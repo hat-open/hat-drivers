@@ -1,6 +1,7 @@
 aiohttp == 3.7.4.post0
-hat-asn1
 hat-aio
+hat-asn1
 hat-json
 hat-peg
 hat-util
+pyserial == 3.5
