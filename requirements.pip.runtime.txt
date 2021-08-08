@@ -1,0 +1,5 @@
+aiohttp == 3.7.4.post0
+hat-aio
+hat-json
+hat-peg
+hat-util

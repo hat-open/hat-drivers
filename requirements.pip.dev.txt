@@ -1,0 +1,12 @@
+-r requirements.pip.runtime.txt
+
+doit == 0.33.1
+flake8 == 3.9.2
+furo == 2021.7.28b40
+hat-doit >= 0.5.2
+pdoc3 == 0.9.2
+pytest == 6.2.4
+pytest-cov == 2.12.1
+setuptools == 57.4.0
+sphinx == 4.1.2
+wheel == 0.36.2

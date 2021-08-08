@@ -1,0 +1,6 @@
+/.doit.db
+/build
+/src_py/**/asn1_repo.json
+/test_pytest/.coverage
+/test_pytest/profile
+__pycache__
