@@ -1,7 +1,7 @@
-aiohttp == 3.7.4.post0
-hat-aio
-hat-asn1
-hat-json
-hat-peg
-hat-util
-pyserial == 3.5
+aiohttp >= 3.7.4.post0
+hat-aio >= 0.5.1
+hat-asn1 >= 0.5.1
+hat-json >= 0.5.1
+hat-peg >= 0.5.1
+hat-util >= 0.5.4
+pyserial >= 3.5
