@@ -267,7 +267,7 @@ class Master(aio.Resource):
                     continue
 
                 if self._modbus_type == common.ModbusType.TCP:
-                    transaction_id += 1
+                    transaction_id = (transaction_id + 1) % 0x10000
                     req_adu = messages.TcpAdu(transaction_id=transaction_id,
                                               device_id=device_id,
                                               pdu=req_pdu)
