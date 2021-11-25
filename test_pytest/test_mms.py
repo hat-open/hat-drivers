@@ -1,18 +1,23 @@
 import asyncio
 import contextlib
-from datetime import datetime, timezone
-import pytest
+import datetime
 import math
 
+import pytest
+
 from hat import aio
+from hat import util
 from hat.drivers import mms
 
 
+pytestmark = pytest.mark.asyncio
+
+
 @pytest.fixture
-def server_factory(unused_tcp_port_factory):
+async def create_server():
 
     @contextlib.asynccontextmanager
-    async def factory(connection_cb, request_cb):
+    async def create_server(connection_cb, request_cb):
         connections = []
 
         async def on_connection(conn):
@@ -21,7 +26,7 @@ def server_factory(unused_tcp_port_factory):
 
         server = await mms.listen(
             on_connection, request_cb,
-            addr=mms.Address('0.0.0.0', unused_tcp_port_factory()))
+            addr=mms.Address('0.0.0.0', util.get_unused_tcp_port()))
         yield server
         async_group = aio.Group()
         async_group.spawn(server.async_close)
@@ -29,11 +34,10 @@ def server_factory(unused_tcp_port_factory):
             async_group.spawn(conn.async_close)
         await async_group.async_close(cancel=False)
 
-    return factory
+    return create_server
 
 
-@pytest.mark.asyncio
-async def test_listen(server_factory):
+async def test_listen(create_server):
 
     async def connection_cb(connection):
         pass
@@ -41,14 +45,12 @@ async def test_listen(server_factory):
     async def request_cb(connection, request):
         return mms.Response.StatusResponse(logical=1, physical=1)
 
-    async with server_factory(connection_cb, request_cb) as server:
+    async with create_server(connection_cb, request_cb) as server:
         assert len(server.addresses) == 1
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
 @pytest.mark.parametrize("connection_count", [1, 2, 10])
-async def test_can_connect(connection_count, server_factory):
+async def test_can_connect(connection_count, create_server):
     server_connections = []
     client_connections = []
 
@@ -58,7 +60,7 @@ async def test_can_connect(connection_count, server_factory):
     async def request_cb(connection, request):
         return mms.Response.StatusResponse(logical=1, physical=1)
 
-    async with server_factory(connection_cb, request_cb) as server:
+    async with create_server(connection_cb, request_cb) as server:
         address = server.addresses[0]
         for _ in range(connection_count):
             conn = await mms.connect(request_cb, address)
@@ -72,8 +74,6 @@ async def test_can_connect(connection_count, server_factory):
     await async_group.async_close(cancel=False)
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
 @pytest.mark.parametrize("req,resp", [(
         mms.StatusRequest(),
         mms.StatusResponse(logical=1, physical=1)
@@ -155,7 +155,7 @@ async def test_can_connect(connection_count, server_factory):
             names=[mms.VmdSpecificObjectName(identifier='x')]),
         mms.ErrorResponse(error_class=mms.ErrorClass.RESOURCE, value=0)
 )])
-async def test_request_response(server_factory, req, resp):
+async def test_request_response(create_server, req, resp):
     request = req
     response = resp
     requests_received = []
@@ -170,7 +170,7 @@ async def test_request_response(server_factory, req, resp):
     async def client_req_cb(connection, request):
         pass
 
-    async with server_factory(connection_cb, server_req_cb) as server:
+    async with create_server(connection_cb, server_req_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(client_req_cb, address)
         received_status = await conn.send_confirmed(request)
@@ -181,8 +181,6 @@ async def test_request_response(server_factory, req, resp):
     assert received_status == response
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
 @pytest.mark.parametrize("msg", [
     mms.UnsolicitedStatusUnconfirmed(logical=1, physical=1),
     mms.EventNotificationUnconfirmed(
@@ -216,7 +214,7 @@ async def test_request_response(server_factory, req, resp):
                                       mms.BooleanData(value=False),
                                       mms.BooleanData(value=True)])])
 ])
-async def test_unconfirmed(server_factory, msg):
+async def test_unconfirmed(create_server, msg):
 
     async def connection_cb(connection):
         connection.send_unconfirmed(msg)
@@ -227,7 +225,7 @@ async def test_unconfirmed(server_factory, msg):
     async def client_req_cb(connection, request):
         pass
 
-    async with server_factory(connection_cb, server_req_cb) as server:
+    async with create_server(connection_cb, server_req_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(client_req_cb, address)
         received_unconfirmed = await conn.receive_unconfirmed()
@@ -236,9 +234,7 @@ async def test_unconfirmed(server_factory, msg):
     assert msg == received_unconfirmed
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
-async def test_request_client(server_factory):
+async def test_request_client(create_server):
 
     expected_response = mms.IdentifyResponse(vendor='x',
                                              model='y',
@@ -258,7 +254,7 @@ async def test_request_client(server_factory):
     async def client_req_cb(connection, request):
         return expected_response
 
-    async with server_factory(connection_cb, server_req_cb) as server:
+    async with create_server(connection_cb, server_req_cb) as server:
         address = server.addresses[0]
         await mms.connect(client_req_cb, address)
         await connection_cb_future
@@ -266,8 +262,6 @@ async def test_request_client(server_factory):
     assert connected_clients == [expected_response]
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
 @pytest.mark.parametrize("type_description", [
     mms.ArrayTypeDescription(number_of_elements=10,
                              element_type=mms.VmdSpecificObjectName('x')),
@@ -290,7 +284,7 @@ async def test_request_client(server_factory):
     mms.UtcTimeTypeDescription(),
     mms.VisibleStringTypeDescription(xyz=5542),
 ])
-async def test_type_description_serialization(server_factory,
+async def test_type_description_serialization(create_server,
                                               type_description):
     read_request = mms.GetVariableAccessAttributesRequest(value='x')
     expected_response = mms.GetVariableAccessAttributesResponse(
@@ -306,7 +300,7 @@ async def test_type_description_serialization(server_factory,
     async def client_req_cb(connection, request):
         pass
 
-    async with server_factory(connection_cb, server_req_cb) as server:
+    async with create_server(connection_cb, server_req_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(client_req_cb, address)
         read_response = await conn.send_confirmed(read_request)
@@ -315,13 +309,12 @@ async def test_type_description_serialization(server_factory,
     assert read_response == expected_response
 
 
-@pytest.mark.asyncio
-@pytest.mark.timeout(2)
 @pytest.mark.parametrize("data", [
     [mms.BcdData(10)],
     [mms.ArrayData([mms.BcdData(11), mms.BcdData(12)])],
-    [mms.BinaryTimeData(datetime.utcnow().replace(microsecond=0,
-                                                  tzinfo=timezone.utc))],
+    [mms.BinaryTimeData(datetime.datetime.utcnow().replace(
+        microsecond=0,
+        tzinfo=datetime.timezone.utc))],
     [mms.BitStringData([True, False, True])],
     [mms.BooleanData(True)],
     [mms.BooleanArrayData([True, False])],
@@ -334,14 +327,14 @@ async def test_type_description_serialization(server_factory,
     [mms.StructureData([mms.MmsStringData('xyz'),
                         mms.IntegerData(321412)])],
     [mms.UnsignedData(123)],
-    [mms.UtcTimeData(value=datetime.now(timezone.utc),
+    [mms.UtcTimeData(value=datetime.datetime.now(datetime.timezone.utc),
                      leap_second=False,
                      clock_failure=False,
                      not_synchronized=False,
                      accuracy=None)],
     [mms.VisibleStringData('123')],
 ])
-async def test_data_serialization(server_factory, data):
+async def test_data_serialization(create_server, data):
     read_request = mms.ReadRequest(mms.AaSpecificObjectName('x'))
     expected_response = mms.ReadResponse(data)
 
@@ -355,7 +348,7 @@ async def test_data_serialization(server_factory, data):
     async def client_req_cb(connection, request):
         pass
 
-    async with server_factory(connection_cb, server_req_cb) as server:
+    async with create_server(connection_cb, server_req_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(client_req_cb, address)
         read_response = await conn.send_confirmed(read_request)
@@ -371,8 +364,7 @@ async def test_data_serialization(server_factory, data):
             assert received_data == expected_data
 
 
-@pytest.mark.asyncio
-async def test_receive_unconfirmed_raises_connection_exception(server_factory):
+async def test_receive_unconfirmed_raises_connection_exception(create_server):
 
     async def connection_cb(connection):
         pass
@@ -380,7 +372,7 @@ async def test_receive_unconfirmed_raises_connection_exception(server_factory):
     async def request_cb(connection, request):
         pass
 
-    async with server_factory(connection_cb, request_cb) as server:
+    async with create_server(connection_cb, request_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(request_cb, address)
         result_future = conn.receive_unconfirmed()
@@ -391,8 +383,7 @@ async def test_receive_unconfirmed_raises_connection_exception(server_factory):
     await conn.async_close()
 
 
-@pytest.mark.asyncio
-async def test_send_confirmed_raises_connection_exception(server_factory):
+async def test_send_confirmed_raises_connection_exception(create_server):
 
     async def connection_cb(connection):
         pass
@@ -400,7 +391,7 @@ async def test_send_confirmed_raises_connection_exception(server_factory):
     async def request_cb(connection, request):
         await asyncio.sleep(1)
 
-    async with server_factory(connection_cb, request_cb) as server:
+    async with create_server(connection_cb, request_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(request_cb, address)
         result_future = conn.send_confirmed(mms.StatusRequest())
@@ -410,7 +401,7 @@ async def test_send_confirmed_raises_connection_exception(server_factory):
 
     await conn.async_close()
 
-    async with server_factory(connection_cb, request_cb) as server:
+    async with create_server(connection_cb, request_cb) as server:
         address = server.addresses[0]
         conn = await mms.connect(request_cb, address)
         result_future = asyncio.ensure_future(
