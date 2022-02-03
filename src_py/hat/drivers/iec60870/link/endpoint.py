@@ -22,14 +22,14 @@ async def create(address_size: common.AddressSize,
     endpoint = Endpoint()
     endpoint._encoder = encoder.Encoder(address_size)
 
-    endpoint._conn = await serial.connect(port=port,
-                                          baudrate=baudrate,
-                                          bytesize=bytesize,
-                                          parity=parity,
-                                          stopbits=stopbits,
-                                          xonxoff=xonxoff,
-                                          rtscts=rtscts,
-                                          dsrdtr=dsrdtr)
+    endpoint._conn = await serial.create(port=port,
+                                         baudrate=baudrate,
+                                         bytesize=bytesize,
+                                         parity=parity,
+                                         stopbits=stopbits,
+                                         xonxoff=xonxoff,
+                                         rtscts=rtscts,
+                                         dsrdtr=dsrdtr)
 
     return endpoint
 

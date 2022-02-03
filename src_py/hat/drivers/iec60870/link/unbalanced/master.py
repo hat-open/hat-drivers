@@ -63,7 +63,7 @@ class Master(aio.Resource):
                       send_retry_count: int = 3,
                       poll_delay: float = 1
                       ) -> Connection:
-        if addr >= self._encoder.get_broadcast_address():
+        if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
 
         conn = _MasterConnection()
