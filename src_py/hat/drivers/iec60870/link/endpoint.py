@@ -46,7 +46,7 @@ class Endpoint(aio.Resource):
 
             while True:
                 try:
-                    size = self._encoder.get_next_msg_size(msg_bytes)
+                    size = self._encoder.get_next_frame_size(msg_bytes)
 
                 except Exception:
                     msg_bytes = msg_bytes[1:]

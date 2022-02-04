@@ -106,7 +106,8 @@ class Encoder:
         else:
             raise ValueError('unsupported frame type')
 
-        address_bytes = (frame.address.to_bytes(self._address_size.value)
+        address_bytes = (frame.address.to_bytes(self._address_size.value,
+                                                byteorder='little')
                          if self._address_size != common.AddressSize.ZERO
                          else b'')
 
