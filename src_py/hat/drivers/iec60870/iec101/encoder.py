@@ -117,7 +117,7 @@ def _decode_io_element(asdu, io, io_element):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            qualifier=io_element.qualifier,
+            request=io_element.qualifier,
             cause=_try_decode_enum(asdu.cause.cause_type.value,
                                    common.CommandReqCause,
                                    common.CommandResCause))
@@ -377,7 +377,7 @@ def _encode_msg(msg):
         asdu_type = app.iec101.common.AsduType.C_IC_NA
         cause_type = app.iec101.common.CauseType(msg.cause.value)
         io_element = app.iec101.common.IoElement_C_IC_NA(
-            qualifier=msg.qualifier)
+            qualifier=msg.request)
 
     elif isinstance(msg, common.CounterInterrogationMsg):
         asdu_type = app.iec101.common.AsduType.C_CI_NA

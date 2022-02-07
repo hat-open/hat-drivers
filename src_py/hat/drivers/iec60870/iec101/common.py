@@ -380,8 +380,8 @@ class InterrogationMsg(typing.NamedTuple):
     is_test: bool
     originator_address: OriginatorAddress
     asdu_address: AsduAddress
-    qualifier: int
-    """qualifier in range [0, 255]"""
+    request: int
+    """request in range [0, 255]"""
     cause: CommandCause
 
 

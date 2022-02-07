@@ -170,9 +170,11 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def drain(self, wait_ack: bool = False):
-        # TODO: implement wait_ack
+        # push to queue
         # TODO rewrite
+        # resolve future queue pusha
         await self._conn.drain()
+        # TODO: implement wait_ack
 
     async def receive(self) -> common.Bytes:
         try:
@@ -244,6 +246,7 @@ class Connection(aio.Resource):
                                  self._send_window_size))
 
                 if not self._is_enabled:
+                    # TODO log message drop
                     continue
 
                 _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
@@ -267,6 +270,7 @@ class Connection(aio.Resource):
             self.close()
 
     async def _test_loop(self):
+        # TODO: implement reset timeout on received frame
         try:
             while True:
                 await asyncio.sleep(self._test_timeout)
@@ -286,13 +290,16 @@ class Connection(aio.Resource):
 
     async def _process_apduu(self, apdu):
         if apdu.function == common.ApduFunction.STARTDT_ACT:
-            if not self._always_enabled:
-                self._is_enabled = True
-                _write_apdu(self._conn,
-                            common.APDUU(common.ApduFunction.STARTDT_CON))
+            self._is_enabled = True
+            _write_apdu(self._conn,
+                        common.APDUU(common.ApduFunction.STARTDT_CON))
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
             if not self._always_enabled:
+                # TODO
+                # _write_apdu(self._conn, common.APDUS(self._rsn))
+                # self._w = 0
+                # self._stop_supervisory_timeout()
                 self._is_enabled = False
                 _write_apdu(self._conn,
                             common.APDUU(common.ApduFunction.STOPDT_CON))
@@ -310,7 +317,10 @@ class Connection(aio.Resource):
     async def _process_apdui(self, apdu):
         await self._set_ack(apdu.rsn)
 
-        self._rsn = (apdu.ssn + 1) % 0x8000
+        if apdu.ssn != self._rsn:
+            raise Exception('missing apdu sequence number')
+
+        self._rsn = (self._rsn + 1) % 0x8000
         self._start_supervisory_timeout()
 
         if apdu.data:
