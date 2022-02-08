@@ -1,7 +1,7 @@
 """IEC 60870-5 APCI layer"""
 
 from hat.drivers.iec60870.link.common import Bytes
-from hat.drivers.iec60870.link.connection import (ConnectionCb,
+from hat.drivers.iec60870.apci.connection import (ConnectionCb,
                                                   connect,
                                                   listen,
                                                   Server,
