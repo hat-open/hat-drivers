@@ -265,11 +265,12 @@ class _MasterConnection(Connection):
             self.close()
 
     async def _send_loop(self, send):
-        try:
-            frame_count_bit = False
-            data_flow_control = False
-            data_flow_queue = collections.deque()
+        future = None
+        frame_count_bit = False
+        data_flow_control = False
+        data_flow_queue = collections.deque()
 
+        try:
             while True:
                 if not data_flow_control and data_flow_queue:
                     future, function, data = data_flow_queue.popleft()

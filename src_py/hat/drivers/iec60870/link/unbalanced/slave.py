@@ -79,7 +79,7 @@ class Slave(aio.Resource):
                     future, res = conn._process(req)
 
                     if (req.address == self._broadcast_address or
-                            req.function.DATA_NO_RES):
+                            req.function == common.ReqFunction.DATA_NO_RES):
                         continue
 
                     last_rw_delta = time.monotonic() - last_rw_time
