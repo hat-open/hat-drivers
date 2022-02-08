@@ -4,6 +4,9 @@ import typing
 
 Bytes = typing.Union[bytes, bytearray, memoryview]
 
+SequenceNumber = int
+"""sequence number in range [0, 0x7FFF]"""
+
 
 class ApduFunction(enum.Enum):
     TESTFR_CON = 0x83
@@ -15,13 +18,13 @@ class ApduFunction(enum.Enum):
 
 
 class APDUI(typing.NamedTuple):
-    ssn: int
-    rsn: int
+    ssn: SequenceNumber
+    rsn: SequenceNumber
     data: Bytes
 
 
 class APDUS(typing.NamedTuple):
-    rsn: int
+    rsn: SequenceNumber
 
 
 class APDUU(typing.NamedTuple):

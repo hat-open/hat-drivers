@@ -43,6 +43,12 @@ def decode(data: common.Bytes) -> common.APDU:
 
 def encode(apdu: common.APDU) -> common.Bytes:
     if isinstance(apdu, common.APDUI):
+        if apdu.ssn > 0x7FFF:
+            raise ValueError('invalid send sequence number')
+        if apdu.rsn > 0x7FFF:
+            raise ValueError('invalid receive sequence number')
+        if len(apdu.data) > 249:
+            raise ValueError('unsupported data size')
         data = [(apdu.ssn << 1) & 0xFF,
                 (apdu.ssn >> 7) & 0xFF,
                 (apdu.rsn << 1) & 0xFF,
@@ -50,6 +56,8 @@ def encode(apdu: common.APDU) -> common.Bytes:
                 *apdu.data]
 
     elif isinstance(apdu, common.APDUS):
+        if apdu.rsn > 0x7FFF:
+            raise ValueError('invalid receive sequence number')
         data = [1,
                 0,
                 (apdu.rsn << 1) & 0xFF,

@@ -146,23 +146,23 @@ def test_decode_apdus(apdu_bytes, rsn):
     assert apdu.rsn == rsn
 
 
-@pytest.mark.parametrize("s_i", ['s', 'i'])
-@pytest.mark.parametrize("sn, sn_exp", [
-    (32767, 32767),
-    (32768, 0),
-    (32769, 1),
-    (32768 + 100, 100),
-    ])
-def test_sn(sn, sn_exp, s_i):
-    if s_i == 'i':
-        apdu = common.APDUI(ssn=sn, rsn=sn, data=b'')
-    else:
-        apdu = common.APDUS(rsn=sn)
-
+@pytest.mark.parametrize("sn", [0, 1, 100, 0x7FFF])
+def test_valid_sequence_number(sn):
+    apdu = common.APDUI(ssn=sn, rsn=sn, data=b'')
     apdu_encoded = encoder.encode(apdu)
     apdu_decoded = encoder.decode(apdu_encoded)
-    if s_i == 'i':
-        assert apdu_decoded.ssn == sn_exp
-        assert apdu_decoded.rsn == sn_exp
-    else:
-        assert apdu_decoded.rsn == sn_exp
+    assert apdu == apdu_decoded
+
+    apdu = common.APDUS(rsn=sn)
+    apdu_encoded = encoder.encode(apdu)
+    apdu_decoded = encoder.decode(apdu_encoded)
+    assert apdu == apdu_decoded
+
+
+@pytest.mark.parametrize("sn", [0x8000, 123456])
+def test_invalid_sequence_number(sn):
+    with pytest.raises(Exception):
+        encoder.encode(common.APDUI(ssn=sn, rsn=sn, data=b''))
+
+    with pytest.raises(Exception):
+        encoder.encode(common.APDUS(rsn=sn))
