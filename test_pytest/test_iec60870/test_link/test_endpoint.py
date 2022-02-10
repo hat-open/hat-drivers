@@ -24,10 +24,12 @@ class CatchLogHandler(logging.Handler):
 def catchlog_queue(logger):
     handler = CatchLogHandler()
     logger.addHandler(handler)
+    logger.propagate = False
     try:
         yield handler.records
     finally:
         logger.removeHandler(handler)
+        logger.propagate = True
 
 
 class SerialMock(aio.Resource):
