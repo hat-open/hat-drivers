@@ -6,9 +6,6 @@ from hat import util
 from hat.drivers import udp
 
 
-pytestmark = pytest.mark.asyncio
-
-
 @pytest.fixture
 def addr():
     return udp.Address('127.0.0.1', util.get_unused_udp_port())

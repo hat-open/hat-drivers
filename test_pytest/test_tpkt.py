@@ -6,9 +6,6 @@ from hat import util
 from hat.drivers import tpkt
 
 
-pytestmark = pytest.mark.asyncio
-
-
 @pytest.fixture
 def addr():
     return tpkt.Address('127.0.0.1', util.get_unused_tcp_port())

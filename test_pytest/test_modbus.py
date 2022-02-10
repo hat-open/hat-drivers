@@ -14,9 +14,6 @@ from hat.drivers import modbus
 from hat.drivers import tcp
 
 
-pytestmark = pytest.mark.asyncio
-
-
 CommType = enum.Enum('CommType', ['TCP', 'SERIAL'])
 
 

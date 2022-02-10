@@ -10,9 +10,6 @@ from hat.drivers.iec60870.link import endpoint, common
 import hat.drivers.serial
 
 
-pytestmark = pytest.mark.asyncio
-
-
 class CatchLogHandler(logging.Handler):
 
     def __init__(self):

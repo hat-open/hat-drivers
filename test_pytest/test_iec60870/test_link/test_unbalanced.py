@@ -7,8 +7,6 @@ from hat import aio
 from hat.drivers import serial
 from hat.drivers.iec60870.link import unbalanced
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 async def mock_serial(monkeypatch):
@@ -41,7 +39,7 @@ class _MockSerialConnection(aio.Resource):
             self._data = self._data[size:]
             return bytes(result)
 
-    async def write(self, data: bytes):
+    async def write(self, data):
         for m_conn in self._mock_connections:
             if self is m_conn:
                 continue

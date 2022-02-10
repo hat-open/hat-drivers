@@ -9,9 +9,8 @@ import pytest
 import hat.drivers.serial
 
 
-pytestmark = [pytest.mark.asyncio,
-              pytest.mark.skipif(sys.platform == 'win32',
-                                 reason="can't simulate serial")]
+pytestmark = pytest.mark.skipif(sys.platform == 'win32',
+                                reason="can't simulate serial")
 
 
 @pytest.fixture

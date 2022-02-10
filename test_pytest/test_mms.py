@@ -10,9 +10,6 @@ from hat import util
 from hat.drivers import mms
 
 
-pytestmark = pytest.mark.asyncio
-
-
 @pytest.fixture
 async def create_server():
 

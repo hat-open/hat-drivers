@@ -7,9 +7,6 @@ from hat import aio
 from hat.drivers import tcp
 
 
-pytestmark = pytest.mark.asyncio
-
-
 @pytest.fixture
 def addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())

@@ -9,9 +9,6 @@ from hat import util
 from hat.drivers import iec104
 
 
-pytestmark = pytest.mark.asyncio
-
-
 @pytest.fixture
 def addr():
     return iec104.Address('127.0.0.1', util.get_unused_tcp_port())

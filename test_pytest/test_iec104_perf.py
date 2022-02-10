@@ -8,8 +8,7 @@ from hat import util
 from hat.drivers import iec104
 
 
-pytestmark = [pytest.mark.asyncio,
-              pytest.mark.perf]
+pytestmark = pytest.mark.perf
 
 
 @pytest.fixture
