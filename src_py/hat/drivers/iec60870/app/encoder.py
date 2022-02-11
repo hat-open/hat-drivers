@@ -125,7 +125,7 @@ class Encoder:
         return bytes(data)
 
     def _decode_io(self, asdu_type, ioe_element_count, io_bytes):
-        address, rest = _decode_int(io_bytes)
+        address, rest = _decode_int(io_bytes, self._io_address_size.value)
 
         elements = collections.deque()
         for _ in range(ioe_element_count):
@@ -144,7 +144,7 @@ class Encoder:
         return io, rest
 
     def _encode_io(self, asdu_type, io):
-        yield from _encode_int(io.address, self._io_address_size)
+        yield from _encode_int(io.address, self._io_address_size.value)
 
         for element in io.elements:
             yield from self._encode_io_element_cb(element, asdu_type)
