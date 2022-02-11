@@ -39,7 +39,7 @@ async def connect(addr: tcp.Address,
 
     try:
         _write_apdu(conn, common.APDUU(common.ApduFunction.STARTDT_ACT))
-        await aio.wait_for(_wait_startdt_con(), response_timeout)
+        await aio.wait_for(_wait_startdt_con(conn), response_timeout)
 
     except Exception:
         await aio.uncancellable(conn.async_close())
@@ -251,7 +251,7 @@ class Connection(aio.Resource):
 
                 _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
                                                      rsn=self._rsn,
-                                                     asdu=asdu))
+                                                     data=asdu))
                 self._w = 0
                 self._stop_supervisory_timeout()
 
