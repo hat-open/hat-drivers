@@ -148,8 +148,6 @@ class Connection(aio.Resource):
         self._waiting_ack_handles = {}
         self._waiting_ack_cv = asyncio.Condition()
 
-        self.async_group.spawn(aio.call_on_cancel, self._on_close)
-
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
         self.async_group.spawn(self._test_loop)
@@ -169,12 +167,16 @@ class Connection(aio.Resource):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def drain(self, wait_ack: bool = False):
-        # push to queue
-        # TODO rewrite
-        # resolve future queue pusha
+    async def drain(self):
+        try:
+            future = asyncio.Future()
+            self._send_queue.put_nowait(future)
+            await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
         await self._conn.drain()
-        # TODO: implement wait_ack
 
     async def receive(self) -> common.Bytes:
         try:
@@ -182,15 +184,6 @@ class Connection(aio.Resource):
 
         except aio.QueueClosedError:
             raise ConnectionError()
-
-    async def _on_close(self):
-        self._receive_queue.close()
-        self._send_queue.close()
-
-        for f in self._waiting_ack_handles.values():
-            f.cancel()
-
-        self._stop_supervisory_timeout()
 
     def _on_response_timeout(self):
         mlog.warning("response timeout occured - closing connection")
@@ -231,11 +224,17 @@ class Connection(aio.Resource):
 
         finally:
             self.close()
+            self._receive_queue.close()
 
     async def _write_loop(self):
         try:
             while True:
                 asdu = await self._send_queue.get()
+
+                if isinstance(asdu, asyncio.Future):
+                    if not asdu.done():
+                        asdu.set_result(None)
+                    continue
 
                 if self._ssn in self._waiting_ack_handles:
                     raise Exception("can not reuse already registered ssn")
@@ -246,7 +245,7 @@ class Connection(aio.Resource):
                                  self._send_window_size))
 
                 if not self._is_enabled:
-                    # TODO log message drop
+                    mlog.info("send data not enabled - discarding message")
                     continue
 
                 _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
@@ -268,6 +267,16 @@ class Connection(aio.Resource):
 
         finally:
             self.close()
+            self._stop_supervisory_timeout()
+            self._send_queue.close()
+
+            for f in self._waiting_ack_handles.values():
+                f.cancel()
+
+            while not self._send_queue.empty():
+                asdu = self._send_queue.get_nowait()
+                if isinstance(asdu, asyncio.Future) and not asdu.done():
+                    asdu.set_exception(ConnectionError())
 
     async def _test_loop(self):
         # TODO: implement reset timeout on received frame
@@ -296,10 +305,9 @@ class Connection(aio.Resource):
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
             if not self._always_enabled:
-                # TODO
-                # _write_apdu(self._conn, common.APDUS(self._rsn))
-                # self._w = 0
-                # self._stop_supervisory_timeout()
+                _write_apdu(self._conn, common.APDUS(self._rsn))
+                self._w = 0
+                self._stop_supervisory_timeout()
                 self._is_enabled = False
                 _write_apdu(self._conn,
                             common.APDUU(common.ApduFunction.STOPDT_CON))

@@ -156,7 +156,6 @@ async def test_connection(conn_queue, server_port):
         await conn_cli.receive()
 
 
-@pytest.mark.skip(reason="implementation not done")
 async def test_drain(server_port):
     supervisory_timeout = 0.1
     async with server_conn_queue(server_port,
@@ -172,12 +171,6 @@ async def test_drain(server_port):
 
         conn_srv.send(b'\xab\x12')
         await asyncio.wait_for(conn_srv.drain(), 0.1)
-
-        # ack does not arrive until receive window size is full or
-        # until supervisory timeout elapsed
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(conn_cli.drain(wait_ack=True), 0.05)
-        await conn_cli.drain(wait_ack=True)
 
         # messages are not sent becaues there are more than send_window_size
         # so drain should not end until supervisory timeout elapses
