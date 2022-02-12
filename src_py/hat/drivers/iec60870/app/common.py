@@ -33,22 +33,23 @@ class TimeSize(enum.Enum):
 class Time(typing.NamedTuple):
     size: TimeSize
     milliseconds: int
+    """milliseconds in range [0, 59999]"""
     invalid: typing.Optional[bool]
     """available for size THREE, FOUR, SEVEN"""
     minutes: typing.Optional[int]
-    """available for size THREE, FOUR, SEVEN"""
+    """available for size THREE, FOUR, SEVEN (minutes in range [0, 59])"""
     summer_time: typing.Optional[bool]
     """available for size FOUR, SEVEN"""
     hours: typing.Optional[int]
-    """available for size FOUR, SEVEN"""
+    """available for size FOUR, SEVEN (hours in range [0, 23])"""
     day_of_week: typing.Optional[int]
-    """available for size SEVEN"""
+    """available for size SEVEN (day_of_week in range [1, 7])"""
     day_of_month: typing.Optional[int]
-    """available for size SEVEN"""
+    """available for size SEVEN (day_of_month in range [1, 31])"""
     months: typing.Optional[int]
-    """available for size SEVEN"""
+    """available for size SEVEN (months in range [1, 12])"""
     years: typing.Optional[int]
-    """available for size SEVEN"""
+    """available for size SEVEN (years in range [0, 99])"""
 
 
 class IO(typing.NamedTuple):
