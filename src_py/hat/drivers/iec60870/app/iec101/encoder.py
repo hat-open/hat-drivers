@@ -578,7 +578,7 @@ def decode_io_element(io_bytes: common.Bytes,
     if asdu_type == common.AsduType.F_FR_NA:
         file_name = int.from_bytes(io_bytes[:2], 'little')
         file_length = int.from_bytes(io_bytes[2:5], 'little')
-        ready = io_bytes[5]
+        ready = bool(io_bytes[5] & 0x80)
         io_bytes = io_bytes[6:]
 
         element = common.IoElement_F_FR_NA(file_name=file_name,
@@ -590,7 +590,7 @@ def decode_io_element(io_bytes: common.Bytes,
         file_name = int.from_bytes(io_bytes[:2], 'little')
         section_name = io_bytes[2]
         section_length = int.from_bytes(io_bytes[3:6], 'little')
-        ready = io_bytes[6]
+        ready = bool(io_bytes[6] & 0x80)
         io_bytes = io_bytes[7:]
 
         element = common.IoElement_F_SR_NA(file_name=file_name,
@@ -788,6 +788,7 @@ def encode_io_element(element: common.IoElement,
 
     elif isinstance(element, common.IoElement_M_IT_TB):
         yield from encode_binary_counter_value(element.value)
+        yield from encode_quality(element.quality)
 
     elif isinstance(element, common.IoElement_M_EP_TD):
         quality = util.first(encode_quality(element.quality))
@@ -962,7 +963,7 @@ def decode_quality(io_bytes: common.Bytes,
         not_topical = bool(io_bytes[0] & 0x40)
         substituted = bool(io_bytes[0] & 0x20)
         blocked = bool(io_bytes[0] & 0x10)
-        time_invalid = bool(io_bytes[0] & 0x01)
+        time_invalid = bool(io_bytes[0] & 0x08)
         quality = common.ProtectionQuality(invalid=invalid,
                                            not_topical=not_topical,
                                            substituted=substituted,
@@ -1001,7 +1002,7 @@ def encode_quality(quality: common.Quality
                (0x40 if quality.not_topical else 0) |
                (0x20 if quality.substituted else 0) |
                (0x10 if quality.blocked else 0) |
-               (0x01 if quality.time_invalid else 0))
+               (0x08 if quality.time_invalid else 0))
 
     else:
         raise ValueError('unsupported quality')

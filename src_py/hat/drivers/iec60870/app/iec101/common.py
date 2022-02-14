@@ -154,6 +154,7 @@ class CounterQuality(typing.NamedTuple):
     adjusted: bool
     overflow: bool
     sequence: int
+    """sequence in range [0, 31]"""
 
 
 class ProtectionQuality(typing.NamedTuple):
