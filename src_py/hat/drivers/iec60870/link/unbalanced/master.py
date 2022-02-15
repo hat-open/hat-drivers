@@ -36,6 +36,7 @@ async def create_master(port: str,
     master._broadcast_address = common.get_broadcast_address(address_size)
 
     master._endpoint = await endpoint.create(address_size=address_size,
+                                             direction_valid=False,
                                              port=port,
                                              baudrate=baudrate,
                                              bytesize=bytesize,
@@ -58,7 +59,7 @@ class Master(aio.Resource):
         return self._endpoint.async_group
 
     async def connect(self,
-                      addr: int,
+                      addr: common.Address,
                       response_timeout: float = 15,
                       send_retry_count: int = 3,
                       poll_delay: float = 1
@@ -77,7 +78,7 @@ class Master(aio.Resource):
         send_fn = functools.partial(self._send, response_timeout)
 
         try:
-            req = common.ReqFrame(is_master=False,
+            req = common.ReqFrame(direction=None,
                                   frame_count_bit=False,
                                   frame_count_valid=False,
                                   function=common.ReqFunction.REQ_STATUS,
@@ -89,7 +90,7 @@ class Master(aio.Resource):
                                     common.ResFunction.RES_STATUS]:
                 raise Exception('invalid status response')
 
-            req = common.ReqFrame(is_master=False,
+            req = common.ReqFrame(direction=None,
                                   frame_count_bit=False,
                                   frame_count_valid=False,
                                   function=common.ReqFunction.RESET_LINK,
@@ -287,7 +288,7 @@ class _MasterConnection(Connection):
 
                 frame_count_bit = not frame_count_bit
                 req = common.ReqFrame(
-                    is_master=False,
+                    direction=None,
                     frame_count_bit=frame_count_bit,
                     frame_count_valid=True,
                     function=function,

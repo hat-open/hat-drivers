@@ -3,6 +3,7 @@
 from hat.drivers.iec60870.link import balanced
 from hat.drivers.iec60870.link import unbalanced
 from hat.drivers.iec60870.link.common import (Bytes,
+                                              Address,
                                               AddressSize)
 from hat.drivers.iec60870.link.connection import (ConnectionCb,
                                                   Connection)
@@ -11,6 +12,7 @@ from hat.drivers.iec60870.link.connection import (ConnectionCb,
 __all__ = ['balanced',
            'unbalanced',
            'Bytes',
+           'Address',
            'AddressSize',
            'ConnectionCb',
            'Connection']

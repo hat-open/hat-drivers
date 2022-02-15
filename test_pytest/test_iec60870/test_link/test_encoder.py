@@ -21,7 +21,7 @@ import hat.drivers.iec60870.link.common as common
     (b'\xab', None, False),
     ])
 def test_get_next_frame_size(data, frame_size, address_size, include_addr):
-    encoder = Encoder(address_size)
+    encoder = Encoder(address_size, False)
     if frame_size is None:
         with pytest.raises(Exception):
             encoder.get_next_frame_size(data)
@@ -31,7 +31,7 @@ def test_get_next_frame_size(data, frame_size, address_size, include_addr):
     assert encoder.get_next_frame_size(data) == exp_frame_size
 
 
-@pytest.mark.parametrize('is_master', [False])
+@pytest.mark.parametrize('direction', [None])
 @pytest.mark.parametrize('fcb_ac', [False])
 @pytest.mark.parametrize('fcv_dfc', [False])
 @pytest.mark.parametrize('function', [
@@ -58,12 +58,12 @@ def test_get_next_frame_size(data, frame_size, address_size, include_addr):
     (112, AddressSize.ONE),
     (456, AddressSize.TWO),
     ])
-def test_encoder(is_master, function, data, fcb_ac, fcv_dfc,
+def test_encoder(direction, function, data, fcb_ac, fcv_dfc,
                  address, address_size):
-    encoder = Encoder(address_size)
+    encoder = Encoder(address_size, False)
     if isinstance(function, common.ReqFunction):
         frame = common.ReqFrame(
-            is_master=is_master,
+            direction=direction,
             frame_count_bit=fcb_ac,
             frame_count_valid=fcv_dfc,
             function=function,
@@ -71,7 +71,7 @@ def test_encoder(is_master, function, data, fcb_ac, fcv_dfc,
             data=data)
     else:
         frame = common.ResFrame(
-            is_master=is_master,
+            direction=direction,
             access_demand=fcb_ac,
             data_flow_control=fcv_dfc,
             function=function,
@@ -81,9 +81,8 @@ def test_encoder(is_master, function, data, fcb_ac, fcv_dfc,
     encoded = encoder.encode(frame)
     frame_decoded = encoder.decode(encoded)
 
-    if (address_size == AddressSize.ZERO or
-            frame._replace(address=0) == _short_ack):
-        assert frame._replace(address=0) == frame_decoded
+    if (address_size == AddressSize.ZERO or frame == _short_ack):
+        assert frame._replace(address=None) == frame_decoded
     else:
         assert frame == frame_decoded
 
@@ -95,9 +94,9 @@ def test_encoder(is_master, function, data, fcb_ac, fcv_dfc,
     AddressSize.ONE,
     AddressSize.TWO])
 def test_address_size(address, address_size):
-    encoder = Encoder(address_size)
+    encoder = Encoder(address_size, False)
     frame = common.ReqFrame(
-        is_master=True,
+        direction=None,
         frame_count_bit=True,
         frame_count_valid=False,
         function=common.ReqFunction.REQ_DATA_1,
@@ -114,14 +113,14 @@ def test_address_size(address, address_size):
     frame_decoded = encoder.decode(encoded)
 
     if address_size == AddressSize.ZERO:
-        frame_decoded.address == 0
+        assert frame_decoded.address is None
     else:
         assert frame.address == frame_decoded.address
 
 
-_short_ack = common.ResFrame(is_master=False,
+_short_ack = common.ResFrame(direction=None,
                              access_demand=False,
                              data_flow_control=False,
                              function=common.ResFunction.ACK,
-                             address=0,
+                             address=None,
                              data=b'')

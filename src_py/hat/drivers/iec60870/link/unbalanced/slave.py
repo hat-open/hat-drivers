@@ -15,7 +15,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_slave(port: str,
-                       addrs: typing.Iterable[int],
+                       addrs: typing.Iterable[common.Address],
                        connection_cb: typing.Optional[ConnectionCb] = None,
                        baudrate: int = 9600,
                        bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
@@ -39,6 +39,7 @@ async def create_slave(port: str,
     slave._conns = {addr: None for addr in addrs}
 
     slave._endpoint = await endpoint.create(address_size=address_size,
+                                            direction_valid=False,
                                             port=port,
                                             baudrate=baudrate,
                                             bytesize=bytesize,
@@ -230,7 +231,7 @@ class _SlaveConnection(Connection):
 
         # TODO: remember response only if resend posible
         self._res = common.ResFrame(
-            is_master=False,
+            direction=None,
             access_demand=not self._send_queue.empty(),
             data_flow_control=False,
             function=function,

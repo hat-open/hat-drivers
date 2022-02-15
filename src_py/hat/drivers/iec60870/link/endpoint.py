@@ -10,6 +10,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create(address_size: common.AddressSize,
+                 direction_valid: bool,
                  port: str,
                  baudrate: int = 9600,
                  bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
@@ -20,7 +21,8 @@ async def create(address_size: common.AddressSize,
                  dsrdtr: bool = False
                  ) -> 'Endpoint':
     endpoint = Endpoint()
-    endpoint._encoder = encoder.Encoder(address_size)
+    endpoint._encoder = encoder.Encoder(address_size=address_size,
+                                        direction_valid=direction_valid)
 
     endpoint._conn = await serial.create(port=port,
                                          baudrate=baudrate,

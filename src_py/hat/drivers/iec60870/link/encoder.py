@@ -5,8 +5,11 @@ from hat.drivers.iec60870.link import common
 
 class Encoder:
 
-    def __init__(self, address_size: common.AddressSize):
+    def __init__(self,
+                 address_size: common.AddressSize,
+                 direction_valid: bool):
         self._address_size = address_size
+        self._direction_valid = direction_valid
 
     def get_next_frame_size(self, data: common.Bytes) -> int:
         if not data or data[0] == 0xE5:
@@ -58,14 +61,17 @@ class Encoder:
         address_bytes = data[1:1+self._address_size.value]
         data = data[1+self._address_size.value:-2]
 
-        is_master = bool(control_field & 0x80)
-        address = int.from_bytes(address_bytes, byteorder='little')
+        direction = (common.Direction(control_field >> 7)
+                     if self._direction_valid else None)
+        address = (int.from_bytes(address_bytes, byteorder='little')
+                   if self._address_size != common.AddressSize.ZERO
+                   else None)
 
         if control_field & 0x40:
             frame_count_bit = bool(control_field & 0x20)
             frame_count_valid = bool(control_field & 0x10)
             function = common.ReqFunction(control_field & 0x0F)
-            frame = common.ReqFrame(is_master=is_master,
+            frame = common.ReqFrame(direction=direction,
                                     frame_count_bit=frame_count_bit,
                                     frame_count_valid=frame_count_valid,
                                     function=function,
@@ -76,7 +82,7 @@ class Encoder:
             access_demand = bool(control_field & 0x20)
             data_flow_control = bool(control_field & 0x10)
             function = common.ResFunction(control_field & 0x0F)
-            frame = common.ResFrame(is_master=is_master,
+            frame = common.ResFrame(direction=direction,
                                     access_demand=access_demand,
                                     data_flow_control=data_flow_control,
                                     function=function,
@@ -86,10 +92,11 @@ class Encoder:
         return frame
 
     def encode(self, frame: common.Frame) -> common.Bytes:
-        if frame._replace(address=_short_ack.address) == _short_ack:
+        if frame._replace(direction=None) == _short_ack:
             return b'\xE5'
 
-        control_field = ((0x80 if frame.is_master else 0x00) |
+        control_field = ((frame.direction.value << 7
+                          if self._direction_valid else 0) |
                          frame.function.value)
 
         if isinstance(frame, common.ReqFrame):
@@ -120,9 +127,9 @@ class Encoder:
         return bytes(itertools.chain(header, data, footer))
 
 
-_short_ack = common.ResFrame(is_master=False,
+_short_ack = common.ResFrame(direction=None,
                              access_demand=False,
                              data_flow_control=False,
                              function=common.ResFunction.ACK,
-                             address=0,
+                             address=None,
                              data=b'')

@@ -4,6 +4,14 @@ import typing
 
 Bytes = typing.Union[bytes, bytearray, memoryview]
 
+Address = typing.Optional[int]
+"""addres is ``None`` or in range [0, 255] or in range [0, 65535]"""
+
+
+class Direction(enum.Enum):
+    B_TO_A = 0
+    A_TO_B = 1
+
 
 class AddressSize(enum.Enum):
     ZERO = 0
@@ -34,20 +42,20 @@ class ResFunction(enum.Enum):
 
 
 class ReqFrame(typing.NamedTuple):
-    is_master: bool
+    direction: typing.Optional[Direction]
     frame_count_bit: bool
     frame_count_valid: bool
     function: ReqFunction
-    address: int
+    address: Address
     data: Bytes
 
 
 class ResFrame(typing.NamedTuple):
-    is_master: bool
+    direction: typing.Optional[Direction]
     access_demand: bool
     data_flow_control: bool
     function: ResFunction
-    address: int
+    address: Address
     data: Bytes
 
 

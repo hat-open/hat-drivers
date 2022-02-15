@@ -79,6 +79,7 @@ async def test_endpoint(monkeypatch):
         # logger monkeypatched to capture log message
         my_endpoint = await endpoint.create(
             address_size=common.AddressSize.TWO,
+            direction_valid=None,
             port='port',
             baudrate=1,
             bytesize=hat.drivers.serial.ByteSize.EIGHTBITS,
@@ -91,7 +92,7 @@ async def test_endpoint(monkeypatch):
         serial_conn = await serial_queue.get()
 
         frame = common.ReqFrame(
-            is_master=True,
+            direction=None,
             frame_count_bit=False,
             frame_count_valid=False,
             function=common.ReqFunction.REQ_DATA_1,
