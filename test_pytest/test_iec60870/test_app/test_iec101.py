@@ -6,7 +6,7 @@ import pytest
 from hat.drivers.iec60870.app.iec101 import encoder, common
 
 
-random.seed(1)
+rndm = random.Random(1)
 
 
 def asdu_type_ioe():
@@ -148,7 +148,7 @@ def asdu_type_ioe():
             for select in [True, False]:
                 yield asdu_type, io_element(value=value,
                                             select=select,
-                                            qualifier=random.randint(0, 31))
+                                            qualifier=rndm.randint(0, 31))
 
     for asdu_type in [common.AsduType.C_SE_NA]:
         io_element = getattr(common, f"IoElement_{asdu_type.name}")
@@ -183,7 +183,7 @@ def asdu_type_ioe():
     for asdu_type in [common.AsduType.M_EI_NA]:
         io_element = getattr(common, f"IoElement_{asdu_type.name}")
         for _ in range(3):
-            cause = random.randint(0, 127)
+            cause = rndm.randint(0, 127)
             yield asdu_type, io_element(
                 param_change=get_random_bool(),
                 cause=cause)
@@ -222,123 +222,75 @@ def asdu_type_ioe():
     for value in normalized_values:
         yield asdu_type, io_element(
             value=common.NormalizedValue(value=value),
-            qualifier=random.randint(0, 255))
+            qualifier=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.P_ME_NB
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for value in scaled_values:
         yield asdu_type, io_element(value=common.ScaledValue(value=value),
-                                    qualifier=random.randint(0, 255))
+                                    qualifier=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.P_ME_NC
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for value in floating_values:
         yield asdu_type, io_element(value=common.FloatingValue(value=value),
-                                    qualifier=random.randint(0, 255))
+                                    qualifier=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.F_FR_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    file_length=random.randint(0, 16777215),
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    file_length=rndm.randint(0, 16777215),
                                     ready=get_random_bool())
 
     asdu_type = common.AsduType.F_SR_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    section_name=random.randint(0, 255),
-                                    section_length=random.randint(0, 16777215),
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    section_name=rndm.randint(0, 255),
+                                    section_length=rndm.randint(0, 16777215),
                                     ready=get_random_bool())
 
     asdu_type = common.AsduType.F_SC_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    section_name=random.randint(0, 255),
-                                    qualifier=random.randint(0, 255))
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    section_name=rndm.randint(0, 255),
+                                    qualifier=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.F_LS_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    section_name=random.randint(0, 255),
-                                    last_qualifier=random.randint(0, 255),
-                                    checksum=random.randint(0, 255))
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    section_name=rndm.randint(0, 255),
+                                    last_qualifier=rndm.randint(0, 255),
+                                    checksum=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.F_AF_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    section_name=random.randint(0, 255),
-                                    qualifier=random.randint(0, 255))
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    section_name=rndm.randint(0, 255),
+                                    qualifier=rndm.randint(0, 255))
 
     asdu_type = common.AsduType.F_SG_NA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    section_name=random.randint(0, 255),
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    section_name=rndm.randint(0, 255),
                                     segment=b'\xab\x12')
 
     asdu_type = common.AsduType.F_DR_TA
     io_element = getattr(common, f"IoElement_{asdu_type.name}")
     for _ in range(5):
-        yield asdu_type, io_element(file_name=random.randint(0, 65535),
-                                    file_length=random.randint(0, 16777215),
+        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
+                                    file_length=rndm.randint(0, 16777215),
                                     more_follows=get_random_bool(),
                                     is_directory=get_random_bool(),
                                     transfer_active=get_random_bool(),
                                     creation_time=get_time(
                                         size=common.TimeSize.SEVEN))
     # TODO: C_RD_NA,  C_TS_NA
-
-
-@pytest.mark.parametrize("asdu_type, io_element", asdu_type_ioe())
-def test_encoder(asdu_type, io_element):
-    time = get_time_from_asdu(asdu_type)
-    cause_size = get_cause_size()
-    originator_address = (0 if cause_size == common.CauseSize.ONE
-                          else random.randint(0, 255))
-    asdu_address_size = get_asdu_address_size()
-    asdu_address = get_asdu_address(asdu_address_size)
-    io_address_size = get_io_address_size()
-    _encoder = encoder.Encoder(
-        cause_size=cause_size,
-        asdu_address_size=asdu_address_size,
-        io_address_size=io_address_size)
-
-    ioes = [io_element]
-    ios_no = random.randint(1, 3)
-    ios = [common.IO(
-                address=get_io_address(io_address_size),
-                elements=ioes,
-                time=time)
-           for i in range(ios_no)]
-
-    asdu = common.ASDU(
-        type=asdu_type,
-        cause=common.Cause(
-            type=common.CauseType.SPONTANEOUS,
-            is_negative_confirm=False,
-            is_test=False,
-            originator_address=originator_address),
-        address=asdu_address,
-        ios=ios)
-    asdu_encoded = _encoder.encode_asdu(asdu)
-    asdu_decoded = _encoder.decode_asdu(asdu_encoded)
-
-    io_element = asdu.ios[0].elements[0]
-    if (hasattr(io_element, 'value') and
-            (isinstance(io_element.value, common.NormalizedValue) or
-             isinstance(io_element.value, common.FloatingValue))):
-        for io, io_decoded in zip(asdu.ios, asdu_decoded.ios):
-            for ioe, ioe_decoded in zip(io.elements, io_decoded.elements):
-                assert math.isclose(ioe.value.value,
-                                    ioe_decoded.value.value,
-                                    rel_tol=1e-3)
-        assert remove_ioe_value(asdu_decoded) == remove_ioe_value(asdu)
-        return
-    assert asdu_decoded == asdu
 
 
 step_position_values = [-64, -13, 0, 17, 63]
@@ -423,7 +375,7 @@ def get_time(size=common.TimeSize.SEVEN):
 
 
 def get_random_bool():
-    return bool(random.randint(0, 1))
+    return bool(rndm.randint(0, 1))
 
 
 def get_quality(asdu_type):
@@ -445,7 +397,7 @@ def get_quality(asdu_type):
             invalid=get_random_bool(),
             adjusted=get_random_bool(),
             overflow=get_random_bool(),
-            sequence=random.randint(0, 31))
+            sequence=rndm.randint(0, 31))
     if asdu_type in [common.AsduType.M_EP_TA,
                      common.AsduType.M_EP_TD,
                      common.AsduType.M_EP_TB,
@@ -467,28 +419,76 @@ def get_quality(asdu_type):
 
 
 def get_cause_size():
-    return common.CauseSize(random.randint(1, 2))
+    return common.CauseSize(rndm.randint(1, 2))
 
 
 def get_asdu_address_size():
-    return common.AsduAddressSize(random.randint(1, 2))
+    return common.AsduAddressSize(rndm.randint(1, 2))
 
 
 def get_io_address_size():
-    return common.IoAddressSize(random.randint(1, 3))
+    return common.IoAddressSize(rndm.randint(1, 3))
 
 
 def get_asdu_address(size):
     if size == common.AsduAddressSize.ONE:
-        return random.randint(0, 255)
+        return rndm.randint(0, 255)
     if size == common.AsduAddressSize.TWO:
-        return random.randint(256, 65535)
+        return rndm.randint(256, 65535)
 
 
 def get_io_address(size):
     if common.IoAddressSize.ONE:
-        return random.randint(0, 255)
+        return rndm.randint(0, 255)
     if common.IoAddressSize.TWO:
-        return random.randint(256, 65535)
+        return rndm.randint(256, 65535)
     if common.IoAddressSize.THREE:
-        return random.randint(65536, 16777215)
+        return rndm.randint(65536, 16777215)
+
+
+@pytest.mark.parametrize("asdu_type, io_element", asdu_type_ioe())
+def test_encoder(asdu_type, io_element):
+    time = get_time_from_asdu(asdu_type)
+    cause_size = get_cause_size()
+    originator_address = (0 if cause_size == common.CauseSize.ONE
+                          else rndm.randint(0, 255))
+    asdu_address_size = get_asdu_address_size()
+    asdu_address = get_asdu_address(asdu_address_size)
+    io_address_size = get_io_address_size()
+    _encoder = encoder.Encoder(
+        cause_size=cause_size,
+        asdu_address_size=asdu_address_size,
+        io_address_size=io_address_size)
+
+    ioes = [io_element]
+    ios_no = rndm.randint(1, 3)
+    ios = [common.IO(
+                address=get_io_address(io_address_size),
+                elements=ioes,
+                time=time)
+           for i in range(ios_no)]
+
+    asdu = common.ASDU(
+        type=asdu_type,
+        cause=common.Cause(
+            type=common.CauseType.SPONTANEOUS,
+            is_negative_confirm=False,
+            is_test=False,
+            originator_address=originator_address),
+        address=asdu_address,
+        ios=ios)
+    asdu_encoded = _encoder.encode_asdu(asdu)
+    asdu_decoded = _encoder.decode_asdu(asdu_encoded)
+
+    io_element = asdu.ios[0].elements[0]
+    if (hasattr(io_element, 'value') and
+            (isinstance(io_element.value, common.NormalizedValue) or
+             isinstance(io_element.value, common.FloatingValue))):
+        for io, io_decoded in zip(asdu.ios, asdu_decoded.ios):
+            for ioe, ioe_decoded in zip(io.elements, io_decoded.elements):
+                assert math.isclose(ioe.value.value,
+                                    ioe_decoded.value.value,
+                                    rel_tol=1e-3)
+        assert remove_ioe_value(asdu_decoded) == remove_ioe_value(asdu)
+        return
+    assert asdu_decoded == asdu
