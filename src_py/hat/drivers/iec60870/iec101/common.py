@@ -37,6 +37,9 @@ ProtectionStartValue = app.iec101.common.ProtectionStartValue
 ProtectionCommandValue = app.iec101.common.ProtectionCommandValue
 StatusValue = app.iec101.common.StatusValue
 
+OtherCause = int
+"""values defined by `app.iec101.common.CauseType`"""
+
 
 class DataResCause(enum.Enum):
     PERIODIC = app.iec101.common.CauseType.PERIODIC
@@ -69,7 +72,7 @@ class DataResCause(enum.Enum):
     INTERROGATED_COUNTER04 = app.iec101.common.CauseType.INTERROGATED_COUNTER04
 
 
-DataCause = typing.Union[DataResCause, None]
+DataCause = typing.Union[DataResCause, OtherCause]
 
 
 class CommandReqCause(enum.Enum):
@@ -87,7 +90,7 @@ class CommandResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
 
 
-CommandCause = typing.Union[CommandReqCause, CommandResCause, None]
+CommandCause = typing.Union[CommandReqCause, CommandResCause, OtherCause]
 
 
 class InitializationResCause(enum.Enum):
@@ -96,7 +99,7 @@ class InitializationResCause(enum.Enum):
     REMOTE_RESET = 2
 
 
-InitializationCause = typing.Union[InitializationResCause, None]
+InitializationCause = typing.Union[InitializationResCause, OtherCause]
 
 
 class ReadReqCause(enum.Enum):
@@ -110,7 +113,7 @@ class ReadResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
 
 
-ReadCause = typing.Union[ReadReqCause, ReadResCause, None]
+ReadCause = typing.Union[ReadReqCause, ReadResCause, OtherCause]
 
 
 class ActivationReqCause(enum.Enum):
@@ -125,7 +128,9 @@ class ActivationResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
 
 
-ActivationCause = typing.Union[ActivationReqCause, ActivationResCause, None]
+ActivationCause = typing.Union[ActivationReqCause,
+                               ActivationResCause,
+                               OtherCause]
 
 
 class DelayReqCause(enum.Enum):
@@ -141,7 +146,7 @@ class DelayResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
 
 
-DelayCause = typing.Union[DelayReqCause, DelayResCause, None]
+DelayCause = typing.Union[DelayReqCause, DelayResCause, OtherCause]
 
 
 class ParameterReqCause(enum.Enum):
@@ -174,7 +179,7 @@ class ParameterResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
 
 
-ParameterCause = typing.Union[ParameterReqCause, ParameterResCause, None]
+ParameterCause = typing.Union[ParameterReqCause, ParameterResCause, OtherCause]
 
 
 class ParameterActivationReqCause(enum.Enum):
@@ -193,7 +198,7 @@ class ParameterActivationResCause(enum.Enum):
 
 ParameterActivationCause = typing.Union[ParameterActivationReqCause,
                                         ParameterActivationResCause,
-                                        None]
+                                        OtherCause]
 
 
 class SingleData(typing.NamedTuple):

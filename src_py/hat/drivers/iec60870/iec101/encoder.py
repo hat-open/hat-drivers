@@ -1,4 +1,5 @@
 import contextlib
+import enum
 import typing
 
 from hat.drivers.iec60870 import app
@@ -82,8 +83,8 @@ def _decode_io_element(asdu, io, io_element):
             io_address=io.address,
             data=_decode_data_io_element(io_element, asdu.type),
             time=io.time,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.DataResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.DataResCause))
 
     elif asdu.type in {app.iec101.common.AsduType.C_SC_NA,
                        app.iec101.common.AsduType.C_DC_NA,
@@ -99,9 +100,9 @@ def _decode_io_element(asdu, io, io_element):
             io_address=io.address,
             command=_decode_command_io_element(io_element, asdu.type),
             is_negative_confirm=asdu.cause.is_negative_confirm,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.CommandReqCause,
-                                   common.CommandResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.CommandReqCause,
+                                common.CommandResCause))
 
     elif asdu.type == app.iec101.common.AsduType.M_EI_NA:
         return common.InitializationMsg(
@@ -109,8 +110,8 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             param_change=io_element.param_change,
-            cause=_try_decode_enum(io_element.cause,
-                                   common.InitializationResCause))
+            cause=_decode_cause(io_element.cause,
+                                common.InitializationResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_IC_NA:
         return common.InterrogationMsg(
@@ -118,9 +119,9 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             request=io_element.qualifier,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.CommandReqCause,
-                                   common.CommandResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.CommandReqCause,
+                                common.CommandResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_CI_NA:
         return common.CounterInterrogationMsg(
@@ -129,9 +130,9 @@ def _decode_io_element(asdu, io, io_element):
             asdu_address=asdu.address,
             request=io_element.request,
             freeze=io_element.freeze,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.CommandReqCause,
-                                   common.CommandResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.CommandReqCause,
+                                common.CommandResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_RD_NA:
         return common.ReadMsg(
@@ -139,9 +140,9 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             io_address=io.address,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ReadReqCause,
-                                   common.ReadResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ReadReqCause,
+                                common.ReadResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_CS_NA:
         return common.ClockSyncMsg(
@@ -149,18 +150,18 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             time=io_element.time,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ActivationReqCause,
-                                   common.ActivationResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ActivationReqCause,
+                                common.ActivationResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_TS_NA:
         return common.TestMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ActivationReqCause,
-                                   common.ActivationResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ActivationReqCause,
+                                common.ActivationResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_RP_NA:
         return common.ResetMsg(
@@ -168,9 +169,9 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             qualifier=io_element.qualifier,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ActivationReqCause,
-                                   common.ActivationResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ActivationReqCause,
+                                common.ActivationResCause))
 
     elif asdu.type == app.iec101.common.AsduType.C_CD_NA:
         return common.DelayMsg(
@@ -178,9 +179,9 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             time=io_element.time,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.DelayReqCause,
-                                   common.DelayResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.DelayReqCause,
+                                common.DelayResCause))
 
     elif asdu.type in {app.iec101.common.AsduType.P_ME_NA,
                        app.iec101.common.AsduType.P_ME_NB,
@@ -191,9 +192,9 @@ def _decode_io_element(asdu, io, io_element):
             asdu_address=asdu.address,
             io_address=io.address,
             parameter=_decode_parameter_io_element(io_element, asdu.type),
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ParameterReqCause,
-                                   common.ParameterResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ParameterReqCause,
+                                common.ParameterResCause))
 
     elif asdu.type == app.iec101.common.AsduType.P_AC_NA:
         return common.ParameterActivationMsg(
@@ -202,9 +203,9 @@ def _decode_io_element(asdu, io, io_element):
             asdu_address=asdu.address,
             io_address=io.address,
             qualifier=io_element.qualifier,
-            cause=_try_decode_enum(asdu.cause.cause_type.value,
-                                   common.ParameterActivationReqCause,
-                                   common.ParameterActivationResCause))
+            cause=_decode_cause(asdu.cause.type.value,
+                                common.ParameterActivationReqCause,
+                                common.ParameterActivationResCause))
 
     raise ValueError('unsupported asdu type')
 
@@ -339,10 +340,11 @@ def _decode_parameter_io_element(io_element, asdu_type):
     raise ValueError('unsupported asdu type')
 
 
-def _try_decode_enum(value, *enum_classes):
-    for enum_class in enum_classes:
+def _decode_cause(value, *cause_classes):
+    for cause_class in cause_classes:
         with contextlib.suppress(ValueError):
-            return enum_class(value)
+            return cause_class(value)
+    return value
 
 
 def _encode_msg(msg):
@@ -354,14 +356,18 @@ def _encode_msg(msg):
 
     if isinstance(msg, common.DataMsg):
         asdu_type = _get_data_asdu_type(msg.data, msg.time)
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_address = msg.io_address
         io_element = _get_data_io_element(msg.data, asdu_type)
         time = msg.time
 
     elif isinstance(msg, common.CommandMsg):
         asdu_type = _get_command_asdu_type(msg.command)
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         is_negative_confirm = msg.is_negative_confirm
         io_address = msg.io_address
         io_element = _get_command_io_element(msg.command, asdu_type)
@@ -371,59 +377,78 @@ def _encode_msg(msg):
         cause_type = app.iec101.common.CauseType.INITIALIZED
         io_element = app.iec101.common.IoElement_M_EI_NA(
             param_change=msg.param_change,
-            cause=msg.cause.value)
+            cause=(msg.cause.value if isinstance(msg.cause, enum.Enum)
+                   else msg.cause))
 
     elif isinstance(msg, common.InterrogationMsg):
         asdu_type = app.iec101.common.AsduType.C_IC_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.IoElement_C_IC_NA(
             qualifier=msg.request)
 
     elif isinstance(msg, common.CounterInterrogationMsg):
         asdu_type = app.iec101.common.AsduType.C_CI_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.IoElement_C_CI_NA(
             request=msg.request,
             freeze=msg.freeze)
 
     elif isinstance(msg, common.ReadMsg):
         asdu_type = app.iec101.common.AsduType.C_RD_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_address = msg.io_address
         io_element = app.iec101.common.IoElement_C_RD_NA()
 
     elif isinstance(msg, common.ClockSyncMsg):
         asdu_type = app.iec101.common.AsduType.C_CS_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.IoElement_C_CS_NA(
             time=msg.time)
 
     elif isinstance(msg, common.TestMsg):
         asdu_type = app.iec101.common.AsduType.C_TS_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.IoElement_C_TS_NA()
 
     elif isinstance(msg, common.ResetMsg):
         asdu_type = app.iec101.common.AsduType.C_RP_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.IoElement_C_RP_NA(
             qualifier=msg.qualifier)
 
     elif isinstance(msg, common.DelayMsg):
         asdu_type = app.iec101.common.AsduType.C_CD_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_element = app.iec101.common.C_CD_NA(
             time=msg.time)
 
     elif isinstance(msg, common.ParameterMsg):
         asdu_type = _get_parameter_asdu_type(msg.parameter)
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_address = msg.io_address
         io_element = _get_parameter_io_element(msg.parameter, asdu_type)
 
     elif isinstance(msg, common.ParameterActivationMsg):
         asdu_type = app.iec101.common.AsduType.P_AC_NA
-        cause_type = app.iec101.common.CauseType(msg.cause.value)
+        cause_type = app.iec101.common.CauseType(
+            msg.cause.value if isinstance(msg.cause, enum.Enum)
+            else msg.cause)
         io_address = msg.io_address
         io_element = app.iec101.common.IoElement_P_AC_NA(
             qualifier=msg.qualifier)
