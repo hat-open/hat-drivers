@@ -68,6 +68,9 @@ class Slave(aio.Resource):
                 req = await self._endpoint.receive()
                 last_rw_time = time.monotonic()
 
+                if not isinstance(req, common.ReqFrame):
+                    continue
+
                 addrs = (list(self._conns.keys())
                          if req.address == self._broadcast_address
                          else [req.address])
