@@ -433,7 +433,7 @@ def _encode_msg(msg):
         cause_type = app.iec101.common.CauseType(
             msg.cause.value if isinstance(msg.cause, enum.Enum)
             else msg.cause)
-        io_element = app.iec101.common.C_CD_NA(
+        io_element = app.iec101.common.IoElement_C_CD_NA(
             time=msg.time)
 
     elif isinstance(msg, common.ParameterMsg):
@@ -456,7 +456,7 @@ def _encode_msg(msg):
     else:
         raise ValueError('unsupported message')
 
-    cause = app.iec101.common.Cause(cause_type=cause_type,
+    cause = app.iec101.common.Cause(type=cause_type,
                                     is_negative_confirm=is_negative_confirm,
                                     is_test=msg.is_test,
                                     originator_address=msg.originator_address)
@@ -465,7 +465,7 @@ def _encode_msg(msg):
                               elements=[io_element],
                               time=time)
 
-    asdu = app.iec101.common.ASDU(asdu_type=asdu_type,
+    asdu = app.iec101.common.ASDU(type=asdu_type,
                                   cause=cause,
                                   address=msg.asdu_address,
                                   ios=[io])

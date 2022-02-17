@@ -42,52 +42,52 @@ OtherCause = int
 
 
 class DataResCause(enum.Enum):
-    PERIODIC = app.iec101.common.CauseType.PERIODIC
-    BACKGROUND_SCAN = app.iec101.common.CauseType.BACKGROUND_SCAN
-    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS
-    REQUEST = app.iec101.common.CauseType.REQUEST
-    REMOTE_COMMAND = app.iec101.common.CauseType.REMOTE_COMMAND
-    LOCAL_COMMAND = app.iec101.common.CauseType.LOCAL_COMMAND
-    INTERROGATED_STATION = app.iec101.common.CauseType.INTERROGATED_STATION
-    INTERROGATED_GROUP01 = app.iec101.common.CauseType.INTERROGATED_GROUP01
-    INTERROGATED_GROUP02 = app.iec101.common.CauseType.INTERROGATED_GROUP02
-    INTERROGATED_GROUP03 = app.iec101.common.CauseType.INTERROGATED_GROUP03
-    INTERROGATED_GROUP04 = app.iec101.common.CauseType.INTERROGATED_GROUP04
-    INTERROGATED_GROUP05 = app.iec101.common.CauseType.INTERROGATED_GROUP05
-    INTERROGATED_GROUP06 = app.iec101.common.CauseType.INTERROGATED_GROUP06
-    INTERROGATED_GROUP07 = app.iec101.common.CauseType.INTERROGATED_GROUP07
-    INTERROGATED_GROUP08 = app.iec101.common.CauseType.INTERROGATED_GROUP08
-    INTERROGATED_GROUP09 = app.iec101.common.CauseType.INTERROGATED_GROUP09
-    INTERROGATED_GROUP10 = app.iec101.common.CauseType.INTERROGATED_GROUP10
-    INTERROGATED_GROUP11 = app.iec101.common.CauseType.INTERROGATED_GROUP11
-    INTERROGATED_GROUP12 = app.iec101.common.CauseType.INTERROGATED_GROUP12
-    INTERROGATED_GROUP13 = app.iec101.common.CauseType.INTERROGATED_GROUP13
-    INTERROGATED_GROUP14 = app.iec101.common.CauseType.INTERROGATED_GROUP14
-    INTERROGATED_GROUP15 = app.iec101.common.CauseType.INTERROGATED_GROUP15
-    INTERROGATED_GROUP16 = app.iec101.common.CauseType.INTERROGATED_GROUP16
-    INTERROGATED_COUNTER = app.iec101.common.CauseType.INTERROGATED_COUNTER
-    INTERROGATED_COUNTER01 = app.iec101.common.CauseType.INTERROGATED_COUNTER01
-    INTERROGATED_COUNTER02 = app.iec101.common.CauseType.INTERROGATED_COUNTER02
-    INTERROGATED_COUNTER03 = app.iec101.common.CauseType.INTERROGATED_COUNTER03
-    INTERROGATED_COUNTER04 = app.iec101.common.CauseType.INTERROGATED_COUNTER04
+    PERIODIC = app.iec101.common.CauseType.PERIODIC.value
+    BACKGROUND_SCAN = app.iec101.common.CauseType.BACKGROUND_SCAN.value
+    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS.value
+    REQUEST = app.iec101.common.CauseType.REQUEST.value
+    REMOTE_COMMAND = app.iec101.common.CauseType.REMOTE_COMMAND.value
+    LOCAL_COMMAND = app.iec101.common.CauseType.LOCAL_COMMAND.value
+    INTERROGATED_STATION = app.iec101.common.CauseType.INTERROGATED_STATION.value  # NOQA
+    INTERROGATED_GROUP01 = app.iec101.common.CauseType.INTERROGATED_GROUP01.value  # NOQA
+    INTERROGATED_GROUP02 = app.iec101.common.CauseType.INTERROGATED_GROUP02.value  # NOQA
+    INTERROGATED_GROUP03 = app.iec101.common.CauseType.INTERROGATED_GROUP03.value  # NOQA
+    INTERROGATED_GROUP04 = app.iec101.common.CauseType.INTERROGATED_GROUP04.value  # NOQA
+    INTERROGATED_GROUP05 = app.iec101.common.CauseType.INTERROGATED_GROUP05.value  # NOQA
+    INTERROGATED_GROUP06 = app.iec101.common.CauseType.INTERROGATED_GROUP06.value  # NOQA
+    INTERROGATED_GROUP07 = app.iec101.common.CauseType.INTERROGATED_GROUP07.value  # NOQA
+    INTERROGATED_GROUP08 = app.iec101.common.CauseType.INTERROGATED_GROUP08.value  # NOQA
+    INTERROGATED_GROUP09 = app.iec101.common.CauseType.INTERROGATED_GROUP09.value  # NOQA
+    INTERROGATED_GROUP10 = app.iec101.common.CauseType.INTERROGATED_GROUP10.value  # NOQA
+    INTERROGATED_GROUP11 = app.iec101.common.CauseType.INTERROGATED_GROUP11.value  # NOQA
+    INTERROGATED_GROUP12 = app.iec101.common.CauseType.INTERROGATED_GROUP12.value  # NOQA
+    INTERROGATED_GROUP13 = app.iec101.common.CauseType.INTERROGATED_GROUP13.value  # NOQA
+    INTERROGATED_GROUP14 = app.iec101.common.CauseType.INTERROGATED_GROUP14.value  # NOQA
+    INTERROGATED_GROUP15 = app.iec101.common.CauseType.INTERROGATED_GROUP15.value  # NOQA
+    INTERROGATED_GROUP16 = app.iec101.common.CauseType.INTERROGATED_GROUP16.value  # NOQA
+    INTERROGATED_COUNTER = app.iec101.common.CauseType.INTERROGATED_COUNTER.value  # NOQA
+    INTERROGATED_COUNTER01 = app.iec101.common.CauseType.INTERROGATED_COUNTER01.value  # NOQA
+    INTERROGATED_COUNTER02 = app.iec101.common.CauseType.INTERROGATED_COUNTER02.value  # NOQA
+    INTERROGATED_COUNTER03 = app.iec101.common.CauseType.INTERROGATED_COUNTER03.value  # NOQA
+    INTERROGATED_COUNTER04 = app.iec101.common.CauseType.INTERROGATED_COUNTER04.value  # NOQA
 
 
 DataCause = typing.Union[DataResCause, OtherCause]
 
 
 class CommandReqCause(enum.Enum):
-    ACTIVATION = app.iec101.common.CauseType.ACTIVATION
-    DEACTIVATION = app.iec101.common.CauseType.DEACTIVATION
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
+    DEACTIVATION = app.iec101.common.CauseType.DEACTIVATION.value
 
 
 class CommandResCause(enum.Enum):
-    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION  # NOQA
-    DEACTIVATION_CONFIRMATION = app.iec101.common.CauseType.DEACTIVATION_CONFIRMATION  # NOQA
-    ACTIVATION_TERMINATION = app.iec101.common.CauseType.ACTIVATION_TERMINATION
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    DEACTIVATION_CONFIRMATION = app.iec101.common.CauseType.DEACTIVATION_CONFIRMATION.value  # NOQA
+    ACTIVATION_TERMINATION = app.iec101.common.CauseType.ACTIVATION_TERMINATION.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 CommandCause = typing.Union[CommandReqCause, CommandResCause, OtherCause]
@@ -103,29 +103,29 @@ InitializationCause = typing.Union[InitializationResCause, OtherCause]
 
 
 class ReadReqCause(enum.Enum):
-    REQUEST = app.iec101.common.CauseType.REQUEST
+    REQUEST = app.iec101.common.CauseType.REQUEST.value
 
 
 class ReadResCause(enum.Enum):
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 ReadCause = typing.Union[ReadReqCause, ReadResCause, OtherCause]
 
 
 class ActivationReqCause(enum.Enum):
-    ACTIVATION = app.iec101.common.CauseType.ACTIVATION
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
 
 
 class ActivationResCause(enum.Enum):
-    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION  # NOQA
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 ActivationCause = typing.Union[ActivationReqCause,
@@ -134,66 +134,66 @@ ActivationCause = typing.Union[ActivationReqCause,
 
 
 class DelayReqCause(enum.Enum):
-    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS
-    ACTIVATION = app.iec101.common.CauseType.ACTIVATION
+    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS.value
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
 
 
 class DelayResCause(enum.Enum):
-    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION  # NOQA
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 DelayCause = typing.Union[DelayReqCause, DelayResCause, OtherCause]
 
 
 class ParameterReqCause(enum.Enum):
-    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS
-    ACTIVATION = app.iec101.common.CauseType.ACTIVATION
+    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS.value
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
 
 
 class ParameterResCause(enum.Enum):
-    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION  # NOQA
-    INTERROGATED_STATION = app.iec101.common.CauseType.INTERROGATED_STATION
-    INTERROGATED_GROUP01 = app.iec101.common.CauseType.INTERROGATED_GROUP01
-    INTERROGATED_GROUP02 = app.iec101.common.CauseType.INTERROGATED_GROUP02
-    INTERROGATED_GROUP03 = app.iec101.common.CauseType.INTERROGATED_GROUP03
-    INTERROGATED_GROUP04 = app.iec101.common.CauseType.INTERROGATED_GROUP04
-    INTERROGATED_GROUP05 = app.iec101.common.CauseType.INTERROGATED_GROUP05
-    INTERROGATED_GROUP06 = app.iec101.common.CauseType.INTERROGATED_GROUP06
-    INTERROGATED_GROUP07 = app.iec101.common.CauseType.INTERROGATED_GROUP07
-    INTERROGATED_GROUP08 = app.iec101.common.CauseType.INTERROGATED_GROUP08
-    INTERROGATED_GROUP09 = app.iec101.common.CauseType.INTERROGATED_GROUP09
-    INTERROGATED_GROUP10 = app.iec101.common.CauseType.INTERROGATED_GROUP10
-    INTERROGATED_GROUP11 = app.iec101.common.CauseType.INTERROGATED_GROUP11
-    INTERROGATED_GROUP12 = app.iec101.common.CauseType.INTERROGATED_GROUP12
-    INTERROGATED_GROUP13 = app.iec101.common.CauseType.INTERROGATED_GROUP13
-    INTERROGATED_GROUP14 = app.iec101.common.CauseType.INTERROGATED_GROUP14
-    INTERROGATED_GROUP15 = app.iec101.common.CauseType.INTERROGATED_GROUP15
-    INTERROGATED_GROUP16 = app.iec101.common.CauseType.INTERROGATED_GROUP16
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    INTERROGATED_STATION = app.iec101.common.CauseType.INTERROGATED_STATION.value  # NOQA
+    INTERROGATED_GROUP01 = app.iec101.common.CauseType.INTERROGATED_GROUP01.value  # NOQA
+    INTERROGATED_GROUP02 = app.iec101.common.CauseType.INTERROGATED_GROUP02.value  # NOQA
+    INTERROGATED_GROUP03 = app.iec101.common.CauseType.INTERROGATED_GROUP03.value  # NOQA
+    INTERROGATED_GROUP04 = app.iec101.common.CauseType.INTERROGATED_GROUP04.value  # NOQA
+    INTERROGATED_GROUP05 = app.iec101.common.CauseType.INTERROGATED_GROUP05.value  # NOQA
+    INTERROGATED_GROUP06 = app.iec101.common.CauseType.INTERROGATED_GROUP06.value  # NOQA
+    INTERROGATED_GROUP07 = app.iec101.common.CauseType.INTERROGATED_GROUP07.value  # NOQA
+    INTERROGATED_GROUP08 = app.iec101.common.CauseType.INTERROGATED_GROUP08.value  # NOQA
+    INTERROGATED_GROUP09 = app.iec101.common.CauseType.INTERROGATED_GROUP09.value  # NOQA
+    INTERROGATED_GROUP10 = app.iec101.common.CauseType.INTERROGATED_GROUP10.value  # NOQA
+    INTERROGATED_GROUP11 = app.iec101.common.CauseType.INTERROGATED_GROUP11.value  # NOQA
+    INTERROGATED_GROUP12 = app.iec101.common.CauseType.INTERROGATED_GROUP12.value  # NOQA
+    INTERROGATED_GROUP13 = app.iec101.common.CauseType.INTERROGATED_GROUP13.value  # NOQA
+    INTERROGATED_GROUP14 = app.iec101.common.CauseType.INTERROGATED_GROUP14.value  # NOQA
+    INTERROGATED_GROUP15 = app.iec101.common.CauseType.INTERROGATED_GROUP15.value  # NOQA
+    INTERROGATED_GROUP16 = app.iec101.common.CauseType.INTERROGATED_GROUP16.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 ParameterCause = typing.Union[ParameterReqCause, ParameterResCause, OtherCause]
 
 
 class ParameterActivationReqCause(enum.Enum):
-    ACTIVATION = app.iec101.common.CauseType.ACTIVATION
-    DEACTIVATION = app.iec101.common.CauseType.DEACTIVATION
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
+    DEACTIVATION = app.iec101.common.CauseType.DEACTIVATION.value
 
 
 class ParameterActivationResCause(enum.Enum):
-    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION  # NOQA
-    DEACTIVATION_CONFIRMATION = app.iec101.common.CauseType.DEACTIVATION_CONFIRMATION  # NOQA
-    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE
-    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE
-    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS
-    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    DEACTIVATION_CONFIRMATION = app.iec101.common.CauseType.DEACTIVATION_CONFIRMATION.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
 ParameterActivationCause = typing.Union[ParameterActivationReqCause,
