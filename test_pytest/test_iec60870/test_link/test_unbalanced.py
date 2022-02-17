@@ -165,3 +165,41 @@ async def test_multiple_slaves(mock_serial, slave_count, poll_delay):
     for i in range(slave_count):
         await slaves[i].async_close()
     await master.async_close()
+
+
+async def test_disconnect_slave(mock_serial):
+    master = await unbalanced.master.create_master(port='1')
+    slave = await unbalanced.slave.create_slave(port='1',
+                                                addrs=[1])
+    master_conn = await master.connect(addr=1,
+                                       response_timeout=0.01,
+                                       send_retry_count=1)
+    assert master_conn.is_open
+    await slave.async_close()
+    await master_conn.wait_closed()
+    with pytest.raises(ConnectionError):
+        await master_conn.send(b'hi')
+    with pytest.raises(ConnectionError):
+        await master_conn.receive()
+    await master.async_close()
+
+
+async def test_disconnect_master(mock_serial):
+    queue = asyncio.Queue()
+    master = await unbalanced.master.create_master(port='1')
+    slave = await unbalanced.slave.create_slave(port='1',
+                                                addrs=[1],
+                                                connection_cb=queue.put_nowait,
+                                                keep_alive_timeout=0.1)
+    await master.connect(addr=1,
+                         response_timeout=0.01,
+                         send_retry_count=1)
+    slave_conn = await queue.get()
+    assert slave_conn.is_open
+    await master.async_close()
+    await slave_conn.wait_closed()
+    with pytest.raises(ConnectionError):
+        await slave_conn.send(b'hi')
+    with pytest.raises(ConnectionError):
+        await slave_conn.receive()
+    await slave.async_close()

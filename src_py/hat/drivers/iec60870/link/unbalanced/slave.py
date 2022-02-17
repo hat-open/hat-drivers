@@ -169,7 +169,7 @@ class _SlaveConnection(Connection):
         self._receive_queue.close()
 
         while not self._send_queue.empty():
-            future = self._send_queue.get_nowait()
+            future, _ = self._send_queue.get_nowait()
             if future.done():
                 continue
             future.set_exception(ConnectionError())
