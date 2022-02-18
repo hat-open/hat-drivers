@@ -14,7 +14,7 @@ class Encoder:
             cause_size=common.CauseSize.ONE,
             asdu_address_size=common.AsduAddressSize.ONE,
             io_address_size=common.IoAddressSize.TWO,
-            asdu_type_time_sizes=set(),
+            asdu_type_time_sizes={},
             inverted_sequence_bit=True,
             decode_io_element_cb=_decode_io_element,
             encode_io_element_cb=_encode_io_element)
@@ -28,6 +28,8 @@ class Encoder:
         ios = [common.IO(address=_decode_io_address(io.address),
                          elements=io.elements)
                for io in asdu.ios]
+
+        # TODO assert len(asdu.ios) == 1
 
         return common.ASDU(type=asdu_type,
                            cause=cause,
