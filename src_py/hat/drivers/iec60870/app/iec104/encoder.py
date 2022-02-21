@@ -92,20 +92,20 @@ class Encoder:
                                    address=address,
                                    ios=ios)
 
-        return self._encoder.encode(asdu)
+        return self._encoder.encode_asdu(asdu)
 
 
 _asdu_type_time_sizes = {
-    k: v for k, v in iec101.encoder.asdu_type_time_sizes.items()
-    if k in iec101_asdu_types}.update({
-        common.AsduType.C_SC_TA.value: common.TimeSize.SEVEN,
-        common.AsduType.C_DC_TA.value: common.TimeSize.SEVEN,
-        common.AsduType.C_RC_TA.value: common.TimeSize.SEVEN,
-        common.AsduType.C_SE_TA.value: common.TimeSize.SEVEN,
-        common.AsduType.C_SE_TB.value: common.TimeSize.SEVEN,
-        common.AsduType.C_SE_TC.value: common.TimeSize.SEVEN,
-        common.AsduType.C_BO_TA.value: common.TimeSize.SEVEN,
-        common.AsduType.C_TS_TA.value: common.TimeSize.SEVEN})
+    **{k: v for k, v in iec101.encoder.asdu_type_time_sizes.items()
+       if k in iec101_asdu_types},
+    **{common.AsduType.C_SC_TA.value: common.TimeSize.SEVEN,
+       common.AsduType.C_DC_TA.value: common.TimeSize.SEVEN,
+       common.AsduType.C_RC_TA.value: common.TimeSize.SEVEN,
+       common.AsduType.C_SE_TA.value: common.TimeSize.SEVEN,
+       common.AsduType.C_SE_TB.value: common.TimeSize.SEVEN,
+       common.AsduType.C_SE_TC.value: common.TimeSize.SEVEN,
+       common.AsduType.C_BO_TA.value: common.TimeSize.SEVEN,
+       common.AsduType.C_TS_TA.value: common.TimeSize.SEVEN}}
 
 
 def _decode_io_element(io_bytes, asdu_type):
