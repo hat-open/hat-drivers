@@ -183,9 +183,9 @@ class OrderType(enum.Enum):
     END_OF_CHANNEL_TRANSMISSION_WITHOUT_ABORTION = 35
     END_OF_CHANNEL_TRANSMISSION_WITH_ABORTION_BY_CONTROL_SYSTEM = 36
     END_OF_CHANNEL_TRANSMISSION_WITH_ABORTION_BY_THE_PROTECTION_EQUIPMENT = 37
-    END_OF_TAG_TRANSMISSION_WITHOUT_ABORTION = 35
-    END_OF_TAG_TRANSMISSION_WITH_ABORTION_BY_CONTROL_SYSTEM = 36
-    END_OF_TAG_TRANSMISSION_WITH_ABORTION_BY_THE_PROTECTION_EQUIPMENT = 37
+    END_OF_TAG_TRANSMISSION_WITHOUT_ABORTION = 38
+    END_OF_TAG_TRANSMISSION_WITH_ABORTION_BY_CONTROL_SYSTEM = 39
+    END_OF_TAG_TRANSMISSION_WITH_ABORTION_BY_THE_PROTECTION_EQUIPMENT = 40
     DISTURBANCE_DATA_TRANSMITTED_SUCCESSFULLY = 64
     DISTURBANCE_DATA_TRANSMITTED_NOT_SUCCESSFULLY = 65
     CHANNEL_TRANSMITTED_SUCCESSFULLY = 66
@@ -207,8 +207,10 @@ class Channel(enum.Enum):
 
 
 class IoAddress(typing.NamedTuple):
-    function_type: FunctionType
-    information_number: InformationNumber
+    function_type: typing.Union[FunctionType, int]
+    """function_type is in range [0, 255]"""
+    information_number: typing.Union[InformationNumber, int]
+    """information_number is in range [0, 255]"""
 
 
 class Identification(typing.NamedTuple):
@@ -284,8 +286,10 @@ class Real64Value(typing.NamedTuple):
 
 
 class DoubleValue(enum.Enum):
+    TRANSIENT = 0
     OFF = 1
     ON = 2
+    ERROR = 3
 
 
 class SingleValue(enum.Enum):
@@ -555,7 +559,7 @@ class IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES(typing.NamedTuple):
     """fault_number in range [0, 65535]"""
     channel: Channel
     element_number: int
-    """fault_number in range [0, 65535]"""
+    """element_number in range [0, 65535]"""
     values: typing.List[FixedValue]
 
 

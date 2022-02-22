@@ -4,6 +4,7 @@ import contextlib
 import functools
 import logging
 import time
+import typing
 
 from hat import aio
 from hat.drivers import serial
@@ -62,7 +63,8 @@ class Master(aio.Resource):
                       addr: common.Address,
                       response_timeout: float = 15,
                       send_retry_count: int = 3,
-                      poll_delay: float = 1
+                      poll_class1_delay: typing.Optional[float] = 1,
+                      poll_class2_delay: typing.Optional[float] = None
                       ) -> Connection:
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
@@ -106,8 +108,10 @@ class Master(aio.Resource):
             raise
 
         conn.async_group.spawn(conn._send_loop, send_fn)
-        conn.async_group.spawn(conn._poll_loop_class1, poll_delay)
-        conn.async_group.spawn(conn._poll_loop_class2, poll_delay)
+        if poll_class1_delay is not None:
+            conn.async_group.spawn(conn._poll_loop_class1, poll_class1_delay)
+        if poll_class2_delay is not None:
+            conn.async_group.spawn(conn._poll_loop_class2, poll_class2_delay)
 
         return conn
 
@@ -322,7 +326,8 @@ class _MasterConnection(Connection):
                         self._receive_queue.put_nowait(res.data)
                     future.set_result(None)
 
-                elif res.function == common.ResFunction.ACK:
+                elif res.function in (common.ResFunction.ACK,
+                                      common.ResFunction.RES_NACK):
                     future.set_result(None)
 
                 else:

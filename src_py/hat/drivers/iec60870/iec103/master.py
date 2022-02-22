@@ -75,8 +75,11 @@ class MasterConnection(aio.Resource):
         return self._conn.async_group
 
     async def time_sync(self,
+                        time: typing.Optional[common.Time] = None,
                         asdu_address: common.AsduAddress = 0xFF,
-                        time: typing.Optional[common.Time] = None
+                        io_address: common.IoAddress = common.IoAddress(
+                            common.FunctionType.GLOBAL_FUNCTION_TYPE,
+                            common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION)  # NOQA
                         ) -> common.Time:
         async with self._time_sync_lock:
             if not self.is_open:
@@ -88,9 +91,7 @@ class MasterConnection(aio.Resource):
                 cause=app.iec103.common.Cause.TIME_SYNCHRONIZATION,
                 address=asdu_address,
                 ios=[app.iec103.common.IO(
-                    address=app.iec103.common.IoAddress(
-                        function_type=app.iec103.common.FunctionType.GLOBAL_FUNCTION_TYPE,  # NOQA
-                        information_number=app.iec103.common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION),  # NOQA
+                    address=io_address,
                     elements=[app.iec103.common.IoElement_TIME_SYNCHRONIZATION(
                         time=time)])])
             data = self._encoder.encode_asdu(asdu)

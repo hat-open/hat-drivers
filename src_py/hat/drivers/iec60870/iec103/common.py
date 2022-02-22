@@ -10,6 +10,8 @@ InformationNumber = app.iec103.common.InformationNumber
 Description = app.iec103.common.Description
 IoAddress = app.iec103.common.IoAddress
 Identification = app.iec103.common.Identification
+TimeSize = app.iec103.common.TimeSize
+Time = app.iec103.common.Time
 
 ValueType = app.iec103.common.ValueType
 NoneValue = app.iec103.common.NoneValue
@@ -103,3 +105,7 @@ class GenericData(typing.NamedTuple):
     identification: Identification
     description: Description
     value: ArrayValue
+
+
+time_from_datetime = app.iec103.common.time_from_datetime
+time_to_datetime = app.iec103.common.time_to_datetime

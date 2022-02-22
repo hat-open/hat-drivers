@@ -1,4 +1,6 @@
 import collections
+import contextlib
+import enum
 import itertools
 import math
 import struct
@@ -50,19 +52,35 @@ class Encoder:
                                    address=address,
                                    ios=ios)
 
-        return self._encoder.encode(asdu)
+        return self._encoder.encode_asdu(asdu)
 
 
 def _decode_io_address(io_address):
-    function_type = common.FunctionType(io_address & 0xFF)
-    information_number = common.InformationNumber(io_address >> 8)
+    function_type = io_address & 0xFF
+    with contextlib.suppress(ValueError):
+        function_type = common.FunctionType(function_type)
+
+    information_number = io_address >> 8
+    with contextlib.suppress(ValueError):
+        information_number = common.InformationNumber(information_number)
+
     return common.IoAddress(function_type=function_type,
                             information_number=information_number)
 
 
 def _encode_io_address(io_address):
-    return (io_address.function_type.value |
-            (io_address.information_number.value << 8))
+    function_type = (
+        io_address.function_type.value
+        if isinstance(io_address.function_type, enum.Enum)
+        else io_address.function_type)
+
+    information_number = (
+        io_address.information_number.value
+        if isinstance(io_address.information_number, enum.Enum)
+        else io_address.information_number)
+
+    return (function_type |
+            (information_number << 8))
 
 
 def _decode_io_element(io_bytes, asdu_type):
@@ -479,7 +497,8 @@ def _encode_io_element(element, asdu_type):
         yield from element.fault_number.to_bytes(2, 'little')
         yield element.channel.value
 
-    raise ValueError('unsupported asdu type')
+    else:
+        raise ValueError('unsupported asdu type')
 
 
 def _decode_fixed(data, bit_offset, bit_size, signed):
@@ -505,7 +524,7 @@ def _decode_descriptive_data(data):
     description = common.Description(data[0])
     value, data = _decode_value(data[1:], common.ValueType.ARRAY)
     descriptive_data = common.DescriptiveData(description=description,
-                                              values=value)
+                                              value=value)
     return descriptive_data, data
 
 
@@ -547,11 +566,11 @@ def _decode_value(data, value_type):
         return common.FixedValue(value), b''
 
     if value_type == common.ValueType.REAL32:
-        value = struct.unpack('<f', data)[0]
+        value = struct.unpack('<f', data[:4])[0]
         return common.Real32Value(value), data[4:]
 
     if value_type == common.ValueType.REAL64:
-        value = struct.unpack('<d', data)[0]
+        value = struct.unpack('<d', data[:8])[0]
         return common.Real64Value(value), data[8:]
 
     if value_type == common.ValueType.DOUBLE:
@@ -576,10 +595,9 @@ def _decode_value(data, value_type):
         return common.TimeValue(value), data[7:]
 
     if value_type == common.ValueType.IDENTIFICATION:
-        group_id = data[0]
-        entry_id = data[1]
-        return common.IdentificationValue(group_id=group_id,
-                                          entry_id=entry_id), data[2:]
+        value = common.Identification(group_id=data[0],
+                                      entry_id=data[1])
+        return common.IdentificationValue(value), data[2:]
 
     if value_type == common.ValueType.RELATIVE_TIME:
         value = int.from_bytes(data[:2], 'little'), data[2:]
@@ -629,7 +647,7 @@ def _decode_value(data, value_type):
         value = int.from_bytes(data, 'little')
         return common.TextNumberValue(value), b''
 
-    if value_type == common.ValueType.REPLY_CODE:
+    if value_type == common.ValueType.REPLY:
         return common.ReplyValue(data[0]), data[1:]
 
     if value_type == common.ValueType.ARRAY:

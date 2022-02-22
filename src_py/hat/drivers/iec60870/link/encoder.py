@@ -54,7 +54,7 @@ class Encoder:
         if data[-1] != 0x16:
             raise Exception('invalid end identifier')
 
-        if data[-2] != sum(data[:-2]) % 0xFF:
+        if data[-2] != sum(data[:-2]) % 0x100:
             raise Exception('invalid crc')
 
         control_field = data[0]
@@ -119,7 +119,7 @@ class Encoder:
                          else b'')
 
         data = [control_field, *address_bytes, *frame.data]
-        crc = sum(data) % 0xFF
+        crc = sum(data) % 0x100
 
         header = [0x68, len(data), len(data), 0x68] if frame.data else [0x10]
         footer = [crc, 0x16]
