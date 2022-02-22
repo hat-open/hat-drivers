@@ -79,7 +79,7 @@ async def test_send_receive(mock_serial):
     slave = await unbalanced.slave.create_slave(port='1',
                                                 addrs=[1],
                                                 connection_cb=queue.put_nowait)
-    master_conn = await master.connect(addr=1, poll_delay=0.01)
+    master_conn = await master.connect(addr=1, poll_class1_delay=0.01)
     slave_conn = await queue.get()
 
     await master_conn.send(b'hello')
@@ -108,9 +108,9 @@ async def test_slave_range(mock_serial):
     slave = await unbalanced.slave.create_slave(port='1',
                                                 addrs=[1, 2],
                                                 connection_cb=queue.put_nowait)
-    master_conn_1 = await master.connect(addr=1, poll_delay=0.01)
+    master_conn_1 = await master.connect(addr=1, poll_class1_delay=0.01)
     slave_conn_1 = await queue.get()
-    master_conn_2 = await master.connect(addr=2, poll_delay=0.01)
+    master_conn_2 = await master.connect(addr=2, poll_class1_delay=0.01)
     slave_conn_2 = await queue.get()
 
     await master_conn_1.send(b'hello')
@@ -149,7 +149,8 @@ async def test_multiple_slaves(mock_serial, slave_count, poll_delay):
             port='1',
             addrs=[i],
             connection_cb=queue.put_nowait)
-        master_conn = await master.connect(addr=i, poll_delay=poll_delay)
+        master_conn = await master.connect(addr=i,
+                                           poll_class1_delay=poll_delay)
         slave_conn = await queue.get()
         slaves.append(slave)
         master_conns.append(master_conn)
