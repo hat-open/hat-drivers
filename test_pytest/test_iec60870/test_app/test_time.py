@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from hat.drivers.iec60870.app.iec101 import common
@@ -54,3 +56,30 @@ def test_time(size, encode_size, decode_size, milliseconds, invalid, minutes,
         else:
             time_decoded = decode_time(time_enc, time_size=decode_size)
             assert time_decoded == time_exp
+
+
+@pytest.mark.parametrize("invalid", [True, False])
+def test_time_from_to_datetime(invalid):
+    dtime_local = datetime.datetime.now()
+    dtime = dtime_local.astimezone(datetime.timezone.utc)
+    dtime = dtime.replace(
+        microsecond=round(dtime.microsecond / 1000) * 1000)
+    t_60870 = common.time_from_datetime(dtime, invalid=invalid)
+    assert t_60870.invalid is invalid
+    assert t_60870.minutes == dtime_local.minute
+    assert t_60870.hours == dtime_local.hour
+    assert t_60870.months == dtime_local.month
+    assert t_60870.size is common.TimeSize.SEVEN
+
+    dt_from_to = common.time_to_datetime(t_60870)
+    assert dtime == dt_from_to
+
+
+def test_time_to_datetime_exception():
+    t_60870 = common.time_from_datetime(
+        datetime.datetime.now(datetime.timezone.utc))
+    for size in [common.TimeSize.TWO,
+                 common.TimeSize.THREE,
+                 common.TimeSize.FOUR]:
+        with pytest.raises(ValueError):
+            common.time_to_datetime(t_60870._replace(size=size))

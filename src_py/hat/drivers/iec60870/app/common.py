@@ -94,7 +94,7 @@ def time_to_datetime(t: Time
     """Convert Time to datetime.datetime"""
     # TODO document edge cases (local time, os implementation, ...)
     # TODO maybe allow diferent time size (use now for time)
-    if time.size != TimeSize.SEVEN:
+    if t.size != TimeSize.SEVEN:
         raise ValueError('unsupported time size')
     local_dt = datetime.datetime(
         year=2000 + t.years if t.years < 70 else 1900 + t.years,
