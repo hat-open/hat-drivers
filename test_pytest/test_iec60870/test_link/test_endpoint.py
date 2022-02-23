@@ -117,7 +117,7 @@ def data_bytes_frames_received_log():
     noise = b'\x00\x01\xab\xff'
     short = b'\xe5'
     fixed = b'\x10\x49\x01\x4a\x16'
-    variable = b'\x68\x05\x05\x68\x4a\x7b\x00\xab\x12\x83\x16'
+    variable = b'\x68\x05\x05\x68\x43\x70\xab\xff\x12\x6f\x16'
     yield (noise, 0, 0)
     yield (short, 1, 0)
     yield (noise + short + noise + short + short, 3, 0)
@@ -140,7 +140,7 @@ def data_bytes_frames_received_log():
         variable, len(variable) - 1, b'\xab')
     yield (variable_invalid_end, 0, 1)
     variable_invalid_crc = replace_byte_at_idx(
-        variable, len(variable) - 2, b'\x84')
+        variable, len(variable) - 2, b'\x6e')
     yield (variable_invalid_crc, 0, 1)
     yield (variable_invalid_crc + noise + variable_invalid_end +
            noise + variable_invalid_crc, 0, 3)
