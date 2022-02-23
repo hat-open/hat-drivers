@@ -1,7 +1,7 @@
 import pytest
 
-from hat.drivers.iec60870.link.encoder import Encoder
 from hat.drivers.iec60870.link import AddressSize
+from hat.drivers.iec60870.link.encoder import Encoder
 import hat.drivers.iec60870.link.common as common
 
 
@@ -31,7 +31,9 @@ def test_get_next_frame_size(data, frame_size, address_size, include_addr):
     assert encoder.get_next_frame_size(data) == exp_frame_size
 
 
-@pytest.mark.parametrize('direction', [None])
+@pytest.mark.parametrize('direction', [common.Direction.B_TO_A,
+                                       common.Direction.A_TO_B,
+                                       None])
 @pytest.mark.parametrize('fcb_ac', [False])
 @pytest.mark.parametrize('fcv_dfc', [False])
 @pytest.mark.parametrize('function', [
@@ -58,9 +60,9 @@ def test_get_next_frame_size(data, frame_size, address_size, include_addr):
     (112, AddressSize.ONE),
     (456, AddressSize.TWO),
     ])
-def test_encoder(direction, function, data, fcb_ac, fcv_dfc,
-                 address, address_size):
-    encoder = Encoder(address_size, False)
+def test_encode_decode(direction, function, data, fcb_ac, fcv_dfc,
+                       address, address_size):
+    encoder = Encoder(address_size, bool(direction))
     if isinstance(function, common.ReqFunction):
         frame = common.ReqFrame(
             direction=direction,
@@ -85,6 +87,32 @@ def test_encoder(direction, function, data, fcb_ac, fcv_dfc,
         assert frame._replace(address=None) == frame_decoded
     else:
         assert frame == frame_decoded
+
+
+@pytest.mark.parametrize('data, valid', [
+    (b'\x12', False),                    # invalid start
+    (b'\x12\xab', False),                # invalid start
+    (b'\x10\xab', False),                # invalid end
+    (b'\x10\xab\x00\x00\x00', False),    # invalid end
+    (b'\x10\xab\x00\x00\x16', False),    # invalid crc
+    (b'\x10\x49\x01\x4a\x16', True),
+    (b'\x68\x05\x05\x68\x4a\x7b\x00\xab\x12\x83\x16', True),
+    (b'\x68\x05\x05\x68\x4a\x7b\x00\xab\x12\x83\x12', False),  # invalid end
+    (b'\x68\x05\x05\x68\x4a\x7b\x00\xab\x12\x00\x16', False),  # invalid crc
+    (b'\x68\x05\x06\x68\x4a\x7b\x00\xab\x12\x83\x16', False),  # invalid length
+    (b'\x68\x04\x05\x68\x4a\x7b\x00\xab\x12\x83\x16', False),  # invalid length
+    (b'\x68\x04\x04\x68\x4a\x7b\x00\xab\x12\x83\x16', False),  # invalid length
+    # invalid repeated start
+    (b'\x68\x04\x04\x67\x4a\x7b\x00\xab\x12\x83\x16', False),
+    ])
+def test_decode_exc(data, valid):
+    encoder = Encoder(AddressSize.ONE, False)
+    if not valid:
+        with pytest.raises(Exception):
+            encoder.decode(data)
+    else:
+        frame = encoder.decode(data)
+        assert isinstance(frame, common.ReqFrame)
 
 
 @pytest.mark.parametrize('address', [
