@@ -56,31 +56,12 @@ class Encoder:
 
 
 def _decode_io_address(io_address):
-    function_type = io_address & 0xFF
-    with contextlib.suppress(ValueError):
-        function_type = common.FunctionType(function_type)
-
-    information_number = io_address >> 8
-    with contextlib.suppress(ValueError):
-        information_number = common.InformationNumber(information_number)
-
-    return common.IoAddress(function_type=function_type,
-                            information_number=information_number)
+    return common.IoAddress(function_type=io_address & 0xFF,
+                            information_number=io_address >> 8)
 
 
 def _encode_io_address(io_address):
-    function_type = (
-        io_address.function_type.value
-        if isinstance(io_address.function_type, enum.Enum)
-        else io_address.function_type)
-
-    information_number = (
-        io_address.information_number.value
-        if isinstance(io_address.information_number, enum.Enum)
-        else io_address.information_number)
-
-    return (function_type |
-            (information_number << 8))
+    return io_address.function_type | (io_address.information_number << 8)
 
 
 def _decode_io_element(io_bytes, asdu_type):

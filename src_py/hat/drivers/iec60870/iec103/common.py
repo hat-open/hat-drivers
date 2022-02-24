@@ -5,8 +5,6 @@ from hat.drivers.iec60870 import app
 
 
 Bytes = app.iec103.common.Bytes
-FunctionType = app.iec103.common.FunctionType
-InformationNumber = app.iec103.common.InformationNumber
 Description = app.iec103.common.Description
 IoAddress = app.iec103.common.IoAddress
 Identification = app.iec103.common.Identification

@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import datetime
+import enum
 import itertools
 import logging
 import typing
@@ -79,8 +80,8 @@ class MasterConnection(aio.Resource):
 
         time = time or common.time_from_datetime(datetime.datetime.now())
         io_address = common.IoAddress(
-            common.FunctionType.GLOBAL_FUNCTION_TYPE,
-            common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION)  # NOQA
+            _FunctionType.GLOBAL_FUNCTION_TYPE.value,
+            _InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION.value)  # NOQA
         asdu = app.iec103.common.ASDU(
             type=app.iec103.common.AsduType.TIME_SYNCHRONIZATION,
             cause=app.iec103.common.Cause.TIME_SYNCHRONIZATION,
@@ -105,8 +106,8 @@ class MasterConnection(aio.Resource):
                 address=asdu_address,
                 ios=[app.iec103.common.IO(
                     address=app.iec103.common.IoAddress(
-                        function_type=app.iec103.common.FunctionType.GLOBAL_FUNCTION_TYPE,  # NOQA
-                        information_number=app.iec103.common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION),  # NOQA
+                        function_type=_FunctionType.GLOBAL_FUNCTION_TYPE.value,  # NOQA
+                        information_number=_InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION.value),  # NOQA
                     elements=[app.iec103.common.IoElement_GENERAL_INTERROGATION(  # NOQA
                         scan_number=scan_number)])])
             data = self._encoder.encode_asdu(asdu)
@@ -164,8 +165,8 @@ class MasterConnection(aio.Resource):
                 address=asdu_address,
                 ios=[app.iec103.common.IO(
                     address=app.iec103.common.IoAddress(
-                        function_type=app.iec103.common.FunctionType.GENERIC_FUNCTION_TYPE,  # NOQA
-                        information_number=app.iec103.common.InformationNumber.GENERAL_INTERROGATION_OF_GENERIC_DATA),  # NOQA
+                        function_type=_FunctionType.GENERIC_FUNCTION_TYPE.value,  # NOQA
+                        information_number=_InformationNumber.GENERAL_INTERROGATION_OF_GENERIC_DATA.value),  # NOQA
                     elements=[app.iec103.common.IoElement_GENERIC_COMMAND(
                         return_identifier=return_identifier,
                         data=[])])])
@@ -322,6 +323,99 @@ class MasterConnection(aio.Resource):
 
     async def _process_END_OF_TRANSMISSION(self, cause, asdu_address, io_address, element):  # NOQA
         pass
+
+
+class _FunctionType(enum.Enum):
+    DISTANCE_PROTECTION = 128
+    OVERCURRENT_PROTECTION = 160
+    TRANSFORMER_DIFFERENTIAL_PROTECTION = 176
+    LINE_DIFFERENTIAL_PROTECTION = 192
+    GENERIC_FUNCTION_TYPE = 254
+    GLOBAL_FUNCTION_TYPE = 255
+
+
+class _InformationNumber(enum.Enum):
+    GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION = 0
+    RESET_FRAME_COUNT_BIT = 2
+    RESET_COMMUNICATION_UNIT = 3
+    START_RESTART = 4
+    POWER_ON = 5
+    AUTO_RECLOSER = 16
+    TELEPROTECTION = 17
+    PROTECTION = 18
+    LED_RESET = 19
+    MONITOR_DIRECTION_BLOCKED = 20
+    TEST_MODE = 21
+    LOCAL_PARAMETER_SETTING = 22
+    CHARACTERISTIC_1 = 23
+    CHARACTERISTIC_2 = 24
+    CHARACTERISTIC_3 = 25
+    CHARACTERISTIC_4 = 26
+    AUXILIARY_INPUT_1 = 27
+    AUXILIARY_INPUT_2 = 28
+    AUXILIARY_INPUT_3 = 29
+    AUXILIARY_INPUT_4 = 30
+    MEASURAND_SUPERVISION_I = 32
+    MEASURAND_SUPERVISION_V = 33
+    PHASE_SEQUENCE_SUPERVISION = 35
+    TRIP_CIRCUIT_SUPERVISION = 36
+    I_BACKUP_OPERATION = 37
+    VT_FUSE_FAILURE = 38
+    TELEPROTECTION_DISTURBED = 39
+    GROUP_WARNING = 46
+    GROUP_ALARM = 47
+    EARTH_FAULT_L1 = 48
+    EARTH_FAULT_L2 = 49
+    EARTH_FAULT_L3 = 50
+    EARTH_FAULT_FORWARD = 51
+    EARTH_FAULT_REVERSE = 52
+    START_PICKUP_L1 = 64
+    START_PICKUP_L2 = 65
+    START_PICKUP_L3 = 66
+    START_PICKUP_N = 67
+    GENERAL_TRIP = 68
+    TRIP_L1 = 69
+    TRIP_L2 = 70
+    TRIP_L3 = 71
+    TRIP_I = 72
+    FAULT_LOCATION = 73
+    FAULT_FORWARD = 74
+    FAULT_REVERSE = 75
+    TELEPROTECTION_SIGNAL_TRANSMITTED = 76
+    TELEPROTECTION_SIGNAL_RECEIVED = 77
+    ZONE_1 = 78
+    ZONE_2 = 79
+    ZONE_3 = 80
+    ZONE_4 = 81
+    ZONE_5 = 82
+    ZONE_6 = 83
+    GENERAL_START_PICKUP = 84
+    BREAKER_FAILURE = 85
+    TRIP_MEASURING_SYSTEM_L1 = 86
+    TRIP_MEASURING_SYSTEM_L2 = 87
+    TRIP_MEASURING_SYSTEM_L3 = 88
+    TRIP_MEASURING_SYSTEM_E = 89
+    TRIP_I_1 = 90
+    TRIP_I_2 = 91
+    TRIP_IN_1 = 92
+    TRIP_IN_2 = 93
+    CB_ON_BY_AR = 128
+    CB_ON_BY_LONG_TIME_AR = 129
+    AR_BLOCKED = 130
+    MEASURAND_I = 144
+    MEASURAND_I_V = 145
+    MEASURAND_I_V_P_Q = 146
+    MEASURAND_IN_VEN = 147
+    MEASURAND_IL123_VL123_P_Q_F = 148
+    READ_HEADINGS_OF_ALL_DEFINED_GROUPS = 240
+    READ_VALUES_OR_ATTRIBUTES_OF_ALL_ENTRIES_OF_ONE_GROUP = 241
+    READ_DIRECTORY_OF_SINGLE_ENTRY = 243
+    READ_VALUE_OR_ATTRIBUTE_OF_A_SINGLE_ENTRY = 244
+    GENERAL_INTERROGATION_OF_GENERIC_DATA = 245
+    WRITE_ENTRY = 248
+    WRITE_ENTRY_WITH_CONFIRMATION = 249
+    WRITE_ENTRY_WITH_EXECUTION = 250
+    WRITE_ENTRY_ABORT = 251
 
 
 def _try_decode_enum(value, enum_cls, default=None):
