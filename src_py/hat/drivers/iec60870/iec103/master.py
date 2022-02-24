@@ -31,9 +31,6 @@ class MasterConnection(aio.Resource):
 
         self._encoder = app.iec103.encoder.Encoder()
 
-        self._time_sync_lock = asyncio.Lock()
-        self._time_sync_future = None
-
         self._interrogate_lock = asyncio.Lock()
         self._interrogate_req_id = None
         self._interrogate_future = None
@@ -76,33 +73,25 @@ class MasterConnection(aio.Resource):
 
     async def time_sync(self,
                         time: typing.Optional[common.Time] = None,
-                        asdu_address: common.AsduAddress = 0xFF,
-                        io_address: common.IoAddress = common.IoAddress(
-                            common.FunctionType.GLOBAL_FUNCTION_TYPE,
-                            common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION)  # NOQA
-                        ) -> common.Time:
-        async with self._time_sync_lock:
-            if not self.is_open:
-                raise ConnectionError()
+                        asdu_address: common.AsduAddress = 0xFF):
+        if not self.is_open:
+            raise ConnectionError()
 
-            time = time or common.time_from_datetime(datetime.datetime.now())
-            asdu = app.iec103.common.ASDU(
-                type=app.iec103.common.AsduType.TIME_SYNCHRONIZATION,
-                cause=app.iec103.common.Cause.TIME_SYNCHRONIZATION,
-                address=asdu_address,
-                ios=[app.iec103.common.IO(
-                    address=io_address,
-                    elements=[app.iec103.common.IoElement_TIME_SYNCHRONIZATION(
-                        time=time)])])
-            data = self._encoder.encode_asdu(asdu)
+        time = time or common.time_from_datetime(datetime.datetime.now())
+        io_address = common.IoAddress(
+            common.FunctionType.GLOBAL_FUNCTION_TYPE,
+            common.InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION)  # NOQA
+        asdu = app.iec103.common.ASDU(
+            type=app.iec103.common.AsduType.TIME_SYNCHRONIZATION,
+            cause=app.iec103.common.Cause.TIME_SYNCHRONIZATION,
+            address=asdu_address,
+            ios=[app.iec103.common.IO(
+                address=io_address,
+                elements=[app.iec103.common.IoElement_TIME_SYNCHRONIZATION(
+                    time=time)])])
+        data = self._encoder.encode_asdu(asdu)
 
-            try:
-                self._time_sync_future = asyncio.Future()
-                await self._conn.send(data)
-                return await self._time_sync_future
-
-            finally:
-                self._time_sync_future = None
+        await self._conn.send(data)
 
     async def interrogate(self, asdu_address: common.AsduAddress):
         async with self._interrogate_lock:
@@ -218,7 +207,6 @@ class MasterConnection(aio.Resource):
 
         finally:
             self.close()
-            _try_set_exception(self._time_sync_future, ConnectionError())
             _try_set_exception(self._interrogate_future, ConnectionError())
             _try_set_exception(self._send_command_future, ConnectionError())
             _try_set_exception(self._interrogate_generic_future,
@@ -275,7 +263,7 @@ class MasterConnection(aio.Resource):
                    bytes(element.software))
 
     async def _process_TIME_SYNCHRONIZATION(self, cause, asdu_address, io_address, element):  # NOQA
-        _try_set_result(self._time_sync_future, element.time)
+        mlog.info("received time sync response")
 
     async def _process_GENERAL_INTERROGATION_TERMINATION(self, cause, asdu_address, io_address, element):  # NOQA
         if element.scan_number != self._interrogate_req_id:

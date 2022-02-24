@@ -80,17 +80,17 @@ class Master(aio.Resource):
         send_fn = functools.partial(self._send, response_timeout)
 
         try:
-            req = common.ReqFrame(direction=None,
-                                  frame_count_bit=False,
-                                  frame_count_valid=False,
-                                  function=common.ReqFunction.REQ_STATUS,
-                                  address=addr,
-                                  data=b'')
-            res = await send_fn(req)
+            # req = common.ReqFrame(direction=None,
+            #                       frame_count_bit=False,
+            #                       frame_count_valid=False,
+            #                       function=common.ReqFunction.REQ_STATUS,
+            #                       address=addr,
+            #                       data=b'')
+            # res = await send_fn(req)
 
-            if res.function not in [common.ResFunction.ACK,
-                                    common.ResFunction.RES_STATUS]:
-                raise Exception('invalid status response')
+            # if res.function not in [common.ResFunction.ACK,
+            #                         common.ResFunction.RES_STATUS]:
+            #     raise Exception('invalid status response')
 
             req = common.ReqFrame(direction=None,
                                   frame_count_bit=False,
