@@ -109,11 +109,11 @@ class Encoder:
         is_sequence = len(asdu.ios) == 1 and len(asdu.ios[0].elements) > 1
         if is_sequence:
             data.append(
-                0x00 if self._inverted_sequence_bit else 0x80 |
+                (0x00 if self._inverted_sequence_bit else 0x80) |
                 len(asdu.ios[0].elements))
         else:
             data.append(
-                0x80 if self._inverted_sequence_bit else 0x00 |
+                (0x80 if self._inverted_sequence_bit else 0x00) |
                 len(asdu.ios))
 
         data.extend(_encode_int(asdu.cause, self._cause_size.value))
