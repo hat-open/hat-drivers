@@ -1,6 +1,4 @@
 import collections
-import contextlib
-import enum
 import itertools
 import math
 import struct
