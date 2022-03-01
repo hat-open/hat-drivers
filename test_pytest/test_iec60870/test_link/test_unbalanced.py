@@ -32,6 +32,12 @@ class _MockSerialConnection(aio.Resource):
     def async_group(self):
         return self._async_group
 
+    async def extend_data(self, data):
+        if self.is_open:
+            self._data.extend(data)
+            async with self._cv:
+                self._cv.notify()
+
     async def read(self, size):
         async with self._cv:
             await self._cv.wait_for(lambda: len(self._data) >= size)
@@ -43,10 +49,8 @@ class _MockSerialConnection(aio.Resource):
         for m_conn in self._mock_connections:
             if self is m_conn:
                 continue
-            if self.is_open and m_conn.is_open:
-                m_conn._data.extend(data)
-                async with m_conn._cv:
-                    m_conn._cv.notify()
+            if self.is_open:
+                await m_conn.extend_data(data)
 
 
 async def test_create(mock_serial):
@@ -203,4 +207,50 @@ async def test_disconnect_master(mock_serial):
         await slave_conn.send(b'hi')
     with pytest.raises(ConnectionError):
         await slave_conn.receive()
+    await slave.async_close()
+
+
+@pytest.mark.parametrize("noise", [
+    b'noise',  # add noise to the channel
+    b'\xe5',   # start of the short ack
+    b'\x10',   # start of the fixed length frame
+    b'\x68',   # start of the variable length frame
+    b'\x10\x00\x01\x00',              # res uncomplete fix
+    b'\x10\x00\x01\x00\xff\x16',      # res invalid checksum fix
+    b'\x10\x00\x01\x00\x00\x01\x16',  # res too long fix
+    b'\x10\x40\x01\x00',              # req uncomplete fix
+    b'\x10\x40\x01\x00\xff\x16',      # req invalid checksum fix
+    b'\x10\x40\x01\x00\x00\x41\x16',  # req too long fix
+    b'\x68\x03\x03\x68\x00\x01\x00',              # res uncomplete var
+    b'\x68\x03\x03\x68\x00\x01\x00\xff\x16',      # res invalid checksum var
+    b'\x68\x03\x03\x68\x00\x01\x00\x00\x01\x16',  # res too long variable
+    b'\x68\x03\x03\x68\x40\x01\x00',              # req uncomplete variable
+    b'\x68\x03\x03\x68\x40\x01\x00\xff\x16',      # req invalid checksum var
+    b'\x68\x03\x03\x68\x40\x01\x00\x00\x41\x16',  # req too long variable
+    ])
+async def test_channel_noise(mock_serial, noise):
+    queue = asyncio.Queue()
+    master = await unbalanced.master.create_master(port='1')
+    slave = await unbalanced.slave.create_slave(port='1',
+                                                addrs=[1],
+                                                connection_cb=queue.put_nowait,
+                                                keep_alive_timeout=0.1)
+    master_conn = await master.connect(addr=1,
+                                       response_timeout=0.01,
+                                       poll_class1_delay=0.01)
+    slave_conn = await queue.get()
+
+    await slave._endpoint._conn.extend_data(noise)
+
+    await master_conn.send(b'hello')
+    received = await slave_conn.receive()
+    assert received == b'hello'
+
+    await master._endpoint._conn.extend_data(noise)
+
+    await slave_conn.send(b'hi')
+    received = await master_conn.receive()
+    assert received == b'hi'
+
+    await master.async_close()
     await slave.async_close()
