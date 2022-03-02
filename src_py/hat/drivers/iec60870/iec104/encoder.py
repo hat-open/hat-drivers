@@ -430,7 +430,7 @@ def _encode_msg(msg):
     else:
         raise ValueError('unsupported message')
 
-    cause = app.iec104.common.Cause(cause_type=cause_type,
+    cause = app.iec104.common.Cause(type=cause_type,
                                     is_negative_confirm=is_negative_confirm,
                                     is_test=msg.is_test,
                                     originator_address=msg.originator_address)
@@ -439,7 +439,7 @@ def _encode_msg(msg):
                               elements=[io_element],
                               time=time)
 
-    asdu = app.iec104.common.ASDU(asdu_type=asdu_type,
+    asdu = app.iec104.common.ASDU(type=asdu_type,
                                   cause=cause,
                                   address=msg.asdu_address,
                                   ios=[io])

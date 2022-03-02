@@ -85,7 +85,7 @@ from hat.drivers.iec60870.iec104.common import (Bytes,
                                                 Msg,
                                                 time_from_datetime,
                                                 time_to_datetime)
-from hat.drivers.iec60870.iec101.connection import Connection
+from hat.drivers.iec60870.iec104.connection import Connection
 
 
 __all__ = ['Bytes',
