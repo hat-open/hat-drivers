@@ -1,487 +1,639 @@
+import itertools
 import math
-import random
 
 import pytest
 
 from hat.drivers.iec60870.app.iec101 import encoder, common
 
 
-rndm = random.Random(1)
+asdu_addresses = [0, 255, 65535]
 
+asdu_sizes = [common.AsduAddressSize.ONE,
+              common.AsduAddressSize.ONE,
+              common.AsduAddressSize.TWO]
 
-def asdu_type_ioe():
-    for asdu_type in [common.AsduType.M_SP_NA,
-                      common.AsduType.M_SP_TA,
-                      common.AsduType.M_SP_TB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in [common.SingleValue.ON, common.SingleValue.OFF]:
-            yield asdu_type, io_element(value=value,
-                                        quality=gen_quality(asdu_type))
+io_addresses = [255, 65535, 16777215]
 
-    for asdu_type in [common.AsduType.M_DP_NA,
-                      common.AsduType.M_DP_TA,
-                      common.AsduType.M_DP_TB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in [common.DoubleValue.ON,
-                      common.DoubleValue.OFF,
-                      common.DoubleValue.INTERMEDIATE,
-                      common.DoubleValue.FAULT]:
-            yield asdu_type, io_element(value=value,
-                                        quality=gen_quality(asdu_type))
+io_sizes = [common.IoAddressSize.ONE,
+            common.IoAddressSize.TWO,
+            common.IoAddressSize.THREE]
 
-    for asdu_type in [common.AsduType.M_ST_NA,
-                      common.AsduType.M_ST_TA,
-                      common.AsduType.M_ST_TB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in [-64, -13, 0, 17, 63]:
-            for transient in [True, False]:
-                yield asdu_type, io_element(value=common.StepPositionValue(
-                                                value=value,
-                                                transient=transient),
-                                            quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_BO_NA,
-                      common.AsduType.M_BO_TA,
-                      common.AsduType.M_BO_TB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in bitstring_values:
-            yield asdu_type, io_element(value=common.BitstringValue(
-                                            value=value),
-                                        quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_ME_NA,
-                      common.AsduType.M_ME_TA,
-                      common.AsduType.M_ME_ND,
-                      common.AsduType.M_ME_TD]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in normalized_values:
-            if asdu_type == common.AsduType.M_ME_ND:
-                yield asdu_type, io_element(value=common.NormalizedValue(
-                                                value=value))
-            else:
-                yield asdu_type, io_element(value=common.NormalizedValue(
-                                                value=value),
-                                            quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_ME_NB,
-                      common.AsduType.M_ME_TB,
-                      common.AsduType.M_ME_TE,
-                      ]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in scaled_values:
-            yield asdu_type, io_element(value=common.ScaledValue(
-                                            value=value),
-                                        quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_ME_NC,
-                      common.AsduType.M_ME_TC,
-                      common.AsduType.M_ME_TF,
-                      ]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in floating_values:
-            yield asdu_type, io_element(value=common.FloatingValue(
-                                            value=value),
-                                        quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_IT_NA,
-                      common.AsduType.M_IT_TA,
-                      common.AsduType.M_IT_TB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in [-2**31, -123, 0, 456, 2**31-1]:
-            yield asdu_type, io_element(value=common.BinaryCounterValue(
-                                            value=value),
-                                        quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.M_EP_TA,
-                      common.AsduType.M_EP_TD]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in [common.ProtectionValue.OFF,
-                      common.ProtectionValue.ON]:
-            yield asdu_type, io_element(value=value,
-                                        quality=gen_quality(asdu_type),
-                                        elapsed_time=123)
-
-    for asdu_type in [common.AsduType.M_EP_TB,
-                      common.AsduType.M_EP_TE]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for _ in range(3):
-            value = common.ProtectionStartValue(
-                general=gen_random_bool(),
-                l1=gen_random_bool(),
-                l2=gen_random_bool(),
-                l3=gen_random_bool(),
-                ie=gen_random_bool(),
-                reverse=gen_random_bool())
-            yield asdu_type, io_element(value=value,
-                                        quality=gen_quality(asdu_type),
-                                        duration_time=123)
-
-    for asdu_type in [common.AsduType.M_EP_TC,
-                      common.AsduType.M_EP_TF]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for _ in range(3):
-            value = common.ProtectionCommandValue(
-                general=gen_random_bool(),
-                l1=gen_random_bool(),
-                l2=gen_random_bool(),
-                l3=gen_random_bool())
-            yield asdu_type, io_element(value=value,
-                                        quality=gen_quality(asdu_type),
-                                        operating_time=123)
-
-    asdu_type = common.AsduType.M_PS_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for v, change in [([True] * 16, [False] * 16),
-                      ([gen_random_bool() for _ in range(16)],
-                       [gen_random_bool() for _ in range(16)])]:
-        value = common.StatusValue(
-            value=v,
-            change=change)
-        yield asdu_type, io_element(value=value,
-                                    quality=gen_quality(asdu_type))
-
-    for asdu_type in [common.AsduType.C_SC_NA,
-                      common.AsduType.C_DC_NA,
-                      common.AsduType.C_RC_NA]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        values = {
-            common.AsduType.C_SC_NA: [common.SingleValue.OFF,
-                                      common.SingleValue.ON],
-            common.AsduType.C_DC_NA: [common.DoubleValue.FAULT,
-                                      common.DoubleValue.OFF,
-                                      common.DoubleValue.ON,
-                                      common.DoubleValue.INTERMEDIATE],
-            common.AsduType.C_RC_NA: [common.RegulatingValue.LOWER,
-                                      common.RegulatingValue.HIGHER]
-                }[asdu_type]
-        for value in values:
-            for select in [True, False]:
-                yield asdu_type, io_element(value=value,
-                                            select=select,
-                                            qualifier=rndm.randint(0, 31))
-
-    for asdu_type in [common.AsduType.C_SE_NA]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in normalized_values:
-            for select in [True, False]:
-                yield asdu_type, io_element(
-                    value=common.NormalizedValue(value=value),
-                    select=select)
-
-    for asdu_type in [common.AsduType.C_SE_NB]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in scaled_values:
-            for select in [True, False]:
-                yield asdu_type, io_element(
-                    value=common.ScaledValue(value=value),
-                    select=select)
-
-    for asdu_type in [common.AsduType.C_SE_NC]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in floating_values:
-            for select in [True, False]:
-                yield asdu_type, io_element(
-                    value=common.FloatingValue(value=value),
-                    select=select)
-
-    for asdu_type in [common.AsduType.C_BO_NA]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for value in bitstring_values:
-            yield asdu_type, io_element(
-                value=common.BitstringValue(value=value))
-
-    for asdu_type in [common.AsduType.M_EI_NA]:
-        io_element = getattr(common, f"IoElement_{asdu_type.name}")
-        for _ in range(3):
-            cause = rndm.randint(0, 127)
-            yield asdu_type, io_element(
-                param_change=gen_random_bool(),
-                cause=cause)
-
-    asdu_type = common.AsduType.C_IC_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for qualifier in [0, 255, 123]:
-        yield asdu_type, io_element(qualifier=qualifier)
-
-    asdu_type = common.AsduType.C_CI_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for request in [0, 63, 13]:
-        for freeze in [common.FreezeCode.READ,
-                       common.FreezeCode.FREEZE,
-                       common.FreezeCode.FREEZE_AND_RESET,
-                       common.FreezeCode.RESET]:
-            yield asdu_type, io_element(request=request,
-                                        freeze=freeze)
-
-    asdu_type = common.AsduType.C_CS_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    yield asdu_type, io_element(
-        time=gen_time_of_size(size=common.TimeSize.SEVEN))
-
-    asdu_type = common.AsduType.C_RP_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for qualifier in [0, 255, 123]:
-        yield asdu_type, io_element(qualifier=qualifier)
-
-    asdu_type = common.AsduType.C_CD_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for time in [0, 65535, 123]:
-        yield asdu_type, io_element(time=time)
-
-    asdu_type = common.AsduType.P_ME_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for value in normalized_values:
-        yield asdu_type, io_element(
-            value=common.NormalizedValue(value=value),
-            qualifier=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.P_ME_NB
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for value in scaled_values:
-        yield asdu_type, io_element(value=common.ScaledValue(value=value),
-                                    qualifier=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.P_ME_NC
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for value in floating_values:
-        yield asdu_type, io_element(value=common.FloatingValue(value=value),
-                                    qualifier=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.F_FR_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    file_length=rndm.randint(0, 16777215),
-                                    ready=gen_random_bool())
-
-    asdu_type = common.AsduType.F_SR_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    section_name=rndm.randint(0, 255),
-                                    section_length=rndm.randint(0, 16777215),
-                                    ready=gen_random_bool())
-
-    asdu_type = common.AsduType.F_SC_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    section_name=rndm.randint(0, 255),
-                                    qualifier=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.F_LS_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    section_name=rndm.randint(0, 255),
-                                    last_qualifier=rndm.randint(0, 255),
-                                    checksum=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.F_AF_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    section_name=rndm.randint(0, 255),
-                                    qualifier=rndm.randint(0, 255))
-
-    asdu_type = common.AsduType.F_SG_NA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    section_name=rndm.randint(0, 255),
-                                    segment=b'\xab\x12')
-
-    asdu_type = common.AsduType.F_DR_TA
-    io_element = getattr(common, f"IoElement_{asdu_type.name}")
-    for _ in range(5):
-        yield asdu_type, io_element(file_name=rndm.randint(0, 65535),
-                                    file_length=rndm.randint(0, 16777215),
-                                    more_follows=gen_random_bool(),
-                                    is_directory=gen_random_bool(),
-                                    transfer_active=gen_random_bool(),
-                                    creation_time=gen_time_of_size(
-                                        size=common.TimeSize.SEVEN))
-    # TODO: C_RD_NA,  C_TS_NA
-
+cause_sizes = [common.CauseSize.ONE,
+               common.CauseSize.ONE,
+               common.CauseSize.TWO]
 
 bitstring_values = [b'\xff' * 4, b'\x00' * 4, b'\x12\xab\xff\x00']
 
-
 normalized_values = [-1.0, 0.9999, -0.123, 0.456, 0]
 
-
 scaled_values = [-2**15, -123, 0, 456, 2**15-1]
-
 
 floating_values = [-16777216.1234, -12345.678, 0, 12345.678, 16777216.1234]
 
 
-def remove_ioe_value(asdu):
-    ios_new = []
-    for io in asdu.ios:
-        ioes_new = []
-        for ioe in io.elements:
-            ioe_value_new = ioe.value._replace(value=None)
-            ioes_new.append(ioe._replace(value=ioe_value_new))
-        ios_new.append(io._replace(elements=ioes_new))
-    return asdu._replace(ios=ios_new)
+def times():
+    samples = dict(
+        milliseconds=(0, 59999, 1234),
+        invalid=[True, False, True],
+        minutes=(0, 59, 30),
+        summer_time=[True, False, True],
+        hours=(0, 23, 12),
+        day_of_week=(1, 7, 3),
+        day_of_month=(1, 31, 13),
+        months=(1, 12, 6),
+        years=(0, 99, 50))
+    for values in zip(*samples.values()):
+        time_dict = dict(zip(samples.keys(), values))
+        yield common.Time(**time_dict,
+                          size=common.TimeSize.SEVEN)
 
 
-def gen_time_for_asdu(asdu_type):
-    if asdu_type.name[-2:] in ['NA', 'NB', 'NC', 'ND']:
-        return
-    if asdu_type == common.AsduType.F_DR_TA:
-        return
-    if asdu_type.name.endswith('TA') or asdu_type.name in [
-            'M_EP_TB', 'M_EP_TC', 'M_ME_TB', 'M_ME_TC']:
-        return gen_time_of_size(size=common.TimeSize.THREE)
-    return gen_time_of_size(size=common.TimeSize.SEVEN)
+def causes():
+    for (cause_type, is_negative_confirm, is_test, originator_address) in zip(
+            (common.CauseType.SPONTANEOUS,
+             common.CauseType.INTERROGATED_STATION,
+             common.CauseType.ACTIVATION),
+            (True, False, True),
+            (False, True, False),
+            (0, 255, 123)):
+        yield common.Cause(
+            type=cause_type,
+            is_negative_confirm=is_negative_confirm,
+            is_test=is_test,
+            originator_address=originator_address)
 
 
-def gen_time_of_size(size=common.TimeSize.SEVEN):
-    milliseconds = rndm.randint(0, 59999)
-    invalid = gen_random_bool()
-    minutes = rndm.randint(0, 59)
-    summer_time = gen_random_bool()
-    hours = rndm.randint(0, 23)
-    day_of_week = rndm.randint(1, 7)
-    day_of_month = rndm.randint(1, 31)
-    months = rndm.randint(1, 12)
-    years = rndm.randint(0, 99)
-    if size == common.TimeSize.THREE:
-        return common.Time(
-                    size=common.TimeSize.THREE,
-                    milliseconds=milliseconds,
-                    invalid=invalid,
-                    minutes=minutes,
-                    summer_time=None,
-                    hours=None,
-                    day_of_week=None,
-                    day_of_month=None,
-                    months=None,
-                    years=None)
-    if size == common.TimeSize.SEVEN:
-        return common.Time(
-                        size=common.TimeSize.SEVEN,
-                        milliseconds=milliseconds,
-                        invalid=invalid,
-                        minutes=minutes,
-                        summer_time=summer_time,
-                        hours=hours,
-                        day_of_week=day_of_week,
-                        day_of_month=day_of_month,
-                        months=months,
-                        years=years)
+def qualities(quality_class):
+    samples = dict(
+        invalid=[True, False, True],
+        not_topical=[True, False, False],
+        substituted=[True, False, True],
+        blocked=[True, False, False],
+        adjusted=[True, False, True],
+        overflow=[True, False, False],
+        time_invalid=[True, False, True],
+        sequence=[0, 31, 13])
+    dicts = [dict(zip(samples.keys(), values))
+             for values in zip(*samples.values())]
+    for quality_dict in dicts:
+        yield quality_class(
+            **{k: v for k, v in quality_dict.items()
+               if hasattr(quality_class, k)})
 
 
-def gen_random_bool():
-    return rndm.choice([True, False])
-
-
-def gen_quality(asdu_type):
-    if asdu_type in [common.AsduType.M_SP_NA,
-                     common.AsduType.M_SP_TA,
-                     common.AsduType.M_SP_TB,
-                     common.AsduType.M_DP_NA,
-                     common.AsduType.M_DP_TA,
-                     common.AsduType.M_DP_TB]:
-        return common.IndicationQuality(
-            invalid=gen_random_bool(),
-            not_topical=gen_random_bool(),
-            substituted=gen_random_bool(),
-            blocked=gen_random_bool())
-    if asdu_type in [common.AsduType.M_IT_NA,
-                     common.AsduType.M_IT_TA,
-                     common.AsduType.M_IT_TB]:
-        return common.CounterQuality(
-            invalid=gen_random_bool(),
-            adjusted=gen_random_bool(),
-            overflow=gen_random_bool(),
-            sequence=rndm.randint(0, 31))
-    if asdu_type in [common.AsduType.M_EP_TA,
-                     common.AsduType.M_EP_TD,
-                     common.AsduType.M_EP_TB,
-                     common.AsduType.M_EP_TE,
-                     common.AsduType.M_EP_TC,
-                     common.AsduType.M_EP_TF]:
-        return common.ProtectionQuality(
-            invalid=gen_random_bool(),
-            not_topical=gen_random_bool(),
-            substituted=gen_random_bool(),
-            blocked=gen_random_bool(),
-            time_invalid=gen_random_bool())
-    return common.MeasurementQuality(
-        invalid=gen_random_bool(),
-        not_topical=gen_random_bool(),
-        substituted=gen_random_bool(),
-        blocked=gen_random_bool(),
-        overflow=gen_random_bool())
-
-
-def gen_asdu_address(size):
-    if size == common.AsduAddressSize.ONE:
-        return rndm.randint(0, 255)
-    if size == common.AsduAddressSize.TWO:
-        return rndm.randint(256, 65535)
-
-
-def gen_io_address(size):
-    if common.IoAddressSize.ONE:
-        return rndm.randint(0, 255)
-    if common.IoAddressSize.TWO:
-        return rndm.randint(256, 65535)
-    if common.IoAddressSize.THREE:
-        return rndm.randint(65536, 16777215)
-
-
-@pytest.mark.parametrize("cause", [
-    common.CauseType.SPONTANEOUS,
-    common.CauseType.INTERROGATED_STATION,
-    'any'])
-@pytest.mark.parametrize("asdu_type, io_element", asdu_type_ioe())
-def test_encoder(asdu_type, io_element, cause):
-    time = gen_time_for_asdu(asdu_type)
-    cause_size = rndm.choice(list(common.CauseSize))
-    originator_address = (0 if cause_size == common.CauseSize.ONE
-                          else rndm.randint(0, 255))
-    asdu_address_size = rndm.choice(list(common.AsduAddressSize))
-    asdu_address = gen_asdu_address(asdu_address_size)
-    io_address_size = rndm.choice(list(common.IoAddressSize))
+def assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         ioe_kwargs={}, assert_asdu_equals=None):
+    if cause_size == common.CauseSize.ONE:
+        cause = cause._replace(originator_address=0)
+    time = time_seven_to_size(time, time_size)
     _encoder = encoder.Encoder(
         cause_size=cause_size,
-        asdu_address_size=asdu_address_size,
-        io_address_size=io_address_size)
+        asdu_address_size=asdu_size,
+        io_address_size=io_size)
 
-    ioes = [io_element]
-    ios_no = rndm.randint(1, 3)
+    io_element_class = getattr(common, f"IoElement_{asdu_type.name}")
+    ioe_dict = {**ioe_kwargs}
+    if value is not None:
+        ioe_dict['value'] = value
+    if quality:
+        ioe_dict['quality'] = quality
+    io_element = io_element_class(**ioe_dict)
     ios = [common.IO(
-                address=gen_io_address(io_address_size),
-                elements=ioes,
-                time=time)
-           for i in range(ios_no)]
-
+                address=io,
+                elements=[io_element],
+                time=time)]
     asdu = common.ASDU(
         type=asdu_type,
-        cause=common.Cause(
-            type=(rndm.choice(list(common.CauseType))
-                  if cause == 'any' else cause),
-            is_negative_confirm=gen_random_bool(),
-            is_test=gen_random_bool(),
-            originator_address=originator_address),
-        address=asdu_address,
+        cause=cause,
+        address=asdu,
         ios=ios)
     asdu_encoded = _encoder.encode_asdu(asdu)
     asdu_decoded = _encoder.decode_asdu(asdu_encoded)
 
-    io_element = asdu.ios[0].elements[0]
-    if (hasattr(io_element, 'value') and
-            (isinstance(io_element.value, common.NormalizedValue) or
-             isinstance(io_element.value, common.FloatingValue))):
-        for io, io_decoded in zip(asdu.ios, asdu_decoded.ios):
-            for ioe, ioe_decoded in zip(io.elements, io_decoded.elements):
-                assert math.isclose(ioe.value.value,
-                                    ioe_decoded.value.value,
-                                    rel_tol=1e-3)
-        assert remove_ioe_value(asdu_decoded) == remove_ioe_value(asdu)
+    if assert_asdu_equals:
+        assert_asdu_equals(asdu_decoded, asdu)
+    else:
+        assert asdu_decoded == asdu
+
+
+def assert_asdu_float_equals(asdu1, asdu2):
+    assert asdu1.type == asdu2.type
+    assert asdu1.cause == asdu2.cause
+    assert asdu1.address == asdu2.address
+    for io1, io2 in zip(asdu1.ios, asdu2.ios):
+        assert io1.address == io2.address
+        assert io1.time == io2.time
+        for ioe1, ioe2 in zip(io1.elements, io2.elements):
+            assert math.isclose(ioe1.value.value,
+                                ioe2.value.value,
+                                rel_tol=1e-3)
+            for ioe_attr in ['quality',
+                             'select',
+                             'qualifier']:
+                if hasattr(ioe1, ioe_attr):
+                    assert getattr(ioe1, ioe_attr) == getattr(ioe2, ioe_attr)
+
+
+def time_seven_to_size(time_seven, size):
+    if size is None:
         return
-    assert asdu_decoded == asdu
+    if size is common.TimeSize.SEVEN:
+        return time_seven
+    if size is common.TimeSize.THREE:
+        return common.Time(**dict(
+                time_seven._asdict(),
+                size=size,
+                summer_time=None,
+                hours=None,
+                day_of_week=None,
+                day_of_month=None,
+                months=None,
+                years=None))
+
+
+@pytest.mark.parametrize("value", common.SingleValue)
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_SP_NA, None),
+    (common.AsduType.M_SP_TA, common.TimeSize.THREE),
+    (common.AsduType.M_SP_TB, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.IndicationQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_sp(asdu_type, value, quality, cause, asdu, asdu_size,
+              io, io_size, cause_size, time, time_size):
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", common.DoubleValue)
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_DP_NA, None),
+    (common.AsduType.M_DP_TA, common.TimeSize.THREE),
+    (common.AsduType.M_DP_TB, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.IndicationQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_dp(asdu_type, value, quality, cause, asdu, asdu_size,
+              io, io_size, cause_size, time, time_size):
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", [-64, -13, 0, 17, 63])
+@pytest.mark.parametrize("transient", [True, False])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_ST_NA, None),
+    (common.AsduType.M_ST_TA, common.TimeSize.THREE),
+    (common.AsduType.M_ST_TB, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_st(asdu_type, value, quality, cause, asdu, asdu_size,
+              io, io_size, cause_size, time, time_size, transient):
+    value = common.StepPositionValue(value=value,
+                                     transient=transient)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", [
+    b'\xff' * 4, b'\x00' * 4, b'\x12\xab\xff\x00'])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_BO_NA, None),
+    (common.AsduType.M_BO_TA, common.TimeSize.THREE),
+    (common.AsduType.M_BO_TB, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_bo(asdu_type, value, quality, cause, asdu, asdu_size,
+              io, io_size, cause_size, time, time_size):
+    value = common.BitstringValue(value=value)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", normalized_values)
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_ME_NA, None),
+    (common.AsduType.M_ME_TA, common.TimeSize.THREE),
+    (common.AsduType.M_ME_ND, None),
+    (common.AsduType.M_ME_TD, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_me_normalized(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size):
+    if asdu_type == common.AsduType.M_ME_ND:
+        quality = None
+    value = common.BitstringValue(value=value)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         assert_asdu_equals=assert_asdu_float_equals)
+
+
+@pytest.mark.parametrize("value", scaled_values)
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_ME_NB, None),
+    (common.AsduType.M_ME_TB, common.TimeSize.THREE),
+    (common.AsduType.M_ME_TE, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_me_scaled(asdu_type, value, quality, cause, asdu, asdu_size,
+                     io, io_size, cause_size, time, time_size):
+    value = common.ScaledValue(value=value)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", floating_values)
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_ME_NC, None),
+    (common.AsduType.M_ME_TC, common.TimeSize.THREE),
+    (common.AsduType.M_ME_TF, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_me_floating(asdu_type, value, quality, cause, asdu, asdu_size,
+                       io, io_size, cause_size, time, time_size):
+    value = common.FloatingValue(value=value)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         assert_asdu_equals=assert_asdu_float_equals)
+
+
+@pytest.mark.parametrize("value", [-2**31, -123, 0, 456, 2**31-1])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_IT_NA, None),
+    (common.AsduType.M_IT_TA, common.TimeSize.THREE),
+    (common.AsduType.M_IT_TB, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.CounterQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_m_it(asdu_type, value, quality, cause, asdu, asdu_size,
+              io, io_size, cause_size, time, time_size):
+    value = common.BinaryCounterValue(value=value)
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size)
+
+
+@pytest.mark.parametrize("value", common.ProtectionValue)
+@pytest.mark.parametrize("elapsed_time", [0, 123, 65535])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_EP_TA, common.TimeSize.THREE),
+    (common.AsduType.M_EP_TD, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.ProtectionQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_protect_value(asdu_type, value, quality, cause, asdu, asdu_size,
+                       io, io_size, cause_size, time, time_size, elapsed_time):
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         ioe_kwargs={'elapsed_time': elapsed_time})
+
+
+@pytest.mark.parametrize("value", [
+    common.ProtectionStartValue(*([True] * 6)),
+    common.ProtectionStartValue(*([False] * 6)),
+    common.ProtectionStartValue(*([True, False] * 3))])
+@pytest.mark.parametrize("duration_time", [0, 123, 65535])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_EP_TB, common.TimeSize.THREE),
+    (common.AsduType.M_EP_TE, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.ProtectionQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_protect_start(asdu_type, value, quality, cause, asdu, asdu_size,
+                       io, io_size, cause_size, time, time_size,
+                       duration_time):
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         ioe_kwargs={'duration_time': duration_time})
+
+
+@pytest.mark.parametrize("value", [
+    common.ProtectionCommandValue(*([True] * 4)),
+    common.ProtectionCommandValue(*([False] * 4)),
+    common.ProtectionCommandValue(*([True, False] * 2))])
+@pytest.mark.parametrize("operating_time", [0, 123, 65535])
+@pytest.mark.parametrize("asdu_type, time_size", [
+    (common.AsduType.M_EP_TC, common.TimeSize.THREE),
+    (common.AsduType.M_EP_TF, common.TimeSize.SEVEN)])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size, time",
+    zip(qualities(common.ProtectionQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes, times()))
+def test_protect_command(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         operating_time):
+    assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
+                         io, io_size, cause_size, time, time_size,
+                         ioe_kwargs={'operating_time': operating_time})
+
+
+@pytest.mark.parametrize("value", [[True] * 16,
+                                   [False] * 16,
+                                   [False, True] * 8])
+@pytest.mark.parametrize("change", [[True] * 16,
+                                    [False] * 16,
+                                    [False, True] * 8])
+@pytest.mark.parametrize(
+    "quality, cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(qualities(common.MeasurementQuality), causes(), asdu_addresses,
+        asdu_sizes, io_addresses, io_sizes, cause_sizes))
+def test_status_value(value, quality, cause, asdu, asdu_size,
+                      io, io_size, cause_size, change):
+    value = common.StatusValue(
+        value=value,
+        change=change)
+    assert_encode_decode(common.AsduType.M_PS_NA, value, quality, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None)
+
+
+@pytest.mark.parametrize("asdu_type, value", [
+    *itertools.product((common.AsduType.C_SC_NA,), common.SingleValue),
+    *itertools.product((common.AsduType.C_DC_NA,), common.DoubleValue),
+    *itertools.product((common.AsduType.C_RC_NA,), common.RegulatingValue),
+    ])
+@pytest.mark.parametrize("select, qualifier", [(True, 0),
+                                               (False, 31)])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_cmd_ind(asdu_type, value, cause, asdu, asdu_size, io, io_size,
+                 cause_size, select, qualifier):
+    assert_encode_decode(asdu_type, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'select': select,
+                                     'qualifier': qualifier})
+
+
+@pytest.mark.parametrize("asdu_type, value", [
+    *itertools.product((common.AsduType.C_SE_NA,),
+                       [common.NormalizedValue(value=i)
+                        for i in normalized_values]),
+    *itertools.product((common.AsduType.C_SE_NC,),
+                       [common.FloatingValue(value=i)
+                        for i in floating_values])
+    ])
+@pytest.mark.parametrize("select", [True, False])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_cmd_float(asdu_type, value, cause, asdu, asdu_size, io, io_size,
+                   cause_size, select):
+    assert_encode_decode(asdu_type, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'select': select},
+                         assert_asdu_equals=assert_asdu_float_equals)
+
+
+@pytest.mark.parametrize("value", scaled_values)
+@pytest.mark.parametrize("select", [True, False])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_cmd_scale(value, cause, asdu, asdu_size, io, io_size,
+                   cause_size, select):
+    value = common.ScaledValue(value=value)
+    assert_encode_decode(common.AsduType.C_SE_NB, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'select': select})
+
+
+@pytest.mark.parametrize("value", bitstring_values)
+@pytest.mark.parametrize("select", [True, False])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_cmd_bitstring(value, cause, asdu, asdu_size, io, io_size,
+                       cause_size, select):
+    value = common.BitstringValue(value=value)
+    assert_encode_decode(common.AsduType.C_BO_NA, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None)
+
+
+@pytest.mark.parametrize("param_change", [True, False])
+@pytest.mark.parametrize("cause_ioe", [0, 127])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_m_ei_na(cause, asdu, asdu_size, io, io_size,
+                 cause_size, param_change, cause_ioe):
+    assert_encode_decode(common.AsduType.M_EI_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'param_change': param_change,
+                                     'cause': cause_ioe})
+
+
+@pytest.mark.parametrize("asdu_type", [common.AsduType.C_IC_NA,
+                                       common.AsduType.C_RP_NA,
+                                       common.AsduType.P_AC_NA])
+@pytest.mark.parametrize("qualifier", [0, 123, 255])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_c_ic_rp_ac(asdu_type, cause, asdu, asdu_size, io, io_size, cause_size,
+                    qualifier):
+    assert_encode_decode(asdu_type, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'qualifier': qualifier})
+
+
+@pytest.mark.parametrize("request_ioe", [0, 63, 13])
+@pytest.mark.parametrize("freeze", common.FreezeCode)
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_c_ci_na(cause, asdu, asdu_size, io, io_size,
+                 cause_size, request_ioe, freeze):
+    assert_encode_decode(common.AsduType.C_CI_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'request': request_ioe,
+                                     'freeze': freeze})
+
+
+@pytest.mark.parametrize("time_ioe", times())
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_c_cs_na(cause, asdu, asdu_size, io, io_size, cause_size, time_ioe):
+    assert_encode_decode(common.AsduType.C_CS_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'time': time_ioe})
+
+
+@pytest.mark.parametrize("time_ioe", [0, 65535, 123])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_c_cd_na(cause, asdu, asdu_size, io, io_size, cause_size, time_ioe):
+    assert_encode_decode(common.AsduType.C_CD_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'time': time_ioe})
+
+
+@pytest.mark.parametrize("asdu_type, value", [
+    *itertools.product((common.AsduType.P_ME_NA,),
+                       [common.NormalizedValue(value=1)
+                        for i in normalized_values]),
+    *itertools.product((common.AsduType.P_ME_NC,),
+                       [common.FloatingValue(value=1)
+                        for i in floating_values]),
+    ])
+@pytest.mark.parametrize("qualifier", [0, 123, 255])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_p_me_na_nc(asdu_type, value, cause, asdu, asdu_size, io, io_size,
+                    cause_size, qualifier):
+    assert_encode_decode(asdu_type, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'qualifier': qualifier})
+
+
+@pytest.mark.parametrize("value", scaled_values)
+@pytest.mark.parametrize("qualifier", [0, 123, 255])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_p_me_nb(value, cause, asdu, asdu_size, io, io_size,
+                 cause_size, qualifier):
+    value = common.ScaledValue(value=value)
+    assert_encode_decode(common.AsduType.P_ME_NB, value, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'qualifier': qualifier})
+
+
+@pytest.mark.parametrize("file_name", [0, 65535])
+@pytest.mark.parametrize("file_length", [0, 16777215])
+@pytest.mark.parametrize("ready", [True, False])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_fr_na(cause, asdu, asdu_size, io, io_size,
+                 cause_size, file_name, file_length, ready):
+    assert_encode_decode(common.AsduType.F_FR_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'file_length': file_length,
+                                     'ready': ready})
+
+
+@pytest.mark.parametrize("file_name", [0, 65535])
+@pytest.mark.parametrize("section_name", [0, 255])
+@pytest.mark.parametrize("section_length", [0, 16777215])
+@pytest.mark.parametrize("ready", [True, False])
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_sr_na(cause, asdu, asdu_size, io, io_size,
+                 cause_size, file_name, section_name, section_length, ready):
+    assert_encode_decode(common.AsduType.F_SR_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'section_name': section_name,
+                                     'section_length': section_length,
+                                     'ready': ready})
+
+
+@pytest.mark.parametrize("asdu_type", (common.AsduType.F_SC_NA,
+                                       common.AsduType.F_AF_NA))
+@pytest.mark.parametrize("file_name", (0, 65535))
+@pytest.mark.parametrize("section_name", (0, 255))
+@pytest.mark.parametrize("qualifier", (0, 255))
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_sc_af_na(asdu_type, cause, asdu, asdu_size, io, io_size,
+                    cause_size, file_name, section_name, qualifier):
+    assert_encode_decode(asdu_type, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'section_name': section_name,
+                                     'qualifier': qualifier})
+
+
+@pytest.mark.parametrize("file_name", (0, 65535))
+@pytest.mark.parametrize("section_name", (0, 255))
+@pytest.mark.parametrize("last_qualifier", (0, 255))
+@pytest.mark.parametrize("checksum", (0, 255))
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_ls_na(cause, asdu, asdu_size, io, io_size, cause_size,
+                 file_name, section_name, last_qualifier, checksum):
+    assert_encode_decode(common.AsduType.F_LS_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'section_name': section_name,
+                                     'last_qualifier': last_qualifier,
+                                     'checksum': checksum})
+
+
+@pytest.mark.parametrize("file_name", (0, 65535))
+@pytest.mark.parametrize("section_name", (0, 255))
+@pytest.mark.parametrize("segment", (b'\xab\x12', b''))
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_sg_na(cause, asdu, asdu_size, io, io_size, cause_size,
+                 file_name, section_name, segment):
+    assert_encode_decode(common.AsduType.F_SG_NA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'section_name': section_name,
+                                     'segment': segment})
+
+
+@pytest.mark.parametrize("file_name", (0, 65535))
+@pytest.mark.parametrize("file_length", (0, 16777215))
+@pytest.mark.parametrize("more_follows, is_directory, transfer_active", [
+    (True, True, True),
+    (False, False, False)])
+@pytest.mark.parametrize("creation_time", times())
+@pytest.mark.parametrize(
+    "cause, asdu, asdu_size, io, io_size, cause_size",
+    zip(causes(), asdu_addresses, asdu_sizes, io_addresses, io_sizes,
+        cause_sizes))
+def test_f_dr_ta(cause, asdu, asdu_size, io, io_size, cause_size,
+                 file_name, file_length, more_follows, is_directory,
+                 transfer_active, creation_time):
+    assert_encode_decode(common.AsduType.F_DR_TA, None, None, cause, asdu,
+                         asdu_size, io, io_size, cause_size, None, None,
+                         ioe_kwargs={'file_name': file_name,
+                                     'file_length': file_length,
+                                     'more_follows': more_follows,
+                                     'is_directory': is_directory,
+                                     'transfer_active': transfer_active,
+                                     'creation_time': creation_time})
+
+
+# TODO: C_RD_NA,  C_TS_NA,
