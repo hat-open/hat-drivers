@@ -109,7 +109,7 @@ def _decode_io_element(asdu, io, io_element):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            qualifier=io_element.qualifier,
+            request=io_element.qualifier,
             cause=_decode_cause(asdu.cause.type.value,
                                 common.CommandReqCause,
                                 common.CommandResCause))
@@ -366,7 +366,7 @@ def _encode_msg(msg):
             msg.cause.value if isinstance(msg.cause, enum.Enum)
             else msg.cause)
         io_element = app.iec104.common.IoElement_C_IC_NA(
-            qualifier=msg.qualifier)
+            qualifier=msg.request)
 
     elif isinstance(msg, common.CounterInterrogationMsg):
         asdu_type = app.iec104.common.AsduType.C_CI_NA
@@ -688,42 +688,65 @@ def _get_data_io_element(data, asdu_type):
 
 
 def _get_command_io_element(command, asdu_type):
-    if asdu_type in {app.iec104.common.AsduType.C_SC_NA,
-                     app.iec104.common.AsduType.C_SC_TA}:
+    if asdu_type == app.iec104.common.AsduType.C_SC_NA:
         return app.iec104.common.IoElement_C_SC_NA(value=command.value,
                                                    select=command.select,
                                                    qualifier=command.qualifier)
 
-    if asdu_type in {app.iec104.common.AsduType.C_DC_NA,
-                     app.iec104.common.AsduType.C_DC_TA}:
+    if asdu_type == app.iec104.common.AsduType.C_SC_TA:
+        return app.iec104.common.IoElement_C_SC_TA(value=command.value,
+                                                   select=command.select,
+                                                   qualifier=command.qualifier)
+
+    if asdu_type == app.iec104.common.AsduType.C_DC_NA:
         return app.iec104.common.IoElement_C_DC_NA(value=command.value,
                                                    select=command.select,
                                                    qualifier=command.qualifier)
 
-    if asdu_type in {app.iec104.common.AsduType.C_RC_NA,
-                     app.iec104.common.AsduType.C_RC_TA}:
+    if asdu_type == app.iec104.common.AsduType.C_DC_TA:
+        return app.iec104.common.IoElement_C_DC_TA(value=command.value,
+                                                   select=command.select,
+                                                   qualifier=command.qualifier)
+
+    if asdu_type == app.iec104.common.AsduType.C_RC_NA:
         return app.iec104.common.IoElement_C_RC_NA(value=command.value,
                                                    select=command.select,
                                                    qualifier=command.qualifier)
 
-    if asdu_type in {app.iec104.common.AsduType.C_SE_NA,
-                     app.iec104.common.AsduType.C_SE_TA}:
+    if asdu_type == app.iec104.common.AsduType.C_RC_TA:
+        return app.iec104.common.IoElement_C_RC_TA(value=command.value,
+                                                   select=command.select,
+                                                   qualifier=command.qualifier)
+
+    if asdu_type == app.iec104.common.AsduType.C_SE_NA:
         return app.iec104.common.IoElement_C_SE_NA(value=command.value,
                                                    select=command.select)
 
-    if asdu_type in {app.iec104.common.AsduType.C_SE_NB,
-                     app.iec104.common.AsduType.C_SE_TB}:
+    if asdu_type == app.iec104.common.AsduType.C_SE_TA:
+        return app.iec104.common.IoElement_C_SE_TA(value=command.value,
+                                                   select=command.select)
+
+    if asdu_type == app.iec104.common.AsduType.C_SE_NB:
         return app.iec104.common.IoElement_C_SE_NB(value=command.value,
                                                    select=command.select)
 
-    if asdu_type in {app.iec104.common.AsduType.C_SE_NC,
-                     app.iec104.common.AsduType.C_SE_TC}:
+    if asdu_type == app.iec104.common.AsduType.C_SE_TB:
+        return app.iec104.common.IoElement_C_SE_TB(value=command.value,
+                                                   select=command.select)
+
+    if asdu_type == app.iec104.common.AsduType.C_SE_NC:
         return app.iec104.common.IoElement_C_SE_NC(value=command.value,
                                                    select=command.select)
 
-    if asdu_type in {app.iec104.common.AsduType.C_BO_NA,
-                     app.iec104.common.AsduType.C_BO_TA}:
+    if asdu_type == app.iec104.common.AsduType.C_SE_TC:
+        return app.iec104.common.IoElement_C_SE_TC(value=command.value,
+                                                   select=command.select)
+
+    if asdu_type == app.iec104.common.AsduType.C_BO_NA:
         return app.iec104.common.IoElement_C_BO_NA(value=command.value)
+
+    if asdu_type == app.iec104.common.AsduType.C_BO_TA:
+        return app.iec104.common.IoElement_C_BO_TA(value=command.value)
 
     raise ValueError('unsupported asdu type')
 
