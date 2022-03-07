@@ -148,7 +148,7 @@ def _decode_io_element(io_bytes, asdu_type):
             identification, io_bytes = _decode_value(
                 io_bytes, common.ValueType.IDENTIFICATION)
             data_i, io_bytes = _decode_descriptive_data(io_bytes)
-            data.append((identification, data_i))
+            data.append((identification.value, data_i))
         data = list(data)
 
         element = common.IoElement_GENERIC_DATA(
@@ -160,7 +160,7 @@ def _decode_io_element(io_bytes, asdu_type):
 
     if asdu_type == common.AsduType.GENERIC_IDENTIFICATION:
         return_identifier = io_bytes[0]
-        identification, _ = _decode_value(io_bytes,
+        identification, _ = _decode_value(io_bytes[1:3],
                                           common.ValueType.IDENTIFICATION)
         data_size = io_bytes[3] & 0x3F
         counter = bool(io_bytes[3] & 0x40)
@@ -175,7 +175,7 @@ def _decode_io_element(io_bytes, asdu_type):
 
         element = common.IoElement_GENERIC_IDENTIFICATION(
             return_identifier=return_identifier,
-            identification=identification,
+            identification=identification.value,
             counter=counter,
             more_follows=more_follows,
             data=data)
@@ -202,7 +202,7 @@ def _decode_io_element(io_bytes, asdu_type):
                 io_bytes, common.ValueType.IDENTIFICATION)
             description = common.Description(io_bytes[0])
             io_bytes = io_bytes[1:]
-            data.append((identification, description))
+            data.append((identification.value, description))
         data = list(data)
 
         element = common.IoElement_GENERIC_COMMAND(
@@ -305,7 +305,7 @@ def _decode_io_element(io_bytes, asdu_type):
             address, io_bytes = _decode_value(io_bytes,
                                               common.ValueType.IO_ADDRESS)
             value, io_bytes = _decode_value(io_bytes, common.ValueType.DOUBLE)
-            values.append((address, value))
+            values.append((address.value, value))
         values = list(values)
 
         element = common.IoElement_TRANSMISSION_OF_TAGS(
@@ -323,7 +323,8 @@ def _decode_io_element(io_bytes, asdu_type):
 
         values = collections.deque()
         for _ in range(values_size):
-            value, io_bytes = _decode_value(io_bytes, common.ValueType.FIXED)
+            value = _decode_fixed(io_bytes[:2], 0, 16, True)
+            io_bytes = io_bytes[2:]
             values.append(value)
         values = list(values)
 
@@ -389,12 +390,14 @@ def _encode_io_element(element, asdu_type):
                (0x40 if element.counter else 0x00) |
                (len(element.data) & 0x3F))
         for identification, data in element.data:
+            identification = common.IdentificationValue(identification)
             yield from _encode_value(identification)
             yield from _encode_descriptive_data(data)
 
     elif asdu_type == common.AsduType.GENERIC_IDENTIFICATION:
+        identification = common.IdentificationValue(element.identification)
         yield element.return_identifier
-        yield from _encode_value(element.identification)
+        yield from _encode_value(identification)
         yield ((0x80 if element.more_follows else 0x00) |
                (0x40 if element.counter else 0x00) |
                (len(element.data) & 0x3F))
@@ -409,6 +412,7 @@ def _encode_io_element(element, asdu_type):
         yield element.return_identifier
         yield len(element.data)
         for identification, description in element.data:
+            identification = common.IdentificationValue(identification)
             yield from _encode_value(identification)
             yield description.value
 
@@ -458,6 +462,7 @@ def _encode_io_element(element, asdu_type):
         yield len(element.values)
         yield from element.tag_position.to_bytes(2, 'little')
         for address, value in element.values:
+            address = common.IoAddressValue(address)
             yield from _encode_value(address)
             yield from _encode_value(value)
 
@@ -468,7 +473,7 @@ def _encode_io_element(element, asdu_type):
         yield len(element.values)
         yield from element.element_number.to_bytes(2, 'little')
         for value in element.values:
-            yield from _encode_value(value)
+            yield from _encode_fixed(value, 0, 16, True)
 
     elif asdu_type == common.AsduType.END_OF_TRANSMISSION:
         yield element.order_type.value
@@ -482,21 +487,35 @@ def _encode_io_element(element, asdu_type):
 
 def _decode_fixed(data, bit_offset, bit_size, signed):
     value = 0
+    max_value = ((1 << (bit_size - 1)) if signed else ((1 << bit_size) - 1))
+
     for i in range(bit_offset, bit_offset + bit_size):
         if data[i // 8] & (1 << (i % 8)):
             value = value | (1 << (i - bit_offset))
 
-    if not signed:
-        return value / ((1 << bit_size) - 1)
+    if signed and (value & (1 << (bit_size - 1))):
+        value = -(~((-1 << bit_size) | value) + 1)
 
-    if value & (1 << (bit_size - 1)):
-        value = (-1 << bit_size) | value
-
-    return value / (1 << (bit_size - 1))
+    return value / max_value
 
 
 def _encode_fixed(value, bit_offset, bit_size, signed):
-    pass
+    if not ((-1 if signed else 0) <= value < 1):
+        raise ValueError('unsupported value')
+
+    max_value = ((1 << (bit_size - 1)) if signed else ((1 << bit_size) - 1))
+    value = int(value * max_value)
+    if value < 0:
+        value = (~value + 1) | (1 << (bit_size - 1))
+
+    size = math.ceil((bit_offset + bit_size) / 8)
+    data = [0] * size
+
+    for i in range(bit_offset, bit_offset + bit_size):
+        if value & (1 << (i - bit_offset)):
+            data[i // 8] = data[i // 8] | (1 << (i % 8))
+
+    yield from data
 
 
 def _decode_descriptive_data(data):
@@ -541,7 +560,7 @@ def _decode_value(data, value_type):
         return common.FixedValue(value), b''
 
     if value_type == common.ValueType.UFIXED:
-        value = _decode_fixed(data, 0, 8 * len(data), True)
+        value = _decode_fixed(data, 0, 8 * len(data), False)
         return common.FixedValue(value), b''
 
     if value_type == common.ValueType.REAL32:
@@ -579,15 +598,13 @@ def _decode_value(data, value_type):
         return common.IdentificationValue(value), data[2:]
 
     if value_type == common.ValueType.RELATIVE_TIME:
-        value = int.from_bytes(data[:2], 'little'), data[2:]
-        return common.RelativeTimeValue(value)
+        value = int.from_bytes(data[:2], 'little')
+        return common.RelativeTimeValue(value), data[2:]
 
     if value_type == common.ValueType.IO_ADDRESS:
-        function_type = common.FunctionType(data[0])
-        information_number = common.InformationNumber(data[1])
-        return common.IoAddress(
-            function_type=function_type,
-            information_number=information_number), data[2:]
+        value = common.IoAddress(function_type=data[0],
+                                 information_number=data[1])
+        return common.IoAddressValue(value), data[2:]
 
     if value_type == common.ValueType.DOUBLE_WITH_TIME:
         value = common.DoubleValue(data[0])
@@ -673,7 +690,8 @@ def _encode_value(value, size=None):
         for i in range(size):
             acc = 0
             for j in range(8):
-                if len(value.value) > i * j and value.values[i * j]:
+                index = i * 8 + j
+                if index < len(value.value) and value.value[index]:
                     acc = acc | (1 << j)
             yield acc
 
@@ -711,7 +729,7 @@ def _encode_value(value, size=None):
         yield from itertools.repeat(0, size - 1)
 
     elif isinstance(value, common.MeasurandValue):
-        data = list(_encode_fixed(value, 3, 13, True))
+        data = list(_encode_fixed(value.value, 3, 13, True))
         data[0] = data[0] | ((0x01 if value.overflow else 0x00) |
                              (0x02 if value.invalid else 0x00))
         yield from data
@@ -722,8 +740,8 @@ def _encode_value(value, size=None):
         yield from itertools.repeat(0, size - 7)
 
     elif isinstance(value, common.IdentificationValue):
-        yield value.group_id
-        yield value.entry_id
+        yield value.value.group_id
+        yield value.value.entry_id
         yield from itertools.repeat(0, size - 2)
 
     elif isinstance(value, common.RelativeTimeValue):
@@ -731,8 +749,8 @@ def _encode_value(value, size=None):
         yield from itertools.repeat(0, size - 2)
 
     elif isinstance(value, common.IoAddressValue):
-        yield value.function_type.value
-        yield value.information_number.value
+        yield value.value.function_type
+        yield value.value.information_number
         yield from itertools.repeat(0, size - 2)
 
     elif isinstance(value, common.DoubleWithTimeValue):

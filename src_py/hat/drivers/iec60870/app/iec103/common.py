@@ -467,7 +467,8 @@ class IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES(typing.NamedTuple):
     channel: Channel
     element_number: int
     """element_number in range [0, 65535]"""
-    values: typing.List[FixedValue]
+    values: typing.List[float]
+    """values are in range [-1.0, 1.0)"""
 
 
 class IoElement_END_OF_TRANSMISSION(typing.NamedTuple):

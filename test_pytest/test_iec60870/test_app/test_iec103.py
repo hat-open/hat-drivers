@@ -75,9 +75,12 @@ def assert_measurand_asdu(asdu, asdu_decoded):
 
 def assert_generic_data_asdu_types(asdu, asdu_decoded):
 
-    fixed_types = [common.FixedValue, common.UFixedValue, common.Real32Value,
-                   common.Real64Value, common.MeasurandValue,
-                   common.MeasurandWithRelativeTimeValue]
+    fixed_types = [common.ValueType.FIXED,
+                   common.ValueType.UFIXED,
+                   common.ValueType.REAL32,
+                   common.ValueType.REAL64,
+                   common.ValueType.MEASURAND,
+                   common.ValueType.MEASURAND_WITH_RELATIVE_TIME]
 
     def assert_array_values(a1, a2):
         assert a1.more_follows == a2.more_follows
@@ -85,37 +88,54 @@ def assert_generic_data_asdu_types(asdu, asdu_decoded):
         assert len(a1.values) == len(a2.values)
         value_type = a1.value_type
 
-        if value_type not in fixed_types and value_type != common.ArrayValue:
-            assert a1.values == a2.values
-            return
-
-        if value_type in fixed_types:
+        if value_type == common.ValueType.BITSTRING:
             for value, value_decoded in zip(a1.values, a2.values):
-                assert math.isclose(value,
-                                    value_decoded,
-                                    rel_tol=1e-3)
+                for bit, bit_decoded in zip(value.value, value_decoded.value):
+                    assert bit == bit_decoded
 
-        if value_type == common.ArrayValue:
+        elif value_type == common.ValueType.ARRAY:
             for value, value_decoded in zip(a1.values, a2.values):
                 assert_array_values(value, value_decoded)
 
+        elif value_type in fixed_types:
+            for value, value_decoded in zip(a1.values, a2.values):
+                assert math.isclose(value.value,
+                                    value_decoded.value,
+                                    rel_tol=1e-2)
+
+        else:
+            assert a1.values == a2.values
+
     if asdu == asdu_decoded:
         return
+
     assert len(asdu_decoded.ios) == 1
-    assert len(asdu_decoded.ios.elements) == 1
+    assert len(asdu_decoded.ios[0].elements) == 1
     ioe = asdu.ios[0].elements[0]
     ioe_decoded = asdu_decoded.ios[0].elements[0]
+
     for attr in ioe._fields:
-        if attr != 'data':
-            assert getattr(ioe, attr) != getattr(ioe_decoded, attr)
-            continue
-        assert len(ioe.data) == len(ioe_decoded.data)
-        for d, d_decoded in zip(ioe.data, ioe_decoded.data):
-            identification, desc_data = d
-            identification_decoded, desc_data_decoded = d_decoded
-            assert identification == identification_decoded
-            assert desc_data.description == desc_data_decoded.description
-            assert_array_values(desc_data.value, desc_data_decoded.value)
+        if attr == 'data':
+            assert len(ioe.data) == len(ioe_decoded.data)
+
+            for data, data_decoded in zip(ioe.data, ioe_decoded.data):
+                if asdu.type == common.AsduType.GENERIC_DATA:
+                    assert data[0] == data_decoded[0]
+                    assert data[1].description == data_decoded[1].description
+                    assert_array_values(data[1].value, data_decoded[1].value)
+
+                elif asdu.type == common.AsduType.GENERIC_IDENTIFICATION:
+                    assert data.description == data_decoded.description
+                    assert_array_values(data.value, data_decoded.value)
+
+                elif asdu.type == common.AsduType.GENERIC_COMMAND:
+                    assert data == data_decoded
+
+                else:
+                    raise ValueError('invalid asdu type')
+
+        else:
+            assert getattr(ioe, attr) == getattr(ioe_decoded, attr)
 
 
 @pytest.mark.parametrize('value, supplementary, time', [
@@ -235,7 +255,7 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
     ))] * io_element_count, assert_measurand_asdu)
 
 
-@pytest.fixture(params=[
+generic_data = [
     (0, False, False, 1,
      common.ValueType.NONE, common.NoneValue(), 1, False),
     (255, True, True, 1,
@@ -248,9 +268,9 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
     (10, False, False, 1,
      common.ValueType.INT, common.IntValue(-15), 1, False),
     (10, False, False, 1,
-     common.ValueType.UFIXED, common.UFixedValue(-0.5), 1, False),
+     common.ValueType.UFIXED, common.UFixedValue(0.5), 1, False),
     (10, False, False, 1,
-     common.ValueType.FIXED, common.FixedValue(0.5), 1, False),
+     common.ValueType.FIXED, common.FixedValue(-0.5), 1, False),
     (10, False, False, 1,
      common.ValueType.REAL32, common.Real32Value(156.471), 1, False),
     (10, False, False, 1,
@@ -277,7 +297,7 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
          day_of_week=1,
          day_of_month=15,
          months=8,
-         years=2025)), 1, False),
+         years=25)), 1, False),
     (10, False, False, 1,
      common.ValueType.IDENTIFICATION,
      common.IdentificationValue(
@@ -293,17 +313,7 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
      common.ValueType.DOUBLE_WITH_TIME,
      common.DoubleWithTimeValue(
          value=common.DoubleValue.OFF,
-         time=common.Time(
-             size=common.TimeSize.FOUR,
-             milliseconds=100,
-             invalid=False,
-             minutes=55,
-             summer_time=True,
-             hours=11,
-             day_of_week=None,
-             day_of_month=None,
-             months=None,
-             years=None),
+         time=default_time_four,
          supplementary=5), 1, False),
     (10, False, False, 1,
      common.ValueType.DOUBLE_WITH_RELATIVE_TIME,
@@ -329,17 +339,7 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
          value=123.456,
          relative_time=678,
          fault_number=71,
-         time=common.Time(
-             size=common.TimeSize.FOUR,
-             milliseconds=100,
-             invalid=False,
-             minutes=55,
-             summer_time=True,
-             hours=11,
-             day_of_week=None,
-             day_of_month=None,
-             months=None,
-             years=None)), 1, False),
+         time=default_time_four), 1, False),
     (10, False, False, 1,
      common.ValueType.TEXT_NUMBER,
      common.TextNumberValue(781), 1, False),
@@ -357,11 +357,10 @@ def test_measurands_2(overflow, invalid, value, io_element_count):
     (10, False, False, 1,
      common.ValueType.INT, common.IntValue(13), 10, False),
     (10, False, False, 2,
-     common.ValueType.INT, common.IntValue(13), 5, False)])
-def generic_data(request):
-    return request.param
+     common.ValueType.INT, common.IntValue(13), 5, False)]
 
 
+@pytest.mark.parametrize('generic_data', generic_data)
 def test_generic_data(generic_data):
     return_identifier, counter, io_more_follows, data_count, value_type, \
         value, values_count, av_more_follows = generic_data
@@ -373,9 +372,7 @@ def test_generic_data(generic_data):
             return_identifier=return_identifier,
             counter=counter,
             more_follows=io_more_follows,
-            data=[(common.IdentificationValue(common.Identification(
-                    group_id=0,
-                    entry_id=1)),
+            data=[(common.Identification(group_id=0, entry_id=1),
                    common.DescriptiveData(
                         description=common.Description.VALUE_ARRAY,
                         value=common.ArrayValue(
@@ -385,6 +382,7 @@ def test_generic_data(generic_data):
         assert_generic_data_asdu_types)
 
 
+@pytest.mark.parametrize('generic_data', generic_data)
 def test_generic_identification(generic_data):
     return_identifier, counter, io_more_follows, data_count, value_type, \
         value, values_count, av_more_follows = generic_data
@@ -589,13 +587,11 @@ def test_transmission_of_disturbance_values(fault_number, channel,
                 continue
             assert len(ioe.values) == len(ioe_decoded.values)
             for value, decoded_val in zip(ioe.values, ioe_decoded.values):
-                assert len(decoded_val) == 1
-                assert math.isclose(value.value, decoded_val.value,
+                assert math.isclose(value, decoded_val,
                                     rel_tol=1e-3)
 
     asdu_type = common.AsduType.TRANSMISSION_OF_DISTURBANCE_VALUES
     io_element_cls = common.IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES
-    values = [common.FixedValue(value) for value in values]
     assert_encode_decode(asdu_type, [io_element_cls(
         fault_number=fault_number,
         channel=channel,
