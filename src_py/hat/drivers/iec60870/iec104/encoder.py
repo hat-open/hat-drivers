@@ -394,11 +394,11 @@ def _encode_msg(msg):
             time=msg.time)
 
     elif isinstance(msg, common.TestMsg):
-        asdu_type = app.iec104.common.AsduType.C_TS_NA
+        asdu_type = app.iec104.common.AsduType.C_TS_TA
         cause_type = app.iec104.common.CauseType(
             msg.cause.value if isinstance(msg.cause, enum.Enum)
             else msg.cause)
-        io_element = app.iec104.common.IoElement_C_TS_NA(
+        io_element = app.iec104.common.IoElement_C_TS_TA(
             counter=msg.counter)
         time = msg.time
 
