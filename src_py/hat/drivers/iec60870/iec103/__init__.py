@@ -1,8 +1,6 @@
 """IEC 60870-5-103 communication protocol"""
 
 from hat.drivers.iec60870.iec103.common import (Bytes,
-                                                FunctionType,
-                                                InformationNumber,
                                                 Description,
                                                 IoAddress,
                                                 Identification,
@@ -49,8 +47,6 @@ from hat.drivers.iec60870.iec103.master import (DataCb,
 
 
 __all__ = ['Bytes',
-           'FunctionType',
-           'InformationNumber',
            'Description',
            'IoAddress',
            'Identification',
