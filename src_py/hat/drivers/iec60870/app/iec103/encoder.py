@@ -486,36 +486,34 @@ def _encode_io_element(element, asdu_type):
 
 
 def _decode_fixed(data, bit_offset, bit_size, signed):
-    value = 0
-    max_value = ((1 << (bit_size - 1)) if signed else ((1 << bit_size) - 1))
+    limit = 1 << (bit_size - (1 if signed else 0))
+    size = math.ceil((bit_offset + bit_size) / 8)
 
-    for i in range(bit_offset, bit_offset + bit_size):
-        if data[i // 8] & (1 << (i % 8)):
-            value = value | (1 << (i - bit_offset))
+    if len(data) < size:
+        raise ValueError('invalid data length')
 
-    if signed and (value & (1 << (bit_size - 1))):
-        value = -(~((-1 << bit_size) | value) + 1)
+    value = int.from_bytes(data[:size], 'little')
+    value = (value >> bit_offset) & ((1 << bit_size) - 1)
 
-    return value / max_value
+    if signed and (value & limit):
+        value = value | (-1 << bit_size)
+
+    return value / limit
 
 
 def _encode_fixed(value, bit_offset, bit_size, signed):
     if not ((-1 if signed else 0) <= value < 1):
         raise ValueError('unsupported value')
 
-    max_value = ((1 << (bit_size - 1)) if signed else ((1 << bit_size) - 1))
-    value = int(value * max_value)
-    if value < 0:
-        value = (~value + 1) | (1 << (bit_size - 1))
-
+    limit = 1 << (bit_size - (1 if signed else 0))
     size = math.ceil((bit_offset + bit_size) / 8)
-    data = [0] * size
 
-    for i in range(bit_offset, bit_offset + bit_size):
-        if value & (1 << (i - bit_offset)):
-            data[i // 8] = data[i // 8] | (1 << (i % 8))
+    data = int(value * limit)
+    if data < 0:
+        data = data & ((1 << bit_size) - 1)
+    data = data << bit_offset
 
-    yield from data
+    yield from data.to_bytes(size, 'little')
 
 
 def _decode_descriptive_data(data):
