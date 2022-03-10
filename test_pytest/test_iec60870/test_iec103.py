@@ -1,10 +1,11 @@
+import math
+
 import pytest
 
 from hat import aio
 from hat.drivers.iec60870 import iec103
 from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.app.iec103 import common, encoder
-
 
 default_time_seven = iec103.Time(
     size=iec103.TimeSize.SEVEN,
@@ -17,7 +18,6 @@ default_time_seven = iec103.Time(
     day_of_month=1,
     months=1,
     years=99)
-
 
 default_time_four = common.Time(
     size=common.TimeSize.FOUR,
@@ -67,7 +67,7 @@ def create_connection_slave_pair():
         async def receive(self):
             return enc.decode_asdu(await send_queue.get())
 
-    return (MockLinkConnection(), MockSlave())
+    return MockLinkConnection(), MockSlave()
 
 
 @pytest.mark.parametrize('asdu_address, time', [(0xFF, default_time_seven),
@@ -118,76 +118,81 @@ async def test_interrogate_generic():
     pass
 
 
-@pytest.mark.timeout(3)
-@pytest.mark.parametrize('value, supplementary, time', [
-    (common.DoubleValue.OFF, 1, default_time_four),
-    (common.DoubleValue.ON, 5, default_time_four)])
-async def test_time_tagged_message(value, supplementary, time):
+@pytest.mark.parametrize('asdu_type, value, cmp_fn', [
+    (common.AsduType.TIME_TAGGED_MESSAGE,
+     common.DoubleWithTimeValue(value=common.DoubleValue.ON,
+                                time=default_time_four,
+                                supplementary=5),
+     None),
+    (common.AsduType.TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME,
+     common.DoubleWithRelativeTimeValue(value=common.DoubleValue.ON,
+                                        relative_time=123,
+                                        fault_number=123,
+                                        time=default_time_four,
+                                        supplementary=1),
+     None),
+    (common.AsduType.MEASURANDS_1,
+     common.MeasurandValue(overflow=False, invalid=False, value=0.14),
+     lambda recv_val, sent_val: math.isclose(
+         recv_val.value.values[iec103.common.MeasurandType.M1_I_L2].value,
+         sent_val.value,
+         rel_tol=1e-3)),
+    (common.AsduType.TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME,
+     common.MeasurandWithRelativeTimeValue(value=3.14,
+                                           relative_time=123,
+                                           fault_number=123,
+                                           time=default_time_four),
+     lambda recv_val, sent_val: math.isclose(recv_val.value.value,
+                                             sent_val.value,
+                                             rel_tol=1e-3))])
+async def test_spontaneous(asdu_type, value, cmp_fn):
     receive_queue = aio.Queue()
     conn, slave = create_connection_slave_pair()
     master_conn = iec103.MasterConnection(conn=conn,
                                           data_cb=receive_queue.put_nowait)
+    element = getattr(common, f'IoElement_{asdu_type.name}')
+    io_addr = common.IoAddress(function_type=1, information_number=1)
+
     slave_asdu = common.ASDU(
-        type=common.AsduType.TIME_TAGGED_MESSAGE,
+        type=asdu_type,
         cause=common.Cause.SPONTANEOUS,
         address=1,
-        ios=[common.IO(
-            address=common.IoAddress(function_type=1,
-                                     information_number=1),
-            elements=[common.IoElement_TIME_TAGGED_MESSAGE(
-                common.DoubleWithTimeValue(
-                    value=value,
-                    time=time,
-                    supplementary=supplementary))])])
+        ios=[common.IO(address=io_addr, elements=[element(value)])])
     await slave.send(slave_asdu)
     master_data = await receive_queue.get()
 
     assert master_data.asdu_address == slave_asdu.address
-    assert master_data.io_address == common.IoAddress(function_type=1,
-                                                      information_number=1)
+    assert master_data.io_address == io_addr
     assert master_data.cause.value == common.Cause.SPONTANEOUS.value
-    assert master_data.value == common.DoubleWithTimeValue(
-            value=value,
-            time=time,
-            supplementary=supplementary)
+
+    if not cmp_fn:
+        assert master_data.value == value
+    else:
+        assert cmp_fn(master_data, value)
 
     await slave.async_close()
     await master_conn.async_close()
 
 
-@pytest.mark.skip(reason='test not implemented')
-async def test_time_tagged_message_with_relative_time():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_measurands_1():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_time_tagged_measurands_with_relative_time():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
 async def test_identification():
-    pass
+    receive_queue = aio.Queue()
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn,
+                                          data_cb=receive_queue.put_nowait)
+    io_addr = common.IoAddress(function_type=1, information_number=1)
 
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_time_synchronization():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_general_interrogation():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_general_interrogation_termination():
-    pass
+    slave_asdu = common.ASDU(
+        type=common.AsduType.IDENTIFICATION,
+        cause=common.Cause.SPONTANEOUS,
+        address=1,
+        ios=[common.IO(address=io_addr,
+                       elements=[common.IoElement_IDENTIFICATION(
+                           compatibility=1,
+                           value=b'10101010',
+                           software=b'1010')])])
+    await slave.send(slave_asdu)
+    await slave.async_close()
+    await master_conn.async_close()
 
 
 @pytest.mark.skip(reason='test not implemented')

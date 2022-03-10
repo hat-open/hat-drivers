@@ -237,7 +237,7 @@ class MasterConnection(aio.Resource):
             value=element.value))
 
     async def _process_MEASURANDS_1(self, cause, asdu_address, io_address, elements):  # NOQA
-        value = common.MeasurandValues()
+        value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
                 app.iec103.common.AsduType.MEASURANDS_1.value, i))
@@ -272,7 +272,7 @@ class MasterConnection(aio.Resource):
         _try_set_result(self._interrogate_future, None)
 
     async def _process_MEASURANDS_2(self, cause, asdu_address, io_address, elements):  # NOQA
-        value = common.MeasurandValues()
+        value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
                 app.iec103.common.AsduType.MEASURANDS_2.value, i))
