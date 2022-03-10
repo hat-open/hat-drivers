@@ -6,6 +6,7 @@ import pytest
 from hat import aio
 from hat.drivers import tcp
 from hat.drivers.iec60870 import apci
+from hat.drivers.iec60870 import app
 from hat.drivers.iec60870 import iec104
 
 
@@ -47,13 +48,14 @@ def gen_qualities(amount, quality_class):
         'time_invalid': [True, False, True],
         'sequence': [0, 31, 13]}
     cnt = 0
-    for q_dict in [dict(zip(samples.keys(), values))
-                   for values in zip(*samples.values())]:
-        yield quality_class(**{k: v for k, v in q_dict.items()
-                            if hasattr(quality_class, k)})
-        cnt += 1
-        if cnt == amount:
-            return
+    while True:
+        for q_dict in [dict(zip(samples.keys(), values))
+                       for values in zip(*samples.values())]:
+            yield quality_class(**{k: v for k, v in q_dict.items()
+                                if hasattr(quality_class, k)})
+            cnt += 1
+            if cnt == amount:
+                return
 
 
 def gen_times(amount):
@@ -80,16 +82,6 @@ def gen_times(amount):
 
 def assert_msg_default(msg1, msg2):
     assert msg1 == msg2
-
-
-async def assert_send_receive(msgs, assert_msg=assert_msg_default):
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
-
-    conn.send(msgs)
-    msgs_received = await conn.receive()
-    for msg_sent, msg_rec in zip(msgs, msgs_received):
-        assert_msg(msg_sent, msg_rec)
 
 
 def assert_msg_data_float(msg1, msg2):
@@ -133,6 +125,16 @@ def assert_msg_param_float(msg1, msg2):
                         rel_tol=1e-3)
 
 
+async def assert_send_receive(msgs, assert_msg=assert_msg_default):
+    conn_apci = MockApciConnection()
+    conn = iec104.Connection(conn_apci)
+
+    conn.send(msgs)
+    msgs_received = await conn.receive()
+    for msg_sent, msg_rec in zip(msgs, msgs_received):
+        assert_msg(msg_sent, msg_rec)
+
+
 async def test_connection():
     conn_apci = MockApciConnection()
     conn = iec104.Connection(conn_apci)
@@ -151,6 +153,27 @@ async def test_connection():
 
     await conn.wait_closed()
     assert conn_apci.is_closed
+
+
+async def test_drain():
+    conn_apci = MockApciConnection()
+    conn = iec104.Connection(conn_apci)
+
+    assert conn_apci._drain_queue.empty()
+
+    await conn.drain()
+    await conn_apci._drain_queue.get()
+
+    assert conn_apci._drain_queue.empty()
+
+    for _ in range(3):
+        await conn.drain()
+        await conn_apci._drain_queue.get()
+
+    assert conn_apci._drain_queue.empty()
+
+    conn.close()
+    await conn.wait_closed()
 
 
 @pytest.mark.parametrize("data", [
@@ -370,14 +393,17 @@ async def test_send_receive_cmd(is_test, asdu, io, orig,
         await assert_send_receive([msg])
 
 
+@pytest.mark.parametrize("param_change", (True,
+                                          False))
 @pytest.mark.parametrize(
-    "is_test, asdu, orig, param_change, cause",
-    zip((True, False, True), (0, 255, 65535), (1, 123, 255),
-        (True, False, True),
+    "is_test, asdu, orig, cause",
+    zip((True, False, True),
+        (0, 255, 65535),
+        (1, 123, 255),
         (iec104.InitializationResCause.LOCAL_POWER,
          iec104.InitializationResCause.LOCAL_RESET,
          iec104.InitializationResCause.REMOTE_RESET)))
-async def test_send_receive_init(is_test, asdu, orig, param_change, cause):
+async def test_send_receive_init(is_test, asdu, orig, cause, param_change):
     msg = iec104.InitializationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -388,16 +414,17 @@ async def test_send_receive_init(is_test, asdu, orig, param_change, cause):
     await assert_send_receive([msg])
 
 
+@pytest.mark.parametrize("req", (0,
+                                 255))
 @pytest.mark.parametrize(
-    "is_test, asdu, orig, req, cause",
+    "is_test, asdu, orig, cause",
     zip((True, False, True),
         (0, 255, 65535),
         (1, 123, 255),
-        (0, 123, 255),
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandReqCause.DEACTIVATION,
          iec104.CommandResCause.ACTIVATION_TERMINATION)))
-async def test_send_receive_interrogate(is_test, asdu, orig, req, cause):
+async def test_send_receive_interrogate(is_test, asdu, orig, cause, req):
     msg = iec104.InterrogationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -408,18 +435,18 @@ async def test_send_receive_interrogate(is_test, asdu, orig, req, cause):
     await assert_send_receive([msg])
 
 
+@pytest.mark.parametrize("req", (0, 63))
 @pytest.mark.parametrize("freeze", iec104.FreezeCode)
 @pytest.mark.parametrize(
-    "is_test, asdu, orig, req, cause",
+    "is_test, asdu, orig, cause",
     zip((True, False, True),
         (0, 255, 65535),
         (1, 123, 255),
-        (0, 13, 63),
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandResCause.UNKNOWN_TYPE,
          iec104.CommandResCause.UNKNOWN_ASDU_ADDRESS)))
-async def test_send_receive_cnt_interrogate(is_test, asdu, orig, req,
-                                            freeze, cause):
+async def test_send_receive_cnt_interrogate(is_test, asdu, orig, cause,
+                                            req, freeze):
     msg = iec104.CounterInterrogationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -573,22 +600,67 @@ async def test_send_receive_prameter_act(is_test, asdu, io, orig, qualifier,
     await assert_send_receive([msg])
 
 
-async def test_drain():
+def asdu_other_cause():
+    # generates asdu with cause that correspond to OtherCause
+    # for the corresponding message
+
+    # DataMsg
+    data_causes = {i.name for i in iec104.DataResCause}
+    for cause in app.iec104.common.CauseType:
+        if cause.name in data_causes:
+            continue
+        yield app.iec104.common.ASDU(
+                type=app.iec104.common.AsduType.M_SP_NA,
+                cause=app.iec104.common.Cause(type=cause,
+                                              is_negative_confirm=False,
+                                              is_test=False,
+                                              originator_address=0),
+                address=13,
+                ios=[app.iec104.common.IO(
+                        address=123,
+                        elements=[app.iec104.common.IoElement_M_SP_NA(
+                            value=iec104.SingleValue.ON,
+                            quality=iec104.IndicationQuality(
+                                invalid=False,
+                                not_topical=False,
+                                substituted=False,
+                                blocked=False))],
+                        time=None)])
+
+    # CommandMsg
+    cmd_causes = set(i.name for i in (*iec104.CommandReqCause,
+                                      *iec104.CommandResCause))
+    for cause in app.iec104.common.CauseType:
+        if cause.name in cmd_causes:
+            continue
+        yield app.iec104.common.ASDU(
+                type=app.iec104.common.AsduType.C_SC_NA,
+                cause=app.iec104.common.Cause(type=cause,
+                                              is_negative_confirm=False,
+                                              is_test=False,
+                                              originator_address=0),
+                address=13,
+                ios=[app.iec104.common.IO(
+                        address=123,
+                        elements=[app.iec104.common.IoElement_C_SC_NA(
+                            value=iec104.SingleValue.ON,
+                            select=True,
+                            qualifier=1)],
+                        time=None)])
+
+
+@pytest.mark.parametrize("asdu", asdu_other_cause())
+async def test_other_cause(asdu):
     conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
+    conn = iec104.Connection(conn=conn_apci)
 
-    assert conn_apci._drain_queue.empty()
+    # asdu is encoded with app.iec104.encoder.Encoder to bytes
+    asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
 
-    await conn.drain()
-    await conn_apci._drain_queue.get()
+    # bytes are set to queue to be received from connection
+    conn_apci._data_queue.put_nowait(asdu_bytes)
+    msgs = await conn.receive()
+    msg = msgs[0]
 
-    assert conn_apci._drain_queue.empty()
-
-    for _ in range(3):
-        await conn.drain()
-        await conn_apci._drain_queue.get()
-
-    assert conn_apci._drain_queue.empty()
-
-    conn.close()
-    await conn.wait_closed()
+    assert isinstance(msg.cause, int)
+    assert msg.cause == asdu.cause.type.value
