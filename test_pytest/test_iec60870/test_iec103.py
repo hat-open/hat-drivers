@@ -1,3 +1,4 @@
+import asyncio
 import math
 
 import pytest
@@ -103,9 +104,112 @@ async def test_time_sync(asdu_address, time):
     await master_conn.async_close()
 
 
-@pytest.mark.skip(reason='test not implemented')
-async def test_interrogate():
-    pass
+@pytest.mark.parametrize('data_causes', [
+    ['gi'],
+    ['gi', 'spontaneous', 'gi'],
+    ['gi', 'spontaneous', 'gi', 'gi', 'spontaneous']])
+async def test_interrogate(data_causes):
+    receive_queue = aio.Queue()
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn,
+                                          data_cb=receive_queue.put_nowait)
+
+    interrogate_future = asyncio.ensure_future(
+        master_conn.interrogate(asdu_address=0x01))
+    gi_initiation_asdu = await slave.receive()
+
+    assert gi_initiation_asdu.type == common.AsduType.GENERAL_INTERROGATION
+    assert gi_initiation_asdu.cause == common.Cause.GENERAL_INTERROGATION
+    assert gi_initiation_asdu.address == 0x01
+    assert len(gi_initiation_asdu.ios) == 1
+    assert gi_initiation_asdu.ios[0].address.function_type == 255
+    assert gi_initiation_asdu.ios[0].address.information_number == 0
+    assert len(gi_initiation_asdu.ios[0].elements) == 1
+    scan_number = gi_initiation_asdu.ios[0].elements[0].scan_number
+
+    value = common.DoubleValue.OFF
+    for data_cause, information_number in zip(
+            data_causes, range(len(data_causes))):
+        cause = (common.Cause.GENERAL_INTERROGATION if data_cause == 'gi'
+                 else common.Cause.SPONTANEOUS)
+        value = (common.DoubleValue.ON if value == common.DoubleValue.OFF
+                 else common.DoubleValue.OFF)
+        slave_asdu = common.ASDU(
+            type=common.AsduType.TIME_TAGGED_MESSAGE,
+            cause=cause,
+            address=0x01,
+            ios=[common.IO(
+                address=common.IoAddress(
+                    function_type=1, information_number=information_number),
+                elements=[common.IoElement_TIME_TAGGED_MESSAGE(
+                    common.DoubleWithTimeValue(
+                        value=value,
+                        time=default_time_four,
+                        supplementary=1))])])
+        await slave.send(slave_asdu)
+        master_data = await receive_queue.get()
+
+        assert master_data.asdu_address == slave_asdu.address
+        assert master_data.io_address == common.IoAddress(
+                function_type=1, information_number=information_number)
+        assert master_data.cause.value == cause.value
+        assert master_data.value == common.DoubleWithTimeValue(
+                value=value,
+                time=default_time_four,
+                supplementary=1)
+
+    assert not interrogate_future.done()
+
+    await slave.send(common.ASDU(
+        type=common.AsduType.GENERAL_INTERROGATION_TERMINATION,
+        cause=common.Cause.TERMINATION_OF_GENERAL_INTERROGATION,
+        address=0x01,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=255,
+                                     information_number=0),
+            elements=[
+                common.IoElement_GENERAL_INTERROGATION_TERMINATION(
+                    scan_number=scan_number)])]))
+
+    await interrogate_future
+    assert interrogate_future.done()
+    await slave.async_close()
+    await master_conn.async_close()
+
+
+async def test_interrogate_different_scan_number():
+
+    def termination_asdu(scan_number):
+        return common.ASDU(
+            type=common.AsduType.GENERAL_INTERROGATION_TERMINATION,
+            cause=common.Cause.TERMINATION_OF_GENERAL_INTERROGATION,
+            address=0x01,
+            ios=[common.IO(
+                address=common.IoAddress(function_type=255,
+                                         information_number=0),
+                elements=[
+                    common.IoElement_GENERAL_INTERROGATION_TERMINATION(
+                        scan_number=scan_number)])])
+
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn)
+
+    interrogate_future = asyncio.ensure_future(
+        master_conn.interrogate(asdu_address=0x01))
+    gi_initiation_asdu = await slave.receive()
+
+    assert len(gi_initiation_asdu.ios) == 1
+    assert len(gi_initiation_asdu.ios[0].elements) == 1
+    scan_number = gi_initiation_asdu.ios[0].elements[0].scan_number
+
+    await slave.send(termination_asdu((scan_number + 1) % 0x100))
+    assert not interrogate_future.done()
+    await slave.send(termination_asdu(scan_number))
+    await interrogate_future
+    assert interrogate_future.done()
+
+    await slave.async_close()
+    await master_conn.async_close()
 
 
 @pytest.mark.skip(reason='test not implemented')
@@ -220,46 +324,24 @@ async def test_generic_command():
     pass
 
 
-@pytest.mark.skip(reason='test not implemented')
-async def test_list_of_recorded_disturbances():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_order_for_disturbance_data_transmission():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_acknowledgement_for_disturbance_data_transmission():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_ready_for_transmission_of_disturbance_data():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_ready_for_transmission_of_a_channel():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_ready_for_transmission_of_tags():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_transmission_of_tags():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_transmission_of_disturbance_values():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_end_of_transmission():
-    pass
+async def test_transmission_of_disturbance_data():
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn)
+    slave_asdu = common.ASDU(
+        type=common.AsduType.LIST_OF_RECORDED_DISTURBANCES,
+        cause=common.Cause.TRANSMISSION_OF_DISTURBANCE_DATA,
+        address=1,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=1,
+                                     information_number=1),
+            elements=[common.IoElement_LIST_OF_RECORDED_DISTURBANCES(
+                fault_number=3,
+                trip=True,
+                transmitted=False,
+                test=False,
+                other=False,
+                time=default_time_seven)])])
+    await slave.send(slave_asdu)
+    # TODO: finish sequence when functionality implemented
+    await slave.async_close()
+    await master_conn.async_close()
