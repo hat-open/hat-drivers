@@ -611,3 +611,30 @@ def test_end_of_transmission(order_type, fault_number, channel):
         order_type=order_type,
         fault_number=fault_number,
         channel=channel)])
+
+
+@pytest.mark.parametrize('data, value, bit_offset, bit_size, signed', [
+    (b'\x00', 0.0, 0, 8, False),
+    (b'\xFF', 0.99609375, 0, 8, False),
+    (b'\x80', 0.5, 0, 8, False),
+    (b'\x01', 0.00390625, 0, 8, False),
+    (b'\x00', 0.0, 0, 8, True),
+    (b'\x70', 0.875, 0, 8, True),
+    (b'\x40', 0.5, 0, 8, True),
+    (b'\x01', 0.0078125, 0, 8, True),
+    (b'\x80', -1.0, 0, 8, True),
+    (b'\xFF', -0.0078125, 0, 8, True),
+    (b'\xC0', -0.5, 0, 8, True),
+    (b'\xF8\x7F', 0.999755859375, 3, 13, True),
+    (b'\x00\x40', 0.5, 3, 13, True),
+    (b'\x08\x00', 0.000244140625, 3, 13, True),
+    (b'\xF8\xFF', -0.000244140625, 3, 13, True),
+    (b'\xF8\xFF', -0.000244140625, 3, 13, True),
+    (b'\x08\x80', -0.999755859375, 3, 13, True)])
+def test_encode_decode_fixed(data, value, bit_offset, bit_size, signed):
+    encode = encoder._encode_fixed
+    decode = encoder._decode_fixed
+    decoded_value = decode(data, bit_offset, bit_size, signed)
+    encoded_data = encode(value, bit_offset, bit_size, signed)
+    assert value == decoded_value
+    assert data == bytes(encoded_data)
