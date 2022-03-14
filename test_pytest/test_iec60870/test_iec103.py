@@ -257,9 +257,145 @@ async def test_send_command(cause):
     await master_conn.async_close()
 
 
-@pytest.mark.skip(reason='test not implemented')
-async def test_interrogate_generic():
-    pass
+@pytest.mark.parametrize(
+    'counter, io_more_follows, data_count, value_type, value, values_count, '
+    'av_more_follows', [
+        (False, False, 5,
+         common.ValueType.INT, common.IntValue(13), 1, False),
+        (False, False, 1,
+         common.ValueType.INT, common.IntValue(13), 10, False),
+        (False, False, 2,
+         common.ValueType.INT, common.IntValue(13), 5, False)])
+async def test_interrogate_generic(counter, io_more_follows, data_count,
+                                   value_type, value, values_count,
+                                   av_more_follows):
+    receive_queue = aio.Queue()
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(
+        conn=conn, generic_data_cb=receive_queue.put_nowait)
+
+    ggi_future = asyncio.ensure_future(
+        master_conn.interrogate_generic(asdu_address=1))
+    ggi_asdu = await slave.receive()
+
+    assert ggi_asdu.type == common.AsduType.GENERIC_COMMAND
+    assert ggi_asdu.cause == common.Cause.GENERAL_INTERROGATION
+    assert ggi_asdu.address == 1
+    assert len(ggi_asdu.ios) == 1
+    assert ggi_asdu.ios[0].address == common.IoAddress(function_type=254,
+                                                       information_number=245)
+    assert len(ggi_asdu.ios[0].elements) == 1
+    assert ggi_asdu.ios[0].elements[0].data == []
+    return_identifier = ggi_asdu.ios[0].elements[0].return_identifier
+
+    data = [(common.Identification(group_id=0, entry_id=1),
+             common.DescriptiveData(
+                description=common.Description.VALUE_ARRAY,
+                value=common.ArrayValue(
+                    value_type=value_type,
+                    more_follows=av_more_follows,
+                    values=[value] * values_count)))] * data_count
+
+    ggi_response_asdu = common.ASDU(
+        type=common.AsduType.GENERIC_DATA,
+        cause=iec103.GenericDataCause.GENERAL_INTERROGATION,
+        address=1,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=254,
+                                     information_number=245),
+            elements=[common.IoElement_GENERIC_DATA(
+                return_identifier=return_identifier,
+                counter=counter,
+                more_follows=io_more_follows,
+                data=data)])])
+    await slave.send(ggi_response_asdu)
+
+    for i in range(data_count):
+        master_cb_generic_data = await receive_queue.get()
+        assert master_cb_generic_data.asdu_address == 1
+        assert master_cb_generic_data.io_address == common.IoAddress(
+            function_type=254, information_number=245)
+        assert master_cb_generic_data.cause == iec103.GenericDataCause.GENERAL_INTERROGATION  # NOQA
+        assert master_cb_generic_data.identification == common.Identification(
+            group_id=0, entry_id=1)
+        assert master_cb_generic_data.description == common.Description.VALUE_ARRAY  # NOQA
+        assert master_cb_generic_data.value == data[i][1].value
+
+    spontaneus_generic_data_asdu = common.ASDU(
+        type=common.AsduType.GENERIC_DATA,
+        cause=common.Cause.SPONTANEOUS,
+        address=1,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=254,
+                                     information_number=244),
+            elements=[common.IoElement_GENERIC_DATA(
+                return_identifier=0,
+                counter=counter,
+                more_follows=io_more_follows,
+                data=data)])])
+    await slave.send(spontaneus_generic_data_asdu)
+
+    for i in range(data_count):
+        master_cb_generic_data = await receive_queue.get()
+        assert master_cb_generic_data.asdu_address == 1
+        assert master_cb_generic_data.io_address == common.IoAddress(
+            function_type=254, information_number=244)
+        assert master_cb_generic_data.cause == iec103.GenericDataCause.SPONTANEOUS  # NOQA
+        assert master_cb_generic_data.identification == common.Identification(
+            group_id=0, entry_id=1)
+        assert master_cb_generic_data.description == common.Description.VALUE_ARRAY  # NOQA
+        assert master_cb_generic_data.value == data[i][1].value
+
+    assert not ggi_future.done()
+
+    ggi_termination_wrong_rii = common.ASDU(
+        type=common.AsduType.GENERIC_DATA,
+        cause=common.Cause.TERMINATION_OF_GENERAL_INTERROGATION,
+        address=1,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=254,
+                                     information_number=245),
+            elements=[common.IoElement_GENERIC_DATA(
+                return_identifier=1,
+                counter=counter,
+                more_follows=io_more_follows,
+                data=[])])])
+    await slave.send(ggi_termination_wrong_rii)
+
+    assert not ggi_future.done()
+
+    ggi_termination = common.ASDU(
+        type=common.AsduType.GENERIC_DATA,
+        cause=common.Cause.TERMINATION_OF_GENERAL_INTERROGATION,
+        address=1,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=254,
+                                     information_number=245),
+            elements=[common.IoElement_GENERIC_DATA(
+                return_identifier=return_identifier,
+                counter=counter,
+                more_follows=io_more_follows,
+                data=[])])])
+    await slave.send(ggi_termination)
+
+    await ggi_future
+    assert ggi_future.done()
+
+    await slave.async_close()
+    await master_conn.async_close()
+
+
+def compare_measurands_2_data(master_data, value):
+    for i, v in enumerate(master_data.value.values.items()):
+        measurand_type, measurand_value = v
+        assert measurand_type == iec103.MeasurandType((
+            common.AsduType.MEASURANDS_2.value, i))
+        assert measurand_value.overflow == value[i].overflow
+        assert measurand_value.invalid == value[i].invalid
+        assert math.isclose(measurand_value.value,
+                            value[i].value,
+                            rel_tol=1e-2)
+        return True
 
 
 @pytest.mark.parametrize('asdu_type, value, cmp_fn', [
@@ -288,7 +424,21 @@ async def test_interrogate_generic():
                                            time=default_time_four),
      lambda recv_val, sent_val: math.isclose(recv_val.value.value,
                                              sent_val.value,
-                                             rel_tol=1e-3))])
+                                             rel_tol=1e-3)),
+    (common.AsduType.MEASURANDS_2,
+     [common.MeasurandValue(overflow=False, invalid=False, value=0.1)],
+     compare_measurands_2_data),
+    (common.AsduType.MEASURANDS_2,
+     [common.MeasurandValue(overflow=False, invalid=False, value=-0.1),
+      common.MeasurandValue(overflow=False, invalid=False, value=0.5),
+      common.MeasurandValue(overflow=False, invalid=False, value=-0.5),
+      common.MeasurandValue(overflow=False, invalid=False, value=0.9999),
+      common.MeasurandValue(overflow=False, invalid=False, value=-0.9999),
+      common.MeasurandValue(overflow=False, invalid=False, value=0.9999),
+      common.MeasurandValue(overflow=False, invalid=False, value=-1.0),
+      common.MeasurandValue(overflow=False, invalid=False, value=0.5936),
+      common.MeasurandValue(overflow=False, invalid=False, value=-0.5936)],
+     compare_measurands_2_data)])
 async def test_spontaneous(asdu_type, value, cmp_fn):
     receive_queue = aio.Queue()
     conn, slave = create_connection_slave_pair()
@@ -297,12 +447,19 @@ async def test_spontaneous(asdu_type, value, cmp_fn):
     element = getattr(common, f'IoElement_{asdu_type.name}')
     io_addr = common.IoAddress(function_type=1, information_number=1)
 
+    elements = []
+    if isinstance(value, list):
+        elements = [element(v) for v in value]
+    else:
+        elements = [element(value)]
+
     slave_asdu = common.ASDU(
         type=asdu_type,
         cause=common.Cause.SPONTANEOUS,
         address=1,
-        ios=[common.IO(address=io_addr, elements=[element(value)])])
+        ios=[common.IO(address=io_addr, elements=elements)])
     await slave.send(slave_asdu)
+
     master_data = await receive_queue.get()
 
     assert master_data.asdu_address == slave_asdu.address
@@ -337,16 +494,6 @@ async def test_identification():
     await slave.send(slave_asdu)
     await slave.async_close()
     await master_conn.async_close()
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_measurands_2():
-    pass
-
-
-@pytest.mark.skip(reason='test not implemented')
-async def test_generic_data():
-    pass
 
 
 @pytest.mark.skip(reason='test not implemented')
