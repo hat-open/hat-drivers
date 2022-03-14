@@ -212,9 +212,49 @@ async def test_interrogate_different_scan_number():
     await master_conn.async_close()
 
 
-@pytest.mark.skip(reason='test not implemented')
-async def test_send_command():
-    pass
+@pytest.mark.parametrize('cause', [
+    common.Cause.GENERAL_COMMAND,
+    common.Cause.GENERAL_COMMAND_NACK
+])
+async def test_send_command(cause):
+    receive_queue = aio.Queue()
+    conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn,
+                                          data_cb=receive_queue.put_nowait)
+
+    io_address = common.IoAddress(function_type=33, information_number=44)
+
+    send_command_future = asyncio.ensure_future(
+        master_conn.send_command(asdu_address=11,
+                                 io_address=io_address,
+                                 value=common.DoubleValue.ON))
+    ab = await slave.receive()
+    assert ab.type == common.AsduType.GENERAL_COMMAND
+    assert ab.cause == common.Cause.GENERAL_COMMAND
+    assert ab.address == 11
+    assert len(ab.ios) == 1
+    assert ab.ios[0].address == io_address
+    assert len(ab.ios[0].elements) == 1
+    assert ab.ios[0].elements[0].value == common.DoubleValue.ON
+
+    assert not send_command_future.done()
+
+    slave_asdu = common.ASDU(
+        type=common.AsduType.TIME_TAGGED_MESSAGE,
+        cause=cause,
+        address=0x01,
+        ios=[common.IO(
+            address=common.IoAddress(function_type=1, information_number=11),
+            elements=[common.IoElement_TIME_TAGGED_MESSAGE(
+                common.DoubleWithTimeValue(
+                    value=common.DoubleValue.ON,
+                    time=default_time_four,
+                    supplementary=0))])])
+    await slave.send(slave_asdu)
+    await send_command_future
+
+    await slave.async_close()
+    await master_conn.async_close()
 
 
 @pytest.mark.skip(reason='test not implemented')
