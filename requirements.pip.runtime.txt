@@ -1,7 +1,7 @@
 aiohttp ~= 3.8.1
 hat-aio ~= 0.6.0
 hat-asn1 ~= 0.5.1
-hat-json ~= 0.5.3
+hat-json ~= 0.5.5
 hat-peg ~= 0.5.1
 hat-util ~= 0.5.5
 pyserial ~= 3.5
