@@ -387,6 +387,7 @@ class InterrogationMsg(typing.NamedTuple):
     asdu_address: AsduAddress
     request: int
     """request in range [0, 255]"""
+    is_negative_confirm: bool
     cause: CommandCause
 
 
@@ -397,6 +398,7 @@ class CounterInterrogationMsg(typing.NamedTuple):
     request: int
     """request in range [0, 63]"""
     freeze: FreezeCode
+    is_negative_confirm: bool
     cause: CommandCause
 
 

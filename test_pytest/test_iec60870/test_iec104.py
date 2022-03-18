@@ -417,19 +417,22 @@ async def test_send_receive_init(is_test, asdu, orig, cause, param_change):
 @pytest.mark.parametrize("req", (0,
                                  255))
 @pytest.mark.parametrize(
-    "is_test, asdu, orig, cause",
+    "is_test, asdu, orig, is_negative_confirm, cause",
     zip((True, False, True),
         (0, 255, 65535),
         (1, 123, 255),
+        (False, True, False),
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandReqCause.DEACTIVATION,
          iec104.CommandResCause.ACTIVATION_TERMINATION)))
-async def test_send_receive_interrogate(is_test, asdu, orig, cause, req):
+async def test_send_receive_interrogate(is_test, asdu, orig,
+                                        is_negative_confirm, cause, req):
     msg = iec104.InterrogationMsg(
         is_test=is_test,
         originator_address=orig,
         asdu_address=asdu,
         request=req,
+        is_negative_confirm=is_negative_confirm,
         cause=cause)
 
     await assert_send_receive([msg])
@@ -438,21 +441,24 @@ async def test_send_receive_interrogate(is_test, asdu, orig, cause, req):
 @pytest.mark.parametrize("req", (0, 63))
 @pytest.mark.parametrize("freeze", iec104.FreezeCode)
 @pytest.mark.parametrize(
-    "is_test, asdu, orig, cause",
+    "is_test, asdu, orig, is_negative_confirm, cause",
     zip((True, False, True),
         (0, 255, 65535),
         (1, 123, 255),
+        (False, True, False),
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandResCause.UNKNOWN_TYPE,
          iec104.CommandResCause.UNKNOWN_ASDU_ADDRESS)))
-async def test_send_receive_cnt_interrogate(is_test, asdu, orig, cause,
-                                            req, freeze):
+async def test_send_receive_cnt_interrogate(is_test, asdu, orig,
+                                            is_negative_confirm, cause, req,
+                                            freeze):
     msg = iec104.CounterInterrogationMsg(
         is_test=is_test,
         originator_address=orig,
         asdu_address=asdu,
         request=req,
         freeze=freeze,
+        is_negative_confirm=is_negative_confirm,
         cause=cause)
 
     await assert_send_receive([msg])

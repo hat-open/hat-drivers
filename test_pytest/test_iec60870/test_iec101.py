@@ -436,7 +436,8 @@ async def test_send_receive_init(is_test, asdu, asdu_size, io_size,
 @pytest.mark.parametrize("req", (0,
                                  255))
 @pytest.mark.parametrize(
-    "is_test, asdu, asdu_size, io_size, orig, cause, cause_size",
+    "is_test, asdu, asdu_size, io_size, orig, is_negative_confirm, "
+    "cause, cause_size",
     zip((True, False, True),
         (0, 255, 65535),
         (iec101.AsduAddressSize.ONE,
@@ -446,6 +447,7 @@ async def test_send_receive_init(is_test, asdu, asdu_size, io_size,
          iec101.IoAddressSize.TWO,
          iec101.IoAddressSize.THREE),
         (0, 123, 255),
+        (False, True, False),
         (iec101.CommandReqCause.ACTIVATION,
          iec101.CommandReqCause.DEACTIVATION,
          iec101.CommandResCause.ACTIVATION_TERMINATION),
@@ -453,12 +455,14 @@ async def test_send_receive_init(is_test, asdu, asdu_size, io_size,
          iec101.CauseSize.TWO,
          iec101.CauseSize.TWO)))
 async def test_send_receive_interrogate(is_test, asdu, asdu_size, io_size,
-                                        orig, cause, cause_size, req):
+                                        orig, is_negative_confirm,
+                                        cause, cause_size, req):
     msg = iec101.InterrogationMsg(
         is_test=is_test,
         originator_address=orig,
         asdu_address=asdu,
         request=req,
+        is_negative_confirm=is_negative_confirm,
         cause=cause)
 
     await assert_send_receive([msg], cause_size, asdu_size, io_size)
@@ -467,7 +471,8 @@ async def test_send_receive_interrogate(is_test, asdu, asdu_size, io_size,
 @pytest.mark.parametrize("req", (0, 63))
 @pytest.mark.parametrize("freeze", iec101.FreezeCode)
 @pytest.mark.parametrize(
-    "is_test, asdu, asdu_size, io_size, orig, cause, cause_size",
+    "is_test, asdu, asdu_size, io_size, orig, is_negative_confirm, "
+    "cause, cause_size",
     zip((True, False, True),
         (0, 255, 65535),
         (iec101.AsduAddressSize.ONE,
@@ -477,6 +482,7 @@ async def test_send_receive_interrogate(is_test, asdu, asdu_size, io_size,
          iec101.IoAddressSize.TWO,
          iec101.IoAddressSize.THREE),
         (0, 123, 255),
+        (False, True, False),
         (iec101.CommandReqCause.ACTIVATION,
          iec101.CommandReqCause.DEACTIVATION,
          iec101.CommandResCause.ACTIVATION_TERMINATION),
@@ -484,14 +490,15 @@ async def test_send_receive_interrogate(is_test, asdu, asdu_size, io_size,
          iec101.CauseSize.TWO,
          iec101.CauseSize.TWO)))
 async def test_send_receive_cnt_interrogate(is_test, asdu, asdu_size, io_size,
-                                            orig, cause, cause_size, req,
-                                            freeze):
+                                            orig, is_negative_confirm, cause,
+                                            cause_size, req, freeze):
     msg = iec101.CounterInterrogationMsg(
         is_test=is_test,
         originator_address=orig,
         asdu_address=asdu,
         request=req,
         freeze=freeze,
+        is_negative_confirm=is_negative_confirm,
         cause=cause)
 
     await assert_send_receive([msg], cause_size, asdu_size, io_size)

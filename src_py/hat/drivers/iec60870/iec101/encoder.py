@@ -119,6 +119,7 @@ def _decode_io_element(asdu, io, io_element):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             request=io_element.qualifier,
+            is_negative_confirm=asdu.cause.is_negative_confirm,
             cause=_decode_cause(asdu.cause.type.value,
                                 common.CommandReqCause,
                                 common.CommandResCause))
@@ -130,6 +131,7 @@ def _decode_io_element(asdu, io, io_element):
             asdu_address=asdu.address,
             request=io_element.request,
             freeze=io_element.freeze,
+            is_negative_confirm=asdu.cause.is_negative_confirm,
             cause=_decode_cause(asdu.cause.type.value,
                                 common.CommandReqCause,
                                 common.CommandResCause))
@@ -385,6 +387,7 @@ def _encode_msg(msg):
         cause_type = app.iec101.common.CauseType(
             msg.cause.value if isinstance(msg.cause, enum.Enum)
             else msg.cause)
+        is_negative_confirm = msg.is_negative_confirm
         io_element = app.iec101.common.IoElement_C_IC_NA(
             qualifier=msg.request)
 
@@ -393,6 +396,7 @@ def _encode_msg(msg):
         cause_type = app.iec101.common.CauseType(
             msg.cause.value if isinstance(msg.cause, enum.Enum)
             else msg.cause)
+        is_negative_confirm = msg.is_negative_confirm
         io_element = app.iec101.common.IoElement_C_CI_NA(
             request=msg.request,
             freeze=msg.freeze)
