@@ -9,7 +9,7 @@ extensions = [
 
 version = (root_path / 'VERSION').read_text().strip()
 project = 'hat-drivers'
-copyright = '2020-2021, Hat Open AUTHORS'
+copyright = '2020-2022, Hat Open AUTHORS'
 master_doc = 'index'
 
 html_theme = 'furo'
