@@ -38,6 +38,8 @@ def _decode_asdu(asdu):
 
 
 def _decode_io_element(asdu, io, io_element, io_element_index):
+    io_address = io.address + io_element_index
+
     if asdu.type in {app.iec104.common.AsduType.M_SP_NA,
                      app.iec104.common.AsduType.M_DP_NA,
                      app.iec104.common.AsduType.M_ST_NA,
@@ -63,7 +65,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address + io_element_index,
+            io_address=io_address,
             data=_decode_data_io_element(io_element, asdu.type),
             time=io.time,
             cause=_decode_cause(asdu.cause.type.value,
@@ -87,7 +89,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address,
+            io_address=io_address,
             command=_decode_command_io_element(io_element, asdu.type),
             is_negative_confirm=asdu.cause.is_negative_confirm,
             time=io.time,
@@ -132,7 +134,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address,
+            io_address=io_address,
             cause=_decode_cause(asdu.cause.type.value,
                                 common.ReadReqCause,
                                 common.ReadResCause))
@@ -175,7 +177,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address,
+            io_address=io_address,
             parameter=_decode_parameter_io_element(io_element, asdu.type),
             cause=_decode_cause(asdu.cause.type.value,
                                 common.ParameterReqCause,
@@ -186,7 +188,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address,
+            io_address=io_address,
             qualifier=io_element.qualifier,
             cause=_decode_cause(asdu.cause.type.value,
                                 common.ParameterActivationReqCause,
