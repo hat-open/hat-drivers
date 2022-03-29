@@ -666,7 +666,49 @@ async def test_other_cause(asdu):
     # bytes are set to queue to be received from connection
     conn_apci._data_queue.put_nowait(asdu_bytes)
     msgs = await conn.receive()
+    assert len(msgs) == 1
     msg = msgs[0]
 
     assert isinstance(msg.cause, int)
     assert msg.cause == asdu.cause.type.value
+
+
+async def test_sequence_of_ioes():
+    conn_apci = MockApciConnection()
+    conn = iec104.Connection(conn=conn_apci)
+
+    ioes_number = 3
+
+    # asdu is encoded with app.iec104.encoder.Encoder to bytes
+    quality = app.iec104.common.MeasurementQuality(invalid=False,
+                                                   not_topical=False,
+                                                   substituted=False,
+                                                   blocked=False,
+                                                   overflow=False)
+    io_address = 123
+    asdu = app.iec104.common.ASDU(
+                type=app.iec104.common.AsduType.M_ME_NB,
+                cause=app.iec104.common.Cause(
+                    type=app.iec104.common.CauseType.SPONTANEOUS,
+                    is_negative_confirm=False,
+                    is_test=False,
+                    originator_address=0),
+                address=13,
+                ios=[app.iec104.common.IO(
+                        address=io_address,
+                        elements=[
+                            app.iec104.common.IoElement_M_ME_NB(
+                                value=iec104.ScaledValue(value=v),
+                                quality=quality)
+                            for v in range(ioes_number)],
+                        time=None)])
+    asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
+
+    # bytes are set to queue to be received from connection
+    conn_apci._data_queue.put_nowait(asdu_bytes)
+    msgs = await conn.receive()
+    assert len(msgs) == ioes_number
+
+    for i, msg in enumerate(msgs):
+        assert msg.data.value.value == i
+        assert msg.io_address == io_address + i

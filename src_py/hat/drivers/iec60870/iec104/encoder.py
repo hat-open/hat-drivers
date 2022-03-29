@@ -33,11 +33,11 @@ def _encode_msgs(msgs):
 
 def _decode_asdu(asdu):
     for io in asdu.ios:
-        for io_element in io.elements:
-            yield _decode_io_element(asdu, io, io_element)
+        for ioe_i, io_element in enumerate(io.elements):
+            yield _decode_io_element(asdu, io, io_element, ioe_i)
 
 
-def _decode_io_element(asdu, io, io_element):
+def _decode_io_element(asdu, io, io_element, io_element_index):
     if asdu.type in {app.iec104.common.AsduType.M_SP_NA,
                      app.iec104.common.AsduType.M_DP_NA,
                      app.iec104.common.AsduType.M_ST_NA,
@@ -63,7 +63,7 @@ def _decode_io_element(asdu, io, io_element):
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
-            io_address=io.address,
+            io_address=io.address + io_element_index,
             data=_decode_data_io_element(io_element, asdu.type),
             time=io.time,
             cause=_decode_cause(asdu.cause.type.value,
