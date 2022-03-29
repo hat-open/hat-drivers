@@ -4,7 +4,7 @@ from pathlib import Path
 root_path = Path(__file__).parent.parent.resolve()
 
 extensions = [
-    'sphinx.ext.todo',
+    'sphinx.ext.todo'
 ]
 
 version = (root_path / 'VERSION').read_text().strip()

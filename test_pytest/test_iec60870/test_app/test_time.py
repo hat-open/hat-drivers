@@ -63,7 +63,7 @@ def test_time_from_to_datetime(invalid):
     dtime_local = datetime.datetime.now()
     dtime = dtime_local.astimezone(datetime.timezone.utc)
     dtime = dtime.replace(
-        microsecond=round(dtime.microsecond / 1000) * 1000)
+        microsecond=(dtime.microsecond // 1000) * 1000)
     t_60870 = common.time_from_datetime(dtime, invalid=invalid)
     assert t_60870.invalid is invalid
     assert t_60870.minutes == dtime_local.minute

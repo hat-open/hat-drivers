@@ -8,4 +8,4 @@ API
 
 API reference is available as part of generated documentation:
 
-    * `Python hat.drivers.copp module <py_api/hat/drivers/copp/index.html>`_
+    * `Python hat.drivers.copp module <py_api/hat/drivers/copp.html>`_
