@@ -89,6 +89,10 @@ def task_asn1():
         src_paths=[schemas_asn1_dir / 'mms.asn'],
         dst_path=src_py_dir / 'hat/drivers/mms/asn1_repo.json')
 
+    yield _get_subtask_asn1(
+        src_paths=[schemas_asn1_dir / 'snmp.asn'],
+        dst_path=src_py_dir / 'hat/drivers/snmp/asn1_repo.json')
+
 
 def _get_subtask_asn1(src_paths, dst_path):
 
