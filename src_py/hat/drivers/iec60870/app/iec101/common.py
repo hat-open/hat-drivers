@@ -15,6 +15,9 @@ AsduAddress = int
 IoAddress = int
 """IO address in range [0, 255] or [0, 65535] or [0, 16777215]"""
 
+OtherCauseType = int
+"""Other cause type in range [0, 63]"""
+
 
 class AsduType(enum.Enum):
     M_SP_NA = 1
@@ -121,7 +124,7 @@ class CauseType(enum.Enum):
 
 
 class Cause(typing.NamedTuple):
-    type: CauseType
+    type: typing.Union[CauseType, OtherCauseType]
     is_negative_confirm: bool
     is_test: bool
     originator_address: OriginatorAddress

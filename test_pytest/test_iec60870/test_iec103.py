@@ -298,7 +298,7 @@ async def test_interrogate_generic(counter, io_more_follows, data_count,
 
     ggi_response_asdu = common.ASDU(
         type=common.AsduType.GENERIC_DATA,
-        cause=iec103.GenericDataCause.GENERAL_INTERROGATION,
+        cause=common.Cause.GENERAL_INTERROGATION,
         address=1,
         ios=[common.IO(
             address=common.IoAddress(function_type=254,

@@ -38,7 +38,7 @@ ProtectionCommandValue = app.iec101.common.ProtectionCommandValue
 StatusValue = app.iec101.common.StatusValue
 
 OtherCause = int
-"""values defined by `app.iec101.common.CauseType`"""
+"""Other cause in range [0, 63]"""
 
 
 class DataResCause(enum.Enum):

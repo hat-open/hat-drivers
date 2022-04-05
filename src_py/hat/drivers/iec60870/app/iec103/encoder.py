@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import itertools
 import math
 import struct
@@ -23,7 +24,7 @@ class Encoder:
         asdu = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
-        cause = common.Cause(asdu.cause)
+        cause = _decode_cause(asdu.cause)
         address = asdu.address
         ios = [common.IO(address=_decode_io_address(io.address),
                          elements=io.elements)
@@ -38,7 +39,7 @@ class Encoder:
 
     def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
         asdu_type = asdu.type.value
-        cause = asdu.cause.value
+        cause = _encode_cause(asdu.cause)
         address = asdu.address
         ios = [encoder.common.IO(address=_encode_io_address(io.address),
                                  elements=io.elements,
@@ -51,6 +52,16 @@ class Encoder:
                                    ios=ios)
 
         return self._encoder.encode_asdu(asdu)
+
+
+def _decode_cause(value):
+    with contextlib.suppress(ValueError):
+        return common.Cause(value)
+    return value
+
+
+def _encode_cause(cause):
+    return cause.value if isinstance(cause, common.Cause) else cause
 
 
 def _decode_io_address(io_address):

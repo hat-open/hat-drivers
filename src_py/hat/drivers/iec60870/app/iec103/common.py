@@ -6,6 +6,13 @@ from hat.drivers.iec60870.app.common import (Time,
                                              Bytes)
 
 
+AsduAddress = int
+"""ASDU address in range [0, 255]"""
+
+OtherCause = int
+"""Other cause in range [0, 255]"""
+
+
 class AsduType(enum.Enum):
     TIME_TAGGED_MESSAGE = 1
     TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME = 2
@@ -509,7 +516,6 @@ class IO(typing.NamedTuple):
 
 class ASDU(typing.NamedTuple):
     type: AsduType
-    cause: Cause
-    address: int
-    """address in range [0, 255]"""
+    cause: typing.Union[Cause, OtherCause]
+    address: AsduAddress
     ios: typing.List[IO]

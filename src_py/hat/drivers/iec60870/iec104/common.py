@@ -37,7 +37,7 @@ ProtectionCommandValue = iec101.ProtectionCommandValue
 StatusValue = iec101.StatusValue
 
 OtherCause = int
-"""values defined by `app.iec104.common.CauseType`"""
+"""Other cause in range [0, 63]"""
 
 DataResCause = iec101.DataResCause
 DataCause = iec101.DataCause

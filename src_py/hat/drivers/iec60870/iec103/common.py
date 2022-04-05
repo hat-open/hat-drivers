@@ -5,6 +5,8 @@ from hat.drivers.iec60870 import app
 
 
 Bytes = app.iec103.common.Bytes
+AsduAddress = app.iec103.common.AsduAddress
+OtherCause = app.iec103.common.OtherCause
 Description = app.iec103.common.Description
 IoAddress = app.iec103.common.IoAddress
 Identification = app.iec103.common.Identification
@@ -37,10 +39,6 @@ ReplyValue = app.iec103.common.ReplyValue
 ArrayValue = app.iec103.common.ArrayValue
 IndexValue = app.iec103.common.IndexValue
 Value = app.iec103.common.Value
-
-
-AsduAddress = int
-"""ASDU address in range [0, 255]"""
 
 
 class DataCause(enum.Enum):
@@ -89,7 +87,7 @@ class MeasurandValues(typing.NamedTuple):
 class Data(typing.NamedTuple):
     asdu_address: AsduAddress
     io_address: IoAddress
-    cause: typing.Optional[DataCause]
+    cause: typing.Union[DataCause, OtherCause]
     value: typing.Union[DoubleWithTimeValue,
                         DoubleWithRelativeTimeValue,
                         MeasurandValues,
@@ -99,7 +97,7 @@ class Data(typing.NamedTuple):
 class GenericData(typing.NamedTuple):
     asdu_address: AsduAddress
     io_address: IoAddress
-    cause: typing.Optional[GenericDataCause]
+    cause: typing.Union[GenericDataCause, OtherCause]
     identification: Identification
     description: Description
     value: ArrayValue

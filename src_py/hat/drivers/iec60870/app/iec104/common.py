@@ -74,6 +74,7 @@ class AsduType(enum.Enum):
 
 
 CauseType = iec101.common.CauseType
+OtherCauseType = iec101.common.OtherCauseType
 Cause = iec101.common.Cause
 
 QualityType = iec101.common.QualityType

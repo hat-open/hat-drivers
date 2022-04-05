@@ -418,10 +418,10 @@ class _InformationNumber(enum.Enum):
     WRITE_ENTRY_ABORT = 251
 
 
-def _try_decode_enum(value, enum_cls, default=None):
+def _try_decode_enum(value, enum_cls):
     with contextlib.suppress(ValueError):
         return enum_cls(value)
-    return default
+    return value
 
 
 def _try_set_exception(future, exc):

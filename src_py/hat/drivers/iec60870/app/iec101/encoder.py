@@ -1,3 +1,4 @@
+import contextlib
 import struct
 import typing
 
@@ -82,7 +83,7 @@ asdu_type_time_sizes = {common.AsduType.M_SP_TA.value: common.TimeSize.THREE,
 def decode_cause(cause: int,
                  cause_size: common.CauseSize
                  ) -> common.Cause:
-    cause_type = common.CauseType(cause & 0x3F)
+    cause_type = decode_cause_type(cause & 0x3F)
     is_negative_confirm = bool(cause & 0x40)
     is_test = bool(cause & 0x80)
 
@@ -106,7 +107,7 @@ def encode_cause(cause: common.Cause,
                  ) -> int:
     result = ((0x80 if cause.is_test else 0) |
               (0x40 if cause.is_negative_confirm else 0) |
-              cause.type.value)
+              encode_cause_type(cause.type))
 
     if cause_size == common.CauseSize.ONE:
         return result
@@ -115,6 +116,21 @@ def encode_cause(cause: common.Cause,
         return result | (cause.originator_address << 8)
 
     raise ValueError('unsupported cause size')
+
+
+def decode_cause_type(value: int
+                      ) -> typing.Union[common.CauseType,
+                                        common.OtherCauseType]:
+    with contextlib.suppress(ValueError):
+        return common.CauseType(value)
+    return value
+
+
+def encode_cause_type(cause_type: typing.Union[common.CauseType,
+                                               common.OtherCauseType]
+                      ) -> int:
+    return (cause_type.value if isinstance(cause_type, common.CauseType)
+            else cause_type)
 
 
 def decode_io_element(io_bytes: common.Bytes,
