@@ -226,14 +226,14 @@ class MasterConnection(aio.Resource):
             await _try_aio_call(self._data_cb, common.Data(
                 asdu_address=asdu_address,
                 io_address=io_address,
-                cause=_try_decode_enum(cause.value, common.DataCause),
+                cause=_try_decode_cause(cause, common.DataCause),
                 value=element.value))
 
     async def _process_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME(self, cause, asdu_address, io_address, element):  # NOQA
         await _try_aio_call(self._data_cb, common.Data(
             asdu_address=asdu_address,
             io_address=io_address,
-            cause=_try_decode_enum(cause.value, common.DataCause),
+            cause=_try_decode_cause(cause, common.DataCause),
             value=element.value))
 
     async def _process_MEASURANDS_1(self, cause, asdu_address, io_address, elements):  # NOQA
@@ -246,14 +246,14 @@ class MasterConnection(aio.Resource):
         await _try_aio_call(self._data_cb, common.Data(
             asdu_address=asdu_address,
             io_address=io_address,
-            cause=_try_decode_enum(cause.value, common.DataCause),
+            cause=_try_decode_cause(cause, common.DataCause),
             value=value))
 
     async def _process_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME(self, cause, asdu_address, io_address, element):  # NOQA
         await _try_aio_call(self._data_cb, common.Data(
             asdu_address=asdu_address,
             io_address=io_address,
-            cause=_try_decode_enum(cause.value, common.DataCause),
+            cause=_try_decode_cause(cause, common.DataCause),
             value=element.value))
 
     async def _process_IDENTIFICATION(self, cause, asdu_address, io_address, element):  # NOQA
@@ -281,7 +281,7 @@ class MasterConnection(aio.Resource):
         await _try_aio_call(self._data_cb, common.Data(
             asdu_address=asdu_address,
             io_address=io_address,
-            cause=_try_decode_enum(cause.value, common.DataCause),
+            cause=_try_decode_cause(cause, common.DataCause),
             value=value))
 
     async def _process_GENERIC_DATA(self, cause, asdu_address, io_address, element):  # NOQA
@@ -290,7 +290,7 @@ class MasterConnection(aio.Resource):
                 _try_set_result(self._interrogate_generic_future, None)
 
         else:
-            data_cause = _try_decode_enum(cause.value, common.GenericDataCause)
+            data_cause = _try_decode_cause(cause, common.GenericDataCause)
             for identification, data in element.data:
                 await _try_aio_call(self._generic_data_cb, common.GenericData(
                     asdu_address=asdu_address,
@@ -418,7 +418,8 @@ class _InformationNumber(enum.Enum):
     WRITE_ENTRY_ABORT = 251
 
 
-def _try_decode_enum(value, enum_cls):
+def _try_decode_cause(cause, enum_cls):
+    value = cause.value if isinstance(cause, enum.Enum) else cause
     with contextlib.suppress(ValueError):
         return enum_cls(value)
     return value
