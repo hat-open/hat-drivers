@@ -74,7 +74,7 @@ async def connect(request_cb: RequestCb,
                                    user_data=(_mms_syntax_name, req_user_data))
     try:
         res_syntax_name, res_user_data = acse_conn.conn_res_user_data
-        if not asn1.is_oid_eq(res_syntax_name, _mms_syntax_name):
+        if res_syntax_name != _mms_syntax_name:
             raise Exception("invalid syntax name")
         initiate_res = _decode(res_user_data)
         if initiate_res[0] != 'initiate-ResponsePDU':
@@ -100,7 +100,7 @@ async def listen(connection_cb: ConnectionCb,
 
     async def on_validate(syntax_names, user_data):
         syntax_name, req_user_data = user_data
-        if not asn1.is_oid_eq(syntax_name, _mms_syntax_name):
+        if syntax_name != _mms_syntax_name:
             raise Exception('invalid mms syntax name')
         initiate_req = _decode(req_user_data)
         if initiate_req[0] != 'initiate-RequestPDU':
@@ -249,7 +249,7 @@ class Connection(aio.Resource):
         try:
             while running:
                 syntax_name, entity = await self._acse_conn.read()
-                if not asn1.is_oid_eq(syntax_name, _mms_syntax_name):
+                if syntax_name != _mms_syntax_name:
                     continue
                 pdu = _decode(entity)
                 running = await self._process_pdu(pdu)
@@ -352,16 +352,10 @@ _service_support[18] = True  # output
 _service_support[83] = True  # conclude
 
 
-_mms_syntax_name = [('iso', 1),
-                    ('standard', 0),
-                    ('iso9506', 9506),
-                    ('part', 2),
-                    ('mms-abstract-syntax-version1', 1)]
-_mms_app_context_name = [('iso', 1),
-                         ('standard', 0),
-                         ('iso9506', 9506),
-                         ('part', 2),
-                         ('mms-annex-version1', 3)]
+# (iso, standard, iso9506, part, mms-abstract-syntax-version1)
+_mms_syntax_name = (1, 0, 9506, 2, 1)
+# (iso, standard, iso9506, part, mms-annex-version1)
+_mms_app_context_name = (1, 0, 9506, 2, 3)
 _encoder = asn1.Encoder(asn1.Encoding.BER,
                         asn1.Repository.from_json(Path(__file__).parent /
                                                   'asn1_repo.json'))

@@ -100,7 +100,7 @@ async def test_can_connect(connection_count, create_server):
     ), (
         mms.IdentifyRequest(),
         mms.IdentifyResponse(vendor='a', model='b', revision='c',
-                             syntaxes=[[2, 1, 3], [1, 2, 5]])
+                             syntaxes=[(2, 1, 3), (1, 2, 5)])
     ), (
         mms.GetVariableAccessAttributesRequest(value='x'),
         mms.GetVariableAccessAttributesResponse(
@@ -319,7 +319,7 @@ async def test_type_description_serialization(create_server,
     [mms.GeneralizedTimeData('19851106210627.3')],
     [mms.IntegerData(100)],
     [mms.MmsStringData('abcxyz')],
-    [mms.ObjIdData([0, 1, 1, 4, 1203])],
+    [mms.ObjIdData((0, 1, 1, 4, 1203))],
     [mms.OctetStringData(b'34104332')],
     [mms.StructureData([mms.MmsStringData('xyz'),
                         mms.IntegerData(321412)])],

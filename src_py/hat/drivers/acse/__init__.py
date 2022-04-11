@@ -51,11 +51,8 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-_acse_syntax_name = [('joint-iso-itu-t', 2),
-                     ('association-control', 2),
-                     ('abstract-syntax', 1),
-                     ('apdus', 0),
-                     ('version1', 1)]
+# (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
+_acse_syntax_name = (2, 2, 1, 0, 1)
 _encoder = asn1.Encoder(asn1.Encoding.BER,
                         asn1.Repository.from_json(Path(__file__).parent /
                                                   'asn1_repo.json'))
@@ -94,7 +91,7 @@ async def connect(syntax_name_list: typing.List[asn1.ObjectIdentifier],
                                    user_data=copp_user_data)
     try:
         aare_apdu_syntax_name, aare_apdu_entity = copp_conn.conn_res_user_data
-        if not asn1.is_oid_eq(aare_apdu_syntax_name, _acse_syntax_name):
+        if aare_apdu_syntax_name != _acse_syntax_name:
             raise Exception("invalid syntax name")
         aare_apdu = _decode(aare_apdu_entity)
         if aare_apdu[0] != 'aare' or aare_apdu[1]['result'] != 0:
@@ -127,15 +124,14 @@ async def listen(validate_cb: ValidateCb,
 
     async def on_validate(syntax_names, user_data):
         aarq_apdu_syntax_name, aarq_apdu_entity = user_data
-        if not asn1.is_oid_eq(aarq_apdu_syntax_name, _acse_syntax_name):
+        if aarq_apdu_syntax_name != _acse_syntax_name:
             raise Exception('invalid acse syntax name')
         aarq_apdu = _decode(aarq_apdu_entity)
         if aarq_apdu[0] != 'aarq':
             raise Exception('not aarq message')
         aarq_external = aarq_apdu[1]['user-information'][0]
         if aarq_external.direct_ref is not None:
-            if not asn1.is_oid_eq(aarq_external.direct_ref,
-                                  _encoder.syntax_name):
+            if aarq_external.direct_ref != _encoder.syntax_name:
                 raise Exception('invalid encoder identifier')
         _, called_ap_title = _get_ap_titles(aarq_apdu)
         _, called_ae_qualifier = _get_ae_qualifiers(aarq_apdu)
@@ -277,7 +273,7 @@ class Connection(aio.Resource):
         try:
             while True:
                 syntax_name, entity = await self._copp_conn.read()
-                if asn1.is_oid_eq(syntax_name, _acse_syntax_name):
+                if syntax_name == _acse_syntax_name:
                     if entity[0] == 'abrt':
                         close_apdu = None
                     elif entity[0] == 'rlrq':

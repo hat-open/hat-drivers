@@ -60,7 +60,7 @@ class IdentifyRequest(typing.NamedTuple):
 
 
 class GetVariableAccessAttributesRequest(typing.NamedTuple):
-    value: typing.Union['ObjectName', int, str, asn1.Data]
+    value: typing.Union['ObjectName', int, str, asn1.Bytes]
 
 
 class GetNamedVariableListAttributesRequest(typing.NamedTuple):
@@ -229,7 +229,7 @@ class ObjIdData(typing.NamedTuple):
 
 
 class OctetStringData(typing.NamedTuple):
-    value: asn1.Data
+    value: asn1.Bytes
 
 
 class StructureData(typing.NamedTuple):
@@ -392,7 +392,7 @@ ObjectScope.register(VmdSpecificObjectScope)
 
 
 class AddressVariableSpecification(typing.NamedTuple):
-    address: typing.Union[int, str, asn1.Data]
+    address: typing.Union[int, str, asn1.Bytes]
 
 
 class InvalidatedVariableSpecification(typing.NamedTuple):
@@ -408,7 +408,7 @@ class ScatteredAccessDescriptionVariableSpecification(typing.NamedTuple):
 
 
 class VariableDescriptionVariableSpecification(typing.NamedTuple):
-    address: typing.Union[int, str, asn1.Data]
+    address: typing.Union[int, str, asn1.Bytes]
     type_specification: typing.Union[TypeDescription, ObjectName]
 
 

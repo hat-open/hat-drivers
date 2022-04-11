@@ -11,7 +11,6 @@ import typing
 
 from hat import aio
 from hat import asn1
-from hat import util
 from hat.drivers import cosp
 
 
@@ -64,18 +63,18 @@ class SyntaxNames:
     """
 
     def __init__(self, syntax_names: typing.List[asn1.ObjectIdentifier]):
-        self._syntax_names = {(i * 2 + 1): name
-                              for i, name in enumerate(syntax_names)}
+        self._syntax_id_names = {(i * 2 + 1): name
+                                 for i, name in enumerate(syntax_names)}
+        self._syntax_name_ids = {v: k
+                                 for k, v in self._syntax_id_names.items()}
 
     def get_name(self, syntax_id: int) -> asn1.ObjectIdentifier:
         """Get syntax name associated with id"""
-        return self._syntax_names[syntax_id]
+        return self._syntax_id_names[syntax_id]
 
     def get_id(self, syntax_name: asn1.ObjectIdentifier) -> int:
         """Get syntax id associated with name"""
-        syntax_id, _ = util.first(self._syntax_names.items(),
-                                  lambda i: asn1.is_oid_eq(i[1], syntax_name))
-        return syntax_id
+        return self._syntax_name_ids[syntax_name]
 
 
 async def connect(syntax_names: SyntaxNames,
@@ -332,7 +331,7 @@ def _cp_ppdu(syntax_names, calling_psel, called_psel, user_data):
             {'presentation-context-identifier': i,
              'abstract-syntax-name': name,
              'transfer-syntax-name-list': [_encoder.syntax_name]}
-            for i, name in syntax_names._syntax_names.items()]}
+            for i, name in syntax_names._syntax_id_names.items()]}
     if calling_psel is not None:
         cp_params['calling-presentation-selector'] = \
             calling_psel.to_bytes(4, 'big')
@@ -352,7 +351,7 @@ def _cpa_ppdu(syntax_names, responding_psel, user_data):
         'presentation-context-definition-result-list': [
             {'result': 0,
              'transfer-syntax-name': _encoder.syntax_name}
-            for _ in syntax_names._syntax_names.keys()]}
+            for _ in syntax_names._syntax_id_names.keys()]}
     if responding_psel is not None:
         cpa_params['responding-presentation-selector'] = \
             responding_psel.to_bytes(4, 'big')
@@ -385,9 +384,11 @@ def _user_data(syntax_names, user_data):
 def _sytax_names_from_cp_ppdu(cp_ppdu):
     cp_params = cp_ppdu['normal-mode-parameters']
     syntax_names = SyntaxNames([])
-    syntax_names._syntax_names = {
+    syntax_names._syntax_id_names = {
         i['presentation-context-identifier']: i['abstract-syntax-name']
         for i in cp_params['presentation-context-definition-list']}
+    syntax_names._syntax_name_ids = {
+        v: k for k, v in syntax_names._syntax_id_names.items()}
     return syntax_names
 
 
