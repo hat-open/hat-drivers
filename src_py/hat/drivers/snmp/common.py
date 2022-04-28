@@ -16,25 +16,25 @@ class Version(enum.Enum):
 
 
 class ErrorType(enum.Enum):
-    NO_ERROR = 0
-    TOO_BIG = 1
-    NO_SUCH_NAME = 2
-    BAD_VALUE = 3
-    READ_ONLY = 4
-    GEN_ERR = 5
-    NO_ACCESS = 6
-    WRONG_TYPE = 7
-    WRONG_LENGTH = 8
-    WRONG_ENCODING = 9
-    WRONG_VALUE = 10
-    NO_CREATION = 11
-    INCONSISTENT_VALUE = 12
-    RESOURCE_UNAVAILABLE = 13
-    COMMIT_FAILED = 14
-    UNDO_FAILED = 15
-    AUTHORIZATION_ERROR = 16
-    NOT_WRITABLE = 17
-    INCONSISTENT_NAME = 18
+    NO_ERROR = 0                 # v1, v2c, v3
+    TOO_BIG = 1                  # v1, v2c, v3
+    NO_SUCH_NAME = 2             # v1, v2c, v3
+    BAD_VALUE = 3                # v1, v2c, v3
+    READ_ONLY = 4                # v1, v2c, v3
+    GEN_ERR = 5                  # v1, v2c, v3
+    NO_ACCESS = 6                # v2c, v3
+    WRONG_TYPE = 7               # v2c, v3
+    WRONG_LENGTH = 8             # v2c, v3
+    WRONG_ENCODING = 9           # v2c, v3
+    WRONG_VALUE = 10             # v2c, v3
+    NO_CREATION = 11             # v2c, v3
+    INCONSISTENT_VALUE = 12      # v2c, v3
+    RESOURCE_UNAVAILABLE = 13    # v2c, v3
+    COMMIT_FAILED = 14           # v2c, v3
+    UNDO_FAILED = 15             # v2c, v3
+    AUTHORIZATION_ERROR = 16     # v2c, v3
+    NOT_WRITABLE = 17            # v2c, v3
+    INCONSISTENT_NAME = 18       # v2c, v3
 
 
 class CauseType(enum.Enum):
@@ -48,32 +48,20 @@ class CauseType(enum.Enum):
 
 
 class DataType(enum.Enum):
-    INTEGER = 0
-    UNSIGNED = 1
-    COUNTER = 2
-    BIG_COUNTER = 3
-    STRING = 4
-    OBJECT_ID = 5
-    IP_ADDRESS = 6
-    TIME_TICKS = 7
-    ARBITRARY = 8
-    EMPTY = 9
-    UNSPECIFIED = 10
-    NO_SUCH_OBJECT = 11
-    NO_SUCH_INSTANCE = 12
-    END_OF_MIB_VIEW = 13
-
-
-class MsgType(enum.Enum):
-    GET_REQUEST = 'get-request'
-    GET_NEXT_REQUEST = 'get-next-request'
-    GET_BULK_REQUEST = 'get-bulk-request'
-    RESPONSE = 'response'
-    SET_REQUEST = 'set-request'
-    TRAP = 'trap'
-    INFORM_REQUEST = 'inform-request'
-    SNMPV2_TRAP = 'snmpV2-trap'
-    REPORT = 'report'
+    INTEGER = 0               # v1, v2c, v3
+    UNSIGNED = 1              # v1, v2c, v3
+    COUNTER = 2               # v1, v2c, v3
+    BIG_COUNTER = 3           # v2c, v3
+    STRING = 4                # v1, v2c, v3
+    OBJECT_ID = 5             # v1, v2c, v3
+    IP_ADDRESS = 6            # v1, v2c, v3
+    TIME_TICKS = 7            # v1, v2c, v3
+    ARBITRARY = 8             # v1, v2c, v3
+    EMPTY = 9                 # v1
+    UNSPECIFIED = 10          # v2c, v3
+    NO_SUCH_OBJECT = 11       # v2c, v3
+    NO_SUCH_INSTANCE = 12     # v2c, v3
+    END_OF_MIB_VIEW = 13      # v2c, v3
 
 
 class Error(typing.NamedTuple):
@@ -91,37 +79,37 @@ class Data(typing.NamedTuple):
 
     Type of value is determined by value of data type:
 
-        +------------------+------------------------+
-        | type             | value                  |
-        +==================+========================+
-        | INTEGER          | int                    |
-        +------------------+------------------------+
-        | UNSIGNED         | int                    |
-        +------------------+------------------------+
-        | COUNTER          | int                    |
-        +------------------+------------------------+
-        | BIG_COUNTER      | int                    |
-        +------------------+------------------------+
-        | STRING           | str                    |
-        +------------------+------------------------+
-        | OBJECT_ID        | ObjectIdentifier       |
-        +------------------+------------------------+
-        | IP_ADDRESS       | Tuple[int,int,int,int] |
-        +------------------+------------------------+
-        | TIME_TICKS       | int                    |
-        +------------------+------------------------+
-        | ARBITRARY        | Bytes                  |
-        +------------------+------------------------+
-        | EMPTY            | NoneType               |
-        +------------------+------------------------+
-        | UNSPECIFIED      | NoneType               |
-        +------------------+------------------------+
-        | NO_SUCH_OBJECT   | NoneType               |
-        +------------------+------------------------+
-        | NO_SUCH_INSTANCE | NoneType               |
-        +------------------+------------------------+
-        | END_OF_MIB_VIEW  | NoneType               |
-        +------------------+------------------------+
+        +------------------+---------------------------+
+        | type             | value                     |
+        +==================+===========================+
+        | INTEGER          | int                       |
+        +------------------+---------------------------+
+        | UNSIGNED         | int                       |
+        +------------------+---------------------------+
+        | COUNTER          | int                       |
+        +------------------+---------------------------+
+        | BIG_COUNTER      | int                       |
+        +------------------+---------------------------+
+        | STRING           | str                       |
+        +------------------+---------------------------+
+        | OBJECT_ID        | ObjectIdentifier          |
+        +------------------+---------------------------+
+        | IP_ADDRESS       | Tuple[int, int, int, int] |
+        +------------------+---------------------------+
+        | TIME_TICKS       | int                       |
+        +------------------+---------------------------+
+        | ARBITRARY        | Bytes                     |
+        +------------------+---------------------------+
+        | EMPTY            | NoneType                  |
+        +------------------+---------------------------+
+        | UNSPECIFIED      | NoneType                  |
+        +------------------+---------------------------+
+        | NO_SUCH_OBJECT   | NoneType                  |
+        +------------------+---------------------------+
+        | NO_SUCH_INSTANCE | NoneType                  |
+        +------------------+---------------------------+
+        | END_OF_MIB_VIEW  | NoneType                  |
+        +------------------+---------------------------+
 
     """
     type: DataType
@@ -138,50 +126,3 @@ class Trap(typing.NamedTuple):
 class Context(typing.NamedTuple):
     engine_id: str
     name: str
-
-
-class BasicPdu(typing.NamedTuple):
-    request_id: int
-    error: Error
-    data: typing.List[Data]
-
-
-class TrapPdu(typing.NamedTuple):
-    enterprise: ObjectIdentifier
-    addr: typing.Tuple[int, int, int, int]
-    cause: Cause
-    timestamp: int
-    data: typing.List[Data]
-
-
-class BulkPdu(typing.NamedTuple):
-    request_id: int
-    non_repeaters: int
-    max_repetitions: int
-    data: typing.List[Data]
-
-
-Pdu = typing.Union[BasicPdu, TrapPdu, BulkPdu]
-
-
-class MsgV1(typing.NamedTuple):
-    type: MsgType
-    community: str
-    pdu: Pdu
-
-
-class MsgV2C(typing.NamedTuple):
-    type: MsgType
-    community: str
-    pdu: Pdu
-
-
-class MsgV3(typing.NamedTuple):
-    type: MsgType
-    id: int
-    reportable: bool
-    context: Context
-    pdu: Pdu
-
-
-Msg = typing.Union[MsgV1, MsgV2C, MsgV3]

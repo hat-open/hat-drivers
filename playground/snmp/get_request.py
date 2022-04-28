@@ -13,15 +13,16 @@ def main():
 async def async_main():
 
     data = common.Data(type=common.DataType.EMPTY,
-                       name=(1, 3, 6, 1),
+                       name=(1, 3, 6, 1, 2, 1, 2, 1, 0),
                        value=None)
-    pdu = common.BasicPdu(request_id=123,
-                          error=common.Error(type=common.ErrorType.NO_ERROR,
-                                             index=0),
-                          data=[data])
-    msg = common.MsgV1(type=common.MsgType.GET_REQUEST,
-                       community="xyz",
-                       pdu=pdu)
+    pdu = encoder.v1.BasicPdu(
+        request_id=123,
+        error=common.Error(type=common.ErrorType.NO_ERROR,
+                           index=0),
+        data=[data])
+    msg = encoder.v1.Msg(type=encoder.v1.MsgType.GET_REQUEST,
+                         community="xyz",
+                         pdu=pdu)
 
     endpoint = await udp.create(local_addr=None,
                                 remote_addr=('127.0.0.1', 161))
@@ -30,12 +31,13 @@ async def async_main():
 
     endpoint.send(req_msg_bytes)
 
-    while True:
-        msg_bytes, addr = await endpoint.receive()
+    msg_bytes, addr = await endpoint.receive()
 
-        msg = encoder.decode(msg_bytes)
+    msg = encoder.decode(msg_bytes)
 
-        print('>>', msg)
+    print('>>', msg)
+
+    await endpoint.async_close()
 
 
 if __name__ == '__main__':

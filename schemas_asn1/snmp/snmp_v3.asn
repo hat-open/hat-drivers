@@ -1,0 +1,32 @@
+SNMPv3MessageSyntax DEFINITIONS IMPLICIT TAGS ::= BEGIN
+
+IMPORTS
+    PDUs
+    FROM SNMPv2-PDU;
+
+SNMPv3Message ::= SEQUENCE {
+    msgVersion             INTEGER (0..2147483647),
+    msgGlobalData          HeaderData,
+    msgSecurityParameters  OCTET STRING,
+    msgData                ScopedPduData
+}
+
+HeaderData ::= SEQUENCE {
+    msgID             INTEGER (0..2147483647),
+    msgMaxSize        INTEGER (484..2147483647),
+    msgFlags          OCTET STRING (SIZE(1)),
+    msgSecurityModel  INTEGER (1..2147483647)
+}
+
+ScopedPduData ::= CHOICE {
+    plaintext     ScopedPDU,
+    encryptedPDU  OCTET STRING
+}
+
+ScopedPDU ::= SEQUENCE {
+    contextEngineID  OCTET STRING,
+    contextName      OCTET STRING,
+    data             PDUs
+}
+
+END
