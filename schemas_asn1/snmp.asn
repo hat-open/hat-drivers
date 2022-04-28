@@ -1,5 +1,7 @@
 SNMP DEFINITIONS ::= BEGIN
 
+Version ::= INTEGER
+
 ObjectName ::= OBJECT IDENTIFIER
 
 NotificationName ::= OBJECT IDENTIFIER

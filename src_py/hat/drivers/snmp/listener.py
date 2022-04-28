@@ -70,14 +70,16 @@ class Listener(aio.Resource):
                 else:
                     raise ValueError('unsupported message type')
 
-                if not isinstance(msg.pdu, common.TrapPdu):
-                    mlog.warning("received not trap pdu from %s", addr)
-                    continue
+                print(msg)
 
-                trap = common.Trap(oid=msg.pdu.enterprise,
-                                   timestamp=msg.pdu.timestamp,
-                                   data=msg.pdu.data)
-                self._receive_queue.put_nowait((context, trap, addr))
+                # if not isinstance(msg.pdu, common.TrapPdu):
+                #     mlog.warning("received not trap pdu from %s", addr)
+                #     continue
+
+                # trap = common.Trap(oid=msg.pdu.enterprise,
+                #                    timestamp=msg.pdu.timestamp,
+                #                    data=msg.pdu.data)
+                # self._receive_queue.put_nowait((context, trap, addr))
 
         except ConnectionError:
             pass

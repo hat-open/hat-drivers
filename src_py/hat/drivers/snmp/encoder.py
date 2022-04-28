@@ -60,7 +60,10 @@ def _get_version(entity):
             entity.content.elements[0].tag_number != 2):
         raise ValueError('unsupported entity')
 
-    return common.Version(entity.content.elements[0].value)
+    version = _encoder.decode_value('SNMP', 'Version',
+                                    entity.content.elements[0])
+
+    return common.Version(version)
 
 
 def _encode_msg_v1(msg):
