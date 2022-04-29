@@ -8,18 +8,18 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-async def create_slave(local_addr: udp.Address = udp.Address('0.0.0.0', 161)
-                       ) -> 'Slave':
-    """Create slave"""
-    slave = Slave()
+async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161)
+                       ) -> 'Agent':
+    """Create agent"""
+    agent = Agent()
 
-    slave._endpoint = await udp.create(local_addr=local_addr,
+    agent._endpoint = await udp.create(local_addr=local_addr,
                                        remote_addr=None)
 
-    return slave
+    return agent
 
 
-class Slave(aio.Resource):
+class Agent(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:

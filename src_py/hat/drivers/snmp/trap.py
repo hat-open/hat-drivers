@@ -11,10 +11,14 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-async def create_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162)
-                          ) -> 'Listener':
-    """Create listener"""
-    listener = Listener()
+async def create_trap_sender():
+    pass
+
+
+async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162)  # NOQA
+                               ) -> 'TrapListener':
+    """Create trap listener"""
+    listener = TrapListener()
     listener._receive_queue = aio.Queue()
 
     listener._endpoint = await udp.create(local_addr=local_addr,
@@ -25,7 +29,19 @@ async def create_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162)
     return listener
 
 
-class Listener(aio.Resource):
+class TrapSender(aio.Resource):
+
+    @property
+    def async_group(self) -> aio.Group:
+        return self._endpoint.async_group
+
+    async def send(self,
+                   context: common.Context,
+                   trap: common.Trap):
+        pass
+
+
+class TrapListener(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:

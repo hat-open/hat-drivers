@@ -117,12 +117,41 @@ class Data(typing.NamedTuple):
     value: typing.Any
 
 
+class Context(typing.NamedTuple):
+    engine_id: str
+    name: str
+
+
 class Trap(typing.NamedTuple):
     oid: ObjectIdentifier
     timestamp: int
     data: typing.List[Data]
 
 
-class Context(typing.NamedTuple):
-    engine_id: str
-    name: str
+class GetDataReq(typing.NamedTuple):
+    names: typing.Iterable[ObjectIdentifier]
+
+
+class GetNextDataReq(typing.NamedTuple):
+    names: typing.Iterable[ObjectIdentifier]
+
+
+class GetBulkDataReq(typing.NamedTuple):
+    names: typing.Iterable[ObjectIdentifier]
+
+
+class SetDataReq(typing.NamedTuple):
+    data: typing.List[Data]
+
+
+class InformReq(typing.NamedTuple):
+    data: typing.List[Data]
+
+
+Request = typing.Union[GetDataReq,
+                       GetNextDataReq,
+                       GetBulkDataReq,
+                       SetDataReq,
+                       InformReq]
+
+Response = typing.Union[Error, typing.List[Data]]
