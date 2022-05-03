@@ -43,15 +43,19 @@ def decode_msg(msg: asn1.Value) -> Msg:
     msg_type = MsgType(msg['msgData'][1]['data'][0])
     msg_id = msg['msgGlobalData']['msgID']
     reportable = bool(msg['msgGlobalData']['msgFlags'][0] & 4)
-    context_engine_id = msg['msgData'][1]['contextEngineID'].decode('utf-8')
-    context_name = msg['msgData'][1]['contextName'].decode('utf-8')
+    context_engine_id = _decode_str(msg['msgData'][1]['contextEngineID'])
+    context_name = _decode_str(msg['msgData'][1]['contextName'])
     context = common.Context(engine_id=context_engine_id,
                              name=context_name)
 
     pdu = v2c.decode_pdu(msg_type, msg['msgData'][1]['data'][1])
 
-    return common.MsgV3(type=msg_type,
-                        id=msg_id,
-                        reportable=reportable,
-                        context=context,
-                        pdu=pdu)
+    return Msg(type=msg_type,
+               id=msg_id,
+               reportable=reportable,
+               context=context,
+               pdu=pdu)
+
+
+def _decode_str(x):
+    return str(x, encoding='utf-8', errors='replace')

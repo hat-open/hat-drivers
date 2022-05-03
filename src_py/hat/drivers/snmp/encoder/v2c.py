@@ -54,7 +54,7 @@ def decode_msg(msg: asn1.Value) -> Msg:
     pdu = decode_pdu(msg_type, msg['data'][1])
 
     return Msg(type=msg_type,
-               community=msg['community'],
+               community=_decode_str(msg['community']),
                pdu=pdu)
 
 
@@ -179,7 +179,7 @@ def _decode_data(data):
             elif t3 == 'string-value':
                 return common.Data(type=common.DataType.STRING,
                                    name=name,
-                                   value=v2.decode('utf-8'))
+                                   value=_decode_str(v2))
 
             elif t3 == 'objectID-value':
                 return common.Data(type=common.DataType.OBJECT_ID,
@@ -238,3 +238,7 @@ def _decode_data(data):
                            value=None)
 
     raise ValueError('unsupported type')
+
+
+def _decode_str(x):
+    return str(x, encoding='utf-8', errors='replace')

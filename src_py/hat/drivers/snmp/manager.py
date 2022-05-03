@@ -31,7 +31,7 @@ async def create_manager(context: common.Context,
     manager._endpoint = await udp.create(local_addr=None,
                                          remote_addr=remote_addr)
 
-    manager._async_group.spawn(manager._read_loop)
+    manager.async_group.spawn(manager._read_loop)
 
     return manager
 
@@ -40,7 +40,7 @@ class Manager(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:
-        return self._udp.async_group
+        return self._endpoint.async_group
 
     async def send(self, req: common.Request) -> common.Response:
         if not self.is_open:
@@ -67,7 +67,7 @@ class Manager(aio.Resource):
                 # TODO check address
 
                 try:
-                    request_id, res = self._decode_res()
+                    request_id, res = self._decode_res(msg_bytes)
                     future = self._receive_futures[request_id]
                     if not future.done():
                         future.set_result(res)
@@ -106,7 +106,7 @@ class Manager(aio.Resource):
         else:
             raise ValueError('unsupported nessage')
 
-        if msg.pdu.error == common.Error.NO_ERROR:
+        if msg.pdu.error.type == common.ErrorType.NO_ERROR:
             return msg.pdu.request_id, msg.pdu.data
 
         else:
