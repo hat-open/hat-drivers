@@ -22,7 +22,8 @@ from hat.drivers.snmp.trap import (create_trap_sender,
                                    TrapListener)
 from hat.drivers.snmp.manager import (create_manager,
                                       Manager)
-from hat.drivers.snmp.agent import (create_agent,
+from hat.drivers.snmp.agent import (RequestCb,
+                                    create_agent,
                                     Agent)
 
 
@@ -50,5 +51,6 @@ __all__ = ['Bytes',
            'TrapListener',
            'create_manager',
            'Manager',
+           'RequestCb',
            'create_agent',
            'Agent']
