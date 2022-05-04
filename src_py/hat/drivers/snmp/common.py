@@ -123,6 +123,9 @@ class Context(typing.NamedTuple):
 
 
 class Trap(typing.NamedTuple):
+    context: Context
+    cause: typing.Optional[Cause]
+    """cause is available in case of v1"""
     oid: ObjectIdentifier
     timestamp: int
     data: typing.List[Data]

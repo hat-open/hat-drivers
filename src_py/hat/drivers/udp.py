@@ -11,6 +11,11 @@ class Address(typing.NamedTuple):
     port: int
 
 
+class EndpointInfo(typing.NamedTuple):
+    local_addr: Address
+    remote_addr: typing.Optional[Address]
+
+
 async def create(local_addr: typing.Optional[Address] = None,
                  remote_addr: typing.Optional[Address] = None,
                  queue_size: int = 0,
@@ -44,8 +49,16 @@ async def create(local_addr: typing.Optional[Address] = None,
     endpoint._transport, endpoint._protocol = \
         await loop.create_datagram_endpoint(Protocol, local_addr, remote_addr,
                                             **kwargs)
+
     endpoint._async_group.spawn(aio.call_on_cancel, endpoint._transport.close)
     endpoint._async_group.spawn(aio.call_on_cancel, endpoint._queue.close)
+
+    sockname = endpoint._transport.get_extra_info('sockname')
+    peername = endpoint._transport.get_extra_info('peername')
+    endpoint._info = EndpointInfo(
+        local_addr=Address(sockname[0], sockname[1]),
+        remote_addr=Address(peername[0], peername[1]) if peername else None)
+
     return endpoint
 
 
@@ -56,6 +69,11 @@ class Endpoint(aio.Resource):
     def async_group(self) -> aio.Group:
         """Async group"""
         return self._async_group
+
+    @property
+    def info(self) -> EndpointInfo:
+        """Endpoint info"""
+        return self._info
 
     @property
     def empty(self) -> bool:
