@@ -20,4 +20,5 @@ Content
     iec103
     iec104
     modbus
+    snmp
     ssdp
