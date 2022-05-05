@@ -118,7 +118,8 @@ class Data(typing.NamedTuple):
 
 
 class Context(typing.NamedTuple):
-    engine_id: str
+    engine_id: typing.Optional[str]
+    """engine id is not available in case of v1 and v2c"""
     name: str
 
 
