@@ -132,15 +132,15 @@ class Trap(typing.NamedTuple):
 
 
 class GetDataReq(typing.NamedTuple):
-    names: typing.Iterable[ObjectIdentifier]
+    names: typing.List[ObjectIdentifier]
 
 
 class GetNextDataReq(typing.NamedTuple):
-    names: typing.Iterable[ObjectIdentifier]
+    names: typing.List[ObjectIdentifier]
 
 
 class GetBulkDataReq(typing.NamedTuple):
-    names: typing.Iterable[ObjectIdentifier]
+    names: typing.List[ObjectIdentifier]
 
 
 class SetDataReq(typing.NamedTuple):

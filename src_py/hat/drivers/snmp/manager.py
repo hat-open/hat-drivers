@@ -26,12 +26,11 @@ async def create_manager(context: common.Context,
     manager._version = version
     manager._receive_futures = {}
     manager._next_request_id = itertools.count(1)
-    manager._send_lock = asyncio.Lock()
 
     manager._endpoint = await udp.create(local_addr=None,
                                          remote_addr=remote_addr)
 
-    manager.async_group.spawn(manager._read_loop)
+    manager.async_group.spawn(manager._receive_loop)
 
     return manager
 
@@ -59,7 +58,7 @@ class Manager(aio.Resource):
         finally:
             del self._receive_futures[request_id]
 
-    async def _read_loop(self):
+    async def _receive_loop(self):
         try:
             while True:
                 msg_bytes, addr = await self._endpoint.receive()
@@ -80,7 +79,7 @@ class Manager(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("read loop error: %s", e, exc_info=e)
+            mlog.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()

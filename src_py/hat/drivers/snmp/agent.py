@@ -24,6 +24,8 @@ async def create_agent(request_cb: RequestCb,
     agent._endpoint = await udp.create(local_addr=local_addr,
                                        remote_addr=None)
 
+    agent.async_group.spawn(agent._receive_loop)
+
     return agent
 
 
@@ -32,3 +34,19 @@ class Agent(aio.Resource):
     @property
     def async_group(self) -> aio.Group:
         return self._endpoint.async_group
+
+    async def _receive_loop(self):
+        try:
+            while True:
+                msg_bytes, addr = await self._endpoint.receive()
+
+                # TODO: process msg
+
+        except ConnectionError:
+            pass
+
+        except Exception as e:
+            mlog.error("receive loop error: %s", e, exc_info=e)
+
+        finally:
+            self.close()
