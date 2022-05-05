@@ -23,7 +23,7 @@ async def create_trap_sender(remote_addr: udp.Address,
                                         remote_addr=remote_addr)
 
     local_addr = sender._endpoint.info.local_addr
-    sender._addr = tuple(int(i) for i in local_addr.split('.'))
+    sender._addr = tuple(int(i) for i in local_addr.host.split('.'))
 
     return sender
 
@@ -78,7 +78,7 @@ class TrapListener(aio.Resource):
     async def _receive_loop(self):
         try:
             while True:
-                msg_bytes, addr = await self._udp.receive()
+                msg_bytes, addr = await self._endpoint.receive()
 
                 try:
                     msg = encoder.decode(msg_bytes)
@@ -120,10 +120,10 @@ def _encode_trap(version, addr, request_id, trap):
                             name=(1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0),
                             value=trap.oid),
                 *trap.data]
-        pdu = encoder.v2.BasicPdu(request_id=request_id,
-                                  error=error,
-                                  data=data)
-        return encoder.v2c.Msg(type=encoder.v2.MsgType.SNMPV2_TRAP,
+        pdu = encoder.v2c.BasicPdu(request_id=request_id,
+                                   error=error,
+                                   data=data)
+        return encoder.v2c.Msg(type=encoder.v2c.MsgType.SNMPV2_TRAP,
                                community=trap.context.name,
                                pdu=pdu)
 
