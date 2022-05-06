@@ -27,7 +27,7 @@ def get_all(path, out_path, silent):
 
     if verbose:
         print_mibs_tree(mibs_json)
-        print_node_type_stats(mibs_json)
+        # print_node_type_stats(mibs_json)
 
     if out_path:
         json.encode_file(mibs_json, out_path)
@@ -38,18 +38,20 @@ def get_all(path, out_path, silent):
 @click.option('--path', default=None, type=Path, required=True)
 @click.option('--verbose', default=False, type=bool, is_flag=True)
 def translate(oid, path, verbose):
-    print(translate_oid(oid, path, verbose))
-
-
-def translate_oid(oid, mib_path, verbose=False):
-    mib_json = mibs_to_json(mib_path, verbose)
+    mib_json = mibs_to_json(path, verbose)
     tree = mib_tree(mib_json)
+    path = translate_oid(oid, tree, verbose)
+    descr = json.get(tree, [*oid.split('.'), 'description'],
+                     'no description found')
+    print(f"{path}\n\n  description: {descr}")
 
+
+def translate_oid(oid, mib_tree, verbose=False):
     oid_path = oid.split('.')
     name_path = []
     for idx, i in enumerate(oid_path):
         node_name_path = [*oid_path[:idx + 1], 'name']
-        name = json.get(tree, node_name_path, i)
+        name = json.get(mib_tree, node_name_path, i)
         if idx == 0 and i == '1':
             name = 'iso'
         name_path.append(name)
@@ -75,7 +77,7 @@ def mibs_to_json(path, verbose):
     mibCompiler.addSources(*[FileReader(i) for i in mib_src_dirs])
 
     # run recursive MIB compilation
-    results = mibCompiler.compile(*inputMibs, ignoreErrors=True)
+    results = mibCompiler.compile(*inputMibs, ignoreErrors=True, genTexts=True)
     res_dict = {}
     for k, v in results.items():
         res_dict[v] = res_dict.get(v, []) + [k]
@@ -98,7 +100,6 @@ def print_mibs_tree(mibs_json):
     print('\nmibs tree:')
     mibs_sorted = sorted(oids_from_mibs_json(mibs_json),
                          key=lambda j: j['oid'])
-    node_types = []
     for item in mibs_sorted:
         oid = item['oid']
         name = item['name']
@@ -108,16 +109,13 @@ def print_mibs_tree(mibs_json):
         node_type = (json.get(item, ['syntax', 'type'])
                      if item.get('class') == 'objecttype'
                      else item.get('class'))
-        node_types.append(node_type)
         print('  ' * (level - 1) + f"|_{name} ({oid}) {node_type}")
 
 
 def mib_tree(mibs_json):
     tree = {}
-    for item in oids_from_mibs_json(mibs_json):
-        oid = item['oid']
-        for i in oid.split('.'):
-            tree = json.set_(tree, [*oid.split('.')], item)
+    for item in sorted(oids_from_mibs_json(mibs_json), key=lambda j: j['oid']):
+        tree = json.set_(tree, item['oid'].split('.'), item)
     return tree
 
 
@@ -128,8 +126,9 @@ def print_node_type_stats(mibs_json):
         node_type = (json.get(item, ['syntax', 'type'])
                      if item.get('class') == 'objecttype'
                      else item.get('class'))
-        node_types.append(node_type)
-    for nt in set(node_types):
+        if node_type:
+            node_types.append(node_type)
+    for nt in sorted(set(node_types)):
         print(f"\t{nt} {node_types.count(nt)}")
 
 
