@@ -161,7 +161,7 @@ def _req_to_msg_type(version, req):
             return encoder.v1.MsgType.SET_REQUEST
 
         elif isinstance(req, common.InformReq):
-            return encoder.v1.MsgType.INFORM_REQUEST
+            return encoder.v2c.MsgType.INFORM_REQUEST
 
     raise ValueError('unsupported version / request')
 
