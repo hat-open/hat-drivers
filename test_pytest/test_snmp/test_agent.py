@@ -140,7 +140,7 @@ async def test_request_response(req_msg, req_expected, res,
     req_queue = aio.Queue()
     res_queue = aio.Queue()
 
-    async def request_cb(context, request):
+    async def request_cb(version, context, request):
         req_queue.put_nowait((context, request))
         return await res_queue.get()
 
@@ -233,7 +233,7 @@ async def test_request_response_invalid(req_msg, req_expected, res,
     req_queue = aio.Queue()
     res_queue = aio.Queue()
 
-    async def request_cb(context, request):
+    async def request_cb(version, context, request):
         req_queue.put_nowait((context, request))
         return await res_queue.get()
 

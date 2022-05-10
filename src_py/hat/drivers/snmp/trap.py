@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import typing
@@ -12,19 +13,24 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-InformCb = aio.AsyncCallable[[common.Context, common.Inform],
+InformCb = aio.AsyncCallable[[common.Version, common.Inform, udp.Address],
                              typing.Optional[common.Error]]
+"""Inform callback"""
 
 
 async def create_trap_sender(remote_addr: udp.Address,
                              version: common.Version = common.Version.V2C
                              ) -> 'TrapSender':
+    """Create trap sender"""
     sender = TrapSender()
     sender._version = version
     sender._next_request_id = itertools.count(1)
+    sender._receive_futures = {}
 
     sender._endpoint = await udp.create(local_addr=None,
                                         remote_addr=remote_addr)
+
+    sender.async_group.spawn(sender._receive_loop)
 
     local_addr = sender._endpoint.info.local_addr
     sender._addr = tuple(int(i) for i in local_addr.host.split('.'))
@@ -52,11 +58,16 @@ class TrapSender(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:
+        """Async group"""
         return self._endpoint.async_group
 
     def send_trap(self, trap: common.Trap):
+        """Send trap"""
+        if not self.is_open:
+            raise ConnectionError()
+
         request_id = next(self._next_request_id)
-        msg = _encode_trap(self._version, self._addr, request_id, trap)
+        msg = _encode_trap_req(self._version, self._addr, request_id, trap)
         msg_bytes = encoder.encode(msg)
 
         self._endpoint.send(msg_bytes)
@@ -64,22 +75,69 @@ class TrapSender(aio.Resource):
     async def send_inform(self,
                           inform: common.Inform
                           ) -> typing.Optional[common.Error]:
-        raise NotImplementedError()
+        """Send inform"""
+        if not self.is_open:
+            raise ConnectionError()
+
+        request_id = next(self._next_request_id)
+        req_msg = _encode_inform_req(self._version, request_id, inform)
+        req_msg_bytes = encoder.encode(req_msg)
+
+        future = asyncio.Future()
+        self._receive_futures[request_id] = future
+        try:
+            self._endpoint.send(req_msg_bytes)
+            return await future
+
+        finally:
+            del self._receive_futures[request_id]
+
+    async def _receive_loop(self):
+        try:
+            while True:
+                msg_bytes, addr = await self._endpoint.receive()
+
+                # TODO check address
+
+                try:
+                    version, request_id, res = _decode_inform_res(msg_bytes)
+
+                    if version != self._version:
+                        mlog.warning(('received response with version '
+                                      'mismatch (received version %s)'),
+                                     version)
+
+                    future = self._receive_futures[request_id]
+                    if not future.done():
+                        future.set_result(res)
+
+                except Exception as e:
+                    mlog.warning("dropping message from %s: %s",
+                                 addr, e, exc_info=e)
+
+        except ConnectionError:
+            pass
+
+        except Exception as e:
+            mlog.error("receive loop error: %s", e, exc_info=e)
+
+        finally:
+            self.close()
+            for future in self._receive_futures.values():
+                if not future.done():
+                    future.set_exception(ConnectionError())
 
 
 class TrapListener(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:
+        """Async group"""
         return self._endpoint.async_group
 
     async def receive(self) -> typing.Tuple[common.Trap,
                                             udp.Address]:
-        """Receive trap
-
-        For v1 and v2c, context's name is used as community name.
-
-        """
+        """Receive trap"""
         try:
             return await self._receive_queue.get()
 
@@ -89,12 +147,33 @@ class TrapListener(aio.Resource):
     async def _receive_loop(self):
         try:
             while True:
-                msg_bytes, addr = await self._endpoint.receive()
+                req_msg_bytes, addr = await self._endpoint.receive()
 
                 try:
-                    msg = encoder.decode(msg_bytes)
-                    trap = _decode_trap(msg)
-                    self._receive_queue.put_nowait((trap, addr))
+                    req_msg = encoder.decode(req_msg_bytes)
+                    version, request_id, req = _decode_listener_req(req_msg)
+
+                    if isinstance(req, common.Trap):
+                        self._receive_queue.put_nowait((req, addr))
+
+                    elif isinstance(req, common.Inform):
+                        try:
+                            res = await aio.call(self._inform_cb, version, req,
+                                                 addr)
+
+                        except Exception as e:
+                            mlog.warning("error in inform callback: %s",
+                                         e, exc_info=e)
+                            res = common.Error(type=common.ErrorType.GEN_ERR,
+                                               index=0)
+
+                        res_msg = _encode_inform_res(version, request_id, req,
+                                                     res)
+                        res_msg_bytes = encoder.encode(res_msg)
+                        self._endpoint.send(res_msg_bytes)
+
+                    else:
+                        raise ValueError('unsupported request')
 
                 except Exception as e:
                     mlog.warning("error decoding message from %s: %s",
@@ -111,7 +190,7 @@ class TrapListener(aio.Resource):
             self._receive_queue.close()
 
 
-def _encode_trap(version, addr, request_id, trap):
+def _encode_trap_req(version, addr, request_id, trap):
     if version == common.Version.V1:
         pdu = encoder.v1.TrapPdu(enterprise=trap.oid,
                                  addr=addr,
@@ -159,38 +238,102 @@ def _encode_trap(version, addr, request_id, trap):
     raise ValueError('unsupported version')
 
 
-def _decode_trap(msg):
-    if isinstance(msg, encoder.v1.Msg):
-        if msg.type != encoder.v1.MsgType.TRAP:
-            raise ValueError('invalid trap message type')
+def _encode_inform_req(version, request_id, inform):
+    if version == common.Version.V2C:
+        error = common.Error(common.ErrorType.NO_ERROR, 0)
+        pdu = encoder.v2c.BasicPdu(request_id=request_id,
+                                   error=error,
+                                   data=inform.data)
+        return encoder.v2c.Msg(type=encoder.v2c.MsgType.INFORM_REQUEST,
+                               community=inform.context.name,
+                               pdu=pdu)
 
-        context = common.Context(None, msg.community)
-        cause = msg.pdu.cause
-        oid = msg.pdu.enterprise
-        timestamp = msg.pdu.timestamp
-        data = msg.pdu.data
+    if version == common.Version.V3:
+        error = common.Error(common.ErrorType.NO_ERROR, 0)
+        pdu = encoder.v3.BasicPdu(request_id=request_id,
+                                  error=error,
+                                  data=inform.data)
+        return encoder.v3.Msg(type=encoder.v3.MsgType.INFORM_REQUEST,
+                              id=request_id,
+                              reportable=False,
+                              context=inform.context,
+                              pdu=pdu)
 
-    elif isinstance(msg, encoder.v2c.Msg):
-        if msg.type != encoder.v2c.MsgType.SNMPV2_TRAP:
-            raise ValueError('invalid trap message type')
+    raise ValueError('unsupported version')
 
-        if (len(msg.pdu.data) < 2 or
-                msg.pdu.data[0].type != common.DataType.TIME_TICKS or
-                msg.pdu.data[1].type != common.DataType.OBJECT_ID):
-            raise ValueError('invalid trap data')
 
-        # TODO: check data names
+def _encode_inform_res(version, request_id, inform, res):
+    error = res if res else common.Error(common.ErrorType.NO_ERROR, 0)
 
-        context = common.Context(None, msg.community)
-        cause = None
-        timestamp = msg.pdu.data[0].value
-        oid = msg.pdu.data[1].value
-        data = msg.pdu.data[2:]
+    if version == common.Version.V2C:
+        pdu = encoder.v2c.BasicPdu(request_id=request_id,
+                                   error=error,
+                                   data=inform.data)
+        return encoder.v2c.Msg(type=encoder.v2c.MsgType.RESPONSE,
+                               community=inform.context.name,
+                               pdu=pdu)
+
+    if version == common.Version.V3:
+        pdu = encoder.v3.BasicPdu(request_id=request_id,
+                                  error=error,
+                                  data=inform.data)
+        return encoder.v3.Msg(type=encoder.v3.MsgType.RESPONSE,
+                              id=request_id,
+                              reportable=False,
+                              context=inform.context,
+                              pdu=pdu)
+
+    raise ValueError('unsupported version')
+
+
+def _decode_inform_res(msg_bytes):
+    msg = encoder.decode(msg_bytes)
+
+    if isinstance(msg, encoder.v2c.Msg):
+        version = common.Version.V2C
 
     elif isinstance(msg, encoder.v3.Msg):
-        if msg.type != encoder.v3.MsgType.SNMPV2_TRAP:
-            raise ValueError('invalid trap message type')
+        version = common.Version.V3
 
+    else:
+        raise ValueError('unsupported nessage')
+
+    if msg.type != encoder.v2c.MsgType.RESPONSE:
+        raise ValueError('invalid response message type')
+
+    if msg.pdu.error.type == common.ErrorType.NO_ERROR:
+        return version, msg.pdu.request_id, None
+
+    return version, msg.pdu.request_id, msg.pdu.error
+
+
+def _decode_listener_req(msg):
+    if isinstance(msg, encoder.v1.Msg):
+        version = common.Version.V1
+        context = common.Context(None, msg.community)
+
+    elif isinstance(msg, encoder.v2c.Msg):
+        version = common.Version.V2C
+        context = common.Context(None, msg.community)
+
+    elif isinstance(msg, encoder.v3.Msg):
+        version = common.Version.V3
+        context = msg.context
+
+    else:
+        raise ValueError('unsupported message')
+
+    if version == common.Version.V1:
+        if msg.type != encoder.v1.MsgType.TRAP:
+            raise ValueError('unsupported message type')
+
+        req = common.Trap(context=context,
+                          cause=msg.pdu.cause,
+                          oid=msg.pdu.enterprise,
+                          timestamp=msg.pdu.timestamp,
+                          data=msg.pdu.data)
+
+    elif msg.type == encoder.v2c.MsgType.SNMPV2_TRAP:
         if (len(msg.pdu.data) < 2 or
                 msg.pdu.data[0].type != common.DataType.TIME_TICKS or
                 msg.pdu.data[1].type != common.DataType.OBJECT_ID):
@@ -198,17 +341,18 @@ def _decode_trap(msg):
 
         # TODO: check data names
 
-        context = msg.context
-        cause = None
-        timestamp = msg.pdu.data[0].value
-        oid = msg.pdu.data[1].value
-        data = msg.pdu.data[2:]
+        req = common.Trap(context=context,
+                          cause=None,
+                          oid=msg.pdu.data[1].value,
+                          timestamp=msg.pdu.data[0].value,
+                          data=msg.pdu.data[2:])
+
+    elif msg.type == encoder.v2c.MsgType.INFORM_REQUEST:
+        req = common.Inform(context=context,
+                            data=msg.pdu.data)
 
     else:
         raise ValueError('unsupported message type')
 
-    return common.Trap(context=context,
-                       cause=cause,
-                       oid=oid,
-                       timestamp=timestamp,
-                       data=data)
+    request_id = None if version == common.Version.V1 else msg.pdu.request_id
+    return version, request_id, req

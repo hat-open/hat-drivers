@@ -104,7 +104,7 @@ def _decode_res(msg_bytes):
 
     if isinstance(msg, encoder.v1.Msg):
         if msg.type != encoder.v1.MsgType.GET_RESPONSE:
-            raise ValueError(f'invalid response message type ({msg.type})')
+            raise ValueError('invalid response message type')
 
         version = common.Version.V1
         context = common.Context(engine_id=None,
@@ -112,7 +112,7 @@ def _decode_res(msg_bytes):
 
     elif isinstance(msg, encoder.v2c.Msg):
         if msg.type != encoder.v2c.MsgType.RESPONSE:
-            raise ValueError(f'invalid response message type ({msg.type})')
+            raise ValueError('invalid response message type')
 
         version = common.Version.V2C
         context = common.Context(engine_id=None,
@@ -120,13 +120,13 @@ def _decode_res(msg_bytes):
 
     elif isinstance(msg, encoder.v3.Msg):
         if msg.type != encoder.v3.MsgType.RESPONSE:
-            raise ValueError(f'invalid response message type ({msg.type})')
+            raise ValueError('invalid response message type')
 
         version = common.Version.V3
         context = msg.context
 
     else:
-        raise ValueError('unsupported nessage')
+        raise ValueError('unsupported message')
 
     if msg.pdu.error.type == common.ErrorType.NO_ERROR:
         return version, context, msg.pdu.request_id, msg.pdu.data

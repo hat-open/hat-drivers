@@ -77,6 +77,7 @@ async def test_sender_create(udp_addr):
     assert sender.is_closed
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v1'))])
 @pytest.mark.parametrize("cause_type", common.CauseType)
 async def test_sender_send_v1(udp_addr, data, cause_type):
@@ -106,6 +107,7 @@ async def test_sender_send_v1(udp_addr, data, cause_type):
     await listener.async_close()
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v2c'))])
 async def test_sender_send_v2(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
@@ -132,6 +134,7 @@ async def test_sender_send_v2(udp_addr, data):
     await listener.async_close()
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v3'))])
 async def test_sender_send_v3(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
@@ -159,6 +162,7 @@ async def test_sender_send_v3(udp_addr, data):
     await listener.async_close()
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v1'))])
 @pytest.mark.parametrize("cause_type", common.CauseType)
 async def test_listener_receive_v1(udp_addr, data, cause_type):
@@ -191,6 +195,7 @@ async def test_listener_receive_v1(udp_addr, data, cause_type):
     await listener.async_close()
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v2c'))])
 async def test_listener_receive_v2(udp_addr, data):
     listener = await trap.create_trap_listener(udp_addr)
@@ -220,6 +225,7 @@ async def test_listener_receive_v2(udp_addr, data):
     await listener.async_close()
 
 
+@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("data", [list(_data('v3'))])
 async def test_listener_receive_v3(udp_addr, data):
     listener = await trap.create_trap_listener(udp_addr)

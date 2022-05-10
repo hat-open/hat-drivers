@@ -10,8 +10,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-# TODO maybe add version?
-RequestCb = aio.AsyncCallable[[common.Context, common.Request],
+RequestCb = aio.AsyncCallable[[common.Version, common.Context, common.Request],
                               common.Response]
 
 
@@ -52,7 +51,8 @@ class Agent(aio.Resource):
                     continue
 
                 try:
-                    res = await aio.call(self._request_cb, context, req)
+                    res = await aio.call(self._request_cb, version, context,
+                                         req)
                     res_msg = _encode_res_msg(version, context, request_id,
                                               data, res)
                     res_msg_bytes = encoder.encode(res_msg)

@@ -121,6 +121,7 @@ class Context(typing.NamedTuple):
     engine_id: typing.Optional[str]
     """engine id is not available in case of v1 and v2c"""
     name: str
+    """name is used as community name in case of v1 and v2c"""
 
 
 class Trap(typing.NamedTuple):
@@ -133,6 +134,7 @@ class Trap(typing.NamedTuple):
 
 
 class Inform(typing.NamedTuple):
+    context: Context
     data: typing.List[Data]
 
 
