@@ -66,7 +66,18 @@ class Manager(aio.Resource):
                 # TODO check address
 
                 try:
-                    request_id, res = self._decode_res(msg_bytes)
+                    version, context, request_id, res = _decode_res(msg_bytes)
+
+                    if version != self._version:
+                        mlog.warning(('received response with version '
+                                      'mismatch (received version %s)'),
+                                     version)
+
+                    if context != self._context:
+                        mlog.warning(('received response with context '
+                                      'mismatch (received context %s)'),
+                                     context)
+
                     future = self._receive_futures[request_id]
                     if not future.done():
                         future.set_result(res)
@@ -87,29 +98,41 @@ class Manager(aio.Resource):
                 if not future.done():
                     future.set_exception(ConnectionError())
 
-    def _decode_res(self, msg_bytes):
-        msg = encoder.decode(msg_bytes)
 
-        # TODO check context
-        # TODO check version
+def _decode_res(msg_bytes):
+    msg = encoder.decode(msg_bytes)
 
-        if isinstance(msg, encoder.v1.Msg):
-            if msg.type != encoder.v1.MsgType.GET_RESPONSE:
-                raise ValueError('invalid response message type')
+    if isinstance(msg, encoder.v1.Msg):
+        if msg.type != encoder.v1.MsgType.GET_RESPONSE:
+            raise ValueError(f'invalid response message type ({msg.type})')
 
-        elif isinstance(msg, (encoder.v2c.Msg,
-                              encoder.v3.Msg)):
-            if msg.type != encoder.v2c.MsgType.RESPONSE:
-                raise ValueError('invalid response message type')
+        version = common.Version.V1
+        context = common.Context(engine_id=None,
+                                 name=msg.community)
 
-        else:
-            raise ValueError('unsupported nessage')
+    elif isinstance(msg, encoder.v2c.Msg):
+        if msg.type != encoder.v2c.MsgType.RESPONSE:
+            raise ValueError(f'invalid response message type ({msg.type})')
 
-        if msg.pdu.error.type == common.ErrorType.NO_ERROR:
-            return msg.pdu.request_id, msg.pdu.data
+        version = common.Version.V2C
+        context = common.Context(engine_id=None,
+                                 name=msg.community)
 
-        else:
-            return msg.pdu.request_id, msg.pdu.error
+    elif isinstance(msg, encoder.v3.Msg):
+        if msg.type != encoder.v3.MsgType.RESPONSE:
+            raise ValueError(f'invalid response message type ({msg.type})')
+
+        version = common.Version.V3
+        context = msg.context
+
+    else:
+        raise ValueError('unsupported nessage')
+
+    if msg.pdu.error.type == common.ErrorType.NO_ERROR:
+        return version, context, msg.pdu.request_id, msg.pdu.data
+
+    else:
+        return version, context, msg.pdu.request_id, msg.pdu.error
 
 
 def _req_to_msg(version, context, request_id, req):
@@ -160,9 +183,6 @@ def _req_to_msg_type(version, req):
         elif isinstance(req, common.SetDataReq):
             return encoder.v1.MsgType.SET_REQUEST
 
-        elif isinstance(req, common.InformReq):
-            return encoder.v2c.MsgType.INFORM_REQUEST
-
     raise ValueError('unsupported version / request')
 
 
@@ -171,8 +191,7 @@ def _req_to_pdu(version, request_id, req):
 
     if isinstance(req, (common.GetDataReq,
                         common.GetNextDataReq,
-                        common.SetDataReq,
-                        common.InformReq)):
+                        common.SetDataReq)):
         return encoder.v1.BasicPdu(
             request_id=request_id,
             error=common.Error(common.ErrorType.NO_ERROR, 0),
@@ -194,8 +213,7 @@ def _req_to_data(version, req):
         return [_name_to_data(version, name)
                 for name in req.names]
 
-    elif isinstance(req, (common.SetDataReq,
-                          common.InformReq)):
+    elif isinstance(req, common.SetDataReq):
         return req.data
 
     raise ValueError('unsupported request')

@@ -114,9 +114,6 @@ def _decode_req_msg(msg):
         elif msg.type == encoder.v2c.MsgType.SET_REQUEST:
             req = common.SetDataReq(msg.pdu.data)
 
-        elif msg.type == encoder.v2c.MsgType.INFORM_REQUEST:
-            req = common.InformReq(msg.pdu.data)
-
         else:
             raise ValueError('unsupported message type')
 

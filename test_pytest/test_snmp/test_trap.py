@@ -83,7 +83,7 @@ async def test_sender_send_v1(udp_addr, data, cause_type):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_trap_sender(udp_addr, common.Version.V1)
-    sender.send(
+    sender.send_trap(
         common.Trap(context=common.Context(
                         engine_id=None, name='community'),
                     cause=common.Cause(type=cause_type, value=13),
@@ -111,7 +111,7 @@ async def test_sender_send_v2(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_trap_sender(udp_addr, common.Version.V2C)
-    sender.send(
+    sender.send_trap(
         common.Trap(context=common.Context(
                         engine_id=None, name='community'),
                     cause=None,
@@ -138,7 +138,7 @@ async def test_sender_send_v3(udp_addr, data):
 
     sender = await trap.create_trap_sender(udp_addr, common.Version.V3)
 
-    sender.send(
+    sender.send_trap(
         common.Trap(context=common.Context(
                         engine_id='engine_id', name='community'),
                     cause=None,

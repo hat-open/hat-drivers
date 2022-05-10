@@ -12,6 +12,10 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
+InformCb = aio.AsyncCallable[[common.Context, common.Inform],
+                             typing.Optional[common.Error]]
+
+
 async def create_trap_sender(remote_addr: udp.Address,
                              version: common.Version = common.Version.V2C
                              ) -> 'TrapSender':
@@ -28,10 +32,12 @@ async def create_trap_sender(remote_addr: udp.Address,
     return sender
 
 
-async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162)  # NOQA
+async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162),  # NOQA
+                               inform_cb: typing.Optional[InformCb] = None
                                ) -> 'TrapListener':
     """Create trap listener"""
     listener = TrapListener()
+    listener._inform_cb = inform_cb
     listener._receive_queue = aio.Queue()
 
     listener._endpoint = await udp.create(local_addr=local_addr,
@@ -48,12 +54,17 @@ class TrapSender(aio.Resource):
     def async_group(self) -> aio.Group:
         return self._endpoint.async_group
 
-    def send(self, trap: common.Trap):
+    def send_trap(self, trap: common.Trap):
         request_id = next(self._next_request_id)
         msg = _encode_trap(self._version, self._addr, request_id, trap)
         msg_bytes = encoder.encode(msg)
 
         self._endpoint.send(msg_bytes)
+
+    async def send_inform(self,
+                          inform: common.Inform
+                          ) -> typing.Optional[common.Error]:
+        raise NotImplementedError()
 
 
 class TrapListener(aio.Resource):

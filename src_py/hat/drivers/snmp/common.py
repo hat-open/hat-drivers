@@ -132,6 +132,10 @@ class Trap(typing.NamedTuple):
     data: typing.List[Data]
 
 
+class Inform(typing.NamedTuple):
+    data: typing.List[Data]
+
+
 class GetDataReq(typing.NamedTuple):
     names: typing.List[ObjectIdentifier]
 
@@ -148,14 +152,9 @@ class SetDataReq(typing.NamedTuple):
     data: typing.List[Data]
 
 
-class InformReq(typing.NamedTuple):
-    data: typing.List[Data]
-
-
 Request = typing.Union[GetDataReq,
                        GetNextDataReq,
                        GetBulkDataReq,
-                       SetDataReq,
-                       InformReq]
+                       SetDataReq]
 
 Response = typing.Union[Error, typing.List[Data]]

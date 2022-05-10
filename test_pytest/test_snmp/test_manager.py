@@ -65,10 +65,6 @@ def req_to_msg_type(req, version):
         if version in [snmp.Version.V2C,
                        snmp.Version.V3]:
             return v2c.MsgType.GET_BULK_REQUEST
-    if isinstance(req, snmp.InformReq):
-        if version in [snmp.Version.V2C,
-                       snmp.Version.V3]:
-            return v2c.MsgType.INFORM_REQUEST
 
 
 def req_to_data(req, version):
@@ -80,8 +76,7 @@ def req_to_data(req, version):
         return [snmp.Data(type=dtype,
                           name=i,
                           value=None) for i in req.names]
-    if isinstance(req, (snmp.SetDataReq,
-                        snmp.InformReq)):
+    if isinstance(req, snmp.SetDataReq):
         return req.data
 
 
@@ -226,8 +221,7 @@ async def test_send(agent_addr, req, response_exp, version):
 @pytest.mark.parametrize("req", [
     snmp.GetBulkDataReq(names=[]),
     snmp.GetBulkDataReq(names=[(1, 2), (1, 2, 3), (1, 2, 456)]),
-    snmp.InformReq(data=[]),
-    snmp.InformReq(data=[
+    snmp.SetDataReq(data=[
         snmp.Data(type=snmp.DataType.BIG_COUNTER,
                   name=(1, 2, 3, 456),
                   value=123456)]),
@@ -235,7 +229,7 @@ async def test_send(agent_addr, req, response_exp, version):
         snmp.Data(type=snmp.DataType.NO_SUCH_OBJECT,
                   name=(1, 2, 3, 4, 5, 5678),
                   value=None)]),
-    snmp.InformReq(data=[
+    snmp.SetDataReq(data=[
         snmp.Data(type=dt,
                   name=(1, 2, 3, 4, 5, 5678),
                   value=v) for dt, v in (
@@ -356,7 +350,6 @@ async def test_request_id(agent_addr, version):
 
 @pytest.mark.parametrize("invalid_request", [
     snmp.GetBulkDataReq(names=[]),
-    snmp.InformReq(data=[]),
     ])
 async def test_invalid_request(agent_addr, invalid_request):
     manager = await snmp.create_manager(
