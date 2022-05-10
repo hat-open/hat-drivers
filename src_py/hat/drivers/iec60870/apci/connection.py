@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import logging
+import ssl
 import typing
 
 from hat import aio
@@ -22,7 +23,8 @@ async def connect(addr: tcp.Address,
                   supervisory_timeout: float = 10,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
-                  receive_window_size: int = 8
+                  receive_window_size: int = 8,
+                  ssl_ctx: typing.Optional[ssl.SSLContext] = None
                   ) -> 'Connection':
     """Connect to remote device
 
@@ -33,9 +35,10 @@ async def connect(addr: tcp.Address,
         test_timeout: test timeout (t3) in seconds
         send_window_size: send window size (k)
         receive_window_size: receive window size (w)
+        ssl_ctx: optional ssl context argument
 
     """
-    conn = await tcp.connect(addr)
+    conn = await tcp.connect(addr, ssl=ssl_ctx)
 
     try:
         _write_apdu(conn, common.APDUU(common.ApduFunction.STARTDT_ACT))
