@@ -170,7 +170,7 @@ class TrapListener(aio.Resource):
                         res_msg = _encode_inform_res(version, request_id, req,
                                                      res)
                         res_msg_bytes = encoder.encode(res_msg)
-                        self._endpoint.send(res_msg_bytes)
+                        self._endpoint.send(res_msg_bytes, addr)
 
                     else:
                         raise ValueError('unsupported request')
