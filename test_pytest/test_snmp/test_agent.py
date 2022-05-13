@@ -1,14 +1,15 @@
 import pytest
 
 from hat import aio
-from hat.drivers import udp
+from hat import util
 from hat.drivers import snmp
+from hat.drivers import udp
 from hat.drivers.snmp import encoder
 
 
 @pytest.fixture
-def agent_address(unused_tcp_port_factory):
-    return udp.Address('127.0.0.1', unused_tcp_port_factory())
+def agent_address():
+    return udp.Address('127.0.0.1', util.get_unused_udp_port())
 
 
 @pytest.fixture

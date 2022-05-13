@@ -11,7 +11,7 @@ from hat.drivers.snmp.encoder import v1, v2c, v3
 
 @pytest.fixture
 def agent_addr():
-    return udp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return udp.Address('127.0.0.1', util.get_unused_udp_port())
 
 
 async def create_mock_agent(addr):
