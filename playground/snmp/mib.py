@@ -26,8 +26,8 @@ def get_all(path, out_path, silent):
     mibs_json = mibs_to_json(path, verbose)
 
     if verbose:
-        print_mibs_tree(mibs_json)
-        # print_node_type_stats(mibs_json)
+        print_mib_tree(mibs_json)
+        print_node_type_stats(mibs_json)
 
     if out_path:
         json.encode_file(mibs_json, out_path)
@@ -41,9 +41,10 @@ def translate(oid, path, verbose):
     mib_json = mibs_to_json(path, verbose)
     tree = mib_tree(mib_json)
     path = translate_oid(oid, tree, verbose)
-    descr = json.get(tree, [*oid.split('.'), 'description'],
-                     'no description found')
-    print(f"{path}\n\n  description: {descr}")
+    node = json.get(tree, [*oid.split('.')])
+    descr = json.get(node, ['description'], 'no description found')
+    node_type = get_node_type(node)
+    print(f"{path}\n\n  type: {node_type} \n\n  description: {descr}")
 
 
 def translate_oid(oid, mib_tree, verbose=False):
@@ -96,7 +97,7 @@ def oids_from_mibs_json(mibs_json):
     return [i for mib in mibs_json for i in mib.values() if i.get('oid')]
 
 
-def print_mibs_tree(mibs_json):
+def print_mib_tree(mibs_json):
     print('\nmibs tree:')
     mibs_sorted = sorted(oids_from_mibs_json(mibs_json),
                          key=lambda j: j['oid'])
@@ -106,9 +107,7 @@ def print_mibs_tree(mibs_json):
         if oid.startswith('1') and len(oid.split('.')) == 2:
             print('iso')
         level = oid.count('.')
-        node_type = (json.get(item, ['syntax', 'type'])
-                     if item.get('class') == 'objecttype'
-                     else item.get('class'))
+        node_type = get_node_type(item)
         print('  ' * (level - 1) + f"|_{name} ({oid}) {node_type}")
 
 
@@ -123,9 +122,7 @@ def print_node_type_stats(mibs_json):
     print('\nmib node types:')
     node_types = []
     for item in oids_from_mibs_json(mibs_json):
-        node_type = (json.get(item, ['syntax', 'type'])
-                     if item.get('class') == 'objecttype'
-                     else item.get('class'))
+        node_type = get_node_type(item)
         if node_type:
             node_types.append(node_type)
     for nt in sorted(set(node_types)):
@@ -158,6 +155,12 @@ def get_all_mibs(path: Path):
         elif p.is_dir():
             mib_files.update(get_all_mibs(p))
     return mib_files
+
+
+def get_node_type(node):
+    return (json.get(node, ['syntax', 'type'])
+            if node.get('class') == 'objecttype'
+            else node.get('class'))
 
 
 if __name__ == "__main__":
