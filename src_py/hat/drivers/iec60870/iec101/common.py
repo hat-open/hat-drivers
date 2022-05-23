@@ -415,6 +415,7 @@ class ClockSyncMsg(typing.NamedTuple):
     originator_address: OriginatorAddress
     asdu_address: AsduAddress
     time: Time
+    is_negative_confirm: bool
     cause: ActivationCause
 
 

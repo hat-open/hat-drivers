@@ -154,6 +154,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             originator_address=asdu.cause.originator_address,
             asdu_address=asdu.address,
             time=io_element.time,
+            is_negative_confirm=asdu.cause.is_negative_confirm,
             cause=_decode_cause(asdu.cause.type,
                                 common.ActivationReqCause,
                                 common.ActivationResCause))
@@ -413,6 +414,7 @@ def _encode_msg(msg):
     elif isinstance(msg, common.ClockSyncMsg):
         asdu_type = app.iec101.common.AsduType.C_CS_NA
         cause_type = _encode_cause(msg.cause)
+        is_negative_confirm = msg.is_negative_confirm
         io_element = app.iec101.common.IoElement_C_CS_NA(
             time=msg.time)
 
