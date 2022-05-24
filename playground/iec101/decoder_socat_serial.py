@@ -1,12 +1,13 @@
-import click
 from pathlib import Path
+import click
+import contextlib
 import sys
 
 from hat.drivers.iec60870 import iec101
-from hat.drivers.iec60870.iec101.encoder import Encoder
-from hat.drivers.iec60870.app.iec101.encoder import Encoder as EncoderApp
-from hat.drivers.iec60870.link.encoder import Encoder as EncoderLink
 from hat.drivers.iec60870 import link
+from hat.drivers.iec60870.app.iec101.encoder import Encoder as EncoderApp
+from hat.drivers.iec60870.iec101.encoder import Encoder
+from hat.drivers.iec60870.link.encoder import Encoder as EncoderLink
 
 
 def decode(in_bytes):
@@ -35,35 +36,33 @@ def decode(in_bytes):
 
 
 @click.command()
-@click.option('--in-file', default=None, type=Path, required=True)
-@click.option('--out-file', default=None, type=Path, required=False)
-def main(in_file, out_file):
-
+@click.argument('input-path', default=Path('-'), type=Path)
+@click.option('-o', '--output-path', default=Path('-'), type=Path)
+def main(input_path, output_path):
     bytes_str = ''
     out_lines = []
-    with open(in_file, 'r') as f:
+    stream = (sys.stdin if input_path == Path('-')
+              else open(input_path, 'r', encoding='utf-8'))
+    with contextlib.closing(stream):
         while True:
-            line = f.readline()
+            line = stream.readline()
             if not line:
                 break
-            if line[0] != ' ':
+            if line[0] in ['-', '<', '>']:
                 out_lines.append(line)
                 continue
             bytes_str += line.split('    ')[0].strip()
             try:
                 for i in decode(bytes_str):
-                    out_lines.append(i)
-                    out_lines.append("\n")
+                    out_lines.extend((i, "\n"))
                 bytes_str = ''
             except Exception:
                 pass
 
-    if out_file:
-        with open(out_file, 'w') as f:
-            f.writelines(out_lines)
-    else:
-        for i in out_lines:
-            print(i)
+    stream = (sys.stdout if output_path == Path('-')
+              else open(output_path, 'w'))
+    with contextlib.closing(stream):
+        stream.writelines(out_lines)
 
 
 if __name__ == "__main__":
