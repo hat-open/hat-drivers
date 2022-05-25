@@ -53,6 +53,10 @@ ReadReqCause = iec101.ReadReqCause
 ReadResCause = iec101.ReadResCause
 ReadCause = iec101.ReadCause
 
+ClockSyncReqCause = iec101.ClockSyncReqCause
+ClockSyncResCause = iec101.ClockSyncResCause
+ClockSyncCause = iec101.ClockSyncCause
+
 ActivationReqCause = iec101.ActivationReqCause
 ActivationResCause = iec101.ActivationResCause
 ActivationCause = iec101.ActivationCause

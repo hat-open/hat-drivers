@@ -147,8 +147,8 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             time=io_element.time,
             is_negative_confirm=asdu.cause.is_negative_confirm,
             cause=_decode_cause(asdu.cause.type,
-                                common.ActivationReqCause,
-                                common.ActivationResCause))
+                                common.ClockSyncReqCause,
+                                common.ClockSyncResCause))
 
     elif asdu.type == app.iec104.common.AsduType.C_RP_NA:
         return common.ResetMsg(

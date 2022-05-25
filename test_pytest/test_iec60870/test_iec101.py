@@ -533,8 +533,8 @@ async def test_send_receive_read(is_test, asdu, asdu_size, io, io_size,
     await assert_send_receive([msg], cause_size, asdu_size, io_size)
 
 
-@pytest.mark.parametrize("cause", (*iec101.ActivationReqCause,
-                                   *iec101.ActivationResCause))
+@pytest.mark.parametrize("cause", (*iec101.ClockSyncReqCause,
+                                   *iec101.ClockSyncResCause))
 @pytest.mark.parametrize(
     "is_test, asdu, asdu_size, io, io_size, orig, cause_size, time, is_neg",
     zip((True, False, True),

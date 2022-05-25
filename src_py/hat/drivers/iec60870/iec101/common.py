@@ -116,6 +116,24 @@ class ReadResCause(enum.Enum):
 ReadCause = typing.Union[ReadReqCause, ReadResCause, OtherCause]
 
 
+class ClockSyncReqCause(enum.Enum):
+    ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
+
+
+class ClockSyncResCause(enum.Enum):
+    SPONTANEOUS = app.iec101.common.CauseType.SPONTANEOUS.value
+    ACTIVATION_CONFIRMATION = app.iec101.common.CauseType.ACTIVATION_CONFIRMATION.value  # NOQA
+    UNKNOWN_TYPE = app.iec101.common.CauseType.UNKNOWN_TYPE.value
+    UNKNOWN_CAUSE = app.iec101.common.CauseType.UNKNOWN_CAUSE.value
+    UNKNOWN_ASDU_ADDRESS = app.iec101.common.CauseType.UNKNOWN_ASDU_ADDRESS.value  # NOQA
+    UNKNOWN_IO_ADDRESS = app.iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
+
+
+ClockSyncCause = typing.Union[ClockSyncReqCause,
+                              ClockSyncResCause,
+                              OtherCause]
+
+
 class ActivationReqCause(enum.Enum):
     ACTIVATION = app.iec101.common.CauseType.ACTIVATION.value
 
@@ -416,7 +434,7 @@ class ClockSyncMsg(typing.NamedTuple):
     asdu_address: AsduAddress
     time: Time
     is_negative_confirm: bool
-    cause: ActivationCause
+    cause: ClockSyncCause
 
 
 class TestMsg(typing.NamedTuple):
