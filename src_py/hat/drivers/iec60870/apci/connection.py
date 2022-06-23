@@ -63,7 +63,8 @@ async def listen(connection_cb: ConnectionCb,
                  supervisory_timeout: float = 10,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
-                 receive_window_size: int = 8
+                 receive_window_size: int = 8,
+                 ssl_ctx: typing.Optional[ssl.SSLContext] = None
                  ) -> 'Server':
     """Create new IEC104 slave and listen for incoming connections
 
@@ -75,6 +76,7 @@ async def listen(connection_cb: ConnectionCb,
         test_timeout: test timeout (t3) in seconds
         send_window_size: send window size (k)
         receive_window_size: receive window size (w)
+        ssl_ctx: optional ssl context argument
 
     """
     server = Server()
@@ -86,7 +88,8 @@ async def listen(connection_cb: ConnectionCb,
     server._receive_window_size = receive_window_size
 
     server._srv = await tcp.listen(server._on_connection, addr,
-                                   bind_connections=True)
+                                   bind_connections=True,
+                                   ssl=ssl_ctx)
 
     return server
 
