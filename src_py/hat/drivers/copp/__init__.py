@@ -5,7 +5,7 @@ Attributes:
 
 """
 
-from pathlib import Path
+import importlib.resources
 import logging
 import typing
 
@@ -49,9 +49,9 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-_encoder = asn1.Encoder(asn1.Encoding.BER,
-                        asn1.Repository.from_json(Path(__file__).parent /
-                                                  'asn1_repo.json'))
+with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
 
 
 class SyntaxNames:

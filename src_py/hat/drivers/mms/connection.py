@@ -1,7 +1,7 @@
 """Manufacturing Message Specification"""
 
-from pathlib import Path
 import asyncio
+import importlib.resources
 import logging
 import typing
 
@@ -356,9 +356,9 @@ _service_support[83] = True  # conclude
 _mms_syntax_name = (1, 0, 9506, 2, 1)
 # (iso, standard, iso9506, part, mms-annex-version1)
 _mms_app_context_name = (1, 0, 9506, 2, 3)
-_encoder = asn1.Encoder(asn1.Encoding.BER,
-                        asn1.Repository.from_json(Path(__file__).parent /
-                                                  'asn1_repo.json'))
+with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
 
 
 def _encode(value):

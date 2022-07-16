@@ -45,8 +45,7 @@ def task_build():
             name='hat-drivers',
             description='Hat communication drivers',
             url='https://github.com/hat-open/hat-drivers',
-            license=common.License.APACHE2,
-            packages=['hat'])
+            license=common.License.APACHE2)
 
     return {'actions': [build],
             'task_dep': ['asn1']}

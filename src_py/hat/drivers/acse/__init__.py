@@ -1,6 +1,6 @@
 """Association Controll Service Element"""
 
-from pathlib import Path
+import importlib.resources
 import logging
 import typing
 
@@ -53,9 +53,9 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 
 # (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
 _acse_syntax_name = (2, 2, 1, 0, 1)
-_encoder = asn1.Encoder(asn1.Encoding.BER,
-                        asn1.Repository.from_json(Path(__file__).parent /
-                                                  'asn1_repo.json'))
+with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
 
 
 async def connect(syntax_name_list: typing.List[asn1.ObjectIdentifier],

@@ -1,4 +1,4 @@
-from pathlib import Path
+import importlib.resources
 import typing
 
 from hat import asn1
@@ -19,8 +19,9 @@ __all__ = ['v1',
            'decode']
 
 
-_repo = asn1.Repository.from_json(Path(__file__).parent / 'asn1_repo.json')
-_encoder = asn1.Encoder(asn1.Encoding.BER, _repo)
+with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
 
 
 Msg = typing.Union[v1.Msg, v2c.Msg, v3.Msg]
