@@ -3,12 +3,11 @@ from pathlib import Path
 from hat import asn1
 from hat import json
 from hat.doit import common
+from hat.doit.docs import (build_sphinx,
+                           build_pdoc)
 from hat.doit.py import (build_wheel,
                          run_pytest,
                          run_flake8)
-from hat.doit.docs import (SphinxOutputType,
-                           build_sphinx,
-                           build_pdoc)
 
 
 __all__ = ['task_clean_all',
@@ -66,11 +65,15 @@ def task_test():
 
 def task_docs():
     """Docs"""
-    return {'actions': [(build_sphinx, [SphinxOutputType.HTML,
-                                        docs_dir,
-                                        build_docs_dir]),
-                        (build_pdoc, ['hat.drivers',
-                                      build_docs_dir / 'py_api'])],
+
+    def build():
+        build_sphinx(src_dir=docs_dir,
+                     dst_dir=build_docs_dir,
+                     project='hat-drivers')
+        build_pdoc(module='hat.drivers',
+                   dst_dir=build_docs_dir / 'py_api')
+
+    return {'actions': [build],
             'task_dep': ['asn1']}
 
 
