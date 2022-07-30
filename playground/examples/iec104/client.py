@@ -1,40 +1,51 @@
 import asyncio
-from hat.drivers import iec104
+from hat.drivers import tcp
+from hat.drivers.iec60870 import apci
+from hat.drivers.iec60870 import iec104
 
 
-addr = iec104.Address('127.0.0.1', 23231)
+addr = tcp.Address('127.0.0.1', 23231)
 
-cmd = iec104.Command(action=iec104.Action.EXECUTE,
-                     value=iec104.SingleValue.ON,
-                     time=None,
-                     asdu_address=123,
-                     io_address=321,
-                     qualifier=0)
+cmd = iec104.CommandMsg(
+    is_test=False,
+    originator_address=0,
+    asdu_address=123,
+    io_address=321,
+    command=iec104.SingleCommand(
+        value=iec104.SingleValue.ON,
+        select=False,
+        qualifier=0),
+    is_negative_confirm=False,
+    time=None,
+    cause=iec104.CommandReqCause.ACTIVATION)
 
 
 async def main():
     while True:
         try:
-            conn = await iec104.connect(addr)
+            conn = await apci.connect(addr)
+            conn = iec104.Connection(conn)
+
         except Exception:
             print('connect failed - waithing for 5 seconds')
             await asyncio.sleep(5)
             continue
-        conn.async_group.spawn(connection_loop, conn)
-        await conn.wait_closed()
 
+        print('>> connected')
+        try:
+            print('>> sending')
+            conn.send([cmd])
 
-async def connection_loop(conn):
-    print('starting connection loop')
-    try:
-        print('sending command')
-        await conn.send_command(cmd)
-        while True:
-            data = await conn.receive()
-            for i in data:
-                print('>>', i)
-    finally:
-        conn.close()
+            while True:
+                msgs = await conn.receive()
+                print('>> received', msgs)
+
+        except ConnectionError:
+            pass
+
+        finally:
+            print('>> disconnected')
+            await conn.async_close()
 
 
 if __name__ == '__main__':

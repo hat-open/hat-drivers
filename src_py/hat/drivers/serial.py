@@ -175,7 +175,7 @@ class Connection(aio.Resource):
                 await asyncio.sleep(self._silent_interval)
 
         except Exception as e:
-            mlog.warning('read loop error: %s', e, exc_info=e)
+            mlog.warning('write loop error: %s', e, exc_info=e)
 
         finally:
             self._async_group.close()
