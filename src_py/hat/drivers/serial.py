@@ -35,7 +35,7 @@ class Parity(enum.Enum):
     NONE = 'PARITY_NONE'
     EVEN = 'PARITY_EVEN'
     ODD = 'PARITY_ODD'
-    MARK = 'PARITI_MARK'
+    MARK = 'PARITY_MARK'
     SPACE = 'PARITY_SPACE'
 
 
