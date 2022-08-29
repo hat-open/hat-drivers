@@ -4,8 +4,8 @@ import logging
 import typing
 
 from hat import aio
-from hat import udp
 from hat import util
+from hat.drivers import udp
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
