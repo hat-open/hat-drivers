@@ -157,12 +157,13 @@ def data_bytes_frames_received_log():
            noise + variable +
            noise + variable_invalid_length, 1, 1)
 
-    yield(noise + variable +
-          noise + fixed +
-          noise + fixed_invalid_crc +
-          noise + fixed_invalid_start +
-          noise + variable_invalid_end +
-          variable, 3, 2)
+    data_bytes = (noise + variable +
+                  noise + fixed +
+                  noise + fixed_invalid_crc +
+                  noise + fixed_invalid_start +
+                  noise + variable_invalid_end +
+                  variable)
+    yield (data_bytes, 3, 2)
 
 
 @pytest.mark.parametrize("data_bytes, frames_received, logs",
