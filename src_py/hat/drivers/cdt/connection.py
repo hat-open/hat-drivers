@@ -1,6 +1,5 @@
-"""WIP Chrome DevTools Protocol"""
-
 import asyncio
+import itertools
 import logging
 import typing
 
@@ -12,7 +11,11 @@ from hat import util
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
-"""Module logger"""
+
+
+SessionId = int
+EventName = str
+EventCb = typing.Callable[[EventName, json.Data], None]
 
 
 async def connect(host: str,
@@ -32,19 +35,16 @@ async def connect(host: str,
 
     conn = Connection()
     conn._ws = ws
-    conn._session = session
+    conn._ws_session = session
     conn._async_group = aio.Group()
     conn._event_cbs = util.CallbackRegistry()
-    conn._last_id = 0
+    conn._next_ids = itertools.count(1)
     conn._result_futures = {}
 
     conn._async_group.spawn(aio.call_on_cancel, conn._on_close)
     conn._async_group.spawn(conn._receive_loop)
 
     return conn
-
-
-EventCb = typing.Callable[['str', json.Data], None]
 
 
 class Connection(aio.Resource):
@@ -56,19 +56,17 @@ class Connection(aio.Resource):
     def register_event_cb(self,
                           cb: EventCb
                           ) -> util.RegisterCallbackHandle:
-        """Register remote data change callback"""
         return self._event_cbs.register(cb)
 
     async def call(self,
                    method: str,
                    params: json.Data = {},
-                   session_id=None
+                   session_id: typing.Optional[SessionId] = None
                    ) -> json.Data:
         if not self.is_open:
             raise ConnectionError()
 
-        self._last_id += 1
-        msg = {'id': self._last_id,
+        msg = {'id': next(self._next_ids),
                'method': method,
                'params': params}
         if session_id is not None:
@@ -90,7 +88,7 @@ class Connection(aio.Resource):
                 future.set_exception(ConnectionError())
 
         await self._ws.close()
-        await self._session.close()
+        await self._ws_session.close()
 
     async def _receive_loop(self):
         try:
@@ -106,7 +104,14 @@ class Connection(aio.Resource):
                 if 'id' in msg:
                     future = self._result_futures.get(msg['id'])
                     if future and not future.done():
-                        future.set_result(msg['result'])
+                        if 'result' in msg:
+                            future.set_result(msg['result'])
+
+                        else:
+                            future.set_exception(
+                                Exception(msg['error']['message']
+                                          if 'error' in msg
+                                          else 'unknown response'))
 
                 else:
                     self._event_cbs.notify(msg['method'], msg['params'])

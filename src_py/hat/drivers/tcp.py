@@ -1,6 +1,7 @@
 """Asyncio TCP wrapper"""
 
 import asyncio
+import contextlib
 import logging
 import typing
 
@@ -239,4 +240,5 @@ class Connection(aio.Resource):
                 future, _, _ = self._read_queue.get_nowait()
 
             self._writer.close()
-            await aio.uncancellable(self._writer.wait_closed())
+            with contextlib.suppress(Exception):
+                await aio.uncancellable(self._writer.wait_closed())
