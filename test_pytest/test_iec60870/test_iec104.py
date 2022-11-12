@@ -30,8 +30,8 @@ class MockApciConnection(apci.Connection):
     def send(self, data):
         self._data_queue.put_nowait(data)
 
-    async def drain(self):
-        self._drain_queue.put_nowait(None)
+    async def drain(self, wait_ack: bool = False):
+        self._drain_queue.put_nowait(wait_ack)
 
     async def receive(self):
         return await self._data_queue.get()

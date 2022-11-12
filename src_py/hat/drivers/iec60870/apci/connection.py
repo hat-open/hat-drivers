@@ -122,7 +122,12 @@ class Server(aio.Resource):
                                 send_window_size=self._send_window_size,
                                 receive_window_size=self._receive_window_size)
 
-        await aio.call(self._connection_cb, connection)
+        try:
+            await aio.call(self._connection_cb, connection)
+
+        except BaseException:
+            connection.close()
+            raise
 
 
 class Connection(aio.Resource):
@@ -168,21 +173,19 @@ class Connection(aio.Resource):
 
     def send(self, data: common.Bytes):
         try:
-            self._send_queue.put_nowait(data)
+            self._send_queue.put_nowait(_SendQueueEntryData(data))
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def drain(self):
+    async def drain(self, wait_ack: bool = False):
         try:
             future = asyncio.Future()
-            self._send_queue.put_nowait(future)
+            self._send_queue.put_nowait(_SendQueueEntryDrain(wait_ack, future))
             await future
 
         except aio.QueueClosedError:
             raise ConnectionError()
-
-        await self._conn.drain()
 
     async def receive(self) -> common.Bytes:
         try:
@@ -233,37 +236,28 @@ class Connection(aio.Resource):
             self._receive_queue.close()
 
     async def _write_loop(self):
+        entry = None
+
         try:
             while True:
-                asdu = await self._send_queue.get()
+                entry = await self._send_queue.get()
 
-                if isinstance(asdu, asyncio.Future):
-                    if not asdu.done():
-                        asdu.set_result(None)
-                    continue
+                if isinstance(entry, _SendQueueEntryData):
+                    await self._write_apdui(entry.data)
 
-                if self._ssn in self._waiting_ack_handles:
-                    raise Exception("can not reuse already registered ssn")
+                elif isinstance(entry, _SendQueueEntryDrain):
+                    await self._conn.drain()
 
-                async with self._waiting_ack_cv:
-                    await self._waiting_ack_cv.wait_for(
-                        lambda: (len(self._waiting_ack_handles) <
-                                 self._send_window_size))
+                    if entry.wait_ack:
+                        handles = list(self._waiting_ack_handles.values())
+                        self.async_group.spawn(self._wait_handles,
+                                               entry.future, handles)
 
-                if not self._is_enabled:
-                    mlog.info("send data not enabled - discarding message")
-                    continue
+                    elif not entry.future.done():
+                        entry.future.set_result(None)
 
-                _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
-                                                     rsn=self._rsn,
-                                                     data=asdu))
-                self._w = 0
-                self._stop_supervisory_timeout()
-
-                self._waiting_ack_handles[self._ssn] = (
-                    asyncio.get_event_loop().call_later(
-                        self._response_timeout, self._on_response_timeout))
-                self._ssn = (self._ssn + 1) % 0x8000
+                else:
+                    raise ValueError('invalid send queue entry')
 
         except (ConnectionError, aio.QueueClosedError):
             pass
@@ -279,10 +273,13 @@ class Connection(aio.Resource):
             for f in self._waiting_ack_handles.values():
                 f.cancel()
 
-            while not self._send_queue.empty():
-                asdu = self._send_queue.get_nowait()
-                if isinstance(asdu, asyncio.Future) and not asdu.done():
-                    asdu.set_exception(ConnectionError())
+            while True:
+                if (isinstance(entry, _SendQueueEntryDrain) and
+                        not entry.future.done()):
+                    entry.future.set_exception(ConnectionError())
+                if self._send_queue.empty():
+                    break
+                entry = self._send_queue.get_nowait()
 
     async def _test_loop(self):
         # TODO: implement reset timeout on received frame
@@ -346,6 +343,43 @@ class Connection(aio.Resource):
             self._w = 0
             self._stop_supervisory_timeout()
 
+    async def _write_apdui(self, data):
+        if self._ssn in self._waiting_ack_handles:
+            raise Exception("can not reuse already registered ssn")
+
+        async with self._waiting_ack_cv:
+            await self._waiting_ack_cv.wait_for(
+                lambda: (len(self._waiting_ack_handles) <
+                         self._send_window_size))
+
+        if not self._is_enabled:
+            mlog.info("send data not enabled - discarding message")
+            return
+
+        _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
+                                             rsn=self._rsn,
+                                             data=data))
+        self._w = 0
+        self._stop_supervisory_timeout()
+
+        self._waiting_ack_handles[self._ssn] = (
+            asyncio.get_event_loop().call_later(
+                self._response_timeout, self._on_response_timeout))
+        self._ssn = (self._ssn + 1) % 0x8000
+
+    async def _wait_handles(self, future, handles):
+        try:
+            async with self._waiting_ack_cv:
+                await self._waiting_ack_cv.wait_for(
+                    lambda: all(i.cancelled() for i in handles))
+
+            if not future.done():
+                future.set_result(None)
+
+        finally:
+            if not future.done():
+                future.set_exception(ConnectionError())
+
     async def _set_ack(self, ack):
         if ack >= self._ack:
             ssns = range(self._ack, ack)
@@ -375,6 +409,15 @@ class Connection(aio.Resource):
 
         self._supervisory_handle.cancel()
         self._supervisory_handle = None
+
+
+class _SendQueueEntryData(typing.NamedTuple):
+    data: common.Bytes
+
+
+class _SendQueueEntryDrain(typing.NamedTuple):
+    wait_ack: bool
+    future: asyncio.Future
 
 
 async def _read_apdu(conn):

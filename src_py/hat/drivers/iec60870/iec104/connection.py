@@ -21,8 +21,8 @@ class Connection(aio.Resource):
         for data in self._encoder.encode(msgs):
             self._conn.send(data)
 
-    async def drain(self):
-        await self._conn.drain()
+    async def drain(self, wait_ack: bool = False):
+        await self._conn.drain(wait_ack)
 
     async def receive(self) -> typing.List[common.Msg]:
         data = await self._conn.receive()
