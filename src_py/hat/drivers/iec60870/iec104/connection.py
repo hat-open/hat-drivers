@@ -1,3 +1,4 @@
+import collections
 import typing
 
 from hat import aio
@@ -20,6 +21,17 @@ class Connection(aio.Resource):
     def send(self, msgs: typing.List[common.Msg]):
         for data in self._encoder.encode(msgs):
             self._conn.send(data)
+
+    async def send_wait_ack(self, msgs: typing.List[common.Msg]):
+        data = collections.deque(self._encoder.encode(msgs))
+        if not data:
+            return
+
+        last = data.pop()
+        for i in data:
+            self._conn.send(i)
+
+        await self._conn.send_wait_ack(last)
 
     async def drain(self, wait_ack: bool = False):
         await self._conn.drain(wait_ack)

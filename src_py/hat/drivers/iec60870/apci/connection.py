@@ -172,17 +172,27 @@ class Connection(aio.Resource):
         return self._conn.info
 
     def send(self, data: common.Bytes):
+        entry = _SendQueueEntry(data, None, False)
         try:
-            self._send_queue.put_nowait(_SendQueueEntryData(data))
+            self._send_queue.put_nowait(entry)
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def send_wait_ack(self, data: common.Bytes):
+        entry = _SendQueueEntry(data, asyncio.Future(), True)
+        try:
+            self._send_queue.put_nowait(entry)
+            await entry.future
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
     async def drain(self, wait_ack: bool = False):
+        entry = _SendQueueEntry(None, asyncio.Future(), wait_ack)
         try:
-            future = asyncio.Future()
-            self._send_queue.put_nowait(_SendQueueEntryDrain(wait_ack, future))
-            await future
+            self._send_queue.put_nowait(entry)
+            await entry.future
 
         except aio.QueueClosedError:
             raise ConnectionError()
@@ -242,22 +252,23 @@ class Connection(aio.Resource):
             while True:
                 entry = await self._send_queue.get()
 
-                if isinstance(entry, _SendQueueEntryData):
-                    await self._write_apdui(entry.data)
-
-                elif isinstance(entry, _SendQueueEntryDrain):
+                if entry.data is None:
                     await self._conn.drain()
-
-                    if entry.wait_ack:
-                        handles = list(self._waiting_ack_handles.values())
-                        self.async_group.spawn(self._wait_handles,
-                                               entry.future, handles)
-
-                    elif not entry.future.done():
-                        entry.future.set_result(None)
+                    ssn = (self._ssn or 0x8000) - 1
+                    handle = self._waiting_ack_handles.get(ssn)
 
                 else:
-                    raise ValueError('invalid send queue entry')
+                    handle = await self._write_apdui(entry.data)
+
+                if not entry.future:
+                    continue
+
+                if entry.wait_ack and handle:
+                    self.async_group.spawn(self._wait_ack, handle, entry)
+                    entry = None
+
+                elif not entry.future.done():
+                    entry.future.set_result(None)
 
         except (ConnectionError, aio.QueueClosedError):
             pass
@@ -274,8 +285,7 @@ class Connection(aio.Resource):
                 f.cancel()
 
             while True:
-                if (isinstance(entry, _SendQueueEntryDrain) and
-                        not entry.future.done()):
+                if entry and entry.future and not entry.future.done():
                     entry.future.set_exception(ConnectionError())
                 if self._send_queue.empty():
                     break
@@ -362,16 +372,16 @@ class Connection(aio.Resource):
         self._w = 0
         self._stop_supervisory_timeout()
 
-        self._waiting_ack_handles[self._ssn] = (
-            asyncio.get_event_loop().call_later(
-                self._response_timeout, self._on_response_timeout))
+        handle = asyncio.get_event_loop().call_later(self._response_timeout,
+                                                     self._on_response_timeout)
+        self._waiting_ack_handles[self._ssn] = handle
         self._ssn = (self._ssn + 1) % 0x8000
+        return handle
 
-    async def _wait_handles(self, future, handles):
+    async def _wait_ack(self, handle, future):
         try:
             async with self._waiting_ack_cv:
-                await self._waiting_ack_cv.wait_for(
-                    lambda: all(i.cancelled() for i in handles))
+                await self._waiting_ack_cv.wait_for(handle.cancelled)
 
             if not future.done():
                 future.set_result(None)
@@ -411,13 +421,10 @@ class Connection(aio.Resource):
         self._supervisory_handle = None
 
 
-class _SendQueueEntryData(typing.NamedTuple):
-    data: common.Bytes
-
-
-class _SendQueueEntryDrain(typing.NamedTuple):
+class _SendQueueEntry(typing.NamedTuple):
+    data: typing.Optional[common.Bytes]
+    future: typing.Optional[asyncio.Future]
     wait_ack: bool
-    future: asyncio.Future
 
 
 async def _read_apdu(conn):
