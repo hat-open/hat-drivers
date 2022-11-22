@@ -18,6 +18,10 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
+class ConnectionDisabledError(ConnectionError):
+    pass
+
+
 async def connect(addr: tcp.Address,
                   response_timeout: float = 15,
                   supervisory_timeout: float = 10,
@@ -131,6 +135,11 @@ class Server(aio.Resource):
 
 
 class Connection(aio.Resource):
+    """Connection
+
+    For creating new Connection instances see `connect` or `listen` coroutine.
+
+    """
 
     def __init__(self,
                  conn: tcp.Connection,
@@ -165,13 +174,21 @@ class Connection(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:
+        """Async group"""
         return self._conn.async_group
 
     @property
     def info(self) -> tcp.ConnectionInfo:
+        """Connection info"""
         return self._conn.info
 
     def send(self, data: common.Bytes):
+        """Send data
+
+        Raises:
+            ConnectionError
+
+        """
         entry = _SendQueueEntry(data, None, False)
         try:
             self._send_queue.put_nowait(entry)
@@ -180,6 +197,13 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def send_wait_ack(self, data: common.Bytes):
+        """Send data and wait for acknowledgement
+
+        Raises:
+            ConnectionDisabledError
+            ConnectionError
+
+        """
         entry = _SendQueueEntry(data, asyncio.Future(), True)
         try:
             self._send_queue.put_nowait(entry)
@@ -189,6 +213,12 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def drain(self, wait_ack: bool = False):
+        """Drain
+
+        Raises:
+            ConnectionError
+
+        """
         entry = _SendQueueEntry(None, asyncio.Future(), wait_ack)
         try:
             self._send_queue.put_nowait(entry)
@@ -198,6 +228,12 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def receive(self) -> common.Bytes:
+        """Receive data
+
+        Raises:
+            ConnectionError
+
+        """
         try:
             return await self._receive_queue.get()
 
@@ -259,12 +295,15 @@ class Connection(aio.Resource):
 
                 else:
                     handle = await self._write_apdui(entry.data)
+                    if not handle and entry.future and not entry.future.done():
+                        entry.future.set_exception(ConnectionDisabledError())
 
                 if not entry.future:
                     continue
 
-                if entry.wait_ack and handle:
-                    self.async_group.spawn(self._wait_ack, handle, entry)
+                if entry.wait_ack and handle and not entry.future.done():
+                    self.async_group.spawn(self._wait_ack, handle,
+                                           entry.future)
                     entry = None
 
                 elif not entry.future.done():
@@ -292,7 +331,7 @@ class Connection(aio.Resource):
                 entry = self._send_queue.get_nowait()
 
     async def _test_loop(self):
-        # TODO: implement reset timeout on received frame
+        # TODO: implement reset timeout on received frame (v2 5.2.)
         try:
             while True:
                 await asyncio.sleep(self._test_timeout)
