@@ -1,6 +1,9 @@
-"""IEC 60870-5-104 communication protocol"""
+"""IEC 60870-5-101 communication protocol"""
 
-from hat.drivers.iec104.common import (Bytes,
+from hat.drivers.iec101.common import (Bytes,
+                                       CauseSize,
+                                       AsduAddressSize,
+                                       IoAddressSize,
                                        TimeSize,
                                        Time,
                                        OriginatorAddress,
@@ -85,19 +88,19 @@ from hat.drivers.iec104.common import (Bytes,
                                        ClockSyncMsg,
                                        TestMsg,
                                        ResetMsg,
+                                       DelayMsg,
                                        ParameterMsg,
                                        ParameterActivationMsg,
                                        Msg,
                                        time_from_datetime,
                                        time_to_datetime)
-from hat.drivers.iec104.connection import (ConnectionCb,
-                                           connect,
-                                           listen,
-                                           Server,
-                                           Connection)
+from hat.drivers.iec101.connection import Connection
 
 
 __all__ = ['Bytes',
+           'CauseSize',
+           'AsduAddressSize',
+           'IoAddressSize',
            'TimeSize',
            'Time',
            'OriginatorAddress',
@@ -182,13 +185,10 @@ __all__ = ['Bytes',
            'ClockSyncMsg',
            'TestMsg',
            'ResetMsg',
+           'DelayMsg',
            'ParameterMsg',
            'ParameterActivationMsg',
            'Msg',
            'time_from_datetime',
            'time_to_datetime',
-           'ConnectionCb',
-           'connect',
-           'listen',
-           'Server',
            'Connection']

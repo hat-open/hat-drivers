@@ -1,14 +1,13 @@
 import asyncio
 from hat.drivers import tcp
-from hat.drivers.iec60870 import apci
-from hat.drivers.iec60870 import iec104
+from hat.drivers import iec104
 
 
 addr = tcp.Address('127.0.0.1', 23231)
 
 
 async def main():
-    srv = await apci.listen(on_connection, addr)
+    srv = await iec104.listen(on_connection, addr)
 
     try:
         await asyncio.Future()
@@ -18,8 +17,6 @@ async def main():
 
 
 async def on_connection(conn):
-    conn = iec104.Connection(conn)
-
     print('>> connected')
     try:
         conn.async_group.spawn(send_loop, conn)

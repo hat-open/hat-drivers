@@ -1,7 +1,6 @@
 import asyncio
 from hat.drivers import tcp
-from hat.drivers.iec60870 import apci
-from hat.drivers.iec60870 import iec104
+from hat.drivers import iec104
 
 
 addr = tcp.Address('127.0.0.1', 23231)
@@ -23,8 +22,7 @@ cmd = iec104.CommandMsg(
 async def main():
     while True:
         try:
-            conn = await apci.connect(addr)
-            conn = iec104.Connection(conn)
+            conn = await iec104.connect(addr)
 
         except Exception:
             print('connect failed - waithing for 5 seconds')

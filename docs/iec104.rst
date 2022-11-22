@@ -1,7 +1,7 @@
 .. _hat-drivers-iec104:
 
-`hat.drivers.iec60870.iec104` - IEC 60870-5-104
-===============================================
+`hat.drivers.iec104` - IEC 60870-5-104
+======================================
 
 Asyncio based communication driver for
 `IEC 60870-5-104 <https://en.wikipedia.org/wiki/IEC_60870-5>`_ protocol.
@@ -12,4 +12,4 @@ API
 
 API reference is available as part of generated documentation:
 
-    * `Python hat.drivers.iec60870.iec104 module <py_api/hat/drivers/iec60870/iec104.html>`_
+    * `Python hat.drivers.iec104 module <py_api/hat/drivers/iec104.html>`_
