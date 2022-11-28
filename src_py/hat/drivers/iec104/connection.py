@@ -76,8 +76,12 @@ class Connection(aio.Resource):
         self._encoder = encoder.Encoder()
 
     @property
-    def async_group(self):
+    def async_group(self) -> aio.Group:
         return self._conn.async_group
+
+    @property
+    def info(self) -> tcp.ConnectionInfo:
+        return self._conn.info
 
     def send(self, msgs: typing.List[common.Msg]):
         for data in self._encoder.encode(msgs):
