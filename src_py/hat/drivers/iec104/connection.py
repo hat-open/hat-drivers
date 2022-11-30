@@ -3,6 +3,7 @@ import ssl
 import typing
 
 from hat import aio
+from hat import util
 
 from hat.drivers import tcp
 from hat.drivers.iec104 import common
@@ -82,6 +83,15 @@ class Connection(aio.Resource):
     @property
     def info(self) -> tcp.ConnectionInfo:
         return self._conn.info
+
+    @property
+    def is_enabled(self) -> bool:
+        return self._conn.is_enabled
+
+    def register_enabled_cb(self,
+                            cb: typing.Callable[[bool], None]
+                            ) -> util.RegisterCallbackHandle:
+        return self._conn.register_enabled_cb(cb)
 
     def send(self, msgs: typing.List[common.Msg]):
         for data in self._encoder.encode(msgs):

@@ -5,6 +5,7 @@ import ssl
 import typing
 
 from hat import aio
+from hat import util
 from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
 from hat.drivers.iec60870.apci import encoder
@@ -152,6 +153,7 @@ class Connection(aio.Resource):
         self._conn = conn
         self._always_enabled = always_enabled
         self._is_enabled = always_enabled
+        self._enabled_cbs = util.CallbackRegistry()
         self._response_timeout = response_timeout
         self._supervisory_timeout = supervisory_timeout
         self._test_timeout = test_timeout
@@ -181,6 +183,17 @@ class Connection(aio.Resource):
     def info(self) -> tcp.ConnectionInfo:
         """Connection info"""
         return self._conn.info
+
+    @property
+    def is_enabled(self) -> bool:
+        """Is enabled"""
+        return self._is_enabled
+
+    def register_enabled_cb(self,
+                            cb: typing.Callable[[bool], None]
+                            ) -> util.RegisterCallbackHandle:
+        """Register enable callback"""
+        return self._enabled_cbs.register(cb)
 
     def send(self, data: common.Bytes):
         """Send data
@@ -354,6 +367,7 @@ class Connection(aio.Resource):
             self._is_enabled = True
             _write_apdu(self._conn,
                         common.APDUU(common.ApduFunction.STARTDT_CON))
+            self._enabled_cbs.notify(True)
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
             if not self._always_enabled:
@@ -363,6 +377,7 @@ class Connection(aio.Resource):
                 self._is_enabled = False
                 _write_apdu(self._conn,
                             common.APDUU(common.ApduFunction.STOPDT_CON))
+                self._enabled_cbs.notify(False)
 
         elif apdu.function == common.ApduFunction.TESTFR_ACT:
             _write_apdu(self._conn,
