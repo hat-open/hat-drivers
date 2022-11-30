@@ -220,7 +220,9 @@ class Connection(aio.Resource):
 
                 if not data:
                     break
-                future.set_result(data)
+
+                if not future.done():
+                    future.set_result(data)
 
         except asyncio.IncompleteReadError:
             pass
