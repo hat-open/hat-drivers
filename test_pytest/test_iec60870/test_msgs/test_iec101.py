@@ -139,7 +139,7 @@ def assert_encode_decode(asdu_type, value, quality, cause, asdu, asdu_size,
         address=asdu,
         ios=ios)
     asdu_encoded = _encoder.encode_asdu(asdu)
-    asdu_decoded = _encoder.decode_asdu(asdu_encoded)
+    asdu_decoded, _ = _encoder.decode_asdu(asdu_encoded)
 
     assert_asdu(asdu_decoded, asdu)
 

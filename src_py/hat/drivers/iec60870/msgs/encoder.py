@@ -79,7 +79,21 @@ class Encoder:
         self._decode_io_element_cb = decode_io_element_cb
         self._encode_io_element_cb = encode_io_element_cb
 
-    def decode_asdu(self, asdu_bytes: common.Bytes) -> common.ASDU:
+    @property
+    def cause_size(self) -> common.CauseSize:
+        return self._cause_size
+
+    @property
+    def asdu_address_size(self) -> common.AsduAddressSize:
+        return self._asdu_address_size
+
+    @property
+    def io_address_size(self) -> common.IoAddressSize:
+        return self._io_address_size
+
+    def decode_asdu(self,
+                    asdu_bytes: common.Bytes
+                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
         asdu_type = asdu_bytes[0]
         io_number = asdu_bytes[1] & 0x7F
         is_sequence = bool(asdu_bytes[1] & 0x80)
@@ -97,10 +111,11 @@ class Encoder:
             io, rest = self._decode_io(asdu_type, ioe_element_count, rest)
             ios.append(io)
 
-        return common.ASDU(type=asdu_type,
+        asdu = common.ASDU(type=asdu_type,
                            cause=cause,
                            address=address,
                            ios=list(ios))
+        return asdu, rest
 
     def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
         data = collections.deque()

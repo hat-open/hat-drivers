@@ -12,8 +12,10 @@ class Encoder:
     def __init__(self,
                  cause_size: common.CauseSize,
                  asdu_address_size: common.AsduAddressSize,
-                 io_address_size: common.IoAddressSize):
+                 io_address_size: common.IoAddressSize,
+                 max_asdu_size: int = 252):
         self._cause_size = cause_size
+        self._max_asdu_size = max_asdu_size
         self._encoder = encoder.Encoder(
             cause_size=cause_size,
             asdu_address_size=asdu_address_size,
@@ -23,8 +25,26 @@ class Encoder:
             decode_io_element_cb=decode_io_element,
             encode_io_element_cb=encode_io_element)
 
-    def decode_asdu(self, asdu_bytes: common.Bytes) -> common.ASDU:
-        asdu = self._encoder.decode_asdu(asdu_bytes)
+    @property
+    def max_asdu_size(self) -> int:
+        return self._max_asdu_size
+
+    @property
+    def cause_size(self) -> common.CauseSize:
+        return self._encoder.cause_size
+
+    @property
+    def asdu_address_size(self) -> common.AsduAddressSize:
+        return self._encoder.asdu_address_size
+
+    @property
+    def io_address_size(self) -> common.IoAddressSize:
+        return self._encoder.io_address_size
+
+    def decode_asdu(self,
+                    asdu_bytes: common.Bytes
+                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+        asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
         cause = decode_cause(asdu.cause, self._cause_size)
@@ -34,10 +54,11 @@ class Encoder:
                          time=io.time)
                for io in asdu.ios]
 
-        return common.ASDU(type=asdu_type,
+        asdu = common.ASDU(type=asdu_type,
                            cause=cause,
                            address=address,
                            ios=ios)
+        return asdu, rest
 
     def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
         asdu_type = asdu.type.value

@@ -26,7 +26,7 @@ class Encoder:
     def decode(self,
                data: common.Bytes
                ) -> typing.Iterable[common.Msg]:
-        asdu = self._encoder.decode_asdu(data)
+        asdu, _ = self._encoder.decode_asdu(data)
         yield from _decode_asdu(asdu)
 
 

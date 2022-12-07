@@ -68,7 +68,8 @@ def create_connection_slave_pair():
             receive_queue.put_nowait(enc.encode_asdu(asdu))
 
         async def receive(self):
-            return enc.decode_asdu(await send_queue.get())
+            asdu, _ = enc.decode_asdu(await send_queue.get())
+            return asdu
 
     return MockLinkConnection(), MockSlave()
 

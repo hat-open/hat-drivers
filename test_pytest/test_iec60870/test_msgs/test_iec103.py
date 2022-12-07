@@ -44,7 +44,7 @@ def assert_encode_decode(asdu_type, ioes, assert_asdu_fn=None):
                 information_number=17),
             elements=ioes)])
     asdu_encoded = _encoder.encode_asdu(asdu)
-    asdu_decoded = _encoder.decode_asdu(asdu_encoded)
+    asdu_decoded, _ = _encoder.decode_asdu(asdu_encoded)
 
     if assert_asdu_fn:
         assert_asdu_fn(asdu, asdu_decoded)

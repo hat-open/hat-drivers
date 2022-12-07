@@ -1,3 +1,5 @@
+import typing
+
 from hat.drivers.iec60870.msgs import encoder
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs.iec104 import common
@@ -52,7 +54,8 @@ iec101_asdu_types = {common.AsduType.M_SP_NA.value,
 
 class Encoder:
 
-    def __init__(self):
+    def __init__(self, max_asdu_size: int = 249):
+        self._max_asdu_size = max_asdu_size
         self._encoder = encoder.Encoder(
             cause_size=common.CauseSize.TWO,
             asdu_address_size=common.AsduAddressSize.TWO,
@@ -62,8 +65,26 @@ class Encoder:
             decode_io_element_cb=_decode_io_element,
             encode_io_element_cb=_encode_io_element)
 
-    def decode_asdu(self, asdu_bytes: common.Bytes) -> common.ASDU:
-        asdu = self._encoder.decode_asdu(asdu_bytes)
+    @property
+    def max_asdu_size(self) -> int:
+        return self._max_asdu_size
+
+    @property
+    def cause_size(self) -> common.CauseSize:
+        return self._encoder.cause_size
+
+    @property
+    def asdu_address_size(self) -> common.AsduAddressSize:
+        return self._encoder.asdu_address_size
+
+    @property
+    def io_address_size(self) -> common.IoAddressSize:
+        return self._encoder.io_address_size
+
+    def decode_asdu(self,
+                    asdu_bytes: common.Bytes
+                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+        asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
         cause = iec101.encoder.decode_cause(asdu.cause, common.CauseSize.TWO)
@@ -73,10 +94,11 @@ class Encoder:
                          time=io.time)
                for io in asdu.ios]
 
-        return common.ASDU(type=asdu_type,
+        asdu = common.ASDU(type=asdu_type,
                            cause=cause,
                            address=address,
                            ios=ios)
+        return asdu, rest
 
     def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
         asdu_type = asdu.type.value

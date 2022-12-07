@@ -8,7 +8,7 @@ from hat.drivers.iec60870.msgs.common import Time
 
 
 OriginatorAddress = int
-"""Originator address in range [0, 255]"""
+"""Originator address in range [0, 255] - 0 if not available"""
 
 AsduAddress = int
 """ASDU address in range [0, 65535]"""

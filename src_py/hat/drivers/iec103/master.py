@@ -186,7 +186,7 @@ class MasterConnection(aio.Resource):
         try:
             while True:
                 data = await self._conn.receive()
-                asdu = self._encoder.decode_asdu(data)
+                asdu, _ = self._encoder.decode_asdu(data)
 
                 for io in asdu.ios:
                     if asdu.type in self._process_single_element_fns:
