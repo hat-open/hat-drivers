@@ -35,7 +35,7 @@ UserNumber = int
 
 class AsduType(enum.Enum):
     S_IT_TC = 41
-    S_CN_NA = 81
+    S_CH_NA = 81
     S_RP_NA = 82
     S_AR_NA = 83
     S_KR_NA = 84
@@ -109,7 +109,7 @@ class UserRole(enum.Enum):
 
 
 CauseType = enum.Enum('CauseType', [
-    *((cause.name, cause.value) for cause in iec101.common.Cause),
+    *((cause.name, cause.value) for cause in iec101.common.CauseType),
     ('AUTHENTICATION', 14),
     ('SESSION_KEY_MAINTENANCE', 15),
     ('UPDATE_KEY_MAINTENANCE', 16)])
@@ -127,7 +127,7 @@ class IoElement_S_IT_TC(typing.NamedTuple):
     value: BinaryCounterValue
 
 
-class IoElement_S_CN_NA(typing.NamedTuple):
+class IoElement_S_CH_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
     mac_algorithm: typing.Union[MacAlgorithm, int]
@@ -251,7 +251,7 @@ class IoElement_S_UC_NA(typing.NamedTuple):
 
 
 IoElement = typing.Union[IoElement_S_IT_TC,
-                         IoElement_S_CN_NA,
+                         IoElement_S_CH_NA,
                          IoElement_S_RP_NA,
                          IoElement_S_AR_NA,
                          IoElement_S_KR_NA,

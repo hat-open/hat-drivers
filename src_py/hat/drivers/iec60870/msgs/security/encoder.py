@@ -7,6 +7,7 @@ import typing
 
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs import iec104
+from hat.drivers.iec60870.msgs.encoder import encode_time, decode_time
 from hat.drivers.iec60870.msgs.security import common
 
 
@@ -50,7 +51,8 @@ class Encoder:
     def _decode_asdu(self, asdu_bytes, asdu_type):
         io_count, rest = _decode_io_count(asdu_bytes[1:], asdu_type)
         cause, rest = _decode_cause(rest, self._encoder.cause_size)
-        asdu_address, rest = _decode_int(rest, self._encoder.asdu_address_size)
+        asdu_address, rest = _decode_int(rest,
+                                         self._encoder.asdu_address_size.value)
 
         ios = collections.deque()
         for _ in range(io_count):
@@ -65,7 +67,7 @@ class Encoder:
                 ios.append(io)
 
         if asdu_type != common.AsduType.S_IT_TC and not ios:
-            return
+            return None, rest
 
         asdu = common.ASDU(type=asdu_type,
                            cause=cause,
@@ -79,18 +81,21 @@ class Encoder:
         identifier.append(len(asdu.ios))
         identifier.extend(_encode_cause(asdu.cause, self._encoder.cause_size))
         identifier.extend(_encode_int(asdu.address,
-                                      self._encoder.asdu_address_size))
+                                      self._encoder.asdu_address_size.value))
 
-        rest = collections.deque()
+        parts = collections.deque()
         for io in asdu.ios:
             if io.address is not None:
-                rest.extend(_encode_int(io.address,
-                                        self._encoder.io_address_size))
+                parts.append(
+                    _encode_int(io.address,
+                                self._encoder.io_address_size.value))
 
-            rest.extend(_encode_io_element(io.element, self._encoder))
+            parts.append(_encode_io_element(io.element, self._encoder))
 
             if io.time is not None:
-                rest.extend(common.encode_time(io.time, common.TimeSize.SEVEN))
+                parts.append(encode_time(io.time, common.TimeSize.SEVEN))
+
+        rest = itertools.chain.from_iterable(parts)
 
         if asdu.type in _unsegmented_asdu_types:
             yield bytes(itertools.chain(identifier, rest))
@@ -120,11 +125,11 @@ class Encoder:
             self._buffer = None
 
         if asdu_type == common.AsduType.S_IT_TC:
-            io_address, rest = _decode_int(io_bytes,
-                                           self._encoder.io_address_size)
+            io_address, rest = _decode_int(
+                io_bytes, self._encoder.io_address_size.value)
             element, rest = _decode_io_element(rest, self._encoder,
                                                asdu_type)
-            time, rest = (common.decode_time(rest, common.TimeSize.SEVEN),
+            time, rest = (decode_time(rest, common.TimeSize.SEVEN),
                           rest[7:])
 
         else:
@@ -179,7 +184,7 @@ class Encoder:
                 self._buffer = None
                 return None, b''
 
-            elif ((self._buffer.segment + 1) % 64) != segment:
+            elif ((self._buffer.prev_segment + 1) % 64) != segment:
                 if (self._buffer.prev_first == first and
                         self._buffer.prev_segment == segment and
                         self._buffer.prev_io_bytes == rest):
@@ -229,7 +234,7 @@ class _Buffer(typing.NamedTuple):
 
 
 def _decode_io_count(qualifier_bytes, asdu_type):
-    qualifier, rest = qualifier_bytes, qualifier_bytes[1:]
+    qualifier, rest = qualifier_bytes[0], qualifier_bytes[1:]
 
     if qualifier & 0x80:
         raise ValueError('invalid qualifier')
@@ -241,7 +246,7 @@ def _decode_io_count(qualifier_bytes, asdu_type):
 
 
 def _decode_cause(cause_bytes, cause_size):
-    cause, rest = _decode_int(cause_bytes, cause_size)
+    cause, rest = _decode_int(cause_bytes, cause_size.value)
     cause = iec101.encoder.decode_cause(cause=cause,
                                         cause_size=cause_size)
 
@@ -250,10 +255,11 @@ def _decode_cause(cause_bytes, cause_size):
     with contextlib.suppress(ValueError):
         cause_type = common.CauseType(cause_type)
 
-    return common.Cause(type=cause_type,
-                        is_negative_confirm=cause.is_negative_confirm,
-                        is_test=cause.is_test,
-                        originator_address=cause.originator_address)
+    cause = common.Cause(type=cause_type,
+                         is_negative_confirm=cause.is_negative_confirm,
+                         is_test=cause.is_test,
+                         originator_address=cause.originator_address)
+    return cause, rest
 
 
 def _encode_cause(cause, cause_size):
@@ -264,7 +270,7 @@ def _encode_cause(cause, cause_size):
                                 is_test=cause.is_test,
                                 originator_address=cause.originator_address)
 
-    cause = iec104.encoder.encode_cause(cause, cause_size)
+    cause = iec101.encoder.encode_cause(cause, cause_size)
     return _encode_int(cause, cause_size.value)
 
 
@@ -277,7 +283,7 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
                                            value=value)
         return element, rest
 
-    if asdu_type == common.AsduType.S_CN_NA:
+    if asdu_type == common.AsduType.S_CH_NA:
         sequence, rest = _decode_int(io_bytes, 4)
         user, rest = _decode_int(rest, 2)
         mac_algorithm, rest = _decode_int(rest, 1)
@@ -288,7 +294,7 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
         with contextlib.suppress(ValueError):
             mac_algorithm = common.MacAlgorithm(mac_algorithm)
 
-        element = common.IoElement_S_CN_NA(sequence=sequence,
+        element = common.IoElement_S_CH_NA(sequence=sequence,
                                            user=user,
                                            mac_algorithm=mac_algorithm,
                                            reason=reason,
@@ -309,7 +315,7 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
     if asdu_type == common.AsduType.S_AR_NA:
         _, rest = encoder.decode_asdu(io_bytes)
         asdu_len = len(io_bytes) - len(rest)
-        asdu = io_bytes[asdu_len:]
+        asdu = io_bytes[:asdu_len]
         sequence, rest = _decode_int(rest, 4)
         user, rest = _decode_int(rest, 2)
         mac, rest = rest, b''
@@ -372,7 +378,7 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
         user, rest = _decode_int(rest, 2)
         association_id, rest = _decode_int(rest, 2)
         code, rest = _decode_int(rest, 1)
-        time, rest = common.decode_time(rest, common.TimeSize.SEVEN), rest[7:]
+        time, rest = decode_time(rest, common.TimeSize.SEVEN), rest[7:]
         text_len, rest = _decode_int(rest, 2)
         text, rest = rest[:text_len], rest[text_len:]
 
@@ -406,8 +412,8 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
         key_change_method, rest = _decode_int(io_bytes, 1)
         operation, rest = _decode_int(rest, 1)
         sequence, rest = _decode_int(rest, 4)
-        role, rest = _decode_int(io_bytes, 2)
-        role_expiry, rest = _decode_int(io_bytes, 2)
+        role, rest = _decode_int(rest, 2)
+        role_expiry, rest = _decode_int(rest, 2)
         name_len, rest = _decode_int(rest, 2)
         public_key_len, rest = _decode_int(rest, 2)
         certification_len, rest = _decode_int(rest, 2)
@@ -505,7 +511,7 @@ def _encode_io_element(element, encoder):
         yield from _encode_int(element.association_id, 2)
         yield from iec101.encoder.encode_binary_counter_value(element.value)
 
-    elif isinstance(element, common.IoElement_S_CN_NA):
+    elif isinstance(element, common.IoElement_S_CH_NA):
         mac_algorithm = (element.mac_algorithm.value
                          if isinstance(element.mac_algorithm, enum.Enum)
                          else element.mac_algorithm)
@@ -567,7 +573,7 @@ def _encode_io_element(element, encoder):
         yield from _encode_int(element.user, 2)
         yield from _encode_int(element.association_id, 2)
         yield from _encode_int(code, 1)
-        yield from common.encode_time(element.time, common.TimeSize.SEVEN)
+        yield from encode_time(element.time, common.TimeSize.SEVEN)
         yield from _encode_int(len(element.text), 2)
         yield from element.text
 
