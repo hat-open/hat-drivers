@@ -89,12 +89,13 @@ from hat.drivers.iec104.common import (Bytes,
                                        ParameterActivationMsg,
                                        Msg,
                                        time_from_datetime,
-                                       time_to_datetime)
+                                       time_to_datetime,
+                                       Connection,
+                                       Function)
 from hat.drivers.iec104.connection import (ConnectionCb,
                                            connect,
                                            listen,
-                                           Server,
-                                           Connection)
+                                           Server)
 
 
 __all__ = ['Bytes',
@@ -187,8 +188,9 @@ __all__ = ['Bytes',
            'Msg',
            'time_from_datetime',
            'time_to_datetime',
+           'Connection',
+           'Function',
            'ConnectionCb',
            'connect',
            'listen',
-           'Server',
-           'Connection']
+           'Server']

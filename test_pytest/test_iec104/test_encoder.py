@@ -1,40 +1,12 @@
+import collections
 import itertools
 import math
 
 import pytest
 
-from hat import aio
 from hat.drivers import iec104
-from hat.drivers import tcp
-from hat.drivers.iec60870 import apci
+from hat.drivers.iec104.encoder import Encoder
 from hat.drivers.iec60870 import msgs as app
-
-
-class MockApciConnection(apci.Connection):
-
-    def __init__(self):
-        self._data_queue = aio.Queue()
-        self._drain_queue = aio.Queue()
-        self._async_group = aio.Group()
-
-    @property
-    def async_group(self):
-        return self._async_group
-
-    @property
-    def info(self):
-        return tcp.ConnectionInfo(
-            local_addr=tcp.Address(host='abc', port=123),
-            remote_addr=tcp.Address(host='def', port=456))
-
-    def send(self, data):
-        self._data_queue.put_nowait(data)
-
-    async def drain(self, wait_ack: bool = False):
-        self._drain_queue.put_nowait(wait_ack)
-
-    async def receive(self):
-        return await self._data_queue.get()
 
 
 def gen_qualities(amount, quality_class):
@@ -125,55 +97,16 @@ def assert_msg_param_float(msg1, msg2):
                         rel_tol=1e-3)
 
 
-async def assert_send_receive(msgs, assert_msg=assert_msg_default):
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
+def assert_encode_decode(msgs, assert_msg=assert_msg_default):
+    encoder = Encoder()
 
-    conn.send(msgs)
-    msgs_received = await conn.receive()
-    for msg_sent, msg_rec in zip(msgs, msgs_received):
-        assert_msg(msg_sent, msg_rec)
+    decoded_msgs = collections.deque()
+    for i in encoder.encode(msgs):
+        decoded_msgs.extend(encoder.decode(i))
 
-
-async def test_connection():
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
-
-    assert conn.is_open
-
-    conn_apci.close()
-
-    await conn.wait_closed()
-    assert conn.is_closed
-
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
-
-    conn.close()
-
-    await conn.wait_closed()
-    assert conn_apci.is_closed
-
-
-async def test_drain():
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn_apci)
-
-    assert conn_apci._drain_queue.empty()
-
-    await conn.drain()
-    await conn_apci._drain_queue.get()
-
-    assert conn_apci._drain_queue.empty()
-
-    for _ in range(3):
-        await conn.drain()
-        await conn_apci._drain_queue.get()
-
-    assert conn_apci._drain_queue.empty()
-
-    conn.close()
-    await conn.wait_closed()
+    assert len(msgs) == len(decoded_msgs)
+    for i, j in zip(msgs, decoded_msgs):
+        assert_msg(i, j)
 
 
 @pytest.mark.parametrize("data", [
@@ -249,7 +182,7 @@ async def test_drain():
          iec104.DataResCause.INTERROGATED_STATION,
          iec104.DataResCause.REMOTE_COMMAND,
          iec104.DataResCause.LOCAL_COMMAND)))
-async def test_send_receive_data(is_test, time, asdu, io, orig, cause, data):
+def test_data(is_test, time, asdu, io, orig, cause, data):
     if isinstance(data, iec104.StatusData):
         time = None
     msg = iec104.DataMsg(
@@ -261,9 +194,9 @@ async def test_send_receive_data(is_test, time, asdu, io, orig, cause, data):
             time=time,
             cause=cause)
     if isinstance(data.value.value, float):
-        await assert_send_receive([msg], assert_msg_data_float)
+        assert_encode_decode([msg], assert_msg_data_float)
     else:
-        await assert_send_receive([msg])
+        assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("data", [
@@ -323,8 +256,7 @@ async def test_send_receive_data(is_test, time, asdu, io, orig, cause, data):
         (iec104.DataResCause.BACKGROUND_SCAN,
          iec104.DataResCause.REMOTE_COMMAND,
          iec104.DataResCause.INTERROGATED_COUNTER03)))
-async def test_send_receive_protection_data(is_test, time, asdu, io, orig,
-                                            cause, data):
+def test_protection_data(is_test, time, asdu, io, orig, cause, data):
     msg = iec104.DataMsg(
             is_test=is_test,
             originator_address=orig,
@@ -334,7 +266,7 @@ async def test_send_receive_protection_data(is_test, time, asdu, io, orig,
             time=time,
             cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("command", [
@@ -375,8 +307,7 @@ async def test_send_receive_protection_data(is_test, time, asdu, io, orig,
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandReqCause.DEACTIVATION,
          iec104.CommandResCause.ACTIVATION_CONFIRMATION)))
-async def test_send_receive_cmd(is_test, asdu, io, orig,
-                                is_neg_conf, time, command, cause):
+def test_cmd(is_test, asdu, io, orig, is_neg_conf, time, command, cause):
     msg = iec104.CommandMsg(
             is_test=is_test,
             originator_address=orig,
@@ -388,9 +319,9 @@ async def test_send_receive_cmd(is_test, asdu, io, orig,
             cause=cause)
 
     if isinstance(command.value.value, float):
-        await assert_send_receive([msg], assert_msg_cmd_float)
+        assert_encode_decode([msg], assert_msg_cmd_float)
     else:
-        await assert_send_receive([msg])
+        assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("param_change", (True,
@@ -403,7 +334,7 @@ async def test_send_receive_cmd(is_test, asdu, io, orig,
         (iec104.InitializationResCause.LOCAL_POWER,
          iec104.InitializationResCause.LOCAL_RESET,
          iec104.InitializationResCause.REMOTE_RESET)))
-async def test_send_receive_init(is_test, asdu, orig, cause, param_change):
+def test_init(is_test, asdu, orig, cause, param_change):
     msg = iec104.InitializationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -411,7 +342,7 @@ async def test_send_receive_init(is_test, asdu, orig, cause, param_change):
         param_change=param_change,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("req", (0,
@@ -425,8 +356,7 @@ async def test_send_receive_init(is_test, asdu, orig, cause, param_change):
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandReqCause.DEACTIVATION,
          iec104.CommandResCause.ACTIVATION_TERMINATION)))
-async def test_send_receive_interrogate(is_test, asdu, orig,
-                                        is_negative_confirm, cause, req):
+def test_interrogate(is_test, asdu, orig, is_negative_confirm, cause, req):
     msg = iec104.InterrogationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -435,7 +365,7 @@ async def test_send_receive_interrogate(is_test, asdu, orig,
         is_negative_confirm=is_negative_confirm,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("req", (0, 63))
@@ -449,9 +379,8 @@ async def test_send_receive_interrogate(is_test, asdu, orig,
         (iec104.CommandReqCause.ACTIVATION,
          iec104.CommandResCause.UNKNOWN_TYPE,
          iec104.CommandResCause.UNKNOWN_ASDU_ADDRESS)))
-async def test_send_receive_cnt_interrogate(is_test, asdu, orig,
-                                            is_negative_confirm, cause, req,
-                                            freeze):
+def test_cnt_interrogate(is_test, asdu, orig, is_negative_confirm, cause, req,
+                         freeze):
     msg = iec104.CounterInterrogationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -461,7 +390,7 @@ async def test_send_receive_cnt_interrogate(is_test, asdu, orig,
         is_negative_confirm=is_negative_confirm,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (*iec104.ReadReqCause,
@@ -472,7 +401,7 @@ async def test_send_receive_cnt_interrogate(is_test, asdu, orig,
         (0, 255, 65535),
         (255, 65535, 16777215),
         (1, 123, 255)))
-async def test_send_receive_read(is_test, asdu, io, orig, cause):
+def test_read(is_test, asdu, io, orig, cause):
     msg = iec104.ReadMsg(
         is_test=is_test,
         originator_address=orig,
@@ -480,7 +409,7 @@ async def test_send_receive_read(is_test, asdu, io, orig, cause):
         io_address=io,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (*iec104.ClockSyncReqCause,
@@ -492,8 +421,7 @@ async def test_send_receive_read(is_test, asdu, io, orig, cause):
         (1, 123, 255),
         gen_times(3),
         (True, False, True)))
-async def test_send_receive_clock_sync(is_test, asdu, orig, time, cause,
-                                       is_neg_conf):
+def test_clock_sync(is_test, asdu, orig, time, cause, is_neg_conf):
     msg = iec104.ClockSyncMsg(
         is_test=is_test,
         originator_address=orig,
@@ -502,7 +430,7 @@ async def test_send_receive_clock_sync(is_test, asdu, orig, time, cause,
         is_negative_confirm=is_neg_conf,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (*iec104.ActivationReqCause,
@@ -514,7 +442,7 @@ async def test_send_receive_clock_sync(is_test, asdu, orig, time, cause,
         (1, 123, 255),
         (0, 1234, 65535),
         gen_times(3)))
-async def test_send_receive_test(is_test, asdu, orig, counter, time, cause):
+def test_test(is_test, asdu, orig, counter, time, cause):
     msg = iec104.TestMsg(
         is_test=is_test,
         originator_address=orig,
@@ -523,7 +451,7 @@ async def test_send_receive_test(is_test, asdu, orig, counter, time, cause):
         time=time,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (*iec104.ActivationReqCause,
@@ -534,7 +462,7 @@ async def test_send_receive_test(is_test, asdu, orig, counter, time, cause):
         (0, 255, 65535),
         (1, 123, 255),
         (0, 123, 255)))
-async def test_send_receive_reset(is_test, asdu, orig, qualifier, cause):
+def test_reset(is_test, asdu, orig, qualifier, cause):
     msg = iec104.ResetMsg(
         is_test=is_test,
         originator_address=orig,
@@ -542,7 +470,7 @@ async def test_send_receive_reset(is_test, asdu, orig, qualifier, cause):
         qualifier=qualifier,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (
@@ -570,8 +498,7 @@ async def test_send_receive_reset(is_test, asdu, orig, qualifier, cause):
         (0, 255, 65535),
         (255, 65535, 16777215),
         (1, 123, 255)))
-async def test_send_receive_prameter(is_test, asdu, io, orig, parameter,
-                                     cause):
+def test_prameter(is_test, asdu, io, orig, parameter, cause):
     msg = iec104.ParameterMsg(
         is_test=is_test,
         originator_address=orig,
@@ -581,9 +508,9 @@ async def test_send_receive_prameter(is_test, asdu, io, orig, parameter,
         cause=cause)
 
     if isinstance(parameter.value.value, float):
-        await assert_send_receive([msg], assert_msg_param_float)
+        assert_encode_decode([msg], assert_msg_param_float)
     else:
-        await assert_send_receive([msg])
+        assert_encode_decode([msg])
 
 
 @pytest.mark.parametrize("cause", (
@@ -596,8 +523,7 @@ async def test_send_receive_prameter(is_test, asdu, io, orig, parameter,
         (255, 65535, 16777215),
         (1, 123, 255),
         (0, 123, 255)))
-async def test_send_receive_prameter_act(is_test, asdu, io, orig, qualifier,
-                                         cause):
+def test_prameter_act(is_test, asdu, io, orig, qualifier, cause):
     msg = iec104.ParameterActivationMsg(
         is_test=is_test,
         originator_address=orig,
@@ -606,7 +532,7 @@ async def test_send_receive_prameter_act(is_test, asdu, io, orig, qualifier,
         qualifier=qualifier,
         cause=cause)
 
-    await assert_send_receive([msg])
+    assert_encode_decode([msg])
 
 
 def asdu_other_cause():
@@ -658,60 +584,64 @@ def asdu_other_cause():
                         time=None)])
 
 
-@pytest.mark.parametrize("asdu", asdu_other_cause())
-async def test_other_cause(asdu):
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn=conn_apci)
-
-    # asdu is encoded with app.iec104.encoder.Encoder to bytes
-    asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
-
-    # bytes are set to queue to be received from connection
-    conn_apci._data_queue.put_nowait(asdu_bytes)
-    msgs = await conn.receive()
-    assert len(msgs) == 1
-    msg = msgs[0]
-
-    assert isinstance(msg.cause, int)
-    assert msg.cause == asdu.cause.type.value
+# @pytest.mark.parametrize("asdu", asdu_other_cause())
+# def test_other_cause(asdu):
 
 
-async def test_sequence_of_ioes():
-    conn_apci = MockApciConnection()
-    conn = iec104.Connection(conn=conn_apci)
+#     # asdu is encoded with app.iec104.encoder.Encoder to bytes
+#     encoder = app.iec104.encoder.Encoder()
+#     asdu_bytes = encoder.encode_asdu(asdu)
 
-    ioes_number = 3
+#     encoder = Encoder()
+#     msgs = collections.deque()
+#     for i in asdu_bytes:
+#         decoded_asdus.extend(encoder.decode(i))
 
-    # asdu is encoded with app.iec104.encoder.Encoder to bytes
-    quality = app.iec104.common.MeasurementQuality(invalid=False,
-                                                   not_topical=False,
-                                                   substituted=False,
-                                                   blocked=False,
-                                                   overflow=False)
-    io_address = 123
-    asdu = app.iec104.common.ASDU(
-                type=app.iec104.common.AsduType.M_ME_NB,
-                cause=app.iec104.common.Cause(
-                    type=app.iec104.common.CauseType.SPONTANEOUS,
-                    is_negative_confirm=False,
-                    is_test=False,
-                    originator_address=0),
-                address=13,
-                ios=[app.iec104.common.IO(
-                        address=io_address,
-                        elements=[
-                            app.iec104.common.IoElement_M_ME_NB(
-                                value=iec104.ScaledValue(value=v),
-                                quality=quality)
-                            for v in range(ioes_number)],
-                        time=None)])
-    asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
+#     conn_apci._data_queue.put_nowait(asdu_bytes)
+#     msgs = await conn.receive()
+#     assert len(msgs) == 1
+#     msg = msgs[0]
 
-    # bytes are set to queue to be received from connection
-    conn_apci._data_queue.put_nowait(asdu_bytes)
-    msgs = await conn.receive()
-    assert len(msgs) == ioes_number
+#     assert isinstance(msg.cause, int)
+#     assert msg.cause == asdu.cause.type.value
 
-    for i, msg in enumerate(msgs):
-        assert msg.data.value.value == i
-        assert msg.io_address == io_address + i
+
+# def test_sequence_of_ioes():
+#     conn_apci = MockApciConnection()
+#     conn = RegularConnection(conn=conn_apci)
+
+#     ioes_number = 3
+
+#     # asdu is encoded with app.iec104.encoder.Encoder to bytes
+#     quality = app.iec104.common.MeasurementQuality(invalid=False,
+#                                                    not_topical=False,
+#                                                    substituted=False,
+#                                                    blocked=False,
+#                                                    overflow=False)
+#     io_address = 123
+#     asdu = app.iec104.common.ASDU(
+#                 type=app.iec104.common.AsduType.M_ME_NB,
+#                 cause=app.iec104.common.Cause(
+#                     type=app.iec104.common.CauseType.SPONTANEOUS,
+#                     is_negative_confirm=False,
+#                     is_test=False,
+#                     originator_address=0),
+#                 address=13,
+#                 ios=[app.iec104.common.IO(
+#                         address=io_address,
+#                         elements=[
+#                             app.iec104.common.IoElement_M_ME_NB(
+#                                 value=iec104.ScaledValue(value=v),
+#                                 quality=quality)
+#                             for v in range(ioes_number)],
+#                         time=None)])
+#     asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
+
+#     # bytes are set to queue to be received from connection
+#     conn_apci._data_queue.put_nowait(asdu_bytes)
+#     msgs = await conn.receive()
+#     assert len(msgs) == ioes_number
+
+#     for i, msg in enumerate(msgs):
+#         assert msg.data.value.value == i
+#         assert msg.io_address == io_address + i

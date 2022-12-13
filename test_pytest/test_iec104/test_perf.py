@@ -7,7 +7,6 @@ from hat import aio
 from hat import util
 from hat.drivers import iec104
 from hat.drivers import tcp
-from hat.drivers.iec60870 import apci
 
 
 pytestmark = pytest.mark.perf
@@ -38,16 +37,13 @@ async def test_data_sequence(duration, addr, window_size, data_count):
         cause=iec104.DataResCause.SPONTANEOUS)
 
     conn2_future = asyncio.Future()
-    srv = await apci.listen(conn2_future.set_result, addr,
-                            send_window_size=window_size + 1,
-                            receive_window_size=window_size - 1)
-    conn1 = await apci.connect(addr,
-                               send_window_size=window_size + 1,
-                               receive_window_size=window_size - 1)
+    srv = await iec104.listen(conn2_future.set_result, addr,
+                              send_window_size=window_size + 1,
+                              receive_window_size=window_size - 1)
+    conn1 = await iec104.connect(addr,
+                                 send_window_size=window_size + 1,
+                                 receive_window_size=window_size - 1)
     conn2 = await conn2_future
-
-    conn1 = iec104.Connection(conn1)
-    conn2 = iec104.Connection(conn2)
 
     with duration(f'data count: {data_count}; window_size: {window_size}'):
         for _ in range(data_count):
@@ -79,16 +75,13 @@ async def test_data_paralel(duration, addr, window_size, data_count):
         cause=iec104.DataResCause.SPONTANEOUS)
 
     conn2_future = asyncio.Future()
-    srv = await apci.listen(conn2_future.set_result, addr,
-                            send_window_size=window_size + 1,
-                            receive_window_size=window_size - 1)
-    conn1 = await apci.connect(addr,
-                               send_window_size=window_size + 1,
-                               receive_window_size=window_size - 1)
+    srv = await iec104.listen(conn2_future.set_result, addr,
+                              send_window_size=window_size + 1,
+                              receive_window_size=window_size - 1)
+    conn1 = await iec104.connect(addr,
+                                 send_window_size=window_size + 1,
+                                 receive_window_size=window_size - 1)
     conn2 = await conn2_future
-
-    conn1 = iec104.Connection(conn1)
-    conn2 = iec104.Connection(conn2)
 
     async def producer(conn):
         for _ in range(data_count):

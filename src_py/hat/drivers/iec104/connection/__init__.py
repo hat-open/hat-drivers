@@ -1,17 +1,16 @@
-import collections
 import ssl
 import typing
 
 from hat import aio
-from hat import util
 
 from hat.drivers import tcp
 from hat.drivers.iec104 import common
-from hat.drivers.iec104 import encoder
+from hat.drivers.iec104.connection import regular
+from hat.drivers.iec104.connection import secure
 from hat.drivers.iec60870 import apci
 
 
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb = aio.AsyncCallable[[common.Connection], None]
 
 
 async def connect(addr: tcp.Address,
@@ -20,8 +19,10 @@ async def connect(addr: tcp.Address,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
                   receive_window_size: int = 8,
-                  ssl_ctx: typing.Optional[ssl.SSLContext] = None
-                  ) -> 'Connection':
+                  ssl_ctx: typing.Optional[ssl.SSLContext] = None,
+                  update_key: typing.Optional[common.Bytes] = None,
+                  critical_functions: typing.Set[common.Function] = secure.default_critical_functions  # NOQA
+                  ) -> common.Connection:
     apci_conn = await apci.connect(addr=addr,
                                    response_timeout=response_timeout,
                                    supervisory_timeout=supervisory_timeout,
@@ -29,7 +30,12 @@ async def connect(addr: tcp.Address,
                                    send_window_size=send_window_size,
                                    receive_window_size=receive_window_size,
                                    ssl_ctx=ssl_ctx)
-    return Connection(apci_conn)
+
+    if update_key is not None:
+        return secure.SecureConnection(apci_conn, True, update_key,
+                                       critical_functions)
+
+    return regular.RegularConnection(apci_conn)
 
 
 async def listen(connection_cb: ConnectionCb,
@@ -39,10 +45,14 @@ async def listen(connection_cb: ConnectionCb,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
-                 ssl_ctx: typing.Optional[ssl.SSLContext] = None
+                 ssl_ctx: typing.Optional[ssl.SSLContext] = None,
+                 update_key: typing.Optional[common.Bytes] = None,
+                 critical_functions: typing.Set[common.Function] = secure.default_critical_functions  # NOQA
                  ) -> 'Server':
     server = Server()
     server._connection_cb = connection_cb
+    server._update_key = update_key
+    server._critical_functions = critical_functions
     server._srv = await apci.listen(connection_cb=server._on_connection,
                                     addr=addr,
                                     response_timeout=response_timeout,
@@ -58,59 +68,18 @@ class Server(aio.Resource):
 
     @property
     def async_group(self):
-        return self._srv.async_group
+        return self._srv
 
     async def _on_connection(self, apci_conn):
-        conn = Connection(apci_conn)
+        if self._update_key is None:
+            conn = regular.RegularConnection(apci_conn)
+
+        else:
+            conn.secure.SecureConnection(apci_conn, False, self._update_key,
+                                         self._critical_functions)
 
         try:
             await aio.call(self._connection_cb, conn)
 
         except BaseException:
             await aio.uncancellable(conn.async_close())
-
-
-class Connection(aio.Resource):
-
-    def __init__(self, conn: apci.Connection):
-        self._conn = conn
-        self._encoder = encoder.Encoder()
-
-    @property
-    def async_group(self) -> aio.Group:
-        return self._conn.async_group
-
-    @property
-    def info(self) -> tcp.ConnectionInfo:
-        return self._conn.info
-
-    @property
-    def is_enabled(self) -> bool:
-        return self._conn.is_enabled
-
-    def register_enabled_cb(self,
-                            cb: typing.Callable[[bool], None]
-                            ) -> util.RegisterCallbackHandle:
-        return self._conn.register_enabled_cb(cb)
-
-    def send(self, msgs: typing.List[common.Msg]):
-        for data in self._encoder.encode(msgs):
-            self._conn.send(data)
-
-    async def send_wait_ack(self, msgs: typing.List[common.Msg]):
-        data = collections.deque(self._encoder.encode(msgs))
-        if not data:
-            return
-
-        last = data.pop()
-        for i in data:
-            self._conn.send(i)
-
-        await self._conn.send_wait_ack(last)
-
-    async def drain(self, wait_ack: bool = False):
-        await self._conn.drain(wait_ack)
-
-    async def receive(self) -> typing.List[common.Msg]:
-        data = await self._conn.receive()
-        return list(self._encoder.decode(data))
