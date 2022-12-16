@@ -367,6 +367,8 @@ class Connection(aio.Resource):
             self._is_enabled = True
             _write_apdu(self._conn,
                         common.APDUU(common.ApduFunction.STARTDT_CON))
+
+            mlog.debug("send data enabled")
             self._enabled_cbs.notify(True)
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
@@ -377,6 +379,8 @@ class Connection(aio.Resource):
                 self._is_enabled = False
                 _write_apdu(self._conn,
                             common.APDUU(common.ApduFunction.STOPDT_CON))
+
+                mlog.debug("send data disabled")
                 self._enabled_cbs.notify(False)
 
         elif apdu.function == common.ApduFunction.TESTFR_ACT:
@@ -417,7 +421,7 @@ class Connection(aio.Resource):
                          self._send_window_size))
 
         if not self._is_enabled:
-            mlog.info("send data not enabled - discarding message")
+            mlog.debug("send data not enabled - discarding message")
             return
 
         _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
