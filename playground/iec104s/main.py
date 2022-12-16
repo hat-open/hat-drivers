@@ -3,6 +3,9 @@ import asyncio
 import contextlib
 import ssl
 
+import cryptography.hazmat.primitives.hmac
+import cryptography.hazmat.primitives.hashes
+
 from hat import aio
 
 from hat.drivers import tcp
@@ -31,10 +34,11 @@ class Connection(aio.Resource):
 
     async def receive(self):
         asdu = None
+        asdu_bytes = None
         while not asdu:
             asdu_bytes = await self._conn.receive()
             asdu, _ = self._encoder.decode_asdu(asdu_bytes)
-        return asdu
+        return asdu, asdu_bytes
 
 
 def main():
@@ -55,7 +59,7 @@ async def run_master():
 
 
 async def run_slave():
-    # 192.168.28.158
+    # 192.168.28.200
     addr = tcp.Address('0.0.0.0', 19998)
     ssl_ctx = None  # create_ssl_ctx()
     conn_queue = aio.Queue()
@@ -65,22 +69,62 @@ async def run_slave():
 
     print('>> nova veza')
 
+    session_slave_key = None
+    session_master_key = None
+    local_sequence = 0
+    remote_sequence = 0
+    key_status = security.common.KeyStatus.NOT_INIT
+    update_key = (Path(__file__).parent / 'certs/update_key').read_bytes()
+    last_key_challange_data = b'x' * 20
+
     while True:
-        asdu = await conn.receive()
+        asdu, asdu_bytes = await conn.receive()
         print('>>', asdu)
 
         if asdu.type == iec104.common.AsduType.C_IC_NA:
-            conn.send(
-                create_c_ic_na(iec104.common.CauseType.ACTIVATION_CONFIRMATION,
-                               asdu.address, asdu.ios[0].address,
-                               asdu.ios[0].elements[0].qualifier))
-            conn.send(
-                create_m_sp_na(iec104.common.CauseType.INTERROGATED_STATION,
-                               asdu.address, 1, iec104.common.SingleValue.ON))
-            conn.send(
-                create_c_ic_na(iec104.common.CauseType.ACTIVATION_TERMINATION,
-                               asdu.address, asdu.ios[0].address,
-                               asdu.ios[0].elements[0].qualifier))
+            res = create_c_ic_na(
+                iec104.common.CauseType.ACTIVATION_CONFIRMATION, asdu.address,
+                asdu.ios[0].address, asdu.ios[0].elements[0].qualifier)
+            print('++', res)
+            conn.send(res)
+
+            res = create_m_sp_na(iec104.common.CauseType.INTERROGATED_STATION,
+                                 asdu.address, 1, iec104.common.SingleValue.ON)
+            print('++', res)
+            conn.send(res)
+
+            res = create_c_ic_na(
+                iec104.common.CauseType.ACTIVATION_TERMINATION, asdu.address,
+                asdu.ios[0].address, asdu.ios[0].elements[0].qualifier)
+            print('++', res)
+            conn.send(res)
+
+        if asdu.type == security.common.AsduType.S_KR_NA:
+            local_sequence += 1
+            last_key_challange_data = b'x' * 20
+            res = create_s_ks_na(1, local_sequence, 1,
+                                 security.common.KeyWrapAlgorithm.AES_128,
+                                 key_status,
+                                 security.common.MacAlgorithm.NO_MAC,
+                                 last_key_challange_data, b'')
+            print('++', res)
+            conn.send(res)
+
+        if asdu.type == security.common.AsduType.S_KC_NA:
+            pass
+
+        if asdu.type == security.common.AsduType.C_TS_NA:
+            pass
+
+        if asdu.type == security.common.AsduType.S_RP_NA:
+            pass
+
+
+def calculate_mac(data, key):
+    h = cryptography.hazmat.primitives.hmac.HMAC(
+        key, cryptography.hazmat.primitives.hashes.SHA256())
+    h.update(data)
+    return h.finalize()
 
 
 def create_ssl_ctx(path=Path(__file__).parent / 'certs/server_cert.pem'):

@@ -2,7 +2,10 @@
 
 import asyncio
 import contextlib
+import enum
 import logging
+import pathlib
+import ssl
 import typing
 
 from hat import aio
@@ -10,6 +13,11 @@ from hat import aio
 
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
+
+
+class SslProtocol(enum.Enum):
+    TLS_CLIENT = ssl.PROTOCOL_TLS_CLIENT
+    TLS_SERVER = ssl.PROTOCOL_TLS_SERVER
 
 
 class Address(typing.NamedTuple):
@@ -66,6 +74,35 @@ async def listen(connection_cb: ConnectionCb,
     server._addresses = [Address(*sockname[:2]) for sockname in socknames]
 
     return server
+
+
+def create_ssl_ctx(protocol: SslProtocol,
+                   verify_cert: bool = False,
+                   cert_path: typing.Optional[pathlib.PurePath] = None,
+                   key_path: typing.Optional[pathlib.PurePath] = None,
+                   ca_path: typing.Optional[pathlib.PurePath] = None,
+                   password: typing.Optional[str] = None
+                   ) -> ssl.SSLContext:
+    ctx = ssl.SSLContext(protocol.value)
+    ctx.check_hostname = False
+
+    if verify_cert:
+        ctx.verify_mode = ssl.VerifyMode.CERT_REQUIRED
+        ctx.load_default_certs(ssl.Purpose.SERVER_AUTH
+                               if protocol == SslProtocol.TLS_SERVER
+                               else ssl.Purpose.CLIENT_AUTH)
+        if ca_path:
+            ctx.load_verify_locations(cafile=str(ca_path))
+
+    else:
+        ctx.verify_mode = ssl.VerifyMode.CERT_NONE
+
+    if cert_path:
+        ctx.load_cert_chain(certfile=str(cert_path),
+                            keyfile=str(key_path),
+                            password=password)
+
+    return ctx
 
 
 class Server(aio.Resource):

@@ -52,6 +52,7 @@ class AsduType(enum.Enum):
 
 
 class MacAlgorithm(enum.Enum):
+    NO_MAC = 0
     HMAC_SHA_256_8 = 3
     HMAC_SHA_256_16 = 4
     AES_GMAC = 6
