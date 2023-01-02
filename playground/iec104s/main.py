@@ -5,6 +5,7 @@ import ssl
 
 import cryptography.hazmat.primitives.hmac
 import cryptography.hazmat.primitives.hashes
+import cryptography.hazmat.primitives.keywrap
 
 from hat import aio
 
@@ -52,10 +53,51 @@ async def async_main():
 
 
 async def run_master():
-    addr = tcp.Address('', 2404)
+    addr = tcp.Address('192.168.28.159', 2404)
     ssl_ctx = None
-    apci_conn = await apci.connect(addr)
-    conn = Connection(apci_conn, ssl_ctx=ssl_ctx)
+    apci_conn = await apci.connect(addr, ssl_ctx=ssl_ctx)
+    conn = Connection(apci_conn)
+
+    session_slave_key = None
+    session_master_key = None
+    ksq = 0
+
+    digest = cryptography.hazmat.primitives.hashes.Hash(cryptography.hazmat.primitives.hashes.SHA256())
+    digest.update(b'Default')
+    update_key = bytes(reversed(digest.finalize()))
+
+    user = 1
+
+    req = create_s_kr_na(10, user)
+    conn.send(req)
+    print('++', req)
+
+    while True:
+        asdu, asdu_bytes = await conn.receive()
+        print('>>', asdu)
+
+        if asdu.type == security.common.AsduType.S_KS_NA:
+            if asdu.ios[0].element.key_status == security.common.KeyStatus.AUTH_FAIL:
+                continue
+
+            ksq = asdu.ios[0].element.sequence
+            session_slave_key = b'x' * 16
+            session_master_key = b'x' * 16
+            padding = b''
+            data = (len(session_slave_key).to_bytes(2, 'little') +
+                    session_master_key +
+                    session_slave_key +
+                    bytes(security.encoder._encode_io_element(asdu.ios[0].element, None)) +
+                    padding)
+            wrapped_key = cryptography.hazmat.primitives.keywrap.aes_key_wrap_with_padding(
+                update_key, data)
+
+            res = create_s_kc_na(asdu.address, ksq, user, wrapped_key)
+            conn.send(res)
+            print('++', res)
+
+        if asdu.type == security.common.AsduType.S_ER_NA:
+            print('>> text:', bytes(asdu.ios[0].element.text))
 
 
 async def run_slave():
@@ -74,7 +116,7 @@ async def run_slave():
     local_sequence = 0
     remote_sequence = 0
     key_status = security.common.KeyStatus.NOT_INIT
-    update_key = (Path(__file__).parent / 'certs/update_key').read_bytes()
+    update_key = b'x' * 32
     last_key_challange_data = b'x' * 20
 
     while True:
@@ -101,11 +143,11 @@ async def run_slave():
 
         if asdu.type == security.common.AsduType.S_KR_NA:
             local_sequence += 1
-            last_key_challange_data = b'x' * 20
-            res = create_s_ks_na(1, local_sequence, 1,
-                                 security.common.KeyWrapAlgorithm.AES_128,
+            last_key_challange_data = b'x' * 4
+            res = create_s_ks_na(asdu.address, local_sequence, 1,
+                                 security.common.KeyWrapAlgorithm.AES_256,
                                  key_status,
-                                 security.common.MacAlgorithm.NO_MAC,
+                                 security.common.MacAlgorithm.HMAC_SHA_256_16,
                                  last_key_challange_data, b'')
             print('++', res)
             conn.send(res)
@@ -113,8 +155,8 @@ async def run_slave():
         if asdu.type == security.common.AsduType.S_KC_NA:
             pass
 
-        if asdu.type == security.common.AsduType.C_TS_NA:
-            pass
+        # if asdu.type == iec104.common.AsduType.C_TS_NA:
+        #     pass
 
         if asdu.type == security.common.AsduType.S_RP_NA:
             pass

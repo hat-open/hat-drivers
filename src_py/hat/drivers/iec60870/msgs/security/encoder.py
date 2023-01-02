@@ -250,7 +250,7 @@ def _decode_cause(cause_bytes, cause_size):
     cause = iec101.encoder.decode_cause(cause=cause,
                                         cause_size=cause_size)
 
-    cause_type = (cause.value if isinstance(cause.type, enum.Enum)
+    cause_type = (cause.type.value if isinstance(cause.type, enum.Enum)
                   else cause.type)
     with contextlib.suppress(ValueError):
         cause_type = common.CauseType(cause_type)

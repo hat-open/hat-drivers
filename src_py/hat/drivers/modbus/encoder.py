@@ -45,7 +45,7 @@ def encode_adu(adu: messages.Adu) -> transport.Data:
 
 def _encode_adu_tcp(adu):
     pdu_bytes = _encode_pdu(adu.pdu)
-    header = struct.pack('>HHHB', adu.transaction_id, 0,  len(pdu_bytes) + 1,
+    header = struct.pack('>HHHB', adu.transaction_id, 0, len(pdu_bytes) + 1,
                          adu.device_id)
     return bytes(itertools.chain(header, pdu_bytes))
 
