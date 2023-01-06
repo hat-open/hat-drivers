@@ -15,6 +15,9 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
+Bytes = typing.Union[bytes, bytearray, memoryview]
+
+
 class SslProtocol(enum.Enum):
     TLS_CLIENT = ssl.PROTOCOL_TLS_CLIENT
     TLS_SERVER = ssl.PROTOCOL_TLS_SERVER
@@ -184,7 +187,7 @@ class Connection(aio.Resource):
         """Connection info"""
         return self._info
 
-    def write(self, data: bytes):
+    def write(self, data: Bytes):
         """Write data
 
         See `asyncio.StreamWriter.write`.
@@ -202,7 +205,7 @@ class Connection(aio.Resource):
 
     async def read(self,
                    n: int = -1
-                   ) -> bytes:
+                   ) -> Bytes:
         """Read up to `n` bytes
 
         If EOF is detected and no new bytes are available, `ConnectionError`
@@ -211,9 +214,6 @@ class Connection(aio.Resource):
         See `asyncio.StreamReader.read`.
 
         """
-        if n == 0:
-            return b''
-
         future = asyncio.Future()
         try:
             self._read_queue.put_nowait((future, False, n))
@@ -224,7 +224,7 @@ class Connection(aio.Resource):
 
     async def readexactly(self,
                           n: int
-                          ) -> bytes:
+                          ) -> Bytes:
         """Read exactly `n` bytes
 
         If exact number of bytes could not be read, `ConnectionError` is
@@ -233,9 +233,6 @@ class Connection(aio.Resource):
         See `asyncio.StreamReader.readexactly`.
 
         """
-        if n < 1:
-            return b''
-
         future = asyncio.Future()
         try:
             self._read_queue.put_nowait((future, True, n))
@@ -244,31 +241,99 @@ class Connection(aio.Resource):
         except aio.QueueClosedError:
             raise ConnectionError()
 
+    async def reset_input_buffer(self) -> int:
+        """Reset input buffer
+
+        Returns number of bytes cleared from buffer.
+
+        """
+        future = asyncio.Future()
+        try:
+            self._read_queue.put_nowait((future, False, None))
+            return await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
     async def _read_loop(self):
         future = None
+        buffer = bytearray()
         try:
             while True:
                 future, is_exact, n = await self._read_queue.get()
 
-                if is_exact:
-                    data = await self._reader.readexactly(n)
-                else:
-                    data = await self._reader.read(n)
+                while not future.done():
+                    if n is None:
 
-                if not data:
-                    break
+                        # HACK read until asyncio.StreamReader internal buffer
+                        #      empty
+                        if hasattr(self._reader, '_buffer'):
+                            while not future.done() and self._reader._buffer:
+                                count = len(self._reader._buffer)
+                                data = await self._reader.read(count)
+                                buffer.extend(data)
 
-                if not future.done():
+                        if future.done():
+                            break
+
+                        future.set_result(len(buffer))
+                        buffer = bytearray()
+                        break
+
+                    if n >= 0 and len(buffer) >= n:
+                        break
+
+                    if n < 0 and is_exact:
+                        future.set_exception(
+                            ValueError('invalid number of bytes'))
+                        break
+
+                    if buffer and not is_exact:
+                        break
+
+                    async with self.async_group.create_subgroup() as subgroup:
+                        fn = (self._reader.readexactly if is_exact
+                              else self._reader.read)
+                        count = n - len(buffer) if n > 0 else n
+                        result = asyncio.Future()
+                        subgroup.spawn(_set_future_with_result, result, fn,
+                                       count)
+
+                        await asyncio.wait([result, future],
+                                           return_when=asyncio.FIRST_COMPLETED)
+
+                        if not result.done():
+                            break
+
+                    data = result.result()
+                    if not data:
+                        raise EOFError()
+
+                    buffer.extend(data)
+
+                if future.done():
+                    continue
+
+                if n > 0:
+                    buffer = memoryview(buffer)
+                    data, buffer = buffer[:n], bytearray(buffer[n:])
                     future.set_result(data)
 
-        except asyncio.IncompleteReadError:
+                elif n < 0:
+                    future.set_result(buffer)
+                    buffer = bytearray()
+
+                else:
+                    future.set_result(b'')
+
+        except EOFError:
             pass
 
         except Exception as e:
             mlog.warning("read loop error: %s", e, exc_info=e)
 
         finally:
-            self._async_group.close()
+            self.close()
             self._read_queue.close()
 
             while True:
@@ -276,8 +341,16 @@ class Connection(aio.Resource):
                     future.set_exception(ConnectionError())
                 if self._read_queue.empty():
                     break
-                future, _, _ = self._read_queue.get_nowait()
+                future, _, __ = self._read_queue.get_nowait()
 
             self._writer.close()
             with contextlib.suppress(Exception):
                 await aio.uncancellable(self._writer.wait_closed())
+
+
+async def _set_future_with_result(future, fn, *args):
+    try:
+        future.set_result(await fn(*args))
+
+    except Exception as e:
+        future.set_exception(e)

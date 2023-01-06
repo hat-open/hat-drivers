@@ -24,14 +24,14 @@ async def create(address_size: common.AddressSize,
     endpoint._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
 
-    endpoint._conn = await serial.create(port=port,
-                                         baudrate=baudrate,
-                                         bytesize=bytesize,
-                                         parity=parity,
-                                         stopbits=stopbits,
-                                         xonxoff=xonxoff,
-                                         rtscts=rtscts,
-                                         dsrdtr=dsrdtr)
+    endpoint._endpoint = await serial.create(port=port,
+                                             baudrate=baudrate,
+                                             bytesize=bytesize,
+                                             parity=parity,
+                                             stopbits=stopbits,
+                                             xonxoff=xonxoff,
+                                             rtscts=rtscts,
+                                             dsrdtr=dsrdtr)
 
     return endpoint
 
@@ -40,7 +40,7 @@ class Endpoint(aio.Resource):
 
     @property
     def async_group(self):
-        return self._conn.async_group
+        return self._endpoint.async_group
 
     async def receive(self) -> common.Frame:
         while True:
@@ -57,7 +57,7 @@ class Endpoint(aio.Resource):
                 if len(msg_bytes) >= size:
                     break
 
-                data = await self._conn.read(size - len(msg_bytes))
+                data = await self._endpoint.read(size - len(msg_bytes))
                 msg_bytes.extend(data)
 
             try:
@@ -68,4 +68,4 @@ class Endpoint(aio.Resource):
 
     async def send(self, msg: common.Frame):
         data = self._encoder.encode(msg)
-        await self._conn.write(data)
+        await self._endpoint.write(data)

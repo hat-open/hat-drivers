@@ -1,10 +1,17 @@
-"""Modbus messages"""
+from hat.drivers.modbus.common import *  # NOQA
+from hat.drivers.modbus.common import Error
 
 import abc
 import enum
 import typing
 
-from hat.drivers.modbus import common
+
+Bytes = typing.Union[bytes, bytearray, memoryview]
+
+
+class Direction(enum.Enum):
+    REQUEST = 0
+    RESPONSE = 1
 
 
 class FunctionCode(enum.Enum):
@@ -18,6 +25,11 @@ class FunctionCode(enum.Enum):
     WRITE_MULTIPLE_REGISTER = 16
     MASK_WRITE_REGISTER = 22
     READ_FIFO_QUEUE = 24
+
+
+class ErrorRes(typing.NamedTuple):
+    fc: FunctionCode
+    error: Error
 
 
 class ReadCoilsReq(typing.NamedTuple):
@@ -130,6 +142,7 @@ Request.register(ReadFifoQueueReq)
 
 
 Response = type('Response', (abc.ABC, ), {})
+Response.register(ErrorRes)
 Response.register(ReadCoilsRes)
 Response.register(ReadDiscreteInputsRes)
 Response.register(ReadHoldingRegistersRes)
@@ -142,9 +155,7 @@ Response.register(MaskWriteRegisterRes)
 Response.register(ReadFifoQueueRes)
 
 
-class Pdu(typing.NamedTuple):
-    fc: FunctionCode
-    data: typing.Union[Request, Response, common.Error]
+Pdu = typing.Union[Request, Response]
 
 
 class TcpAdu(typing.NamedTuple):
@@ -164,3 +175,50 @@ class AsciiAdu(typing.NamedTuple):
 
 
 Adu = typing.Union[TcpAdu, RtuAdu, AsciiAdu]
+
+
+def get_pdu_function_code(pdu: Pdu) -> FunctionCode:
+    if isinstance(pdu, ErrorRes):
+        return pdu.fc
+
+    if isinstance(pdu, (ReadCoilsReq,
+                        ReadCoilsRes)):
+        return FunctionCode.READ_COILS
+
+    if isinstance(pdu, (ReadDiscreteInputsReq,
+                        ReadDiscreteInputsRes)):
+        return FunctionCode.READ_DISCRETE_INPUTS
+
+    if isinstance(pdu, (ReadHoldingRegistersReq,
+                        ReadHoldingRegistersRes)):
+        return FunctionCode.READ_HOLDING_REGISTERS
+
+    if isinstance(pdu, (ReadInputRegistersReq,
+                        ReadInputRegistersRes)):
+        return FunctionCode.READ_INPUT_REGISTERS
+
+    if isinstance(pdu, (WriteSingleCoilReq,
+                        WriteSingleCoilRes)):
+        return FunctionCode.WRITE_SINGLE_COIL
+
+    if isinstance(pdu, (WriteSingleRegisterReq,
+                        WriteSingleRegisterRes)):
+        return FunctionCode.WRITE_SINGLE_REGISTER
+
+    if isinstance(pdu, (WriteMultipleCoilsReq,
+                        WriteMultipleCoilsRes)):
+        return FunctionCode.WRITE_MULTIPLE_COILS
+
+    if isinstance(pdu, (WriteMultipleRegistersReq,
+                        WriteMultipleRegistersRes)):
+        return FunctionCode.WRITE_MULTIPLE_REGISTER
+
+    if isinstance(pdu, (MaskWriteRegisterReq,
+                        MaskWriteRegisterRes)):
+        return FunctionCode.MASK_WRITE_REGISTER
+
+    if isinstance(pdu, (ReadFifoQueueReq,
+                        ReadFifoQueueRes)):
+        return FunctionCode.READ_FIFO_QUEUE
+
+    raise ValueError('unsupported pdu')

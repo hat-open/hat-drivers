@@ -240,13 +240,15 @@ async def test_channel_noise(mock_serial, noise):
                                        poll_class1_delay=0.01)
     slave_conn = await queue.get()
 
-    await slave._endpoint._conn.extend_data(noise)
+    # TODO should not use private
+    await slave._endpoint._endpoint.extend_data(noise)
 
     await master_conn.send(b'hello')
     received = await slave_conn.receive()
     assert received == b'hello'
 
-    await master._endpoint._conn.extend_data(noise)
+    # TODO should not use private
+    await master._endpoint._endpoint.extend_data(noise)
 
     await slave_conn.send(b'hi')
     received = await master_conn.receive()

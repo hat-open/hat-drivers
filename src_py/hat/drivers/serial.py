@@ -11,6 +11,7 @@
 import asyncio
 import enum
 import logging
+import typing
 
 import serial
 
@@ -24,25 +25,28 @@ read_timeout: float = 0.5
 """Read timeout"""
 
 
+Bytes = typing.Union[bytes, bytearray, memoryview]
+
+
 class ByteSize(enum.Enum):
-    FIVEBITS = 'FIVEBITS'
-    SIXBITS = 'SIXBITS'
-    SEVENBITS = 'SEVENBITS'
-    EIGHTBITS = 'EIGHTBITS'
+    FIVEBITS = serial.FIVEBITS
+    SIXBITS = serial.SIXBITS
+    SEVENBITS = serial.SEVENBITS
+    EIGHTBITS = serial.EIGHTBITS
 
 
 class Parity(enum.Enum):
-    NONE = 'PARITY_NONE'
-    EVEN = 'PARITY_EVEN'
-    ODD = 'PARITY_ODD'
-    MARK = 'PARITY_MARK'
-    SPACE = 'PARITY_SPACE'
+    NONE = serial.PARITY_NONE
+    EVEN = serial.PARITY_EVEN
+    ODD = serial.PARITY_ODD
+    MARK = serial.PARITY_MARK
+    SPACE = serial.PARITY_SPACE
 
 
 class StopBits(enum.Enum):
-    ONE = 'STOPBITS_ONE'
-    ONE_POINT_FIVE = 'STOPBITS_ONE_POINT_FIVE'
-    TWO = 'STOPBITS_TWO'
+    ONE = serial.STOPBITS_ONE
+    ONE_POINT_FIVE = serial.STOPBITS_ONE_POINT_FIVE
+    TWO = serial.STOPBITS_TWO
 
 
 async def create(port: str, *,
@@ -54,7 +58,7 @@ async def create(port: str, *,
                  rtscts: bool = False,
                  dsrdtr: bool = False,
                  silent_interval: float = 0
-                 ) -> 'Connection':
+                 ) -> 'Endpoint':
     """Open serial port
 
     Args:
@@ -71,34 +75,34 @@ async def create(port: str, *,
             consecutive messages
 
     """
-    conn = Connection()
-    conn._silent_interval = silent_interval
-    conn._read_queue = aio.Queue()
-    conn._write_queue = aio.Queue()
-    conn._executor = aio.create_executor()
+    endpoint = Endpoint()
+    endpoint._silent_interval = silent_interval
+    endpoint._read_queue = aio.Queue()
+    endpoint._write_queue = aio.Queue()
+    endpoint._executor = aio.create_executor()
 
-    conn._serial = await conn._executor(
+    endpoint._serial = await endpoint._executor(
         serial.Serial,
         port=port,
         baudrate=baudrate,
-        bytesize=getattr(serial, bytesize.value),
-        parity=getattr(serial, parity.value),
-        stopbits=getattr(serial, stopbits.value),
+        bytesize=bytesize.value,
+        parity=parity.value,
+        stopbits=stopbits.value,
         xonxoff=xonxoff,
         rtscts=rtscts,
         dsrdtr=dsrdtr,
         timeout=read_timeout)
 
-    conn._async_group = aio.Group()
-    conn._async_group.spawn(aio.call_on_cancel, conn._on_close)
-    conn._async_group.spawn(conn._read_loop)
-    conn._async_group.spawn(conn._write_loop)
+    endpoint._async_group = aio.Group()
+    endpoint._async_group.spawn(aio.call_on_cancel, endpoint._on_close)
+    endpoint._async_group.spawn(endpoint._read_loop)
+    endpoint._async_group.spawn(endpoint._write_loop)
 
-    return conn
+    return endpoint
 
 
-class Connection(aio.Resource):
-    """Serial connection
+class Endpoint(aio.Resource):
+    """Serial endpoint
 
     For creating new instances see `create` coroutine.
 
@@ -109,7 +113,7 @@ class Connection(aio.Resource):
         """Async group"""
         return self._async_group
 
-    async def read(self, size: int) -> bytes:
+    async def read(self, size: int) -> Bytes:
         """Read
 
         Args:
@@ -119,73 +123,123 @@ class Connection(aio.Resource):
             ConnectionError
 
         """
-        result = asyncio.Future()
+        future = asyncio.Future()
         try:
-            self._read_queue.put_nowait((size, result))
+            self._read_queue.put_nowait((size, future))
+            return await future
+
         except aio.QueueClosedError:
             raise ConnectionError()
-        return await result
 
-    async def write(self, data: bytes):
+    async def write(self, data: Bytes):
         """Write
 
         Raises:
             ConnectionError
 
         """
-        result = asyncio.Future()
+        future = asyncio.Future()
         try:
-            self._write_queue.put_nowait((data, result))
+            self._write_queue.put_nowait((data, future))
+            await future
+
         except aio.QueueClosedError:
             raise ConnectionError()
-        await result
+
+    async def reset_input_buffer(self) -> int:
+        """Reset input buffer
+
+        Returns number of bytes available in buffer immediately before
+        buffer was cleared.
+
+        Raises:
+            ConnectionError
+
+        """
+        future = asyncio.Future()
+        try:
+            self._read_queue.put_nowait((None, future))
+            return await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
 
     async def _on_close(self):
         await self._executor(self._serial.close)
 
     async def _read_loop(self):
-        result = None
+        future = None
+        buffer = bytearray()
         try:
-            async for size, result in self._read_queue:
-                data = bytearray()
-                while len(data) < size and not result.done():
-                    temp = await self._executor(self._serial.read,
-                                                size - len(data))
-                    data.extend(temp)
-                if not result.done():
-                    result.set_result(bytes(data))
+            while True:
+                size, future = await self._read_queue.get()
+                if future.done():
+                    continue
+
+                if size is None:
+                    count = await self._executor(self._ext_reset_input_buffer)
+                    count += len(buffer)
+                    buffer = bytearray()
+
+                    if not future.done():
+                        future.set_result(count)
+
+                else:
+                    while len(buffer) < size and not future.done():
+                        temp = await self._executor(self._serial.read,
+                                                    size - len(buffer))
+                        buffer.extend(temp)
+
+                    if future.done():
+                        continue
+
+                    buffer = memoryview(buffer)
+                    data, buffer = buffer[:size], bytearray(buffer[size:])
+                    future.set_result(data)
 
         except Exception as e:
             mlog.warning('read loop error: %s', e, exc_info=e)
 
         finally:
-            self._async_group.close()
-            _close_queue(self._read_queue)
-            if result and not result.done():
-                result.set_exception(ConnectionError())
+            self.close()
+            self._read_queue.close()
+
+            while True:
+                if future and not future.done():
+                    future.set_exception(ConnectionError())
+                if self._read_queue.empty():
+                    break
+                _, future = self._read_queue.get_nowait()
 
     async def _write_loop(self):
-        result = None
+        future = None
         try:
-            async for data, result in self._write_queue:
+            while True:
+                data, future = await self._write_queue.get()
+
                 await self._executor(self._serial.write, data)
                 await self._executor(self._serial.flush)
-                if not result.done():
-                    result.set_result(None)
+
+                if not future.done():
+                    future.set_result(None)
+
                 await asyncio.sleep(self._silent_interval)
 
         except Exception as e:
             mlog.warning('write loop error: %s', e, exc_info=e)
 
         finally:
-            self._async_group.close()
-            _close_queue(self._write_queue)
-            if result and not result.done():
-                result.set_exception(ConnectionError())
+            self.close()
+            self._write_queue.close()
 
+            while True:
+                if future and not future.done():
+                    future.set_exception(ConnectionError())
+                if self._write_queue.empty():
+                    break
+                _, future = self._write_queue.get_nowait()
 
-def _close_queue(queue):
-    queue.close()
-    while not queue.empty():
-        _, result = queue.get_nowait()
-        result.set_exception(ConnectionError())
+    def _ext_reset_input_buffer(self):
+        count = self._serial.in_waiting
+        self._serial.reset_input_buffer()
+        return count
