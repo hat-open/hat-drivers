@@ -13,7 +13,6 @@ from hat.drivers.modbus.slave import (SlaveCb,
                                       WriteMaskCb,
                                       create_tcp_server,
                                       create_serial_slave,
-                                      TcpServer,
                                       Slave)
 
 
@@ -30,5 +29,4 @@ __all__ = ['ModbusType',
            'WriteMaskCb',
            'create_tcp_server',
            'create_serial_slave',
-           'TcpServer',
            'Slave']

@@ -78,7 +78,7 @@ async def tcp_listen(connection_cb: ConnectionCb,
                      ) -> tcp.Server:
 
     async def on_connection(conn):
-        await connection_cb(_TcpConnection(conn))
+        await aio.call(connection_cb, _TcpConnection(conn))
 
     return await tcp.listen(on_connection, addr,
                             bind_connections=True,
