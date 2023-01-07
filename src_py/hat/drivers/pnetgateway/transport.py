@@ -16,7 +16,7 @@ class Transport(aio.Resource):
         size_bytes = await self._conn.readexactly(4)
         size = int.from_bytes(size_bytes, 'big')
         msg_bytes = await self._conn.readexactly(size)
-        msg_str = msg_bytes.decode('utf-8')
+        msg_str = str(msg_bytes, 'utf-8')
         msg = json.decode(msg_str)
         return msg
 

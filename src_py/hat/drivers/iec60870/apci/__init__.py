@@ -6,7 +6,6 @@ from hat.drivers.iec60870.apci.connection import (ConnectionCb,
                                                   ConnectionDisabledError,
                                                   connect,
                                                   listen,
-                                                  Server,
                                                   Connection)
 
 
@@ -16,5 +15,4 @@ __all__ = ['Bytes',
            'ConnectionDisabledError',
            'connect',
            'listen',
-           'Server',
            'Connection']

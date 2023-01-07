@@ -70,8 +70,10 @@ async def listen(connection_cb: ConnectionCb,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
                  ssl_ctx: typing.Optional[ssl.SSLContext] = None
-                 ) -> 'Server':
+                 ) -> tcp.Server:
     """Create new IEC104 slave and listen for incoming connections
+
+    Closing server closes all incoming connections.
 
     Args:
         connection_cb: new connection callback
@@ -84,55 +86,30 @@ async def listen(connection_cb: ConnectionCb,
         ssl_ctx: optional ssl context argument
 
     """
-    server = Server()
-    server._connection_cb = connection_cb
-    server._response_timeout = response_timeout
-    server._supervisory_timeout = supervisory_timeout
-    server._test_timeout = test_timeout
-    server._send_window_size = send_window_size
-    server._receive_window_size = receive_window_size
 
-    server._srv = await tcp.listen(server._on_connection, addr,
-                                   bind_connections=True,
-                                   ssl=ssl_ctx)
-
-    return server
-
-
-class Server(aio.Resource):
-    """Server
-
-    For creating new Server instances see `listen` coroutine.
-
-    Closing server closes all incoming connections.
-
-    """
-
-    @property
-    def async_group(self) -> aio.Group:
-        """Async group"""
-        return self._srv.async_group
-
-    @property
-    def addresses(self) -> typing.List[tcp.Address]:
-        """Listening addresses"""
-        return self._srv.addresses
-
-    async def _on_connection(self, conn):
-        connection = Connection(conn=conn,
-                                always_enabled=False,
-                                response_timeout=self._response_timeout,
-                                supervisory_timeout=self._supervisory_timeout,
-                                test_timeout=self._test_timeout,
-                                send_window_size=self._send_window_size,
-                                receive_window_size=self._receive_window_size)
-
+    async def on_connection(conn):
         try:
-            await aio.call(self._connection_cb, connection)
+            conn = Connection(conn=conn,
+                              always_enabled=False,
+                              response_timeout=response_timeout,
+                              supervisory_timeout=supervisory_timeout,
+                              test_timeout=test_timeout,
+                              send_window_size=send_window_size,
+                              receive_window_size=receive_window_size)
 
-        except BaseException:
-            connection.close()
-            raise
+            await aio.call(connection_cb, conn)
+
+            await conn.wait_closing()
+
+        except Exception as e:
+            mlog.error("connection callback error: %s", e, exc_info=e)
+
+        finally:
+            conn.close()
+
+    return await tcp.listen(on_connection, addr,
+                            bind_connections=True,
+                            ssl=ssl_ctx)
 
 
 class Connection(aio.Resource):

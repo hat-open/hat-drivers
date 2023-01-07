@@ -33,7 +33,7 @@ async def create_tcp_master(modbus_type: common.ModbusType,
 
     """
     conn = await transport.tcp_connect(addr, **kwargs)
-    return Master(modbus_type, conn)
+    return Master(conn, modbus_type)
 
 
 async def create_serial_master(modbus_type: common.ModbusType,
@@ -54,7 +54,7 @@ async def create_serial_master(modbus_type: common.ModbusType,
     conn = await transport.serial_create(port,
                                          silent_interval=silent_interval,
                                          **kwargs)
-    return Master(modbus_type, conn)
+    return Master(conn, modbus_type)
 
 
 class Master(aio.Resource):
@@ -233,7 +233,7 @@ class Master(aio.Resource):
         if isinstance(res, transport.ErrorRes):
             return res.error
 
-        if isinstance(res, transport.MaskWriteRegisterRes):
+        if not isinstance(res, transport.MaskWriteRegisterRes):
             raise ValueError("unsupported response pdu")
 
         if (res.address != address):
@@ -257,8 +257,8 @@ class Master(aio.Resource):
                                        pdu=req)
 
         elif self._modbus_type == common.ModbusType.ASCII:
-            req_adu = transport.RtuAdu(device_id=device_id,
-                                       pdu=req)
+            req_adu = transport.AsciiAdu(device_id=device_id,
+                                         pdu=req)
 
         else:
             raise ValueError("unsupported modbus type")
@@ -286,16 +286,19 @@ class Master(aio.Resource):
         return res_adu.pdu
 
     async def _send_loop(self):
+        mlog.debug("starting master send loop")
         future = None
         try:
             while True:
-                with self.async_group.create_subgroup() as subgroup:
+                async with self.async_group.create_subgroup() as subgroup:
                     subgroup.spawn(self._reset_input_buffer_loop)
+                    mlog.debug("started discarding incomming data")
 
                     while not future or future.done():
                         req_adu, future = await self._send_queue.get()
 
                 await self._reset_input_buffer()
+                mlog.debug("stopped discarding incomming data")
 
                 await self._conn.send(req_adu)
 
@@ -315,6 +318,7 @@ class Master(aio.Resource):
             mlog.error("error in send loop: %s", e, exc_info=e)
 
         finally:
+            mlog.debug("stopping master send loop")
             self.close()
             self._send_queue.close()
 
@@ -338,7 +342,7 @@ class Master(aio.Resource):
             mlog.error("error in reset input buffer loop: %s", e, exc_info=e)
 
     async def _reset_input_buffer(self):
-        count = await self._reset_input_buffer()
+        count = await self._conn.reset_input_buffer()
         if not count:
             return
         mlog.debug("discarded %s bytes from input buffer", count)

@@ -53,6 +53,8 @@ async def create_master_slave(tcp_addr, nullmodem):
     @contextlib.asynccontextmanager
     async def create_master_slave(modbus_type, comm_type, read_cb=None,
                                   write_cb=None, write_mask_cb=None):
+        srv = None
+
         if comm_type == CommType.TCP:
             slave_queue = aio.Queue()
             srv = await modbus.create_tcp_server(
@@ -61,25 +63,24 @@ async def create_master_slave(tcp_addr, nullmodem):
             master = await modbus.create_tcp_master(
                 modbus_type, tcp_addr)
             slave = await slave_queue.get()
-            try:
-                yield master, slave
-            finally:
-                await master.async_close()
-                await srv.async_close()
 
         elif comm_type == CommType.SERIAL:
             master = await modbus.create_serial_master(
                 modbus_type, nullmodem[0])
             slave = await modbus.create_serial_slave(
                 modbus_type, nullmodem[1], read_cb, write_cb, write_mask_cb)
-            try:
-                yield master, slave
-            finally:
-                await master.async_close()
-                await slave.async_close()
 
         else:
             raise ValueError()
+
+        try:
+            yield master, slave
+
+        finally:
+            await master.async_close()
+            await slave.async_close()
+            if srv:
+                await srv.async_close()
 
     return create_master_slave
 
@@ -230,4 +231,39 @@ async def test_write(create_master_slave, modbus_type, comm_type,
         entry[4].set_result(result)
 
         read_result = await write_future
+        assert read_result == result
+
+
+@pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
+@pytest.mark.parametrize("comm_type", comm_types)
+@pytest.mark.parametrize("device_id, address, and_mask, or_mask", [
+    (1, 1, 12, 21),
+    (3, 5, 42, 24)
+])
+@pytest.mark.parametrize("result", [None, *modbus.Error])
+async def test_write_mask(create_master_slave, modbus_type, comm_type,
+                          device_id, address, and_mask, or_mask, result):
+    write_mask_queue = aio.Queue()
+
+    async def on_write_mask(slave, device_id, address, and_mask, or_mask):
+        f = asyncio.Future()
+        entry = device_id, address, and_mask, or_mask, f
+        write_mask_queue.put_nowait(entry)
+        return await f
+
+    async with create_master_slave(
+            modbus_type, comm_type,
+            write_mask_cb=on_write_mask) as (master, slave):
+
+        write_mask_future = asyncio.ensure_future(master.write_mask(
+            device_id, address, and_mask, or_mask))
+
+        entry = await write_mask_queue.get()
+        assert entry[0] == device_id
+        assert entry[1] == address
+        assert entry[2] == and_mask
+        assert entry[3] == or_mask
+        entry[4].set_result(result)
+
+        read_result = await write_mask_future
         assert read_result == result

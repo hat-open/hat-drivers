@@ -69,7 +69,14 @@ async def listen(connection_cb: ConnectionCb,
     server._bind_connections = bind_connections
     server._async_group = aio.Group()
 
-    server._srv = await asyncio.start_server(server._on_connection,
+    def on_connection(reader, writer):
+        try:
+            server.async_group.spawn(server._on_connection, reader, writer)
+
+        except Exception:
+            reader.close()
+
+    server._srv = await asyncio.start_server(on_connection,
                                              addr.host, addr.port, **kwargs)
     server._async_group.spawn(aio.call_on_cancel, server._on_close)
 
@@ -129,33 +136,29 @@ class Server(aio.Resource):
         self._srv.close()
         await self._srv.wait_closed()
 
-    def _on_connection(self, reader, writer):
+    async def _on_connection(self, reader, writer):
         try:
-            conn_async_group = (self._async_group.create_subgroup()
-                                if self._bind_connections else None)
-            conn = Connection(reader, writer, conn_async_group)
+            conn = Connection(reader, writer)
 
         except Exception:
             reader.close()
             return
 
         try:
-            self._async_group.spawn(self._async_connection_cb, conn)
-
-        except Exception:
-            conn.close()
-
-    async def _async_connection_cb(self, conn):
-        try:
             await aio.call(self._connection_cb, conn)
+
+            if self._bind_connections:
+                await conn.wait_closing()
+
+            else:
+                conn = None
 
         except Exception as e:
             mlog.warning('connection callback error: %s', e, exc_info=e)
-            await aio.uncancellable(conn.async_close())
 
-        except asyncio.CancelledError:
-            await aio.uncancellable(conn.async_close())
-            raise
+        finally:
+            if conn:
+                await aio.uncancellable(conn.async_close())
 
 
 class Connection(aio.Resource):
@@ -163,13 +166,13 @@ class Connection(aio.Resource):
 
     def __init__(self,
                  reader: asyncio.StreamReader,
-                 writer: asyncio.StreamWriter,
-                 async_group: typing.Optional[aio.Group] = None):
+                 writer: asyncio.StreamWriter):
         self._reader = reader
         self._writer = writer
         self._read_queue = aio.Queue()
-        self._async_group = async_group or aio.Group()
-        self._async_group.spawn(self._read_loop)
+        self._async_group = aio.Group()
+
+        self.async_group.spawn(self._read_loop)
 
         sockname = writer.get_extra_info('sockname')
         peername = writer.get_extra_info('peername')

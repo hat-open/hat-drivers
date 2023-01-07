@@ -21,18 +21,18 @@ def get_next_adu_size(modbus_type: common.ModbusType,
     raise ValueError("unsupported modbus type")
 
 
-async def decode_adu(modbus_type: common.ModbusType,
-                     direction: common.Direction,
-                     data: common.Bytes
-                     ) -> typing.Tuple[common.Adu, common.Bytes]:
+def decode_adu(modbus_type: common.ModbusType,
+               direction: common.Direction,
+               data: common.Bytes
+               ) -> typing.Tuple[common.Adu, common.Bytes]:
     if modbus_type == common.ModbusType.TCP:
-        return await _decode_tcp_adu(direction, data)
+        return _decode_tcp_adu(direction, data)
 
     if modbus_type == common.ModbusType.RTU:
-        return await _decode_rtu_adu(direction, data)
+        return _decode_rtu_adu(direction, data)
 
     if modbus_type == common.ModbusType.ASCII:
-        return await _decode_ascii_adu(direction, data)
+        return _decode_ascii_adu(direction, data)
 
     raise ValueError("unsupported modbus type")
 
@@ -77,9 +77,6 @@ def _get_next_ascii_adu_size(direction, data):
     size += 1
     while size < len(data) and data[size:size+2] != b'\r\n':
         size += 2
-
-    if size >= len(data):
-        return size + 2
 
     return size + 2
 
@@ -163,7 +160,7 @@ def _decode_tcp_adu(direction, data):
     if identifier:
         raise Exception('invalid protocol identifier')
 
-    pdu_bytes, rest = rest[1:length-1], rest[length-1:]
+    pdu_bytes, rest = rest[:length-1], rest[length-1:]
     pdu, _ = _decode_pdu(direction, pdu_bytes)
 
     adu = common.TcpAdu(transaction_id=transaction_id,
@@ -199,7 +196,7 @@ def _decode_ascii_adu(direction, data):
         i, rest = rest[:2], rest[2:]
         if i == b'\r\n':
             break
-        adu_bytes.append(int(i, 16))
+        adu_bytes.append(int(str(i, 'ascii'), 16))
 
     device_id = adu_bytes[0]
     pdu, _ = _decode_pdu(direction, adu_bytes[1:])
@@ -273,7 +270,7 @@ def _decode_req(data):
     elif fc == common.FunctionCode.WRITE_MULTIPLE_REGISTER:
         address, quantity, byte_count = struct.unpack('>HHB', rest[:5])
         values_bytes, rest = rest[5:byte_count+5], rest[byte_count+5:]
-        values = [(values_bytes[i * 2] << 8) | values_bytes[i * 2 + 1]
+        values = [int.from_bytes(values_bytes[i*2:(i+1)*2], 'big')
                   for i in range(quantity)]
         req = common.WriteMultipleRegistersReq(address=address,
                                                values=values)
@@ -323,7 +320,7 @@ def _decode_res(data):
         if byte_count % 2:
             raise Exception('invalid number of bytes')
         values_bytes, rest = rest[1:byte_count+1], rest[byte_count+1:]
-        values = [(values_bytes[i * 2] << 8) | values_bytes[1 + i * 2]
+        values = [int.from_bytes(values_bytes[i*2:(i+1)*2], 'big')
                   for i in range(byte_count // 2)]
         res = common.ReadHoldingRegistersRes(values=values)
 
@@ -332,35 +329,32 @@ def _decode_res(data):
         if byte_count % 2:
             raise Exception('invalid number of bytes')
         values_bytes, rest = rest[1:byte_count+1], rest[byte_count+1:]
-        values = [(values_bytes[i * 2] << 8) | values_bytes[1 + i * 2]
+        values = [int.from_bytes(values_bytes[i*2:(i+1)*2], 'big')
                   for i in range(byte_count // 2)]
-        return common.ReadInputRegistersRes(values=values)
+        res = common.ReadInputRegistersRes(values=values)
 
     elif fc == common.FunctionCode.WRITE_SINGLE_COIL:
-        address = (rest[0] << 8) | rest[1]
-        value = int(bool((rest[2] << 8) | rest[3]))
-        rest = rest[4:]
+        address, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
+        value, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
+        value = 1 if value else 0
         res = common.WriteSingleCoilRes(address=address,
                                         value=value)
 
     elif fc == common.FunctionCode.WRITE_SINGLE_REGISTER:
-        address = (rest[0] << 8) | rest[1]
-        value = (rest[2] << 8) | rest[3]
-        rest = rest[4:]
+        address, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
+        value, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
         res = common.WriteSingleRegisterRes(address=address,
                                             value=value)
 
     elif fc == common.FunctionCode.WRITE_MULTIPLE_COILS:
-        address = (rest[0] << 8) | rest[1]
-        quantity = (rest[2] << 8) | rest[3]
-        rest = rest[4:]
+        address, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
+        quantity, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
         res = common.WriteMultipleCoilsRes(address=address,
                                            quantity=quantity)
 
     elif fc == common.FunctionCode.WRITE_MULTIPLE_REGISTER:
-        address = (rest[0] << 8) | rest[1]
-        quantity = (rest[2] << 8) | rest[3]
-        rest = rest[4:]
+        address, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
+        quantity, rest = int.from_bytes(rest[:2], 'big'), rest[2:]
         res = common.WriteMultipleRegistersRes(address=address,
                                                quantity=quantity)
 
@@ -376,7 +370,7 @@ def _decode_res(data):
         if byte_count % 2:
             raise Exception('invalid number of bytes')
         values_bytes, rest = rest[1:byte_count+1], rest[byte_count+1:]
-        values = [(values_bytes[i * 2] << 8) | values_bytes[1 + i * 2]
+        values = [int.from_bytes(values_bytes[i*2:(i+1)*2], 'big')
                   for i in range(byte_count // 2)]
         res = common.ReadFifoQueueRes(values=values)
 

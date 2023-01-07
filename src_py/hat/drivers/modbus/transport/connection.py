@@ -1,4 +1,5 @@
 import abc
+import logging
 
 from hat import aio
 
@@ -8,10 +9,18 @@ from hat.drivers.modbus.transport import common
 from hat.drivers.modbus.transport import encoder
 
 
+mlog: logging.Logger = logging.getLogger(__name__)
+
+
 class Connection(aio.Resource):
 
     async def send(self, adu: common.Adu):
-        adu_bytes = bytes(encoder.encode_adu(adu))
+        mlog.debug("sending adu: %s", adu)
+        adu_bytes = encoder.encode_adu(adu)
+
+        if mlog.isEnabledFor(logging.DEBUG):
+            mlog.debug("writing bytes: %s", bytes(adu_bytes).hex(' '))
+
         await self._write(adu_bytes)
 
     async def receive(self,
@@ -27,8 +36,13 @@ class Connection(aio.Resource):
                 break
             buff.extend(await self._read(next_adu_size - len(buff)))
 
+        if mlog.isEnabledFor(logging.DEBUG):
+            mlog.debug("received bytes: %s", buff.hex(' '))
+
         buff = memoryview(buff)
         adu, _ = encoder.decode_adu(modbus_type, direction, buff)
+
+        mlog.debug("received adu: %s", adu)
         return adu
 
     async def reset_input_buffer(self) -> int:
@@ -62,6 +76,8 @@ async def serial_create(port: str,
                         **kwargs
                         ) -> Connection:
     endpoint = await serial.create(port, **kwargs)
+
+    mlog.debug("serial endpoint opened: %s", port)
     return _SerialConnection(endpoint)
 
 
@@ -69,6 +85,8 @@ async def tcp_connect(addr: tcp.Address,
                       **kwargs
                       ) -> Connection:
     conn = await tcp.connect(addr, **kwargs)
+
+    mlog.debug("tcp connection established: %s", conn.info)
     return _TcpConnection(conn)
 
 
@@ -78,11 +96,15 @@ async def tcp_listen(connection_cb: ConnectionCb,
                      ) -> tcp.Server:
 
     async def on_connection(conn):
+        mlog.debug("new incomming tcp connection: %s", conn.info)
         await aio.call(connection_cb, _TcpConnection(conn))
 
-    return await tcp.listen(on_connection, addr,
-                            bind_connections=True,
-                            **kwargs)
+    server = await tcp.listen(on_connection, addr,
+                              bind_connections=True,
+                              **kwargs)
+
+    mlog.debug("tcp server listening: %s", server.addresses)
+    return server
 
 
 class _SerialConnection(Connection):
@@ -95,7 +117,7 @@ class _SerialConnection(Connection):
         return self._endpoint.async_group
 
     async def _write(self, data):
-        await self._endpoint.write(bytes(data))
+        await self._endpoint.write(data)
 
     async def _read(self, size):
         return await self._endpoint.read(size)
@@ -114,7 +136,7 @@ class _TcpConnection(Connection):
         return self._conn.async_group
 
     async def _write(self, data):
-        self._conn.write(bytes(data))
+        self._conn.write(data)
         await self._conn.drain()
 
     async def _read(self, size):

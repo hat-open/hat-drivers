@@ -120,7 +120,7 @@ async def create_tcp_server(modbus_type: common.ModbusType,
         finally:
             slave.close()
 
-    return await tcp.tcp_listen(on_connection, addr, **kwargs)
+    return await transport.tcp_listen(on_connection, addr, **kwargs)
 
 
 async def create_serial_slave(modbus_type: common.ModbusType,
@@ -174,12 +174,14 @@ class Slave(aio.Resource):
     @property
     def async_group(self) -> aio.Group:
         """Async group"""
-        return self._async_group
+        return self._conn.async_group
 
     async def _receive_loop(self):
+        mlog.debug("starting slave receive loop")
         try:
             while True:
                 try:
+                    mlog.debug("waiting for request")
                     req_adu = await self._conn.receive(
                         modbus_type=self._modbus_type,
                         direction=transport.Direction.REQUEST)
@@ -195,6 +197,8 @@ class Slave(aio.Resource):
                 req = req_adu.pdu
 
                 try:
+                    mlog.debug("processing request (device_id %s): %s",
+                               device_id, req)
                     res = await self._process_request(device_id, req)
 
                 except Exception as e:
@@ -202,7 +206,11 @@ class Slave(aio.Resource):
                     continue
 
                 if device_id == 0:
+                    mlog.debug("skip sending response (broadcast request): %s",
+                               res)
                     continue
+
+                mlog.debug("sending response: %s", res)
 
                 if self._modbus_type == common.ModbusType.TCP:
                     res_adu = transport.TcpAdu(
@@ -235,6 +243,7 @@ class Slave(aio.Resource):
             mlog.error("receive loop error: %s", e, exc_info=e)
 
         finally:
+            mlog.debug("closing slave receive loop")
             self.close()
 
     async def _process_request(self, device_id, req):
@@ -391,6 +400,7 @@ class Slave(aio.Resource):
     async def _call_read_cb(self, device_id, data_type, start_address,
                             quantity):
         if not self._read_cb:
+            mlog.debug("read callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -404,6 +414,7 @@ class Slave(aio.Resource):
     async def _call_write_cb(self, device_id, data_type, start_address,
                              values):
         if not self._write_cb:
+            mlog.debug("write callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -417,6 +428,7 @@ class Slave(aio.Resource):
     async def _call_write_mask_cb(self, device_id, address, and_mask,
                                   or_mask):
         if not self._write_mask_cb:
+            mlog.debug("write mask callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
