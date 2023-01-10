@@ -68,7 +68,7 @@ class Server(aio.Resource):
 
     @property
     def async_group(self):
-        return self._srv
+        return self._srv.async_group
 
     async def _on_connection(self, apci_conn):
         if self._update_key is None:
