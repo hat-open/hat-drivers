@@ -75,8 +75,8 @@ class Server(aio.Resource):
             conn = regular.RegularConnection(apci_conn)
 
         else:
-            conn.secure.SecureConnection(apci_conn, False, self._update_key,
-                                         self._critical_functions)
+            conn = secure.SecureConnection(apci_conn, False, self._update_key,
+                                           self._critical_functions)
 
         try:
             await aio.call(self._connection_cb, conn)
