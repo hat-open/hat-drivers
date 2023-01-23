@@ -286,7 +286,7 @@ class Master(aio.Resource):
         mlog.debug("starting master send loop")
         future = None
         try:
-            while True:
+            while self.is_open:
                 async with self.async_group.create_subgroup() as subgroup:
                     subgroup.spawn(self._reset_input_buffer_loop)
                     mlog.debug("started discarding incomming data")
@@ -299,14 +299,14 @@ class Master(aio.Resource):
 
                 await self._conn.send(req_adu)
 
-                res_adu = await self._conn.receive(
-                    modbus_type=self._modbus_type,
-                    direction=transport.Direction.RESPONSE)
+                async with self.async_group.create_subgroup() as subgroup:
+                    task = subgroup.spawn(self._receive)
 
-                if future.done():
-                    continue
+                    await asyncio.wait([task, future],
+                                       return_when=asyncio.FIRST_COMPLETED)
 
-                future.set_result(res_adu)
+                    if task.done() and self.is_open and not future.done():
+                        future.set_result(task.result())
 
         except ConnectionError:
             pass
@@ -345,3 +345,16 @@ class Master(aio.Resource):
         if not count:
             return
         mlog.debug("discarded %s bytes from input buffer", count)
+
+    async def _receive(self):
+        try:
+            return await self._conn.receive(
+                modbus_type=self._modbus_type,
+                direction=transport.Direction.RESPONSE)
+
+        except ConnectionError:
+            self.close()
+
+        except Exception as e:
+            mlog.error("receive error: %s", e, exc_info=e)
+            self.close()
