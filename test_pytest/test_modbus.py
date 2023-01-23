@@ -11,6 +11,7 @@ import pytest
 from hat import aio
 from hat import util
 from hat.drivers import modbus
+from hat.drivers import serial
 from hat.drivers import tcp
 
 
@@ -26,6 +27,11 @@ else:
 @pytest.fixture
 def tcp_addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+
+
+@pytest.fixture
+async def patch_serial_read_timeout(monkeypatch):
+    monkeypatch.setattr(serial, 'read_timeout', 0.01)
 
 
 @pytest.fixture
@@ -48,7 +54,7 @@ def nullmodem(request, tmp_path):
 
 
 @pytest.fixture
-async def create_master_slave(tcp_addr, nullmodem):
+async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
 
     @contextlib.asynccontextmanager
     async def create_master_slave(modbus_type, comm_type, read_cb=None,
@@ -137,7 +143,8 @@ async def test_create_tcp(tcp_addr, modbus_type):
 
 @pytest.mark.skipif(sys.platform == 'win32', reason="can't simulate serial")
 @pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
-async def test_create_serial(nullmodem, modbus_type):
+async def test_create_serial(nullmodem, modbus_type,
+                             patch_serial_read_timeout):
     master = await modbus.create_serial_master(modbus_type, nullmodem[0])
     slave = await modbus.create_serial_slave(modbus_type, nullmodem[1])
     assert not master.is_closed

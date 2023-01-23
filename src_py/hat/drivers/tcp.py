@@ -294,6 +294,9 @@ class Connection(aio.Resource):
                     if buffer and not is_exact:
                         break
 
+                    if not self.is_open:
+                        return
+
                     async with self.async_group.create_subgroup() as subgroup:
                         fn = (self._reader.readexactly if is_exact
                               else self._reader.read)

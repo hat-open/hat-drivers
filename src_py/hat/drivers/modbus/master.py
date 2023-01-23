@@ -15,9 +15,6 @@ from hat.drivers.modbus import transport
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
-reset_input_buffer_delay: float = 0.5
-"""Reset input buffer delay"""
-
 
 async def create_tcp_master(modbus_type: common.ModbusType,
                             addr: tcp.Address,
@@ -333,13 +330,15 @@ class Master(aio.Resource):
         try:
             while True:
                 await self._reset_input_buffer()
-                await asyncio.sleep(reset_input_buffer_delay)
+                await self._conn.read_byte()
+                mlog.debug("discarded 1 byte from input buffer")
 
         except ConnectionError:
-            pass
+            self.close()
 
         except Exception as e:
             mlog.error("error in reset input buffer loop: %s", e, exc_info=e)
+            self.close()
 
     async def _reset_input_buffer(self):
         count = await self._conn.reset_input_buffer()

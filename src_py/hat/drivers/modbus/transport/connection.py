@@ -56,6 +56,9 @@ class Connection(aio.Resource):
 
         return counter
 
+    async def read_byte(self) -> bytes:
+        return await self._read(1)
+
     @abc.abstractmethod
     async def _write(self, data: common.Bytes):
         pass
