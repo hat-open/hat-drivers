@@ -147,6 +147,7 @@ async def run_slave():
             res = create_s_ks_na(asdu.address, local_sequence, 1,
                                  security.common.KeyWrapAlgorithm.AES_256,
                                  key_status,
+                                 # security.common.MacAlgorithm.NO_MAC,
                                  security.common.MacAlgorithm.HMAC_SHA_256_16,
                                  last_key_challange_data, b'')
             print('++', res)
