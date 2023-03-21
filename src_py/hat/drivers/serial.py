@@ -116,6 +116,8 @@ class Endpoint(aio.Resource):
     async def read(self, size: int) -> Bytes:
         """Read
 
+        Canceling read doesn't immediately cancel read in progress.
+
         Args:
             size: number of bytes to read
 
@@ -193,9 +195,13 @@ class Endpoint(aio.Resource):
                     if future.done():
                         continue
 
-                    buffer = memoryview(buffer)
-                    data, buffer = buffer[:size], bytearray(buffer[size:])
-                    future.set_result(data)
+                    if size > 0:
+                        buffer = memoryview(buffer)
+                        data, buffer = buffer[:size], bytearray(buffer[size:])
+                        future.set_result(data)
+
+                    else:
+                        future.set_result(b'')
 
         except Exception as e:
             mlog.warning('read loop error: %s', e, exc_info=e)

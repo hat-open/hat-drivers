@@ -18,6 +18,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_tcp_master(modbus_type: common.ModbusType,
                             addr: tcp.Address,
+                            response_timeout: typing.Optional[float] = None,
                             **kwargs
                             ) -> 'Master':
     """Create TCP master
@@ -25,17 +26,19 @@ async def create_tcp_master(modbus_type: common.ModbusType,
     Args:
         modbus_type: modbus type
         addr: remote host address
+        response_timeout: response timeout in seconds
         kwargs: additional arguments used for creating TCP connection
             (see `tcp.connect`)
 
     """
     conn = await transport.tcp_connect(addr, **kwargs)
-    return Master(conn, modbus_type)
+    return Master(conn, modbus_type, response_timeout)
 
 
 async def create_serial_master(modbus_type: common.ModbusType,
                                port: str, *,
                                silent_interval: float = 0.005,
+                               response_timeout: typing.Optional[float] = None,
                                **kwargs
                                ) -> 'Master':
     """Create serial master
@@ -44,6 +47,7 @@ async def create_serial_master(modbus_type: common.ModbusType,
         modbus_type: modbus type
         port: port name (see `serial.create`)
         silent_interval: silent interval (see `serial.create`)
+        response_timeout: response timeout in seconds
         kwargs: additional arguments used for opening serial connection
             (see `serial.create`)
 
@@ -51,7 +55,7 @@ async def create_serial_master(modbus_type: common.ModbusType,
     conn = await transport.serial_create(port,
                                          silent_interval=silent_interval,
                                          **kwargs)
-    return Master(conn, modbus_type)
+    return Master(conn, modbus_type, response_timeout)
 
 
 class Master(aio.Resource):
@@ -59,9 +63,11 @@ class Master(aio.Resource):
 
     def __init__(self,
                  conn: transport.Connection,
-                 modbus_type: common.ModbusType):
+                 modbus_type: common.ModbusType,
+                 response_timeout: typing.Optional[float]):
         self._conn = conn
         self._modbus_type = modbus_type
+        self._response_timeout = response_timeout
         self._send_queue = aio.Queue()
 
         if modbus_type == common.ModbusType.TCP:
@@ -93,6 +99,7 @@ class Master(aio.Resource):
 
         Raises:
             ConnectionError
+            TimeoutError
 
         """
         if device_id == 0:
@@ -155,6 +162,7 @@ class Master(aio.Resource):
 
         Raises:
             ConnectionError
+            TimeoutError
 
         """
         if data_type == common.DataType.COIL:
@@ -219,6 +227,7 @@ class Master(aio.Resource):
 
         Raises:
             ConnectionError
+            TimeoutError
 
         """
         req = transport.MaskWriteRegisterReq(address=address,
@@ -300,13 +309,9 @@ class Master(aio.Resource):
                 await self._conn.send(req_adu)
 
                 async with self.async_group.create_subgroup() as subgroup:
-                    task = subgroup.spawn(self._receive)
-
+                    task = subgroup.spawn(self._receive, future)
                     await asyncio.wait([task, future],
                                        return_when=asyncio.FIRST_COMPLETED)
-
-                    if task.done() and self.is_open and not future.done():
-                        future.set_result(task.result())
 
         except ConnectionError:
             pass
@@ -346,11 +351,24 @@ class Master(aio.Resource):
             return
         mlog.debug("discarded %s bytes from input buffer", count)
 
-    async def _receive(self):
+    async def _receive(self, future):
         try:
-            return await self._conn.receive(
+            receive_co = self._conn.receive(
                 modbus_type=self._modbus_type,
                 direction=transport.Direction.RESPONSE)
+
+            if self._response_timeout is None:
+                result = await receive_co
+
+            else:
+                result = await aio.wait_for(receive_co, self._response_timeout)
+
+            if not future.done():
+                future.set_result(result)
+
+        except asyncio.TimeoutError:
+            if not future.done():
+                future.set_exception(TimeoutError())
 
         except ConnectionError:
             self.close()
@@ -358,3 +376,7 @@ class Master(aio.Resource):
         except Exception as e:
             mlog.error("receive error: %s", e, exc_info=e)
             self.close()
+
+        finally:
+            if not future.done():
+                future.set_exception(ConnectionError())
