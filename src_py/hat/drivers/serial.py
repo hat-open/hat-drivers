@@ -77,7 +77,8 @@ async def create(port: str, *,
     """
     endpoint = Endpoint()
     endpoint._silent_interval = silent_interval
-    endpoint._read_queue = aio.Queue()
+    endpoint._input_buffer = bytearray()
+    endpoint._input_cv = asyncio.Condition()
     endpoint._write_queue = aio.Queue()
     endpoint._executor = aio.create_executor()
 
@@ -116,8 +117,6 @@ class Endpoint(aio.Resource):
     async def read(self, size: int) -> Bytes:
         """Read
 
-        Canceling read doesn't immediately cancel read in progress.
-
         Args:
             size: number of bytes to read
 
@@ -125,13 +124,18 @@ class Endpoint(aio.Resource):
             ConnectionError
 
         """
-        future = asyncio.Future()
-        try:
-            self._read_queue.put_nowait((size, future))
-            return await future
+        async with self._input_cv:
+            while len(self._input_buffer) < size:
+                if not self.is_open:
+                    raise ConnectionError()
+                await self._input_cv.wait()
 
-        except aio.QueueClosedError:
-            raise ConnectionError()
+            if size < 1:
+                return b''
+
+            buffer = memoryview(self._input_buffer)
+            data, self._input_buffer = buffer[:size], bytearray(buffer[size:])
+            return data
 
     async def write(self, data: Bytes):
         """Write
@@ -158,64 +162,39 @@ class Endpoint(aio.Resource):
             ConnectionError
 
         """
-        future = asyncio.Future()
-        try:
-            self._read_queue.put_nowait((None, future))
-            return await future
-
-        except aio.QueueClosedError:
-            raise ConnectionError()
+        async with self._input_cv:
+            count = len(self._input_buffer)
+            self._input_buffer = bytearray()
+            return count
 
     async def _on_close(self):
-        await self._executor(self._serial.close)
+        await self._executor(self._ext_close)
+
+        async with self._input_cv:
+            self._input_cv.notify_all()
 
     async def _read_loop(self):
-        future = None
-        buffer = bytearray()
         try:
             while True:
-                size, future = await self._read_queue.get()
-                if future.done():
+                data_head = await self._executor(self._serial.read, 1)
+                if not data_head:
                     continue
 
-                if size is None:
-                    count = await self._executor(self._ext_reset_input_buffer)
-                    count += len(buffer)
-                    buffer = bytearray()
+                await asyncio.sleep(0.001)
+                data_rest = await self._executor(self._serial.read, -1)
 
-                    if not future.done():
-                        future.set_result(count)
+                async with self._input_cv:
+                    self._input_buffer.extend(data_head)
+                    if data_rest:
+                        self._input_buffer.extend(data_rest)
 
-                else:
-                    while len(buffer) < size and not future.done():
-                        temp = await self._executor(self._serial.read,
-                                                    size - len(buffer))
-                        buffer.extend(temp)
-
-                    if future.done():
-                        continue
-
-                    if size > 0:
-                        buffer = memoryview(buffer)
-                        data, buffer = buffer[:size], bytearray(buffer[size:])
-                        future.set_result(data)
-
-                    else:
-                        future.set_result(b'')
+                    self._input_cv.notify_all()
 
         except Exception as e:
             mlog.warning('read loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
-            self._read_queue.close()
-
-            while True:
-                if future and not future.done():
-                    future.set_exception(ConnectionError())
-                if self._read_queue.empty():
-                    break
-                _, future = self._read_queue.get_nowait()
 
     async def _write_loop(self):
         future = None
@@ -223,8 +202,7 @@ class Endpoint(aio.Resource):
             while True:
                 data, future = await self._write_queue.get()
 
-                await self._executor(self._serial.write, data)
-                await self._executor(self._serial.flush)
+                await self._executor(self._ext_write, data)
 
                 if not future.done():
                     future.set_result(None)
@@ -245,7 +223,18 @@ class Endpoint(aio.Resource):
                     break
                 _, future = self._write_queue.get_nowait()
 
-    def _ext_reset_input_buffer(self):
-        count = self._serial.in_waiting
-        self._serial.reset_input_buffer()
-        return count
+    def _ext_close(self):
+        self._serial.close()
+
+    def _ext_read(self, n=-1):
+        if n < 0:
+            n = self._serial.in_waiting
+
+        if n < 1:
+            return b''
+
+        return self._serial.read(n)
+
+    def _ext_write(self, data):
+        self._serial.write(data)
+        self._serial.flush()

@@ -335,8 +335,9 @@ class Master(aio.Resource):
         try:
             while True:
                 await self._reset_input_buffer()
-                # TODO define interval / cancelable read
-                await asyncio.sleep(1)
+
+                await self._conn.read_byte()
+                mlog.debug("discarded 1 byte from input buffer")
 
         except ConnectionError:
             self.close()
