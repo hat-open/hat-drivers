@@ -109,7 +109,7 @@ def create_ssl_ctx(protocol: SslProtocol,
 
     if cert_path:
         ctx.load_cert_chain(certfile=str(cert_path),
-                            keyfile=str(key_path),
+                            keyfile=str(key_path) if key_path else None,
                             password=password)
 
     return ctx
@@ -180,6 +180,8 @@ class Connection(aio.Resource):
             local_addr=Address(sockname[0], sockname[1]),
             remote_addr=Address(peername[0], peername[1]))
 
+        self._ssl_object = writer.get_extra_info('ssl_object')
+
     @property
     def async_group(self) -> aio.Group:
         """Async group"""
@@ -189,6 +191,11 @@ class Connection(aio.Resource):
     def info(self) -> ConnectionInfo:
         """Connection info"""
         return self._info
+
+    @property
+    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
+        """SSL Object"""
+        return self._ssl_object
 
     def write(self, data: Bytes):
         """Write data

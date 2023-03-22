@@ -1,4 +1,5 @@
 import asyncio
+import subprocess
 
 import pytest
 
@@ -12,13 +13,33 @@ def addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
-async def test_connect_listen(addr):
+@pytest.fixture(scope="session")
+def pem_path(tmp_path_factory):
+    path = tmp_path_factory.mktemp('syslog') / 'pem'
+    subprocess.run(['openssl', 'req', '-batch', '-x509', '-noenc',
+                    '-newkey', 'rsa:2048',
+                    '-days', '1',
+                    '-keyout', str(path),
+                    '-out', str(path)],
+                   stderr=subprocess.DEVNULL,
+                   check=True)
+    return path
+
+
+@pytest.mark.parametrize("with_ssl", [True, False])
+async def test_connect_listen(addr, pem_path, with_ssl):
+    srv_ssl_ctx = (tcp.create_ssl_ctx(tcp.SslProtocol.TLS_SERVER,
+                                      cert_path=pem_path)
+                   if with_ssl else None)
+    conn_ssl_ctx = (tcp.create_ssl_ctx(tcp.SslProtocol.TLS_CLIENT)
+                    if with_ssl else None)
+
     with pytest.raises(ConnectionError):
-        await tcp.connect(addr)
+        await tcp.connect(addr, ssl=conn_ssl_ctx)
 
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await tcp.listen(conn_queue.put_nowait, addr, ssl=srv_ssl_ctx)
+    conn1 = await tcp.connect(addr, ssl=conn_ssl_ctx)
     conn2 = await conn_queue.get()
 
     assert srv.is_open
@@ -28,6 +49,13 @@ async def test_connect_listen(addr):
     assert srv.addresses == [addr]
     assert conn1.info.local_addr == conn2.info.remote_addr
     assert conn1.info.remote_addr == conn2.info.local_addr
+
+    if with_ssl:
+        assert conn1.ssl_object is not None
+        assert conn2.ssl_object is not None
+    else:
+        assert conn1.ssl_object is None
+        assert conn2.ssl_object is None
 
     await conn1.async_close()
     await conn2.async_close()
