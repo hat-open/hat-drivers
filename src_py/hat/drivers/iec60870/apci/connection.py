@@ -162,6 +162,11 @@ class Connection(aio.Resource):
         return self._conn.info
 
     @property
+    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
+        """SSL Object"""
+        return self._conn.ssl_object
+
+    @property
     def is_enabled(self) -> bool:
         """Is enabled"""
         return self._is_enabled
