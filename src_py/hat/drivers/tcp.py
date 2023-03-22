@@ -98,9 +98,9 @@ def create_ssl_ctx(protocol: SslProtocol,
 
     if verify_cert:
         ctx.verify_mode = ssl.VerifyMode.CERT_REQUIRED
-        ctx.load_default_certs(ssl.Purpose.SERVER_AUTH
+        ctx.load_default_certs(ssl.Purpose.CLIENT_AUTH
                                if protocol == SslProtocol.TLS_SERVER
-                               else ssl.Purpose.CLIENT_AUTH)
+                               else ssl.Purpose.SERVER_AUTH)
         if ca_path:
             ctx.load_verify_locations(cafile=str(ca_path))
 
