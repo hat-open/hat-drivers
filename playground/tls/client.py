@@ -2,6 +2,9 @@ from pprint import pprint
 import asyncio
 import contextlib
 
+import cryptography.x509
+import cryptography.hazmat.primitives.asymmetric.rsa
+
 from hat import aio
 
 from hat.drivers import tcp
@@ -22,22 +25,22 @@ async def async_main():
     pprint(ctx.cert_store_stats())
 
     try:
-        while True:
-            print(">> cipher")
-            pprint(conn.ssl_object.cipher())
+        print(">> cipher")
+        pprint(conn.ssl_object.cipher())
 
-            print(">> peer cert")
-            pprint(conn.ssl_object.getpeercert())
+        print(">> peer cert")
+        pprint(conn.ssl_object.getpeercert())
 
-            print(">> alpn protocol")
-            pprint(conn.ssl_object.selected_alpn_protocol())
+        cert_bytes = conn.ssl_object.getpeercert(True)
+        cert = cryptography.x509.load_der_x509_certificate(cert_bytes)
+        key = cert.public_key()
 
-            print(">> shared ciphers")
-            pprint(conn.ssl_object.shared_ciphers())
+        print(">> key")
+        pprint(key)
 
-            await asyncio.sleep(5)
-
-            conn.ssl_object.do_handshake()
+        if isinstance(key, cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey):  # NOQA
+            print(">> rsa key length")
+            pprint(key.key_size)
 
     finally:
         await aio.uncancellable(conn.async_close())
