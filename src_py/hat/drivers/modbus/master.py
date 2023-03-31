@@ -81,6 +81,11 @@ class Master(aio.Resource):
         """Async group"""
         return self._conn.async_group
 
+    @property
+    def log_prefix(self) -> str:
+        """Logging prefix"""
+        return self._conn.log_prefix
+
     async def read(self,
                    device_id: int,
                    data_type: common.DataType,
@@ -292,19 +297,20 @@ class Master(aio.Resource):
         return res_adu.pdu
 
     async def _send_loop(self):
-        mlog.debug("starting master send loop")
+        self._log(logging.DEBUG, "starting master send loop")
         future = None
         try:
             while self.is_open:
                 async with self.async_group.create_subgroup() as subgroup:
                     subgroup.spawn(self._reset_input_buffer_loop)
-                    mlog.debug("started discarding incomming data")
+                    self._log(logging.DEBUG,
+                              "started discarding incomming data")
 
                     while not future or future.done():
                         req_adu, future = await self._send_queue.get()
 
                 await self._reset_input_buffer()
-                mlog.debug("stopped discarding incomming data")
+                self._log(logging.DEBUG, "stopped discarding incomming data")
 
                 await self._conn.send(req_adu)
 
@@ -317,10 +323,10 @@ class Master(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("error in send loop: %s", e, exc_info=e)
+            self._log(logging.ERROR, "error in send loop: %s", e, exc_info=e)
 
         finally:
-            mlog.debug("stopping master send loop")
+            self._log(logging.DEBUG, "stopping master send loop")
             self.close()
             self._send_queue.close()
 
@@ -337,20 +343,21 @@ class Master(aio.Resource):
                 await self._reset_input_buffer()
 
                 await self._conn.read_byte()
-                mlog.debug("discarded 1 byte from input buffer")
+                self._log(logging.DEBUG, "discarded 1 byte from input buffer")
 
         except ConnectionError:
             self.close()
 
         except Exception as e:
-            mlog.error("error in reset input buffer loop: %s", e, exc_info=e)
+            self._log(logging.ERROR, "error in reset input buffer loop: %s", e,
+                      exc_info=e)
             self.close()
 
     async def _reset_input_buffer(self):
         count = await self._conn.reset_input_buffer()
         if not count:
             return
-        mlog.debug("discarded %s bytes from input buffer", count)
+        self._log(logging.DEBUG, "discarded %s bytes from input buffer", count)
 
     async def _receive(self, future):
         try:
@@ -375,9 +382,15 @@ class Master(aio.Resource):
             self.close()
 
         except Exception as e:
-            mlog.error("receive error: %s", e, exc_info=e)
+            self._log(logging.ERROR, "receive error: %s", e, exc_info=e)
             self.close()
 
         finally:
             if not future.done():
                 future.set_exception(ConnectionError())
+
+    def _log(self, level, msg, *args, **kwargs):
+        if not mlog.isEnabledFor(level):
+            return
+
+        mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)

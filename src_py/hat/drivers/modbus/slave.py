@@ -115,7 +115,9 @@ async def create_tcp_server(modbus_type: common.ModbusType,
             await slave.wait_closing()
 
         except Exception as e:
-            mlog.error("error in slave callback: %s", e, exc_info=e)
+            if mlog.isEnabledFor(logging.ERROR):
+                mlog.error(f"tcp local ({addr.host}:{addr.port}): "
+                           f"error in slave callback: %s", e, exc_info=e)
 
         finally:
             slave.close()
@@ -176,12 +178,17 @@ class Slave(aio.Resource):
         """Async group"""
         return self._conn.async_group
 
+    @property
+    def log_prefix(self) -> str:
+        """Logging prefix"""
+        return self._conn.log_prefix
+
     async def _receive_loop(self):
-        mlog.debug("starting slave receive loop")
+        self._log(logging.DEBUG, "starting slave receive loop")
         try:
             while True:
                 try:
-                    mlog.debug("waiting for request")
+                    self._log(logging.DEBUG, "waiting for request")
                     req_adu = await self._conn.receive(
                         modbus_type=self._modbus_type,
                         direction=transport.Direction.REQUEST)
@@ -190,27 +197,31 @@ class Slave(aio.Resource):
                     break
 
                 except Exception as e:
-                    mlog.warning("error receiving request: %s", e, exc_info=e)
+                    self._log(logging.WARNING, "error receiving request: %s",
+                              e, exc_info=e)
                     continue
 
                 device_id = req_adu.device_id
                 req = req_adu.pdu
 
                 try:
-                    mlog.debug("processing request (device_id %s): %s",
-                               device_id, req)
+                    self._log(logging.DEBUG,
+                              "processing request (device_id %s): %s",
+                              device_id, req)
                     res = await self._process_request(device_id, req)
 
                 except Exception as e:
-                    mlog.warning("error processing request: %s", e, exc_info=e)
+                    self._log(logging.WARNING, "error processing request: %s",
+                              e, exc_info=e)
                     continue
 
                 if device_id == 0:
-                    mlog.debug("skip sending response (broadcast request): %s",
-                               res)
+                    self._log(logging.DEBUG,
+                              "skip sending response (broadcast request): %s",
+                              res)
                     continue
 
-                mlog.debug("sending response: %s", res)
+                self._log(logging.DEBUG, "sending response: %s", res)
 
                 if self._modbus_type == common.ModbusType.TCP:
                     res_adu = transport.TcpAdu(
@@ -236,14 +247,15 @@ class Slave(aio.Resource):
                     break
 
                 except Exception as e:
-                    mlog.warning("error sending response: %s", e, exc_info=e)
+                    self._log(logging.WARNING, "error sending response: %s", e,
+                              exc_info=e)
                     continue
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log(logging.ERROR, "receive loop error: %s", e, exc_info=e)
 
         finally:
-            mlog.debug("closing slave receive loop")
+            self._log(logging.DEBUG, "closing slave receive loop")
             self.close()
 
     async def _process_request(self, device_id, req):
@@ -400,7 +412,7 @@ class Slave(aio.Resource):
     async def _call_read_cb(self, device_id, data_type, start_address,
                             quantity):
         if not self._read_cb:
-            mlog.debug("read callback not defined")
+            self._log(logging.DEBUG, "read callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -408,13 +420,14 @@ class Slave(aio.Resource):
                                   start_address, quantity)
 
         except Exception as e:
-            mlog.warning("error in read callback: %s", e, exc_info=e)
+            self._log(logging.WARNING, "error in read callback: %s", e,
+                      exc_info=e)
             return common.Error.FUNCTION_ERROR
 
     async def _call_write_cb(self, device_id, data_type, start_address,
                              values):
         if not self._write_cb:
-            mlog.debug("write callback not defined")
+            self._log(logging.DEBUG, "write callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -422,13 +435,14 @@ class Slave(aio.Resource):
                                   start_address, values)
 
         except Exception as e:
-            mlog.warning("error in write callback: %s", e, exc_info=e)
+            self._log(logging.WARNING, "error in write callback: %s", e,
+                      exc_info=e)
             return common.Error.FUNCTION_ERROR
 
     async def _call_write_mask_cb(self, device_id, address, and_mask,
                                   or_mask):
         if not self._write_mask_cb:
-            mlog.debug("write mask callback not defined")
+            self._log(logging.DEBUG, "write mask callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -436,5 +450,12 @@ class Slave(aio.Resource):
                                   address, and_mask, or_mask)
 
         except Exception as e:
-            mlog.warning("error in write mask callback: %s", e, exc_info=e)
+            self._log(logging.WARNING, "error in write mask callback: %s", e,
+                      exc_info=e)
             return common.Error.FUNCTION_ERROR
+
+    def _log(self, level, msg, *args, **kwargs):
+        if not mlog.isEnabledFor(level):
+            return
+
+        mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)

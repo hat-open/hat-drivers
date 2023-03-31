@@ -14,12 +14,18 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 class Connection(aio.Resource):
 
+    @property
+    @abc.abstractmethod
+    def log_prefix(self) -> str:
+        pass
+
     async def send(self, adu: common.Adu):
-        mlog.debug("sending adu: %s", adu)
+        self._log(logging.DEBUG, "sending adu: %s", adu)
         adu_bytes = encoder.encode_adu(adu)
 
         if mlog.isEnabledFor(logging.DEBUG):
-            mlog.debug("writing bytes: %s", bytes(adu_bytes).hex(' '))
+            self._log(logging.DEBUG, "writing bytes: %s",
+                      bytes(adu_bytes).hex(' '))
 
         await self._write(adu_bytes)
 
@@ -37,12 +43,12 @@ class Connection(aio.Resource):
             buff.extend(await self._read(next_adu_size - len(buff)))
 
         if mlog.isEnabledFor(logging.DEBUG):
-            mlog.debug("received bytes: %s", buff.hex(' '))
+            self._log(logging.DEBUG, "received bytes: %s", buff.hex(' '))
 
         buff = memoryview(buff)
         adu, _ = encoder.decode_adu(modbus_type, direction, buff)
 
-        mlog.debug("received adu: %s", adu)
+        self._log(logging.DEBUG, "received adu: %s", adu)
         return adu
 
     async def reset_input_buffer(self) -> int:
@@ -58,6 +64,12 @@ class Connection(aio.Resource):
 
     async def read_byte(self) -> bytes:
         return await self._read(1)
+
+    def _log(self, level, msg, *args, **kwargs):
+        if not mlog.isEnabledFor(level):
+            return
+
+        mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)
 
     @abc.abstractmethod
     async def _write(self, data: common.Bytes):
@@ -80,7 +92,7 @@ async def serial_create(port: str,
                         ) -> Connection:
     endpoint = await serial.create(port, **kwargs)
 
-    mlog.debug("serial endpoint opened: %s", port)
+    mlog.debug("serial endpoint opened: %s", endpoint.port)
     return _SerialConnection(endpoint)
 
 
@@ -114,10 +126,15 @@ class _SerialConnection(Connection):
 
     def __init__(self, endpoint):
         self._endpoint = endpoint
+        self._log_prefix = f'serial port {endpoint.port}'
 
     @property
     def async_group(self):
         return self._endpoint.async_group
+
+    @property
+    def log_prefix(self):
+        return self._log_prefix
 
     async def _write(self, data):
         await self._endpoint.write(data)
@@ -133,10 +150,19 @@ class _TcpConnection(Connection):
 
     def __init__(self, conn):
         self._conn = conn
+        self._log_prefix = (
+            f'tcp local ('
+            f'{conn.info.local_addr.host}:{conn.info.local_addr.port}'
+            f') remote ('
+            f'{conn.info.remote_addr.host}:{conn.info.remote_addr.port})')
 
     @property
     def async_group(self):
         return self._conn.async_group
+
+    @property
+    def log_prefix(self):
+        return self._log_prefix
 
     async def _write(self, data):
         self._conn.write(data)

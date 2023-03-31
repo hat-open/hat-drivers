@@ -76,6 +76,7 @@ async def create(port: str, *,
 
     """
     endpoint = Endpoint()
+    endpoint._port = port
     endpoint._silent_interval = silent_interval
     endpoint._input_buffer = bytearray()
     endpoint._input_cv = asyncio.Condition()
@@ -113,6 +114,11 @@ class Endpoint(aio.Resource):
     def async_group(self) -> aio.Group:
         """Async group"""
         return self._async_group
+
+    @property
+    def port(self) -> str:
+        """Port name"""
+        return self._port
 
     async def read(self, size: int) -> Bytes:
         """Read
