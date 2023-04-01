@@ -7,6 +7,7 @@ import tempfile
 
 from hat import aio
 
+from hat.drivers import ssl
 from hat.drivers import tcp
 
 
@@ -40,7 +41,7 @@ def create_ctx():
                         '-out', str(cert_path)],
                        stderr=subprocess.DEVNULL,
                        check=True)
-        return tcp.create_ssl_ctx(tcp.SslProtocol.TLS_SERVER,
+        return ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
                                   cert_path=cert_path)
 
 

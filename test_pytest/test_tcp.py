@@ -3,8 +3,9 @@ import subprocess
 
 import pytest
 
-from hat import util
 from hat import aio
+from hat import util
+from hat.drivers import ssl
 from hat.drivers import tcp
 
 
@@ -28,10 +29,10 @@ def pem_path(tmp_path_factory):
 
 @pytest.mark.parametrize("with_ssl", [True, False])
 async def test_connect_listen(addr, pem_path, with_ssl):
-    srv_ssl_ctx = (tcp.create_ssl_ctx(tcp.SslProtocol.TLS_SERVER,
+    srv_ssl_ctx = (ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
                                       cert_path=pem_path)
                    if with_ssl else None)
-    conn_ssl_ctx = (tcp.create_ssl_ctx(tcp.SslProtocol.TLS_CLIENT)
+    conn_ssl_ctx = (ssl.create_ssl_ctx(ssl.SslProtocol.TLS_CLIENT)
                     if with_ssl else None)
 
     with pytest.raises(ConnectionError):

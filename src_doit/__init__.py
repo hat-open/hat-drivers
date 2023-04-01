@@ -1,13 +1,19 @@
+from .pymodules import *  # NOQA
+
 from pathlib import Path
 
 from hat import asn1
 from hat import json
 from hat.doit import common
+from hat.doit.c import get_task_clang_format
 from hat.doit.docs import (build_sphinx,
                            build_pdoc)
 from hat.doit.py import (build_wheel,
                          run_pytest,
-                         run_flake8)
+                         run_flake8,
+                         get_py_versions)
+
+from . import pymodules
 
 
 __all__ = ['task_clean_all',
@@ -15,7 +21,9 @@ __all__ = ['task_clean_all',
            'task_check',
            'task_test',
            'task_docs',
-           'task_asn1']
+           'task_asn1',
+           'task_format',
+           *pymodules.__all__]
 
 
 build_dir = Path('build')
@@ -30,8 +38,10 @@ build_docs_dir = build_dir / 'docs'
 
 def task_clean_all():
     """Clean all"""
-    return {'actions': [(common.rm_rf, [build_dir,
-                                        *src_py_dir.rglob('asn1_repo.json')])]}
+    return {'actions': [(common.rm_rf, [
+            build_dir,
+            *src_py_dir.rglob('asn1_repo.json'),
+            *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*')])]}
 
 
 def task_build():
@@ -44,10 +54,15 @@ def task_build():
             name='hat-drivers',
             description='Hat communication drivers',
             url='https://github.com/hat-open/hat-drivers',
-            license=common.License.APACHE2)
+            license=common.License.APACHE2,
+            py_versions=get_py_versions(pymodules.py_limited_api),
+            py_limited_api=pymodules.py_limited_api,
+            platform=common.target_platform,
+            has_ext_modules=True)
 
     return {'actions': [build],
-            'task_dep': ['asn1']}
+            'task_dep': ['asn1',
+                         'pymodules']}
 
 
 def task_check():
@@ -60,7 +75,8 @@ def task_test():
     """Test"""
     return {'actions': [lambda args: run_pytest(pytest_dir, *(args or []))],
             'pos_arg': 'args',
-            'task_dep': ['asn1']}
+            'task_dep': ['asn1',
+                         'pymodules']}
 
 
 def task_docs():
@@ -74,7 +90,8 @@ def task_docs():
                    dst_dir=build_docs_dir / 'py_api')
 
     return {'actions': [build],
-            'task_dep': ['asn1']}
+            'task_dep': ['asn1',
+                         'pymodules']}
 
 
 def task_asn1():
@@ -94,6 +111,12 @@ def task_asn1():
     yield _get_subtask_asn1(
         src_paths=list((schemas_asn1_dir / 'snmp').rglob('*.asn')),
         dst_path=src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
+
+
+def task_format():
+    """Format"""
+    yield from get_task_clang_format([*Path('src_c').rglob('*.c'),
+                                      *Path('src_c').rglob('*.h')])
 
 
 def _get_subtask_asn1(src_paths, dst_path):

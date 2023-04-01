@@ -1,6 +1,8 @@
 /.doit.db
 /build
+/compile_flags.txt
 /src_py/**/asn1_repo.json
+/src_py/hat/drivers/ssl/_ssl.*
 /test_pytest/.coverage
 /test_pytest/profile
 __pycache__

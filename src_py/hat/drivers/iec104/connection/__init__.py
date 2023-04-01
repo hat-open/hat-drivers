@@ -1,8 +1,8 @@
-import ssl
 import typing
 
 from hat import aio
 
+from hat.drivers import ssl
 from hat.drivers import tcp
 from hat.drivers.iec104 import common
 from hat.drivers.iec104.connection import regular

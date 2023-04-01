@@ -1,11 +1,11 @@
 import asyncio
 import itertools
 import logging
-import ssl
 import typing
 
 from hat import aio
 from hat import util
+from hat.drivers import ssl
 from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
 from hat.drivers.iec60870.apci import encoder
