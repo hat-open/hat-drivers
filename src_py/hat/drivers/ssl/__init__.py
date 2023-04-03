@@ -5,7 +5,11 @@ import pathlib
 import ssl
 import typing
 
-from hat.drivers.ssl import _ssl
+try:
+    from hat.drivers.ssl import _ssl
+
+except ImportError:
+    _ssl = None
 
 
 class SslProtocol(enum.Enum):
@@ -49,6 +53,9 @@ def create_ssl_ctx(protocol: SslProtocol,
 
 def key_update(ssl_object: ssl.SSLObject,
                update_type: KeyUpdateType):
+    if not _ssl:
+        raise Exception('not supported')
+
     if not isinstance(ssl_object, ssl.SSLObject):
         raise TypeError('invalid ssl object')
 
@@ -58,6 +65,9 @@ def key_update(ssl_object: ssl.SSLObject,
 
 
 def renegotiate(ssl_object: ssl.SSLObject):
+    if not _ssl:
+        raise Exception('not supported')
+
     if not isinstance(ssl_object, ssl.SSLObject):
         raise TypeError('invalid ssl object')
 
