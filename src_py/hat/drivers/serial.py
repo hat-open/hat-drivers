@@ -182,12 +182,11 @@ class Endpoint(aio.Resource):
     async def _read_loop(self):
         try:
             while True:
-                data_head = await self._executor(self._serial.read, 1)
+                data_head = await self._executor(self._ext_read, 1)
                 if not data_head:
                     continue
 
-                await asyncio.sleep(0.001)
-                data_rest = await self._executor(self._serial.read, -1)
+                data_rest = await self._executor(self._ext_read, -1)
 
                 async with self._input_cv:
                     self._input_buffer.extend(data_head)
