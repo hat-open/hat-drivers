@@ -1,7 +1,10 @@
 /.doit.db
+/.peru
 /build
 /compile_flags.txt
+/deps
 /src_py/**/asn1_repo.json
+/src_py/hat/drivers/serial/_native_serial.*
 /src_py/hat/drivers/ssl/_ssl.*
 /test_pytest/.coverage
 /test_pytest/profile

@@ -1,4 +1,4 @@
-"""Asyncio wrapper for serial communication
+"""Implementation based on PySerial
 
 .. warning::
 
@@ -9,13 +9,13 @@
 """
 
 import asyncio
-import enum
 import logging
-import typing
 
 import serial
 
 from hat import aio
+
+from hat.drivers.serial import common
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -25,65 +25,24 @@ read_timeout: float = 0.5
 """Read timeout"""
 
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
-
-
-class ByteSize(enum.Enum):
-    FIVEBITS = serial.FIVEBITS
-    SIXBITS = serial.SIXBITS
-    SEVENBITS = serial.SEVENBITS
-    EIGHTBITS = serial.EIGHTBITS
-
-
-class Parity(enum.Enum):
-    NONE = serial.PARITY_NONE
-    EVEN = serial.PARITY_EVEN
-    ODD = serial.PARITY_ODD
-    MARK = serial.PARITY_MARK
-    SPACE = serial.PARITY_SPACE
-
-
-class StopBits(enum.Enum):
-    ONE = serial.STOPBITS_ONE
-    ONE_POINT_FIVE = serial.STOPBITS_ONE_POINT_FIVE
-    TWO = serial.STOPBITS_TWO
-
-
-async def create(port: str, *,
-                 baudrate: int = 9600,
-                 bytesize: ByteSize = ByteSize.EIGHTBITS,
-                 parity: Parity = Parity.NONE,
-                 stopbits: StopBits = StopBits.ONE,
-                 xonxoff: bool = False,
-                 rtscts: bool = False,
-                 dsrdtr: bool = False,
-                 silent_interval: float = 0
-                 ) -> 'Endpoint':
-    """Open serial port
-
-    Args:
-        port: port name dependent of operating system
-            (e.g. `/dev/ttyUSB0`, `COM3`, ...)
-        baudrate: baud rate
-        bytesize: number of data bits
-        parity: parity checking
-        stopbits: number of stop bits
-        xonxoff: enable software flow control
-        rtscts: enable hardware RTS/CTS flow control
-        dsrdtr: enable hardware DSR/DTR flow control
-        silent_interval: minimum time in seconds between writing two
-            consecutive messages
-
-    """
+async def create(port, *,
+                 baudrate=9600,
+                 bytesize=common.ByteSize.EIGHTBITS,
+                 parity=common.Parity.NONE,
+                 stopbits=common.StopBits.ONE,
+                 xonxoff=False,
+                 rtscts=False,
+                 dsrdtr=False,
+                 silent_interval=0):
     endpoint = Endpoint()
     endpoint._port = port
     endpoint._silent_interval = silent_interval
     endpoint._input_buffer = bytearray()
     endpoint._input_cv = asyncio.Condition()
     endpoint._write_queue = aio.Queue()
-    endpoint._executor = aio.create_executor()
+    endpoint._executor = aio.Executor(log_exceptions=False)
 
-    endpoint._serial = await endpoint._executor(
+    endpoint._serial = await endpoint._executor.spawn(
         serial.Serial,
         port=port,
         baudrate=baudrate,
@@ -103,33 +62,17 @@ async def create(port: str, *,
     return endpoint
 
 
-class Endpoint(aio.Resource):
-    """Serial endpoint
-
-    For creating new instances see `create` coroutine.
-
-    """
+class Endpoint(common.Endpoint):
 
     @property
-    def async_group(self) -> aio.Group:
-        """Async group"""
+    def async_group(self):
         return self._async_group
 
     @property
-    def port(self) -> str:
-        """Port name"""
+    def port(self):
         return self._port
 
-    async def read(self, size: int) -> Bytes:
-        """Read
-
-        Args:
-            size: number of bytes to read
-
-        Raises:
-            ConnectionError
-
-        """
+    async def read(self, size):
         async with self._input_cv:
             while len(self._input_buffer) < size:
                 if not self.is_open:
@@ -143,13 +86,7 @@ class Endpoint(aio.Resource):
             data, self._input_buffer = buffer[:size], bytearray(buffer[size:])
             return data
 
-    async def write(self, data: Bytes):
-        """Write
-
-        Raises:
-            ConnectionError
-
-        """
+    async def write(self, data):
         future = asyncio.Future()
         try:
             self._write_queue.put_nowait((data, future))
@@ -158,35 +95,28 @@ class Endpoint(aio.Resource):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def reset_input_buffer(self) -> int:
-        """Reset input buffer
-
-        Returns number of bytes available in buffer immediately before
-        buffer was cleared.
-
-        Raises:
-            ConnectionError
-
-        """
+    async def reset_input_buffer(self):
         async with self._input_cv:
             count = len(self._input_buffer)
             self._input_buffer = bytearray()
             return count
 
     async def _on_close(self):
-        await self._executor(self._ext_close)
+        await self._executor.spawn(self._ext_close)
 
         async with self._input_cv:
             self._input_cv.notify_all()
 
+        await self._executor.async_close()
+
     async def _read_loop(self):
         try:
             while True:
-                data_head = await self._executor(self._ext_read, 1)
+                data_head = await self._executor.spawn(self._ext_read, 1)
                 if not data_head:
                     continue
 
-                data_rest = await self._executor(self._ext_read, -1)
+                data_rest = await self._executor.spawn(self._ext_read, -1)
 
                 async with self._input_cv:
                     self._input_buffer.extend(data_head)
@@ -207,7 +137,7 @@ class Endpoint(aio.Resource):
             while True:
                 data, future = await self._write_queue.get()
 
-                await self._executor(self._ext_write, data)
+                await self._executor.spawn(self._ext_write, data)
 
                 if not future.done():
                     future.set_result(None)

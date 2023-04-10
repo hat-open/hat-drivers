@@ -1,6 +1,7 @@
 from .pymodules import *  # NOQA
 
 from pathlib import Path
+import sys
 
 from hat import asn1
 from hat import json
@@ -22,6 +23,7 @@ __all__ = ['task_clean_all',
            'task_test',
            'task_docs',
            'task_asn1',
+           'task_peru',
            'task_format',
            *pymodules.__all__]
 
@@ -41,7 +43,8 @@ def task_clean_all():
     return {'actions': [(common.rm_rf, [
             build_dir,
             *src_py_dir.rglob('asn1_repo.json'),
-            *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*')])]}
+            *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
+            *(src_py_dir / 'hat/drivers/serial').glob('_native_serial.*')])]}
 
 
 def task_build():
@@ -111,6 +114,11 @@ def task_asn1():
     yield _get_subtask_asn1(
         src_paths=list((schemas_asn1_dir / 'snmp').rglob('*.asn')),
         dst_path=src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
+
+
+def task_peru():
+    """Peru"""
+    return {'actions': [f'{sys.executable} -m peru sync']}
 
 
 def task_format():
