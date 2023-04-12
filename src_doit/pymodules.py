@@ -29,18 +29,21 @@ src_py_dir = Path('src_py')
 
 pymodules_build_dir = build_dir / 'pymodules'
 
+is_target_posix = common.target_platform.value[0] in ('linux', 'darwin')
+is_target_linux = common.target_platform.value[0] == 'linux'
+is_target_win32 = common.target_platform.value[0] == 'win32'
+
+
 ssl_path = (src_py_dir / 'hat/drivers/ssl/_ssl').with_suffix(py_ext_suffix)
 ssl_src_paths = [*(src_c_dir / 'py/_ssl').rglob('*.c')]
 ssl_build_dir = (pymodules_build_dir / 'ssl' /
-                 f'{common.target_platform.name.lower()}_'
-                 f'{common.target_py_version.name.lower()}')
+                 f'{common.target_platform.name.lower()}')
 ssl_c_flags = [*get_py_c_flags(py_limited_api=py_limited_api),
                '-fPIC',
                '-O2']
 ssl_ld_flags = [*get_py_ld_flags(py_limited_api=py_limited_api)]
 ssl_ld_libs = [*get_py_ld_libs(py_limited_api=py_limited_api),
                '-lssl']
-
 
 ssl_build = CBuild(src_paths=ssl_src_paths,
                    build_dir=ssl_build_dir,
@@ -49,27 +52,44 @@ ssl_build = CBuild(src_paths=ssl_src_paths,
                    ld_libs=ssl_ld_libs,
                    task_dep=['pymodules_ssl_cleanup'])
 
+
 native_serial_path = (src_py_dir / 'hat/drivers/serial/_native_serial'
                       ).with_suffix(py_ext_suffix)
-native_serial_impl_path = (src_c_dir / 'hat/win32_serial.c'
-                           if common.target_platform.value[0] == 'win32'
-                           else src_c_dir / 'hat/posix_serial.c')
+native_serial_posix_src_paths = [src_c_dir / 'hat/posix_serial.c']
+native_serial_win32_src_paths = [src_c_dir / 'hat/win32_serial.c']
 native_serial_src_paths = [*(src_c_dir / 'py/_native_serial').rglob('*.c'),
                            deps_dir / 'hat-util/src_c/hat/py_allocator.c',
-                           native_serial_impl_path]
+                           src_c_dir / 'hat/ring.c',
+                           src_c_dir / 'hat/serial.c',
+                           *(native_serial_posix_src_paths
+                             if is_target_posix else []),
+                           *(native_serial_win32_src_paths
+                             if is_target_win32 else [])]
 native_serial_build_dir = (pymodules_build_dir / 'native_serial' /
-                           f'{common.target_platform.name.lower()}_'
-                           f'{common.target_py_version.name.lower()}')
+                           f'{common.target_platform.name.lower()}')
+native_serial_posix_c_flags = ['-pthread',
+                               '-D_POSIX_C_SOURCE=200809L']
+native_serial_linux_c_flags = ['-D_DEFAULT_SOURCE']
+native_serial_win32_c_flags = []
 native_serial_c_flags = [*get_py_c_flags(py_limited_api=py_limited_api),
                          '-fPIC',
                          '-O2',
-                         '-pthread',
-                         '-D_POSIX_C_SOURCE=200809L',
-                         '-DMODULE_NAME="_native_serial"',
+                         '-std=c11',
                          f"-I{deps_dir / 'hat-util/src_c'}",
-                         f"-I{src_c_dir}"]
+                         f"-I{src_c_dir}",
+                         *(native_serial_posix_c_flags
+                           if is_target_posix else []),
+                         *(native_serial_linux_c_flags
+                           if is_target_linux else []),
+                         *(native_serial_win32_c_flags
+                           if is_target_win32 else [])]
+native_serial_posix_ld_flags = ['-pthread']
+native_serial_win32_ld_flags = []
 native_serial_ld_flags = [*get_py_ld_flags(py_limited_api=py_limited_api),
-                          '-pthread']
+                          *(native_serial_posix_ld_flags
+                            if is_target_posix else []),
+                          *(native_serial_win32_ld_flags
+                            if is_target_win32 else [])]
 native_serial_ld_libs = [*get_py_ld_libs(py_limited_api=py_limited_api)]
 
 native_serial_build = CBuild(src_paths=native_serial_src_paths,

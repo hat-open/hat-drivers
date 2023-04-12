@@ -31,7 +31,7 @@ def tcp_addr():
 
 @pytest.fixture
 async def patch_serial_read_timeout(monkeypatch):
-    monkeypatch.setattr(serial, 'read_timeout', 0.01)
+    monkeypatch.setattr(serial.py_serial, 'read_timeout', 0.01)
 
 
 @pytest.fixture

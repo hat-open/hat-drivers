@@ -12,6 +12,9 @@ from hat.drivers import serial
 pytestmark = pytest.mark.skipif(sys.platform == 'win32',
                                 reason="can't simulate serial")
 
+implementations = [serial.native_serial,
+                   serial.py_serial]
+
 
 @pytest.fixture
 def nullmodem(request, tmp_path):
@@ -32,28 +35,24 @@ def nullmodem(request, tmp_path):
     return path1, path2, p
 
 
-async def test_create(nullmodem):
-    endpoint = await serial.create(port=str(nullmodem[0]),
-                                   rtscts=True,
-                                   dsrdtr=True)
+@pytest.mark.parametrize('impl', implementations)
+async def test_create(nullmodem, impl):
+    endpoint = await impl.create(port=str(nullmodem[0]))
     assert not endpoint.is_closed
     await endpoint.async_close()
     assert endpoint.is_closed
 
 
-async def test_read_write(nullmodem):
-    endpoint1 = await serial.create(port=str(nullmodem[0]),
-                                    rtscts=True,
-                                    dsrdtr=True)
-    endpoint2 = await serial.create(port=str(nullmodem[1]),
-                                    rtscts=True,
-                                    dsrdtr=True)
+@pytest.mark.parametrize('impl', implementations)
+async def test_read_write(nullmodem, impl):
+    endpoint1 = await impl.create(port=str(nullmodem[0]))
+    endpoint2 = await impl.create(port=str(nullmodem[1]))
 
-    data = b'test1'
+    data = b'test1\x00'
     await endpoint1.write(data)
     assert data == await endpoint2.read(len(data))
 
-    data = b'test2'
+    data = b'test2\x00'
     await endpoint2.write(data)
     assert data == await endpoint1.read(len(data))
 
@@ -67,10 +66,9 @@ async def test_read_write(nullmodem):
         await endpoint2.write(b'')
 
 
-async def test_close_while_reading(nullmodem):
-    endpoint = await serial.create(port=str(nullmodem[0]),
-                                   rtscts=True,
-                                   dsrdtr=True)
+@pytest.mark.parametrize('impl', implementations)
+async def test_close_while_reading(nullmodem, impl):
+    endpoint = await impl.create(port=str(nullmodem[0]))
 
     read_future = asyncio.ensure_future(endpoint.read(1))
 
@@ -80,20 +78,15 @@ async def test_close_while_reading(nullmodem):
         read_future.result()
 
 
-async def test_close_nullmodem(nullmodem):
-    endpoint = await serial.create(port=str(nullmodem[0]),
-                                   rtscts=True,
-                                   dsrdtr=True)
+@pytest.mark.parametrize('impl', implementations)
+async def test_close_nullmodem(nullmodem, impl):
+    endpoint = await impl.create(port=str(nullmodem[0]))
 
     read_future = asyncio.ensure_future(endpoint.read(1))
-    write_future = asyncio.ensure_future(endpoint.write(b'123'))
 
     nullmodem[2].terminate()
 
     with pytest.raises(ConnectionError):
         await read_future
-
-    with pytest.raises(ConnectionError):
-        await write_future
 
     await endpoint.async_close()

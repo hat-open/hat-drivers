@@ -17,7 +17,7 @@ typedef struct {
 
 
 static void on_serial_close(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_get_ctx(s);
+    Serial *self = (Serial *)hat_serial_ctx(s);
 
     if (!self->close_cb || self->close_cb == Py_None)
         return;
@@ -31,7 +31,7 @@ static void on_serial_close(hat_serial_t *s) {
 
 
 static void on_serial_in(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_get_ctx(s);
+    Serial *self = (Serial *)hat_serial_ctx(s);
 
     if (!self->in_cb || self->in_cb == Py_None)
         return;
@@ -45,7 +45,7 @@ static void on_serial_in(hat_serial_t *s) {
 
 
 static void on_serial_out(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_get_ctx(s);
+    Serial *self = (Serial *)hat_serial_ctx(s);
 
     if (!self->out_cb || self->out_cb == Py_None)
         return;
@@ -87,8 +87,9 @@ static PyObject *Serial_new(PyTypeObject *type, PyObject *args,
         hat_serial_create(&hat_py_allocator, in_buff_size, out_buff_size,
                           on_serial_close, on_serial_in, on_serial_out, self);
     if (!self->serial) {
+        Py_DECREF(self->empty_tuple);
         Py_DECREF(self);
-        PyErr_SetString(PyExc_RuntimeError, "error creating serial object");
+        PyErr_SetString(PyExc_MemoryError, "error creating serial object");
         return NULL;
     }
 
@@ -112,18 +113,18 @@ static void Serial_dealloc(Serial *self) {
 static PyObject *Serial_open(Serial *self, PyObject *args, PyObject *kwargs) {
     PyObject *port_str;
     unsigned long baudrate;
-    unsigned char byte_size;
+    unsigned char bytesize;
     int parity;
-    unsigned char stop_bits;
+    unsigned char stopbits;
     int xonxoff;
     int rtscts;
     int dsrdtr;
     if (!PyArg_ParseTupleAndKeywords(
             args, kwargs, "O!kbCbppp",
-            (char *[]){"port", "baudrate", "byte_size", "parity", "stop_bits",
+            (char *[]){"port", "baudrate", "bytesize", "parity", "stopbits",
                        "xonxoff", "rtscts", "dsrdtr", NULL},
-            &PyUnicode_Type, &port_str, &baudrate, &byte_size, &parity,
-            &stop_bits, &xonxoff, &rtscts, &dsrdtr))
+            &PyUnicode_Type, &port_str, &baudrate, &bytesize, &parity,
+            &stopbits, &xonxoff, &rtscts, &dsrdtr))
         return NULL;
 
     PyObject *port_bytes = PyUnicode_AsUTF8String(port_str);
@@ -136,13 +137,12 @@ static PyObject *Serial_open(Serial *self, PyObject *args, PyObject *kwargs) {
         return NULL;
     }
 
-    int result = hat_serial_open(self->serial, port, baudrate, byte_size,
-                                 parity, stop_bits, xonxoff, rtscts, dsrdtr);
-
+    hat_serial_error_t result =
+        hat_serial_open(self->serial, port, baudrate, bytesize, parity,
+                        stopbits, xonxoff, rtscts, dsrdtr);
     Py_DECREF(port_bytes);
-
     if (result) {
-        PyErr_SetString(PyExc_RuntimeError, "error opening serial port");
+        PyErr_SetString(PyExc_RuntimeError, hat_serial_error_msg(result));
         return NULL;
     }
 
@@ -158,7 +158,7 @@ static PyObject *Serial_close(Serial *self, PyObject *args) {
 
 
 static PyObject *Serial_read(Serial *self, PyObject *args) {
-    size_t data_len = hat_serial_get_in_buff_len(self->serial);
+    size_t data_len = hat_serial_available(self->serial);
 
     if (!data_len)
         Py_RETURN_NONE;
@@ -168,9 +168,9 @@ static PyObject *Serial_read(Serial *self, PyObject *args) {
         return NULL;
 
     uint8_t *data = (uint8_t *)PyBytes_AsString(data_bytes);
-    int result = hat_serial_read(self->serial, data, data_len);
+    size_t result = hat_serial_read(self->serial, data, data_len);
 
-    if (result) {
+    if (result != data_len) {
         Py_DECREF(data_bytes);
         PyErr_SetString(PyExc_RuntimeError, "read error");
     }
@@ -189,43 +189,35 @@ static PyObject *Serial_write(Serial *self, PyObject *data_bytes) {
     if (data_len < 0)
         return NULL;
 
-    size_t buff_size = hat_serial_get_out_buff_size(self->serial);
-    size_t buff_len = hat_serial_get_out_buff_len(self->serial);
-
-    if (data_len > buff_size - buff_len)
-        data_len = buff_size - buff_len;
-
     if (data_len == 0)
         return PyLong_FromLong(0);
 
     uint8_t *data = (uint8_t *)PyBytes_AsString(data_bytes);
-    int result = hat_serial_write(self->serial, data, data_len);
+    size_t result = hat_serial_write(self->serial, data, data_len);
 
-    if (result)
-        return PyLong_FromLong(-1);
-
-    return PyLong_FromLong(data_len);
-}
-
-
-static PyObject *Serial_clear_in_buf(Serial *self, PyObject *args) {
-    return PyLong_FromLong(hat_serial_clear_in_buff(self->serial));
+    return PyLong_FromLong(result);
 }
 
 
 static PyObject *Serial_set_close_cb(Serial *self, PyObject *cb) {
+    Py_XDECREF(self->close_cb);
+    Py_XINCREF(cb);
     self->close_cb = cb;
     Py_RETURN_NONE;
 }
 
 
 static PyObject *Serial_set_in_cb(Serial *self, PyObject *cb) {
+    Py_XDECREF(self->in_cb);
+    Py_XINCREF(cb);
     self->in_cb = cb;
     Py_RETURN_NONE;
 }
 
 
 static PyObject *Serial_set_out_cb(Serial *self, PyObject *cb) {
+    Py_XDECREF(self->out_cb);
+    Py_XINCREF(cb);
     self->out_cb = cb;
     Py_RETURN_NONE;
 }
@@ -243,9 +235,6 @@ PyMethodDef Serial_Methods[] = {{.ml_name = "open",
                                 {.ml_name = "write",
                                  .ml_meth = (PyCFunction)Serial_write,
                                  .ml_flags = METH_O},
-                                {.ml_name = "clear_in_buff",
-                                 .ml_meth = (PyCFunction)Serial_clear_in_buf,
-                                 .ml_flags = METH_NOARGS},
                                 {.ml_name = "set_close_cb",
                                  .ml_meth = (PyCFunction)Serial_set_close_cb,
                                  .ml_flags = METH_O},

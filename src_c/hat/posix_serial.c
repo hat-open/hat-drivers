@@ -1,4 +1,5 @@
 #include "serial.h"
+#include "ring.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -11,179 +12,186 @@
 #include <unistd.h>
 
 
-typedef struct {
-    size_t size;
-    volatile _Atomic size_t head;
-    volatile _Atomic size_t tail;
-    uint8_t data[];
-} hat_serial_buff_t;
-
 struct hat_serial_t {
     hat_allocator_t *a;
-    hat_serial_buff_t *in_buff;
-    hat_serial_buff_t *out_buff;
+    hat_ring_t *in_buff;
+    hat_ring_t *out_buff;
     hat_serial_cb_t close_cb;
     hat_serial_cb_t in_cb;
     hat_serial_cb_t out_cb;
     void *ctx;
     volatile int port_fd;
-    volatile int ev_r_fd;
-    int ev_w_fd;
+    volatile int notify_r_fd;
+    int notify_w_fd;
     pthread_t thread;
     bool is_running;
     volatile _Atomic bool is_closing;
 };
 
 
-static hat_serial_buff_t *create_buff(hat_allocator_t *a, size_t size) {
-    hat_serial_buff_t *buff =
-        hat_allocator_alloc(a, sizeof(hat_serial_buff_t) + size + 1);
-    if (!buff)
-        return NULL;
+static void close_fd(volatile int *fd) {
+    if (*fd < 0)
+        return;
 
-    buff->size = size;
-    buff->head = 0;
-    buff->tail = 0;
-
-    return buff;
+    close(*fd);
+    *fd = -1;
 }
 
 
-static inline size_t get_buff_len(hat_serial_buff_t *buff) {
-    size_t head = atomic_load(&(buff->head));
-    size_t tail = atomic_load(&(buff->tail));
+static hat_serial_error_t clear_notifications(hat_serial_t *s) {
+    uint8_t buff[1024];
 
-    if (head <= tail)
-        return tail - head;
+    while (true) {
+        int result = read(s->notify_r_fd, buff, sizeof(buff));
 
-    return buff->size + 1 - (head - tail);
+        if (result > 0)
+            continue;
+
+        if (result == 0)
+            return HAT_SERIAL_SUCCESS;
+
+        if (errno == EAGAIN)
+            return HAT_SERIAL_SUCCESS;
+
+        return HAT_SERIAL_ERROR_IO;
+    }
 }
 
 
-static inline void move_buff_head(hat_serial_buff_t *buff, size_t len) {
-    atomic_store(&(buff->head), (buff->head + len) % (buff->size + 1));
+static void notify_thread(hat_serial_t *s) {
+    if (s->notify_w_fd < 0)
+        return;
+
+    write(s->notify_w_fd, "x", 1);
 }
 
 
-static inline void move_buff_tail(hat_serial_buff_t *buff, size_t len) {
-    atomic_store(&(buff->tail), (buff->tail + len) % (buff->size + 1));
-}
-
-
-static inline speed_t get_speed(uint32_t baudrate) {
-    if (baudrate <= 0)
-        return B0;
-
-    if (baudrate <= 75)
-        return B75;
-
-    if (baudrate <= 110)
-        return B110;
-
-    if (baudrate <= 134)
-        return B134;
-
-    if (baudrate <= 150)
-        return B150;
-
-    if (baudrate <= 200)
-        return B200;
-
-    if (baudrate <= 300)
-        return B300;
-
-    if (baudrate <= 600)
-        return B600;
-
-    if (baudrate <= 1200)
-        return B1200;
-
-    if (baudrate <= 1800)
-        return B1800;
-
-    if (baudrate <= 2400)
-        return B2400;
-
-    if (baudrate <= 4800)
-        return B4800;
-
-    if (baudrate <= 9600)
-        return B9600;
-
-    if (baudrate <= 19200)
-        return B19200;
-
-    if (baudrate <= 38400)
-        return B38400;
-
-    if (baudrate <= 57600)
-        return B57600;
-
-    if (baudrate <= 115200)
-        return B115200;
-
-    if (baudrate <= 230400)
-        return B230400;
-
-    if (baudrate <= 460800)
-        return B460800;
-
-    if (baudrate <= 500000)
-        return B500000;
-
-    if (baudrate <= 576000)
-        return B576000;
-
-    if (baudrate <= 921600)
-        return B921600;
-
-    if (baudrate <= 1000000)
-        return B1000000;
-
-    if (baudrate <= 1152000)
-        return B1152000;
-
-    if (baudrate <= 1500000)
-        return B1500000;
-
-    return B2000000;
-}
-
-
-static int set_attr_baudrate(struct termios *attr, uint32_t baudrate) {
-    speed_t speed = get_speed(baudrate);
-
-    if (cfsetispeed(attr, speed) || cfsetospeed(attr, speed))
-        return HAT_SERIAL_ERROR;
-
-    return HAT_SERIAL_SUCCESS;
-}
-
-
-static int set_attr_byte_size(struct termios *attr, uint32_t byte_size) {
-    attr->c_cflag &= ~CSIZE;
-
-    if (byte_size == 5) {
-        attr->c_cflag |= CS5;
-
-    } else if (byte_size == 6) {
-        attr->c_cflag |= CS6;
-
-    } else if (byte_size == 7) {
-        attr->c_cflag |= CS7;
-
-    } else if (byte_size == 8) {
-        attr->c_cflag |= CS8;
-
-    } else {
-        return HAT_SERIAL_ERROR;
+static hat_serial_error_t get_speed(uint32_t baudrate, speed_t *speed) {
+    switch (baudrate) {
+    case 0:
+        *speed = B0;
+        break;
+    case 75:
+        *speed = B75;
+        break;
+    case 110:
+        *speed = B110;
+        break;
+    case 134:
+        *speed = B134;
+        break;
+    case 150:
+        *speed = B150;
+        break;
+    case 200:
+        *speed = B200;
+        break;
+    case 300:
+        *speed = B300;
+        break;
+    case 600:
+        *speed = B600;
+        break;
+    case 1200:
+        *speed = B1200;
+        break;
+    case 1800:
+        *speed = B1800;
+        break;
+    case 2400:
+        *speed = B2400;
+        break;
+    case 4800:
+        *speed = B4800;
+        break;
+    case 9600:
+        *speed = B9600;
+        break;
+    case 19200:
+        *speed = B19200;
+        break;
+    case 38400:
+        *speed = B38400;
+        break;
+    case 57600:
+        *speed = B57600;
+        break;
+    case 115200:
+        *speed = B115200;
+        break;
+    case 230400:
+        *speed = B230400;
+        break;
+    case 460800:
+        *speed = B460800;
+        break;
+    case 500000:
+        *speed = B500000;
+        break;
+    case 576000:
+        *speed = B576000;
+        break;
+    case 921600:
+        *speed = B921600;
+        break;
+    case 1000000:
+        *speed = B1000000;
+        break;
+    case 1152000:
+        *speed = B1152000;
+        break;
+    case 1500000:
+        *speed = B1500000;
+        break;
+    case 2000000:
+        *speed = B2000000;
+        break;
+    default:
+        return HAT_SERIAL_ERROR_BAUDRATE;
     }
 
     return HAT_SERIAL_SUCCESS;
 }
 
 
-static int set_attr_parity(struct termios *attr, char parity) {
+static hat_serial_error_t set_attr_baudrate(struct termios *attr,
+                                            uint32_t baudrate) {
+    speed_t speed;
+    if (get_speed(baudrate, &speed))
+        return HAT_SERIAL_ERROR_BAUDRATE;
+
+    if (cfsetispeed(attr, speed) || cfsetospeed(attr, speed))
+        return HAT_SERIAL_ERROR_BAUDRATE;
+
+    return HAT_SERIAL_SUCCESS;
+}
+
+
+static hat_serial_error_t set_attr_bytesize(struct termios *attr,
+                                            uint32_t bytesize) {
+    attr->c_cflag &= ~CSIZE;
+
+    if (bytesize == 5) {
+        attr->c_cflag |= CS5;
+
+    } else if (bytesize == 6) {
+        attr->c_cflag |= CS6;
+
+    } else if (bytesize == 7) {
+        attr->c_cflag |= CS7;
+
+    } else if (bytesize == 8) {
+        attr->c_cflag |= CS8;
+
+    } else {
+        return HAT_SERIAL_ERROR_BYTESIZE;
+    }
+
+    return HAT_SERIAL_SUCCESS;
+}
+
+
+static hat_serial_error_t set_attr_parity(struct termios *attr, char parity) {
     attr->c_iflag &= ~(INPCK | ISTRIP);
 
     if (parity == 'N') {
@@ -197,33 +205,38 @@ static int set_attr_parity(struct termios *attr, char parity) {
         attr->c_cflag |= (PARENB | PARODD);
 
     } else if (parity == 'M') {
-        // TODO CMSPAR not in POSIX
-        // attr->c_cflag |= (PARENB | PARODD | CMSPAR);
+#ifdef _DEFAULT_SOURCE
+        attr->c_cflag |= (PARENB | PARODD | CMSPAR);
+#else
         attr->c_cflag |= (PARENB | PARODD);
+#endif
 
     } else if (parity == 'S') {
         attr->c_cflag &= ~PARODD;
-        // TODO CMSPAR not in POSIX
-        // attr->c_cflag |= (PARENB | CMSPAR);
+#ifdef _DEFAULT_SOURCE
+        attr->c_cflag |= (PARENB | CMSPAR);
+#else
         attr->c_cflag |= PARENB;
+#endif
 
     } else {
-        return HAT_SERIAL_ERROR;
+        return HAT_SERIAL_ERROR_PARITY;
     }
 
     return HAT_SERIAL_SUCCESS;
 }
 
 
-static int set_attr_stop_bits(struct termios *attr, uint8_t stop_bits) {
-    if (stop_bits == 1) {
+static hat_serial_error_t set_attr_stopbits(struct termios *attr,
+                                            uint8_t stopbits) {
+    if (stopbits == 1) {
         attr->c_cflag &= ~CSTOPB;
 
-    } else if (stop_bits == 2) {
+    } else if (stopbits == 2) {
         attr->c_cflag |= CSTOPB;
 
     } else {
-        return HAT_SERIAL_ERROR;
+        return HAT_SERIAL_ERROR_STOPBITS;
     }
 
     return HAT_SERIAL_SUCCESS;
@@ -241,13 +254,14 @@ static void set_attr_xonxoff(struct termios *attr, bool xonxoff) {
 
 
 static void set_attr_rtscts(struct termios *attr, bool rtscts) {
-    // TODO CRTSCTS not in POSIX
-    // if (rtscts) {
-    //     attr->c_cflag |= CRTSCTS;
+#ifdef _DEFAULT_SOURCE
+    if (rtscts) {
+        attr->c_cflag |= CRTSCTS;
 
-    // } else {
-    //     attr->c_cflag &= CRTSCTS;
-    // }
+    } else {
+        attr->c_cflag &= CRTSCTS;
+    }
+#endif
 }
 
 
@@ -256,16 +270,23 @@ static void set_attr_dsrdtr(struct termios *attr, bool dsrdtr) {
 }
 
 
-static int open_port(char *port, uint32_t baudrate, uint8_t byte_size,
-                     char parity, uint8_t stop_bits, bool xonxoff, bool rtscts,
-                     bool dsrdtr) {
-    int fd = open(port, O_RDWR | O_NOCTTY | O_NONBLOCK);
-    if (fd < 0)
-        return -1;
+static hat_serial_error_t open_port(char *port, uint32_t baudrate,
+                                    uint8_t bytesize, char parity,
+                                    uint8_t stopbits, bool xonxoff, bool rtscts,
+                                    bool dsrdtr, volatile int *fd) {
+    hat_serial_error_t result;
+
+    *fd = open(port, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    if (*fd < 0) {
+        result = HAT_SERIAL_ERROR_OPEN;
+        goto error;
+    }
 
     struct termios attr;
-    if (!tcgetattr(fd, &attr))
+    if (tcgetattr(*fd, &attr)) {
+        result = HAT_SERIAL_ERROR_TERMIOS;
         goto error;
+    }
 
     attr.c_iflag &= ~(IGNBRK | INLCR | IGNCR | ICRNL);
     attr.c_oflag &= ~(OPOST | ONLCR | OCRNL);
@@ -275,93 +296,60 @@ static int open_port(char *port, uint32_t baudrate, uint8_t byte_size,
     attr.c_cc[VMIN] = 0;
     attr.c_cc[VTIME] = 0;
 
-    if (set_attr_baudrate(&attr, baudrate))
+    result = set_attr_baudrate(&attr, baudrate);
+    if (result)
         goto error;
 
-    if (set_attr_byte_size(&attr, byte_size))
+    result = set_attr_bytesize(&attr, bytesize);
+    if (result)
         goto error;
 
-    if (set_attr_parity(&attr, parity))
+    result = set_attr_parity(&attr, parity);
+    if (result)
         goto error;
 
-    if (set_attr_stop_bits(&attr, stop_bits))
+    result = set_attr_stopbits(&attr, stopbits);
+    if (result)
         goto error;
 
     set_attr_xonxoff(&attr, xonxoff);
     set_attr_rtscts(&attr, rtscts);
     set_attr_dsrdtr(&attr, dsrdtr);
 
-    if (tcsetattr(fd, TCSANOW, &attr))
+    if (tcsetattr(*fd, TCSANOW, &attr)) {
+        result = HAT_SERIAL_ERROR_TERMIOS;
         goto error;
+    }
 
-    return fd;
+    // TODO update rts and dts
+
+    return HAT_SERIAL_SUCCESS;
 
 error:
-    if (fd >= 0)
-        close(fd);
+    close_fd(fd);
 
-    return -1;
+    return result;
 }
 
 
-static int clear_fd(int fd) {
-    uint8_t buff[1024];
+static hat_serial_error_t serial_read(hat_serial_t *s) {
+    hat_ring_t *buff = s->in_buff;
 
-    while (true) {
-        int result = read(fd, buff, sizeof(buff));
+    uint8_t *unused_data[2];
+    size_t unused_data_len[2];
+    hat_ring_unused(buff, unused_data, unused_data_len);
 
-        if (result > 0)
-            continue;
-
-        if (result == 0)
-            return HAT_SERIAL_SUCCESS;
-
-        if (errno == EAGAIN)
-            return HAT_SERIAL_SUCCESS;
-
-        if (errno == EINTR)
-            continue;
-
-        return HAT_SERIAL_ERROR;
-    }
-}
-
-
-static void send_ev(hat_serial_t *s) {
-    if (s->ev_w_fd < 0)
-        return;
-
-    write(s->ev_w_fd, "x", 1);
-}
-
-
-static int serial_read(hat_serial_t *s) {
-    hat_serial_buff_t *buff = s->in_buff;
-
-    size_t buff_len = get_buff_len(buff);
-    if (buff->size <= buff_len)
+    if (!unused_data_len[0] && !unused_data_len[1])
         return HAT_SERIAL_SUCCESS;
 
-    struct iovec iov[2];
-    int iov_len;
+    struct iovec iov[2] = {
+        {.iov_base = unused_data[0], .iov_len = unused_data_len[0]},
+        {.iov_base = unused_data[1], .iov_len = unused_data_len[1]}};
 
-    if (buff_len <= buff->size - buff->tail) {
-        iov[0] = (struct iovec){.iov_base = buff->data + buff->tail + 1,
-                                .iov_len = buff_len};
-        iov_len = 1;
-
-    } else {
-        iov[0] = (struct iovec){.iov_base = buff->data + buff->tail + 1,
-                                .iov_len = buff->size - buff->tail};
-        iov[1] = (struct iovec){.iov_base = buff->data,
-                                .iov_len = buff_len - buff->size + buff->tail};
-        iov_len = 2;
-    }
-
-    int result = readv(s->port_fd, iov, iov_len);
+    int result = readv(s->port_fd, iov, (unused_data_len[1] ? 2 : 1));
 
     if (result > 0) {
-        move_buff_tail(buff, result);
+        hat_ring_move_tail(buff, result);
 
         if (s->in_cb)
             s->in_cb(s);
@@ -372,42 +360,33 @@ static int serial_read(hat_serial_t *s) {
     if (result == 0)
         return HAT_SERIAL_SUCCESS;
 
-    if (errno == EAGAIN || errno == EINTR)
+    if (errno == EAGAIN)
         return HAT_SERIAL_SUCCESS;
 
-    return HAT_SERIAL_ERROR;
+    return HAT_SERIAL_ERROR_IO;
 }
 
 
-static int serial_write(hat_serial_t *s) {
-    hat_serial_buff_t *buff = s->out_buff;
+static hat_serial_error_t serial_write(hat_serial_t *s) {
+    hat_ring_t *buff = s->out_buff;
 
-    size_t buff_len = get_buff_len(buff);
-    if (!buff_len)
+    uint8_t *used_data[2];
+    size_t used_data_len[2];
+    hat_ring_used(buff, used_data, used_data_len);
+
+    if (!used_data_len[0] && !used_data_len[1])
         return HAT_SERIAL_SUCCESS;
 
-    struct iovec iov[2];
-    int iov_len;
+    struct iovec iov[2] = {
+        {.iov_base = used_data[0], .iov_len = used_data_len[0]},
+        {.iov_base = used_data[1], .iov_len = used_data_len[1]}};
 
-    if (buff_len <= buff->size - buff->head) {
-        iov[0] = (struct iovec){.iov_base = buff->data + buff->head + 1,
-                                .iov_len = buff_len};
-        iov_len = 1;
-
-    } else {
-        iov[0] = (struct iovec){.iov_base = buff->data + buff->head + 1,
-                                .iov_len = buff->size - buff->head};
-        iov[1] = (struct iovec){.iov_base = buff->data,
-                                .iov_len = buff_len - buff->size + buff->head};
-        iov_len = 2;
-    }
-
-    int result = writev(s->port_fd, iov, iov_len);
+    int result = writev(s->port_fd, iov, (used_data_len[1] ? 2 : 1));
 
     if (result > 0) {
-        move_buff_head(buff, result);
+        hat_ring_move_head(buff, result);
 
-        if (s->out_cb && buff_len == result)
+        if (s->out_cb && result == used_data_len[0] + used_data_len[1])
             s->out_cb(s);
 
         return HAT_SERIAL_SUCCESS;
@@ -416,23 +395,29 @@ static int serial_write(hat_serial_t *s) {
     if (result == 0)
         return HAT_SERIAL_SUCCESS;
 
-    if (errno == EAGAIN || errno == EINTR)
+    if (errno == EAGAIN)
         return HAT_SERIAL_SUCCESS;
 
-    return HAT_SERIAL_ERROR;
+    return HAT_SERIAL_ERROR_IO;
 }
 
 
 static void *serial_thread(void *arg) {
     hat_serial_t *s = arg;
-    hat_serial_buff_t *in_buff = s->in_buff;
-    hat_serial_buff_t *out_buff = s->out_buff;
+    hat_ring_t *in_buff = s->in_buff;
+    hat_ring_t *out_buff = s->out_buff;
 
-    struct pollfd fds[2] = {{.fd = s->ev_r_fd, .events = POLLIN},
+    struct pollfd fds[2] = {{.fd = s->notify_r_fd, .events = POLLIN},
                             {.fd = s->port_fd}};
 
     while (!atomic_load(&(s->is_closing))) {
-        if (clear_fd(s->ev_r_fd))
+        if (fds[0].revents & ~POLLIN)
+            break;
+
+        if (fds[1].revents & ~(POLLIN | POLLOUT))
+            break;
+
+        if (clear_notifications(s))
             break;
 
         if (serial_read(s))
@@ -443,27 +428,22 @@ static void *serial_thread(void *arg) {
 
         fds[1].events = 0;
 
-        if (in_buff->size > get_buff_len(in_buff))
+        if (hat_ring_size(in_buff) > hat_ring_len(in_buff))
             fds[1].events |= POLLIN;
 
-        if (get_buff_len(out_buff))
+        if (hat_ring_len(out_buff))
             fds[1].events |= POLLOUT;
 
         if (poll(fds, 2, -1)) {
-            if (errno != EINTR)
-                break;
+            if (errno == EAGAIN)
+                continue;
         }
     }
 
-    if (s->port_fd >= 0) {
-        close(s->port_fd);
-        s->port_fd = -1;
-    }
+    atomic_store(&(s->is_closing), true);
 
-    if (s->ev_r_fd >= 0) {
-        close(s->ev_r_fd);
-        s->ev_r_fd = -1;
-    }
+    close_fd(&(s->port_fd));
+    close_fd(&(s->notify_r_fd));
 
     if (s->close_cb)
         s->close_cb(s);
@@ -477,18 +457,18 @@ hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                                 hat_serial_cb_t in_cb, hat_serial_cb_t out_cb,
                                 void *ctx) {
     hat_serial_t *s = NULL;
-    hat_serial_buff_t *in_buff = NULL;
-    hat_serial_buff_t *out_buff = NULL;
+    hat_ring_t *in_buff = NULL;
+    hat_ring_t *out_buff = NULL;
 
     s = hat_allocator_alloc(a, sizeof(hat_serial_t));
     if (!s)
         goto error;
 
-    in_buff = create_buff(a, in_buff_size);
+    in_buff = hat_ring_create(a, in_buff_size);
     if (!in_buff)
         goto error;
 
-    out_buff = create_buff(a, out_buff_size);
+    out_buff = hat_ring_create(a, out_buff_size);
     if (!out_buff)
         goto error;
 
@@ -500,8 +480,8 @@ hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                         .out_cb = out_cb,
                         .ctx = ctx,
                         .port_fd = -1,
-                        .ev_r_fd = -1,
-                        .ev_w_fd = -1,
+                        .notify_r_fd = -1,
+                        .notify_w_fd = -1,
                         .is_running = false,
                         .is_closing = false};
 
@@ -509,10 +489,10 @@ hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
 
 error:
     if (in_buff)
-        hat_allocator_free(a, in_buff);
+        hat_ring_destroy(in_buff);
 
     if (out_buff)
-        hat_allocator_free(a, out_buff);
+        hat_ring_destroy(out_buff);
 
     if (s)
         hat_allocator_free(a, s);
@@ -524,156 +504,105 @@ error:
 void hat_serial_destroy(hat_serial_t *s) {
     atomic_store(&(s->is_closing), true);
 
-    send_ev(s);
+    notify_thread(s);
 
     if (s->is_running) {
         pthread_join(s->thread, NULL);
         s->is_running = false;
     }
 
-    if (s->port_fd >= 0)
-        close(s->port_fd);
+    close_fd(&(s->port_fd));
+    close_fd(&(s->notify_r_fd));
+    close_fd(&(s->notify_w_fd));
 
-    if (s->ev_r_fd >= 0)
-        close(s->ev_r_fd);
+    hat_ring_destroy(s->in_buff);
+    hat_ring_destroy(s->out_buff);
 
-    if (s->ev_w_fd >= 0)
-        close(s->ev_w_fd);
-
-    hat_allocator_free(s->a, s->in_buff);
-    hat_allocator_free(s->a, s->out_buff);
     hat_allocator_free(s->a, s);
 }
 
 
-int hat_serial_open(hat_serial_t *s, char *port, uint32_t baudrate,
-                    uint8_t byte_size, char parity, uint8_t stop_bits,
-                    bool xonxoff, bool rtscts, bool dsrdtr) {
-    if (s->port_fd >= 0 || s->ev_r_fd >= 0 || s->ev_w_fd >= 0 ||
+hat_serial_error_t hat_serial_open(hat_serial_t *s, char *port,
+                                   uint32_t baudrate, uint8_t bytesize,
+                                   char parity, uint8_t stopbits, bool xonxoff,
+                                   bool rtscts, bool dsrdtr) {
+    if (s->port_fd >= 0 || s->notify_r_fd >= 0 || s->notify_w_fd >= 0 ||
         s->is_running || s->is_closing)
         return HAT_SERIAL_ERROR;
 
-    s->port_fd = open_port(port, baudrate, byte_size, parity, stop_bits,
-                           xonxoff, rtscts, dsrdtr);
-    if (s->port_fd < 0)
+    hat_serial_error_t result =
+        open_port(port, baudrate, bytesize, parity, stopbits, xonxoff, rtscts,
+                  dsrdtr, &(s->port_fd));
+    if (result)
         goto error;
 
     int ev_fds[2];
-    if (!pipe(ev_fds))
+    if (pipe(ev_fds)) {
+        result = HAT_SERIAL_ERROR_IO;
         goto error;
+    }
 
-    s->ev_r_fd = ev_fds[0];
-    s->ev_w_fd = ev_fds[1];
+    s->notify_r_fd = ev_fds[0];
+    s->notify_w_fd = ev_fds[1];
 
-    if (!fcntl(s->ev_r_fd, F_SETFL, O_NONBLOCK))
+    if (fcntl(s->notify_r_fd, F_SETFL, O_NONBLOCK) == -1) {
+        result = HAT_SERIAL_ERROR_IO;
         goto error;
+    }
 
-    if (!fcntl(s->ev_w_fd, F_SETFL, O_NONBLOCK))
+    if (fcntl(s->notify_w_fd, F_SETFL, O_NONBLOCK) == -1) {
+        result = HAT_SERIAL_ERROR_IO;
         goto error;
+    }
 
-    if (!pthread_create(&(s->thread), NULL, serial_thread, s))
+    if (pthread_create(&(s->thread), NULL, serial_thread, s)) {
+        result = HAT_SERIAL_ERROR_THREAD;
         goto error;
+    }
 
     s->is_running = true;
 
+    return HAT_SERIAL_SUCCESS;
+
 error:
-    if (s->port_fd >= 0)
-        close(s->port_fd);
+    close_fd(&(s->port_fd));
+    close_fd(&(s->notify_r_fd));
+    close_fd(&(s->notify_w_fd));
 
-    if (s->ev_r_fd >= 0)
-        close(s->ev_r_fd);
-
-    if (s->ev_w_fd >= 0)
-        close(s->ev_w_fd);
-
-    return HAT_SERIAL_ERROR;
+    return result;
 }
 
 
 void hat_serial_close(hat_serial_t *s) {
     atomic_store(&(s->is_closing), true);
 
-    send_ev(s);
+    notify_thread(s);
 
-    if (s->ev_w_fd >= 0) {
-        close(s->ev_w_fd);
-        s->ev_w_fd = -1;
-    }
+    close_fd(&(s->notify_w_fd));
 }
 
 
-size_t hat_serial_get_in_buff_size(hat_serial_t *s) { return s->in_buff->size; }
+void *hat_serial_ctx(hat_serial_t *s) { return s->ctx; }
 
 
-size_t hat_serial_get_out_buff_size(hat_serial_t *s) {
-    return s->out_buff->size;
+size_t hat_serial_available(hat_serial_t *s) {
+    return hat_ring_len(s->in_buff);
 }
 
 
-size_t hat_serial_get_in_buff_len(hat_serial_t *s) {
-    return get_buff_len(s->in_buff);
+size_t hat_serial_read(hat_serial_t *s, uint8_t *data, size_t data_len) {
+    size_t result = hat_ring_read(s->in_buff, data, data_len);
+
+    notify_thread(s);
+
+    return result;
 }
 
 
-size_t hat_serial_get_out_buff_len(hat_serial_t *s) {
-    return get_buff_len(s->out_buff);
-}
+size_t hat_serial_write(hat_serial_t *s, uint8_t *data, size_t data_len) {
+    size_t result = hat_ring_write(s->out_buff, data, data_len);
 
+    notify_thread(s);
 
-void *hat_serial_get_ctx(hat_serial_t *s) { return s->ctx; }
-
-
-int hat_serial_read(hat_serial_t *s, uint8_t *data, size_t data_len) {
-    hat_serial_buff_t *buff = s->in_buff;
-
-    if (data_len > get_buff_len(buff))
-        return HAT_SERIAL_ERROR;
-
-    if (buff->size - buff->head >= data_len) {
-        memcpy(data, buff->data + buff->head + 1, data_len);
-
-    } else {
-        memcpy(data, buff->data + buff->head + 1, buff->size - buff->head);
-        memcpy(data + buff->size - buff->head, buff->data,
-               data_len - buff->size + buff->head);
-    }
-
-    move_buff_head(buff, data_len);
-
-    send_ev(s);
-
-    return HAT_SERIAL_SUCCESS;
-}
-
-
-int hat_serial_write(hat_serial_t *s, uint8_t *data, size_t data_len) {
-    hat_serial_buff_t *buff = s->out_buff;
-
-    if (data_len > (buff->size - get_buff_len(buff)))
-        return HAT_SERIAL_ERROR;
-
-    if (buff->size - buff->tail >= data_len) {
-        memcpy(buff->data + buff->tail + 1, data, data_len);
-
-    } else {
-        memcpy(buff->data + buff->tail + 1, data, buff->size - buff->tail);
-        memcpy(buff->data, data + buff->size - buff->tail,
-               data_len - buff->size + buff->tail);
-    }
-
-    move_buff_tail(buff, data_len);
-
-    send_ev(s);
-
-    return HAT_SERIAL_SUCCESS;
-}
-
-
-size_t hat_serial_clear_in_buff(hat_serial_t *s) {
-    size_t len = hat_serial_get_in_buff_len(s);
-    move_buff_head(s->in_buff, len);
-
-    send_ev(s);
-
-    return len;
+    return result;
 }

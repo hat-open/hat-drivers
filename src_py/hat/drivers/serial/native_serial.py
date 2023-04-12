@@ -40,9 +40,9 @@ async def create(port, *,
     endpoint._serial = _native_serial.Serial(in_buff_size=0xFFFF,
                                              out_buff_size=0xFFFF)
 
-    endpoint._serial_closed_future = loop.create_future()
-    endpoint._serial.set_close_cb(
-        _create_serial_cb(loop, endpoint._serial_closed_future))
+    endpoint._close_cb_future = loop.create_future()
+    close_cb = _create_serial_cb(loop, endpoint._close_cb_future)
+    endpoint._serial.set_close_cb(close_cb)
 
     endpoint._serial.open(
         port=port,
@@ -56,6 +56,9 @@ async def create(port, *,
         dsrdtr=dsrdtr)
 
     endpoint._async_group = aio.Group()
+    endpoint._async_group.spawn(aio.call_on_done,
+                                asyncio.shield(endpoint._close_cb_future),
+                                endpoint.close)
     endpoint._async_group.spawn(aio.call_on_cancel, endpoint._on_close)
     endpoint._async_group.spawn(endpoint._read_loop)
     endpoint._async_group.spawn(endpoint._write_loop)
@@ -88,7 +91,9 @@ class Endpoint(common.Endpoint):
             return data
 
     async def write(self, data):
-        future = asyncio.Future()
+        loop = asyncio.get_running_loop()
+        future = loop.create_future()
+
         try:
             self._write_queue.put_nowait((data, future))
             await future
@@ -105,27 +110,26 @@ class Endpoint(common.Endpoint):
     async def _on_close(self):
         self._serial.close()
 
-        await self._serial_closed_future()
+        await self._close_cb_future
 
         async with self._input_cv:
             self._input_cv.notify_all()
 
         self._serial.set_close_cb(None)
-        self._serial.set_in_cb(None)
-        self._serial.set_out_cb(None)
 
     async def _read_loop(self):
         try:
             loop = asyncio.get_running_loop()
 
             while True:
-                future = loop.create_future()
-                self._serial.set_in_cb(_create_serial_cb(loop, future))
+                in_cb_future = loop.create_future()
+                in_cb = _create_serial_cb(loop, in_cb_future)
+                self._serial.set_in_cb(in_cb)
 
                 data = self._serial.read()
 
                 if not data:
-                    await future
+                    await in_cb_future
                     continue
 
                 self._serial.set_in_cb(None)
@@ -139,6 +143,7 @@ class Endpoint(common.Endpoint):
 
         finally:
             self.close()
+            self._serial.set_in_cb(None)
 
     async def _write_loop(self):
         future = None
@@ -150,8 +155,9 @@ class Endpoint(common.Endpoint):
 
                 data = memoryview(data)
                 while data:
-                    future = loop.create_future()
-                    self._serial.set_out_cb(_create_serial_cb(loop, future))
+                    out_cb_future = loop.create_future()
+                    out_cb = _create_serial_cb(loop, out_cb_future)
+                    self._serial.set_out_cb(out_cb)
 
                     result = self._serial.write(bytes(data))
                     if result < 0:
@@ -159,7 +165,7 @@ class Endpoint(common.Endpoint):
 
                     data = data[result:]
 
-                    await future
+                    await out_cb_future
 
                 self._serial.set_out_cb(None)
 
@@ -174,6 +180,7 @@ class Endpoint(common.Endpoint):
         finally:
             self.close()
             self._write_queue.close()
+            self._serial.set_out_cb(None)
 
             while True:
                 if future and not future.done():
@@ -184,9 +191,10 @@ class Endpoint(common.Endpoint):
 
 
 def _create_serial_cb(loop, future):
+    return functools.partial(loop.call_soon_threadsafe, _try_set_result,
+                             future, None)
 
-    def on_serial():
-        if not future.done():
-            future.set_result(None)
 
-    return functools.partial(loop.call_soon_threadsafe, on_serial)
+def _try_set_result(future, result):
+    if not future.done():
+        future.set_result(result)

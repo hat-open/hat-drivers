@@ -51,8 +51,7 @@ async def create(port: str, *,
             consecutive messages
 
     """
-    # impl = native_serial or py_serial
-    impl = py_serial
+    impl = native_serial or py_serial
     return await impl.create(port=port,
                              baudrate=baudrate,
                              bytesize=bytesize,
