@@ -97,7 +97,8 @@ native_serial_build = CBuild(src_paths=native_serial_src_paths,
                              c_flags=native_serial_c_flags,
                              ld_flags=native_serial_ld_flags,
                              ld_libs=native_serial_ld_libs,
-                             task_dep=['pymodules_native_serial_cleanup'])
+                             task_dep=['pymodules_native_serial_cleanup',
+                                       'peru'])
 
 
 def task_pymodules():
