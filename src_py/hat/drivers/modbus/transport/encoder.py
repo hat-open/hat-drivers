@@ -4,6 +4,12 @@ import typing
 
 from hat.drivers.modbus.transport import common
 
+try:
+    from hat.drivers.modbus.transport import _encoder
+
+except ImportError:
+    _encoder = None
+
 
 def get_next_adu_size(modbus_type: common.ModbusType,
                       direction: common.Direction,
@@ -560,6 +566,9 @@ def _encode_res(res):
 
 
 def _calculate_crc(data):
+    if _encoder:
+        return _encoder.calculate_crc(data)
+
     crc = 0xFFFF
     for i in data:
         crc ^= i

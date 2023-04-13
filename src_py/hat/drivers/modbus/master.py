@@ -301,6 +301,8 @@ class Master(aio.Resource):
         future = None
         try:
             while self.is_open:
+                # req_adu, future = await self._send_queue.get()
+
                 async with self.async_group.create_subgroup() as subgroup:
                     subgroup.spawn(self._reset_input_buffer_loop)
                     self._log(logging.DEBUG,
@@ -315,9 +317,22 @@ class Master(aio.Resource):
                 await self._conn.send(req_adu)
 
                 async with self.async_group.create_subgroup() as subgroup:
-                    task = subgroup.spawn(self._receive, future)
-                    await asyncio.wait([task, future],
+                    receive_task = subgroup.spawn(self._conn.receive,
+                                                  self._modbus_type,
+                                                  transport.Direction.RESPONSE)
+
+                    await asyncio.wait([receive_task, future],
+                                       timeout=self._response_timeout,
                                        return_when=asyncio.FIRST_COMPLETED)
+
+                    if future.done():
+                        continue
+
+                    if receive_task.done():
+                        future.set_result(receive_task.result())
+
+                    else:
+                        future.set_exception(TimeoutError())
 
         except ConnectionError:
             pass
@@ -358,36 +373,6 @@ class Master(aio.Resource):
         if not count:
             return
         self._log(logging.DEBUG, "discarded %s bytes from input buffer", count)
-
-    async def _receive(self, future):
-        try:
-            receive_co = self._conn.receive(
-                modbus_type=self._modbus_type,
-                direction=transport.Direction.RESPONSE)
-
-            if self._response_timeout is None:
-                result = await receive_co
-
-            else:
-                result = await aio.wait_for(receive_co, self._response_timeout)
-
-            if not future.done():
-                future.set_result(result)
-
-        except asyncio.TimeoutError:
-            if not future.done():
-                future.set_exception(TimeoutError())
-
-        except ConnectionError:
-            self.close()
-
-        except Exception as e:
-            self._log(logging.ERROR, "receive error: %s", e, exc_info=e)
-            self.close()
-
-        finally:
-            if not future.done():
-                future.set_exception(ConnectionError())
 
     def _log(self, level, msg, *args, **kwargs):
         if not mlog.isEnabledFor(level):
