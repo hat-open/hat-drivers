@@ -29,6 +29,9 @@ char *hat_serial_error_msg(hat_serial_error_t error) {
 
     case HAT_SERIAL_ERROR_THREAD:
         return "thread create error";
+
+    case HAT_SERIAL_ERROR_IOCTL:
+        return "ioctl error";
     }
 
     return "unknown error";

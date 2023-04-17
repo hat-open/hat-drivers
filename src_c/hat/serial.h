@@ -18,6 +18,7 @@
 #define HAT_SERIAL_ERROR_OPEN 8
 #define HAT_SERIAL_ERROR_TERMIOS 9
 #define HAT_SERIAL_ERROR_THREAD 10
+#define HAT_SERIAL_ERROR_IOCTL 11
 
 
 #ifdef __cplusplus

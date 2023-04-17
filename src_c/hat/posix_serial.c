@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/uio.h>
 #include <termios.h>
 #include <unistd.h>
@@ -192,19 +193,23 @@ static hat_serial_error_t set_attr_bytesize(struct termios *attr,
 
 
 static hat_serial_error_t set_attr_parity(struct termios *attr, char parity) {
-    attr->c_iflag &= ~(INPCK | ISTRIP);
+    attr->c_iflag &= ~(PARMRK | ISTRIP);
 
     if (parity == 'N') {
+        attr->c_iflag &= ~INPCK;
         attr->c_cflag &= ~(PARENB | PARODD);
 
     } else if (parity == 'E') {
+        attr->c_iflag |= INPCK;
         attr->c_cflag &= ~PARODD;
         attr->c_cflag |= PARENB;
 
     } else if (parity == 'O') {
+        attr->c_iflag |= INPCK;
         attr->c_cflag |= (PARENB | PARODD);
 
     } else if (parity == 'M') {
+        attr->c_iflag |= INPCK;
 #ifdef _DEFAULT_SOURCE
         attr->c_cflag |= (PARENB | PARODD | CMSPAR);
 #else
@@ -212,6 +217,7 @@ static hat_serial_error_t set_attr_parity(struct termios *attr, char parity) {
 #endif
 
     } else if (parity == 'S') {
+        attr->c_iflag |= INPCK;
         attr->c_cflag &= ~PARODD;
 #ifdef _DEFAULT_SOURCE
         attr->c_cflag |= (PARENB | CMSPAR);
@@ -259,7 +265,7 @@ static void set_attr_rtscts(struct termios *attr, bool rtscts) {
         attr->c_cflag |= CRTSCTS;
 
     } else {
-        attr->c_cflag &= CRTSCTS;
+        attr->c_cflag &= ~CRTSCTS;
     }
 #endif
 }
@@ -267,6 +273,30 @@ static void set_attr_rtscts(struct termios *attr, bool rtscts) {
 
 static void set_attr_dsrdtr(struct termios *attr, bool dsrdtr) {
     // TODO
+}
+
+
+static hat_serial_error_t set_status_bits(int fd, bool dtr, bool rts) {
+    int status_bits;
+    if (ioctl(fd, TIOCMGET, &status_bits))
+        return HAT_SERIAL_ERROR_IOCTL;
+
+    if (dtr) {
+        status_bits |= TIOCM_DTR;
+    } else {
+        status_bits &= ~TIOCM_DTR;
+    }
+
+    if (rts) {
+        status_bits |= TIOCM_RTS;
+    } else {
+        status_bits &= ~TIOCM_RTS;
+    }
+
+    if (ioctl(fd, TIOCMSET, &status_bits))
+        return HAT_SERIAL_ERROR_IOCTL;
+
+    return HAT_SERIAL_SUCCESS;
 }
 
 
@@ -282,16 +312,19 @@ static hat_serial_error_t open_port(char *port, uint32_t baudrate,
         goto error;
     }
 
+    // TODO fcntl lock/unlock
+
     struct termios attr;
     if (tcgetattr(*fd, &attr)) {
         result = HAT_SERIAL_ERROR_TERMIOS;
         goto error;
     }
 
-    attr.c_iflag &= ~(IGNBRK | INLCR | IGNCR | ICRNL);
-    attr.c_oflag &= ~(OPOST | ONLCR | OCRNL);
+    attr.c_iflag |= IGNBRK;
+    attr.c_iflag &= ~(BRKINT | IGNPAR | INLCR | IGNCR | ICRNL);
+    attr.c_oflag &= ~(OPOST | ONLCR | OCRNL | ONOCR | ONLRET | OFILL);
     attr.c_cflag |= (CREAD | CLOCAL);
-    attr.c_lflag &= ~(ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHONL | IEXTEN);
+    attr.c_lflag &= ~(ISIG | ICANON | ECHO | IEXTEN);
 
     attr.c_cc[VMIN] = 0;
     attr.c_cc[VTIME] = 0;
@@ -321,7 +354,13 @@ static hat_serial_error_t open_port(char *port, uint32_t baudrate,
         goto error;
     }
 
-    // TODO update rts and dts
+    if (set_status_bits(*fd, !dsrdtr, !rtscts)) {
+        // ignore set status bits error
+    }
+
+    if (tcflush(*fd, TCIOFLUSH)) {
+        // ignore flush error
+    }
 
     return HAT_SERIAL_SUCCESS;
 
