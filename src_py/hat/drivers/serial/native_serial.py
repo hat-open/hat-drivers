@@ -122,17 +122,17 @@ class Endpoint(common.Endpoint):
             loop = asyncio.get_running_loop()
 
             while True:
-                in_cb_future = loop.create_future()
-                in_cb = _create_serial_cb(loop, in_cb_future)
-                self._serial.set_in_cb(in_cb)
+                in_change_cb_future = loop.create_future()
+                in_change_cb = _create_serial_cb(loop, in_change_cb_future)
+                self._serial.set_in_change_cb(in_change_cb)
 
                 data = self._serial.read()
 
                 if not data:
-                    await in_cb_future
+                    await in_change_cb_future
                     continue
 
-                self._serial.set_in_cb(None)
+                self._serial.set_in_change_cb(None)
 
                 async with self._input_cv:
                     self._input_buffer.extend(data)
@@ -143,7 +143,7 @@ class Endpoint(common.Endpoint):
 
         finally:
             self.close()
-            self._serial.set_in_cb(None)
+            self._serial.set_in_change_cb(None)
 
     async def _write_loop(self):
         future = None
@@ -155,9 +155,9 @@ class Endpoint(common.Endpoint):
 
                 data = memoryview(data)
                 while data:
-                    out_cb_future = loop.create_future()
-                    out_cb = _create_serial_cb(loop, out_cb_future)
-                    self._serial.set_out_cb(out_cb)
+                    out_empty_cb_future = loop.create_future()
+                    out_empty_cb = _create_serial_cb(loop, out_empty_cb_future)
+                    self._serial.set_out_empty_cb(out_empty_cb)
 
                     result = self._serial.write(bytes(data))
                     if result < 0:
@@ -165,9 +165,9 @@ class Endpoint(common.Endpoint):
 
                     data = data[result:]
 
-                    await out_cb_future
+                    await out_empty_cb_future
 
-                self._serial.set_out_cb(None)
+                self._serial.set_out_empty_cb(None)
 
                 if not future.done():
                     future.set_result(None)
@@ -180,7 +180,7 @@ class Endpoint(common.Endpoint):
         finally:
             self.close()
             self._write_queue.close()
-            self._serial.set_out_cb(None)
+            self._serial.set_out_empty_cb(None)
 
             while True:
                 if future and not future.done():

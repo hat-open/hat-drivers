@@ -19,24 +19,26 @@ struct hat_serial_t {
     hat_ring_t *in_buff;
     hat_ring_t *out_buff;
     hat_serial_cb_t close_cb;
-    hat_serial_cb_t in_cb;
-    hat_serial_cb_t out_cb;
+    hat_serial_cb_t in_change_cb;
+    hat_serial_cb_t in_full_cb;
+    hat_serial_cb_t out_change_cb;
+    hat_serial_cb_t out_empty_cb;
     void *ctx;
-    volatile int port_fd;
-    volatile int notify_r_fd;
-    int notify_w_fd;
+    volatile _Atomic int port_fd;
+    volatile _Atomic int notify_r_fd;
+    volatile _Atomic int notify_w_fd;
     pthread_t thread;
     bool is_running;
     volatile _Atomic bool is_closing;
 };
 
 
-static void close_fd(volatile int *fd) {
-    if (*fd < 0)
+static void close_fd(volatile _Atomic int *fd) {
+    int f = atomic_exchange(fd, -1);
+    if (f < 0)
         return;
 
-    close(*fd);
-    *fd = -1;
+    close(f);
 }
 
 
@@ -44,7 +46,8 @@ static hat_serial_error_t clear_notifications(hat_serial_t *s) {
     uint8_t buff[1024];
 
     while (true) {
-        int result = read(s->notify_r_fd, buff, sizeof(buff));
+        int fd = atomic_load(&(s->notify_r_fd));
+        int result = read(fd, buff, sizeof(buff));
 
         if (result > 0)
             continue;
@@ -61,10 +64,11 @@ static hat_serial_error_t clear_notifications(hat_serial_t *s) {
 
 
 static void notify_thread(hat_serial_t *s) {
-    if (s->notify_w_fd < 0)
+    int fd = atomic_load(&(s->notify_w_fd));
+    if (fd < 0)
         return;
 
-    write(s->notify_w_fd, "x", 1);
+    write(fd, "x", 1);
 }
 
 
@@ -304,7 +308,7 @@ static hat_serial_error_t set_status_bits(int fd, bool dtr, bool rts) {
 static hat_serial_error_t open_port(char *port, uint32_t baudrate,
                                     uint8_t bytesize, char parity,
                                     uint8_t stopbits, bool xonxoff, bool rtscts,
-                                    bool dsrdtr, volatile int *fd) {
+                                    bool dsrdtr, volatile _Atomic int *fd) {
     hat_serial_error_t result;
 
     *fd = open(port, O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -386,13 +390,17 @@ static hat_serial_error_t serial_read(hat_serial_t *s) {
         {.iov_base = unused_data[0], .iov_len = unused_data_len[0]},
         {.iov_base = unused_data[1], .iov_len = unused_data_len[1]}};
 
-    int result = readv(s->port_fd, iov, (unused_data_len[1] ? 2 : 1));
+    int fd = atomic_load(&(s->port_fd));
+    int result = readv(fd, iov, (unused_data_len[1] ? 2 : 1));
 
     if (result > 0) {
         hat_ring_move_tail(buff, result);
 
-        if (s->in_cb)
-            s->in_cb(s);
+        if (s->in_change_cb)
+            s->in_change_cb(s);
+
+        if (s->in_full_cb && hat_ring_len(buff) >= hat_ring_size(buff))
+            s->in_full_cb(s);
 
         return HAT_SERIAL_SUCCESS;
     }
@@ -421,13 +429,17 @@ static hat_serial_error_t serial_write(hat_serial_t *s) {
         {.iov_base = used_data[0], .iov_len = used_data_len[0]},
         {.iov_base = used_data[1], .iov_len = used_data_len[1]}};
 
-    int result = writev(s->port_fd, iov, (used_data_len[1] ? 2 : 1));
+    int fd = atomic_load(&(s->port_fd));
+    int result = writev(fd, iov, (used_data_len[1] ? 2 : 1));
 
     if (result > 0) {
         hat_ring_move_head(buff, result);
 
-        if (s->out_cb && result == used_data_len[0] + used_data_len[1])
-            s->out_cb(s);
+        if (s->out_change_cb)
+            s->out_change_cb(s);
+
+        if (s->out_empty_cb && !hat_ring_len(buff))
+            s->out_empty_cb(s);
 
         return HAT_SERIAL_SUCCESS;
     }
@@ -447,8 +459,9 @@ static void *serial_thread(void *arg) {
     hat_ring_t *in_buff = s->in_buff;
     hat_ring_t *out_buff = s->out_buff;
 
-    struct pollfd fds[2] = {{.fd = s->notify_r_fd, .events = POLLIN},
-                            {.fd = s->port_fd}};
+    struct pollfd fds[2] = {
+        {.fd = atomic_load(&(s->notify_r_fd)), .events = POLLIN},
+        {.fd = atomic_load(&(s->port_fd))}};
 
     while (!atomic_load(&(s->is_closing))) {
         if (fds[0].revents & ~POLLIN)
@@ -494,8 +507,10 @@ static void *serial_thread(void *arg) {
 
 hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                                 size_t out_buff_size, hat_serial_cb_t close_cb,
-                                hat_serial_cb_t in_cb, hat_serial_cb_t out_cb,
-                                void *ctx) {
+                                hat_serial_cb_t in_change_cb,
+                                hat_serial_cb_t in_full_cb,
+                                hat_serial_cb_t out_change_cb,
+                                hat_serial_cb_t out_empty_cb, void *ctx) {
     hat_serial_t *s = NULL;
     hat_ring_t *in_buff = NULL;
     hat_ring_t *out_buff = NULL;
@@ -516,8 +531,10 @@ hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                         .in_buff = in_buff,
                         .out_buff = out_buff,
                         .close_cb = close_cb,
-                        .in_cb = in_cb,
-                        .out_cb = out_cb,
+                        .in_change_cb = in_change_cb,
+                        .in_full_cb = in_full_cb,
+                        .out_change_cb = out_change_cb,
+                        .out_empty_cb = out_empty_cb,
                         .ctx = ctx,
                         .port_fd = -1,
                         .notify_r_fd = -1,
@@ -622,10 +639,10 @@ void hat_serial_close(hat_serial_t *s) {
 }
 
 
-void *hat_serial_ctx(hat_serial_t *s) { return s->ctx; }
+void *hat_serial_get_ctx(hat_serial_t *s) { return s->ctx; }
 
 
-size_t hat_serial_available(hat_serial_t *s) {
+size_t hat_serial_get_available(hat_serial_t *s) {
     return hat_ring_len(s->in_buff);
 }
 

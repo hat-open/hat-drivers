@@ -10,14 +10,14 @@ typedef struct {
     hat_serial_t *serial;
     PyObject *empty_tuple;
     PyObject *close_cb;
-    PyObject *in_cb;
-    PyObject *out_cb;
+    PyObject *in_change_cb;
+    PyObject *out_empty_cb;
 } Serial;
 // clang-format on
 
 
 static void on_serial_close(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_ctx(s);
+    Serial *self = (Serial *)hat_serial_get_ctx(s);
 
     if (!self->close_cb || self->close_cb == Py_None)
         return;
@@ -30,29 +30,29 @@ static void on_serial_close(hat_serial_t *s) {
 }
 
 
-static void on_serial_in(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_ctx(s);
+static void on_serial_in_change(hat_serial_t *s) {
+    Serial *self = (Serial *)hat_serial_get_ctx(s);
 
-    if (!self->in_cb || self->in_cb == Py_None)
+    if (!self->in_change_cb || self->in_change_cb == Py_None)
         return;
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->in_cb, self->empty_tuple, NULL));
+    Py_XDECREF(PyObject_Call(self->in_change_cb, self->empty_tuple, NULL));
 
     PyGILState_Release(gstate);
 }
 
 
-static void on_serial_out(hat_serial_t *s) {
-    Serial *self = (Serial *)hat_serial_ctx(s);
+static void on_serial_out_empty(hat_serial_t *s) {
+    Serial *self = (Serial *)hat_serial_get_ctx(s);
 
-    if (!self->out_cb || self->out_cb == Py_None)
+    if (!self->out_empty_cb || self->out_empty_cb == Py_None)
         return;
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->out_cb, self->empty_tuple, NULL));
+    Py_XDECREF(PyObject_Call(self->out_empty_cb, self->empty_tuple, NULL));
 
     PyGILState_Release(gstate);
 }
@@ -74,8 +74,8 @@ static PyObject *Serial_new(PyTypeObject *type, PyObject *args,
     self->serial = NULL;
     self->empty_tuple = NULL;
     self->close_cb = NULL;
-    self->in_cb = NULL;
-    self->out_cb = NULL;
+    self->in_change_cb = NULL;
+    self->out_empty_cb = NULL;
 
     self->empty_tuple = PyTuple_New(0);
     if (!self->empty_tuple) {
@@ -83,9 +83,9 @@ static PyObject *Serial_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
 
-    self->serial =
-        hat_serial_create(&hat_py_allocator, in_buff_size, out_buff_size,
-                          on_serial_close, on_serial_in, on_serial_out, self);
+    self->serial = hat_serial_create(
+        &hat_py_allocator, in_buff_size, out_buff_size, on_serial_close,
+        on_serial_in_change, NULL, NULL, on_serial_out_empty, self);
     if (!self->serial) {
         Py_DECREF(self->empty_tuple);
         Py_DECREF(self);
@@ -103,8 +103,8 @@ static void Serial_dealloc(Serial *self) {
 
     Py_XDECREF(self->empty_tuple);
     Py_XDECREF(self->close_cb);
-    Py_XDECREF(self->in_cb);
-    Py_XDECREF(self->out_cb);
+    Py_XDECREF(self->in_change_cb);
+    Py_XDECREF(self->out_empty_cb);
 
     PyObject_Free((PyObject *)self);
 }
@@ -158,7 +158,7 @@ static PyObject *Serial_close(Serial *self, PyObject *args) {
 
 
 static PyObject *Serial_read(Serial *self, PyObject *args) {
-    size_t data_len = hat_serial_available(self->serial);
+    size_t data_len = hat_serial_get_available(self->serial);
 
     if (!data_len)
         Py_RETURN_NONE;
@@ -207,44 +207,45 @@ static PyObject *Serial_set_close_cb(Serial *self, PyObject *cb) {
 }
 
 
-static PyObject *Serial_set_in_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->in_cb);
+static PyObject *Serial_set_in_change_cb(Serial *self, PyObject *cb) {
+    Py_XDECREF(self->in_change_cb);
     Py_XINCREF(cb);
-    self->in_cb = cb;
+    self->in_change_cb = cb;
     Py_RETURN_NONE;
 }
 
 
-static PyObject *Serial_set_out_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->out_cb);
+static PyObject *Serial_set_out_empty_cb(Serial *self, PyObject *cb) {
+    Py_XDECREF(self->out_empty_cb);
     Py_XINCREF(cb);
-    self->out_cb = cb;
+    self->out_empty_cb = cb;
     Py_RETURN_NONE;
 }
 
 
-PyMethodDef Serial_Methods[] = {{.ml_name = "open",
-                                 .ml_meth = (PyCFunction)Serial_open,
-                                 .ml_flags = METH_VARARGS | METH_KEYWORDS},
-                                {.ml_name = "close",
-                                 .ml_meth = (PyCFunction)Serial_close,
-                                 .ml_flags = METH_NOARGS},
-                                {.ml_name = "read",
-                                 .ml_meth = (PyCFunction)Serial_read,
-                                 .ml_flags = METH_NOARGS},
-                                {.ml_name = "write",
-                                 .ml_meth = (PyCFunction)Serial_write,
-                                 .ml_flags = METH_O},
-                                {.ml_name = "set_close_cb",
-                                 .ml_meth = (PyCFunction)Serial_set_close_cb,
-                                 .ml_flags = METH_O},
-                                {.ml_name = "set_in_cb",
-                                 .ml_meth = (PyCFunction)Serial_set_in_cb,
-                                 .ml_flags = METH_O},
-                                {.ml_name = "set_out_cb",
-                                 .ml_meth = (PyCFunction)Serial_set_out_cb,
-                                 .ml_flags = METH_O},
-                                {NULL}};
+PyMethodDef Serial_Methods[] = {
+    {.ml_name = "open",
+     .ml_meth = (PyCFunction)Serial_open,
+     .ml_flags = METH_VARARGS | METH_KEYWORDS},
+    {.ml_name = "close",
+     .ml_meth = (PyCFunction)Serial_close,
+     .ml_flags = METH_NOARGS},
+    {.ml_name = "read",
+     .ml_meth = (PyCFunction)Serial_read,
+     .ml_flags = METH_NOARGS},
+    {.ml_name = "write",
+     .ml_meth = (PyCFunction)Serial_write,
+     .ml_flags = METH_O},
+    {.ml_name = "set_close_cb",
+     .ml_meth = (PyCFunction)Serial_set_close_cb,
+     .ml_flags = METH_O},
+    {.ml_name = "set_in_change_cb",
+     .ml_meth = (PyCFunction)Serial_set_in_change_cb,
+     .ml_flags = METH_O},
+    {.ml_name = "set_out_empty_cb",
+     .ml_meth = (PyCFunction)Serial_set_out_empty_cb,
+     .ml_flags = METH_O},
+    {NULL}};
 
 PyType_Slot serial_type_slots[] = {
     {Py_tp_new, Serial_new},

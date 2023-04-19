@@ -59,8 +59,8 @@ ssl_build = CBuild(src_paths=ssl_src_paths,
 
 serial_path = (src_py_dir /
                'hat/drivers/serial/_native_serial').with_suffix(py_ext_suffix)
-serial_posix_src_paths = [src_c_dir / 'hat/posix_serial.c']
-serial_win32_src_paths = [src_c_dir / 'hat/win32_serial.c']
+serial_posix_src_paths = [src_c_dir / 'hat/serial_posix.c']
+serial_win32_src_paths = [src_c_dir / 'hat/serial_win32.c']
 serial_src_paths = [src_c_dir / 'py/serial/_native_serial.c',
                     peru_dir / 'hat-util/src_c/hat/py_allocator.c',
                     peru_dir / 'hat-util/src_c/hat/ring.c',
