@@ -1,9 +1,9 @@
 imports:
-    hat-util: deps/hat-util
+    hat-util: peru/hat-util
 
 git module hat-util:
     url: https://github.com/hat-open/hat-util
-    rev: 7444736079ad0b7ee038e0debdb001d55263f486
+    rev: 7bd0d1853903b81ecc3ae3aa8cc385142e99644b
     pick: src_c
 
 # cp module hat-util:

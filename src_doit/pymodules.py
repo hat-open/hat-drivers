@@ -27,7 +27,7 @@ py_limited_api = next(iter(common.PyVersion))
 py_ext_suffix = get_py_ext_suffix(py_limited_api=py_limited_api)
 
 build_dir = Path('build')
-deps_dir = Path('deps')
+peru_dir = Path('peru')
 src_c_dir = Path('src_c')
 src_py_dir = Path('src_py')
 
@@ -62,8 +62,8 @@ serial_path = (src_py_dir /
 serial_posix_src_paths = [src_c_dir / 'hat/posix_serial.c']
 serial_win32_src_paths = [src_c_dir / 'hat/win32_serial.c']
 serial_src_paths = [src_c_dir / 'py/serial/_native_serial.c',
-                    deps_dir / 'hat-util/src_c/hat/py_allocator.c',
-                    src_c_dir / 'hat/ring.c',
+                    peru_dir / 'hat-util/src_c/hat/py_allocator.c',
+                    peru_dir / 'hat-util/src_c/hat/ring.c',
                     src_c_dir / 'hat/serial.c',
                     *(serial_posix_src_paths if is_target_posix else []),
                     *(serial_win32_src_paths if is_target_win32 else [])]
@@ -77,7 +77,7 @@ serial_c_flags = [*get_py_c_flags(py_limited_api=py_limited_api),
                   '-fPIC',
                   '-O2',
                   '-std=c11',
-                  f"-I{deps_dir / 'hat-util/src_c'}",
+                  f"-I{peru_dir / 'hat-util/src_c'}",
                   f"-I{src_c_dir}",
                   *(serial_posix_c_flags if is_target_posix else []),
                   *(serial_linux_c_flags if is_target_linux else []),

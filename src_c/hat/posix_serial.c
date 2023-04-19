@@ -1,5 +1,4 @@
 #include "serial.h"
-#include "ring.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -11,6 +10,8 @@
 #include <sys/uio.h>
 #include <termios.h>
 #include <unistd.h>
+
+#include <hat/ring.h>
 
 
 struct hat_serial_t {
