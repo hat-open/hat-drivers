@@ -172,4 +172,4 @@ class _TcpConnection(Connection):
         return await self._conn.readexactly(size)
 
     async def _reset_input_buffer(self):
-        return await self._conn.reset_input_buffer()
+        return self._conn.reset_input_buffer()

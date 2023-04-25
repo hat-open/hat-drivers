@@ -3,8 +3,10 @@
 
 hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                                 size_t out_buff_size, hat_serial_cb_t close_cb,
-                                hat_serial_cb_t in_cb, hat_serial_cb_t out_cb,
-                                void *ctx) {
+                                hat_serial_cb_t in_change_cb,
+                                hat_serial_cb_t in_full_cb,
+                                hat_serial_cb_t out_change_cb,
+                                hat_serial_cb_t out_empty_cb, void *ctx) {
     return NULL;
 }
 
@@ -23,10 +25,10 @@ hat_serial_error_t hat_serial_open(hat_serial_t *s, char *port,
 void hat_serial_close(hat_serial_t *s) {}
 
 
-void *hat_serial_ctx(hat_serial_t *s) { return NULL; }
+void *hat_serial_get_ctx(hat_serial_t *s) { return NULL; }
 
 
-size_t hat_serial_available(hat_serial_t *s) { return 0; }
+size_t hat_serial_get_available(hat_serial_t *s) { return 0; }
 
 
 size_t hat_serial_read(hat_serial_t *s, uint8_t *data, size_t data_len) {

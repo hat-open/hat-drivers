@@ -46,9 +46,9 @@ void hat_tcp_conn_close(hat_tcp_conn_t *s);
 void hat_tcp_conn_destroy(hat_tcp_conn_t *s);
 void *hat_tcp_conn_get_ctx(hat_tcp_conn_t *s);
 void hat_tcp_conn_set_ctx(hat_tcp_conn_t *s, void *ctx);
-size_t hat_serial_available(hat_tcp_conn_t *s);
-size_t hat_serial_read(hat_tcp_conn_t *s, uint8_t *data, size_t data_len);
-size_t hat_serial_write(hat_tcp_conn_t *s, uint8_t *data, size_t data_len);
+size_t hat_tcp_conn_get_available(hat_tcp_conn_t *s);
+size_t hat_tcp_conn_read(hat_tcp_conn_t *s, uint8_t *data, size_t data_len);
+size_t hat_tcp_conn_write(hat_tcp_conn_t *s, uint8_t *data, size_t data_len);
 
 #ifdef __cplusplus
 }

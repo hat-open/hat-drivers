@@ -783,29 +783,29 @@ async def test_sequence_of_ioes():
 
     ioes_number = 3
 
-    # asdu is encoded with app.iec104.encoder.Encoder to bytes
-    quality = app.iec104.common.MeasurementQuality(invalid=False,
+    # asdu is encoded with app.iec101.encoder.Encoder to bytes
+    quality = app.iec101.common.MeasurementQuality(invalid=False,
                                                    not_topical=False,
                                                    substituted=False,
                                                    blocked=False,
                                                    overflow=False)
     io_address = 123
-    asdu = app.iec104.common.ASDU(
-                type=app.iec104.common.AsduType.M_ME_NB,
-                cause=app.iec104.common.Cause(
-                    type=app.iec104.common.CauseType.SPONTANEOUS,
-                    is_negative_confirm=False,
-                    is_test=False,
-                    originator_address=0),
-                address=13,
-                ios=[app.iec104.common.IO(
-                        address=io_address,
-                        elements=[
-                            app.iec104.common.IoElement_M_ME_NB(
-                                value=iec101.ScaledValue(value=v),
-                                quality=quality)
-                            for v in range(ioes_number)],
-                        time=None)])
+    asdu = app.iec101.common.ASDU(
+        type=app.iec101.common.AsduType.M_ME_NB,
+        cause=app.iec101.common.Cause(
+            type=app.iec101.common.CauseType.SPONTANEOUS,
+            is_negative_confirm=False,
+            is_test=False,
+            originator_address=0),
+        address=13,
+        ios=[app.iec101.common.IO(
+                address=io_address,
+                elements=[
+                    app.iec101.common.IoElement_M_ME_NB(
+                        value=iec101.ScaledValue(value=v),
+                        quality=quality)
+                    for v in range(ioes_number)],
+                time=None)])
     asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
 
     # bytes are set to queue to be received from connection

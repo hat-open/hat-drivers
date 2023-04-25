@@ -128,6 +128,8 @@ async def test_readexactly(addr):
     await conn2.async_close()
     with pytest.raises(ConnectionError):
         await conn1.readexactly(len(data) + 1)
+    result = await conn1.readexactly(len(data))
+    assert result == data
     with pytest.raises(ConnectionError):
         await conn1.readexactly(1)
 

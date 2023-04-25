@@ -21,7 +21,8 @@ CommType = enum.Enum('CommType', ['TCP', 'SERIAL'])
 if sys.platform == 'win32':
     comm_types = [CommType.TCP]
 else:
-    comm_types = [CommType.TCP, CommType.SERIAL]
+    comm_types = [CommType.TCP,
+                  CommType.SERIAL]
 
 
 @pytest.fixture
