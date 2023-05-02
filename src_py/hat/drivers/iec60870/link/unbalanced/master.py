@@ -301,13 +301,14 @@ class _MasterConnection(Connection):
 
                 retry_counter = 0
                 while True:
-                    retry_counter += 1
-                    if retry_counter > self._send_retry_count:
-                        raise Exception('send retry count exceeded')
-
                     with contextlib.suppress(asyncio.TimeoutError):
                         res = await send(req)
                         break
+
+                    if retry_counter >= self._send_retry_count:
+                        raise Exception('send retry count exceeded')
+
+                    retry_counter += 1
 
                 if res.access_demand:
                     self._access_demand_event.set()
