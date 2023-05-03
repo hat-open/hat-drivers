@@ -19,7 +19,7 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     cp $ROOT_PATH/build/py/dist/*.whl $DIST_PATH
 done
 
-IMAGES="linux/amd64/build-hat-drivers:alpine3.17-cpy3.10
+IMAGES="linux/amd64/build-hat-drivers:alpine3.17-cpy3.11
         linux/arm/v7/build-hat-drivers:debian11-cpy3.10"
 
 for IMAGE in $IMAGES; do
@@ -39,7 +39,10 @@ for IMAGE in $IMAGES; do
                -v ~/.cache/pip:/root/.cache/pip \
                -i $IMAGE /bin/sh - << EOF
 set -e
-pip3 install -r requirements.pip.dev.txt
+python3 -m venv venv
+. venv/bin/activate
+pip install --upgrade pip
+pip install --upgrade -r requirements.pip.dev.txt
 doit clean_all
 doit
 cp build/py/dist/*.whl dist
