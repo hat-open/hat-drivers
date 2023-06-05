@@ -316,7 +316,8 @@ class Master(aio.Resource):
 
                 await self._conn.send(req_adu)
 
-                async with self.async_group.create_subgroup() as subgroup:
+                async with self.async_group.create_subgroup(
+                        log_exceptions=False) as subgroup:
                     receive_task = subgroup.spawn(self._conn.receive,
                                                   self._modbus_type,
                                                   transport.Direction.RESPONSE)

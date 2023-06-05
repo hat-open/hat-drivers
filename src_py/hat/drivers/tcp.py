@@ -1,8 +1,7 @@
 """Asyncio TCP wrapper"""
 
 import asyncio
-import collections
-import functools
+import contextlib
 import logging
 import typing
 
@@ -36,13 +35,12 @@ async def connect(addr: Address,
                   ) -> 'Connection':
     """Create TCP connection
 
-    Additional arguments are passed directly to `asyncio.create_connection`.
+    Additional arguments are passed directly to `asyncio.open_connection`.
 
     """
-    loop = asyncio.get_running_loop()
-    _, protocol = await loop.create_connection(Protocol, addr.host, addr.port,
-                                               **kwargs)
-    return Connection(protocol)
+    reader, writer = await asyncio.open_connection(addr.host, addr.port,
+                                                   **kwargs)
+    return Connection(reader, writer)
 
 
 async def listen(connection_cb: ConnectionCb,
@@ -56,7 +54,7 @@ async def listen(connection_cb: ConnectionCb,
     If `bind_connections` is ``True``, closing server will close all open
     incoming connections.
 
-    Additional arguments are passed directly to `asyncio.create_server`.
+    Additional arguments are passed directly to `asyncio.start_server`.
 
     """
     server = Server()
@@ -64,23 +62,19 @@ async def listen(connection_cb: ConnectionCb,
     server._bind_connections = bind_connections
     server._async_group = aio.Group()
 
-    on_connection = functools.partial(server.async_group.spawn,
-                                      server._on_connection)
-    create_transport = functools.partial(Protocol, on_connection)
+    def on_connection(reader, writer):
+        try:
+            server.async_group.spawn(server._on_connection, reader, writer)
 
-    loop = asyncio.get_running_loop()
-    server._srv = await loop.create_server(create_transport, addr.host,
-                                           addr.port, **kwargs)
+        except Exception:
+            reader.close()
 
-    server.async_group.spawn(aio.call_on_cancel, server._on_close)
+    server._srv = await asyncio.start_server(on_connection,
+                                             addr.host, addr.port, **kwargs)
+    server._async_group.spawn(aio.call_on_cancel, server._on_close)
 
-    try:
-        socknames = (socket.getsockname() for socket in server._srv.sockets)
-        server._addresses = [Address(*sockname[:2]) for sockname in socknames]
-
-    except Exception:
-        await aio.uncancellable(server.async_close())
-        raise
+    socknames = (socket.getsockname() for socket in server._srv.sockets)
+    server._addresses = [Address(*sockname[:2]) for sockname in socknames]
 
     return server
 
@@ -106,8 +100,13 @@ class Server(aio.Resource):
         self._srv.close()
         await self._srv.wait_closed()
 
-    async def _on_connection(self, protocol):
-        conn = Connection(protocol)
+    async def _on_connection(self, reader, writer):
+        try:
+            conn = Connection(reader, writer)
+
+        except Exception:
+            reader.close()
+            return
 
         try:
             await aio.call(self._connection_cb, conn)
@@ -129,13 +128,23 @@ class Server(aio.Resource):
 class Connection(aio.Resource):
     """TCP connection"""
 
-    def __init__(self, protocol: 'Protocol'):
-        self._protocol = protocol
+    def __init__(self,
+                 reader: asyncio.StreamReader,
+                 writer: asyncio.StreamWriter):
+        self._reader = reader
+        self._writer = writer
+        self._read_queue = aio.Queue()
         self._async_group = aio.Group()
 
-        self.async_group.spawn(aio.call_on_cancel, protocol.async_close)
-        self.async_group.spawn(aio.call_on_done, protocol.wait_closed(),
-                               self.close)
+        self.async_group.spawn(self._read_loop)
+
+        sockname = writer.get_extra_info('sockname')
+        peername = writer.get_extra_info('peername')
+        self._info = ConnectionInfo(
+            local_addr=Address(sockname[0], sockname[1]),
+            remote_addr=Address(peername[0], peername[1]))
+
+        self._ssl_object = writer.get_extra_info('ssl_object')
 
     @property
     def async_group(self) -> aio.Group:
@@ -145,314 +154,180 @@ class Connection(aio.Resource):
     @property
     def info(self) -> ConnectionInfo:
         """Connection info"""
-        return self._protocol.info
+        return self._info
 
     @property
     def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
         """SSL Object"""
-        return self._protocol.ssl_object
+        return self._ssl_object
 
     def write(self, data: Bytes):
-        """Write data"""
-        if not self.is_open:
-            raise ConnectionError()
+        """Write data
 
-        self._protocol.write(data)
+        See `asyncio.StreamWriter.write`.
+
+        """
+        self._writer.write(data)
 
     async def drain(self):
-        """Drain output buffer"""
-        await self._protocol.drain()
+        """Drain stream writer
 
-    async def read(self, n: int = -1) -> Bytes:
+        See `asyncio.StreamWriter.drain`.
+
+        """
+        await self._writer.drain()
+
+    async def read(self,
+                   n: int = -1
+                   ) -> Bytes:
         """Read up to `n` bytes
 
         If EOF is detected and no new bytes are available, `ConnectionError`
         is raised.
 
-        """
-        return await self._protocol.read(n)
+        See `asyncio.StreamReader.read`.
 
-    async def readexactly(self, n: int) -> Bytes:
+        """
+        future = asyncio.Future()
+        try:
+            self._read_queue.put_nowait((future, False, n))
+            return await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def readexactly(self,
+                          n: int
+                          ) -> Bytes:
         """Read exactly `n` bytes
 
         If exact number of bytes could not be read, `ConnectionError` is
         raised.
 
-        """
-        return await self._protocol.readexactly(n)
+        See `asyncio.StreamReader.readexactly`.
 
-    def reset_input_buffer(self) -> int:
+        """
+        future = asyncio.Future()
+        try:
+            self._read_queue.put_nowait((future, True, n))
+            return await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def reset_input_buffer(self) -> int:
         """Reset input buffer
 
         Returns number of bytes cleared from buffer.
 
         """
-        return self._protocol.reset_input_buffer()
-
-
-class Protocol(asyncio.Protocol):
-    """Asyncio protocol implementation"""
-
-    def __init__(self,
-                 on_connected: typing.Optional[typing.Callable[['Protocol'], None]] = None):  # NOQA
-        self._on_connected = on_connected
-        self._loop = asyncio.get_running_loop()
-        self._input_buffer = _InputBuffer()
-        self._transport = None
-        self._read_queue = None
-        self._write_queue = None
-        self._drain_futures = None
-        self._closed_futures = None
-        self._info = None
-        self._ssl_object = None
-
-    @property
-    def info(self) -> ConnectionInfo:
-        return self._info
-
-    @property
-    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
-        return self._ssl_object
-
-    def connection_made(self, transport: asyncio.Transport):
-        self._transport = transport
-        self._read_queue = collections.deque()
-        self._closed_futures = collections.deque()
-
+        future = asyncio.Future()
         try:
-            sockname = transport.get_extra_info('sockname')
-            peername = transport.get_extra_info('peername')
-            self._info = ConnectionInfo(
-                local_addr=Address(sockname[0], sockname[1]),
-                remote_addr=Address(peername[0], peername[1]))
-            self._ssl_object = transport.get_extra_info('ssl_object')
+            self._read_queue.put_nowait((future, False, None))
+            return await future
 
-            if self._on_connected:
-                self._on_connected(self)
-
-        except Exception:
-            transport.abort()
-            return
-
-    def connection_lost(self, exc: typing.Optional[Exception]):
-        self._transport = None
-        self._write_queue = None
-        drain_futures, self._drain_futures = self._drain_futures, None
-        closed_futures, self._closed_futures = self._closed_futures, None
-
-        self.eof_received()
-
-        while drain_futures:
-            future = drain_futures.popleft()
-            if not future.done():
-                future.set_result(None)
-
-        while closed_futures:
-            future = closed_futures.popleft()
-            if not future.done():
-                future.set_result(None)
-
-    def pause_writing(self):
-        self._write_queue = collections.deque()
-        self._drain_futures = collections.deque()
-
-    def resume_writing(self):
-        write_queue, self._write_queue = self._write_queue, None
-        drain_futures, self._drain_futures = self._drain_futures, None
-
-        while self._write_queue is None and write_queue:
-            data = write_queue.popleft()
-            self._transport.write(data)
-
-        if write_queue:
-            write_queue.extend(self._write_queue)
-            self._write_queue = write_queue
-
-            drain_futures.extend(self._drain_futures)
-            self._drain_futures = drain_futures
-
-            return
-
-        while drain_futures:
-            future = drain_futures.popleft()
-            if not future.done():
-                future.set_result(None)
-
-    def data_received(self, data: Bytes):
-        self._input_buffer.add(data)
-
-        while self._input_buffer and self._read_queue:
-            exact, n, future = self._read_queue.popleft()
-            if future.done():
-                continue
-
-            if not exact:
-                future.set_result(self._input_buffer.read(n))
-
-            elif n <= len(self._input_buffer):
-                future.set_result(self._input_buffer.read(n))
-
-            else:
-                self._read_queue.appendleft((exact, n, future))
-                break
-
-    def eof_received(self):
-        while self._read_queue:
-            exact, n, future = self._read_queue.popleft()
-            if future.done():
-                continue
-
-            if exact and n <= len(self._input_buffer):
-                future.set_result(self._input_buffer.read(n))
-
-            elif not exact and self._input_buffer:
-                future.set_result(self._input_buffer.read(n))
-
-            else:
-                future.set_exception(ConnectionError())
-
-        self._read_queue = None
-
-    def write(self, data: Bytes):
-        if self._transport is None:
+        except aio.QueueClosedError:
             raise ConnectionError()
 
-        if self._write_queue is None:
-            self._transport.write(data)
+    async def _read_loop(self):
+        future = None
+        buffer = bytearray()
+        try:
+            while True:
+                future, is_exact, n = await self._read_queue.get()
 
-        else:
-            self._write_queue.append(data)
+                while not future.done():
+                    if n is None:
 
-    async def drain(self):
-        if self._drain_futures is None:
-            return
+                        # HACK read until asyncio.StreamReader internal buffer
+                        #      empty
+                        if hasattr(self._reader, '_buffer'):
+                            while not future.done() and self._reader._buffer:
+                                count = len(self._reader._buffer)
+                                data = await self._reader.read(count)
+                                buffer.extend(data)
 
-        future = self._loop.create_future()
-        self._drain_futures.append(future)
-        await future
+                        if future.done():
+                            break
 
-    async def read(self, n: int) -> Bytes:
-        if n == 0:
-            return b''
+                        future.set_result(len(buffer))
+                        buffer = bytearray()
+                        break
 
-        if self._input_buffer and not self._read_queue:
-            return self._input_buffer.read(n)
+                    if n >= 0 and len(buffer) >= n:
+                        break
 
-        if self._read_queue is None:
-            raise ConnectionError()
+                    if n < 0 and is_exact:
+                        future.set_exception(
+                            ValueError('invalid number of bytes'))
+                        break
 
-        future = self._loop.create_future()
-        future.add_done_callback(self._on_read_future_done)
-        self._read_queue.append((False, n, future))
-        return await future
+                    if buffer and not is_exact:
+                        break
 
-    async def readexactly(self, n: int) -> Bytes:
-        if n == 0:
-            return b''
+                    if not self.is_open:
+                        return
 
-        if n <= len(self._input_buffer) and not self._read_queue:
-            return self._input_buffer.read(n)
+                    async with self.async_group.create_subgroup() as subgroup:
+                        fn = (self._reader.readexactly if is_exact
+                              else self._reader.read)
+                        count = n - len(buffer) if n > 0 else n
+                        result = asyncio.Future()
+                        subgroup.spawn(_set_future_with_result, result, fn,
+                                       count)
 
-        if self._read_queue is None:
-            raise ConnectionError()
+                        await asyncio.wait([result, future],
+                                           return_when=asyncio.FIRST_COMPLETED)
 
-        future = self._loop.create_future()
-        future.add_done_callback(self._on_read_future_done)
-        self._read_queue.append((True, n, future))
-        return await future
+                        if not result.done():
+                            break
 
-    def reset_input_buffer(self):
-        return self._input_buffer.reset()
+                    data = result.result()
+                    if not data:
+                        raise EOFError()
 
-    async def async_close(self):
-        if self._transport is not None:
-            self._transport.close()
+                    buffer.extend(data)
 
-        await self.wait_closed()
+                if future.done():
+                    continue
 
-    async def wait_closed(self):
-        if self._closed_futures is None:
-            return
+                if n > 0:
+                    buffer = memoryview(buffer)
+                    data, buffer = buffer[:n], bytearray(buffer[n:])
+                    future.set_result(data)
 
-        future = self._loop.create_future()
-        self._closed_futures.append(future)
-        await future
-
-    def _on_read_future_done(self, future):
-        if not self._read_queue:
-            return
-
-        if not isinstance(future, asyncio.CancelledError):
-            return
-
-        for _ in range(len(self._read_queue)):
-            i = self._read_queue.popleft()
-            if not i[2].done():
-                self._read_queue.append(i)
-
-        self.data_received(b'')
-
-
-class _InputBuffer:
-
-    def __init__(self):
-        self._data = collections.deque()
-        self._data_len = 0
-
-    def __len__(self):
-        return self._data_len
-
-    def add(self, data):
-        if not data:
-            return
-
-        self._data.append(data)
-        self._data_len += len(data)
-
-    def read(self, n):
-        if n == 0:
-            return b''
-
-        if n < 0 or n >= self._data_len:
-            data, self._data = self._data, collections.deque()
-            data_len, self._data_len = self._data_len, 0
-
-        else:
-            data = collections.deque()
-            data_len = 0
-
-            while data_len < n:
-                head = self._data.popleft()
-                self._data_len -= len(head)
-
-                if data_len + len(head) <= n:
-                    data.append(head)
-                    data_len += len(head)
+                elif n < 0:
+                    future.set_result(buffer)
+                    buffer = bytearray()
 
                 else:
-                    head = memoryview(head)
-                    head1, head2 = head[:n], head[n:]
+                    future.set_result(b'')
 
-                    data.append(head1)
-                    data_len += len(head1)
+        except EOFError:
+            pass
 
-                    self._data.appendleft(head2)
-                    self._data_len += len(head2)
+        except Exception as e:
+            mlog.warning("read loop error: %s", e, exc_info=e)
 
-        if len(data) < 2:
-            return data[0]
+        finally:
+            self.close()
+            self._read_queue.close()
 
-        data_bytes = bytearray(data_len)
-        data_bytes_len = 0
+            while True:
+                if future and not future.done():
+                    future.set_exception(ConnectionError())
+                if self._read_queue.empty():
+                    break
+                future, _, __ = self._read_queue.get_nowait()
 
-        while data:
-            head = data.popleft()
-            data_bytes[data_bytes_len:data_bytes_len+len(head)] = head
-            data_bytes_len += len(head)
+            self._writer.close()
+            with contextlib.suppress(Exception):
+                await aio.uncancellable(self._writer.wait_closed())
 
-        return data_bytes
 
-    def reset(self):
-        self._data.clear()
-        data_len, self._data_len = self._data_len, 0
-        return data_len
+async def _set_future_with_result(future, fn, *args):
+    try:
+        future.set_result(await fn(*args))
+
+    except Exception as e:
+        future.set_exception(e)
