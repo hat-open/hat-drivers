@@ -20,7 +20,7 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
 done
 
 IMAGES="linux/amd64/build-hat-drivers:alpine3.17-cpy3.11
-        linux/arm/v7/build-hat-drivers:debian11-cpy3.10"
+        linux/arm/v7/build-hat-drivers:debian11-cpy3.11"
 
 for IMAGE in $IMAGES; do
     $PYTHON -m doit clean_all
@@ -41,8 +41,9 @@ for IMAGE in $IMAGES; do
 set -e
 python3 -m venv venv
 . venv/bin/activate
+export CARGO_NET_GIT_FETCH_WITH_CLI=true  # cryptography
 pip install --upgrade pip
-pip install --upgrade -r requirements.pip.dev.txt
+pip install --upgrade -r requirements.pip.dev.txt 'cryptography==3.3.2'
 doit clean_all
 doit
 cp build/py/dist/*.whl dist

@@ -197,7 +197,7 @@ class Protocol(asyncio.Protocol):
                  on_connected: typing.Optional[typing.Callable[['Protocol'], None]] = None):  # NOQA
         self._on_connected = on_connected
         self._loop = asyncio.get_running_loop()
-        self._input_buffer = _InputBuffer()
+        self._input_buffer = InputBuffer()
         self._transport = None
         self._read_queue = None
         self._write_queue = None
@@ -393,7 +393,8 @@ class Protocol(asyncio.Protocol):
         self.data_received(b'')
 
 
-class _InputBuffer:
+class InputBuffer:
+    """Data input buffer"""
 
     def __init__(self):
         self._data = collections.deque()
@@ -402,14 +403,20 @@ class _InputBuffer:
     def __len__(self):
         return self._data_len
 
-    def add(self, data):
+    def add(self, data: Bytes):
+        """Add data"""
         if not data:
             return
 
         self._data.append(data)
         self._data_len += len(data)
 
-    def read(self, n):
+    def read(self, n: int) -> Bytes:
+        """Read up to `n` bytes
+
+        If ``n < 0``, read all data.
+
+        """
         if n == 0:
             return b''
 
@@ -431,7 +438,7 @@ class _InputBuffer:
 
                 else:
                     head = memoryview(head)
-                    head1, head2 = head[:n], head[n:]
+                    head1, head2 = head[:n-data_len], head[n-data_len:]
 
                     data.append(head1)
                     data_len += len(head1)
@@ -452,7 +459,8 @@ class _InputBuffer:
 
         return data_bytes
 
-    def reset(self):
+    def reset(self) -> int:
+        """Clear data and return number of bytes cleared"""
         self._data.clear()
         data_len, self._data_len = self._data_len, 0
         return data_len
