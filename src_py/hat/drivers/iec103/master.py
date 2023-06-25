@@ -4,7 +4,6 @@ import datetime
 import enum
 import itertools
 import logging
-import typing
 
 from hat import aio
 
@@ -24,8 +23,8 @@ class MasterConnection(aio.Resource):
 
     def __init__(self,
                  conn: link.Connection,
-                 data_cb: typing.Optional[DataCb] = None,
-                 generic_data_cb: typing.Optional[GenericDataCb] = None):
+                 data_cb: DataCb | None = None,
+                 generic_data_cb: GenericDataCb | None = None):
         self._conn = conn
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
@@ -73,7 +72,7 @@ class MasterConnection(aio.Resource):
         return self._conn.async_group
 
     async def time_sync(self,
-                        time: typing.Optional[common.Time] = None,
+                        time: common.Time | None = None,
                         asdu_address: common.AsduAddress = 0xFF):
         if not self.is_open:
             raise ConnectionError()

@@ -2,7 +2,7 @@ import enum
 import typing
 
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+Bytes = bytes | bytearray | memoryview
 
 SequenceNumber = int
 """sequence number in range [0, 0x7FFF]"""
@@ -31,4 +31,4 @@ class APDUU(typing.NamedTuple):
     function: ApduFunction
 
 
-APDU = typing.Union[APDUI, APDUS, APDUU]
+APDU = APDUI | APDUS | APDUU

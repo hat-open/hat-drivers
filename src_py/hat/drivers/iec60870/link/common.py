@@ -2,9 +2,9 @@ import enum
 import typing
 
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+Bytes = bytes | bytearray | memoryview
 
-Address = typing.Optional[int]
+Address = int | None
 """addres is ``None`` or in range [0, 255] or in range [0, 65535]"""
 
 
@@ -42,7 +42,7 @@ class ResFunction(enum.Enum):
 
 
 class ReqFrame(typing.NamedTuple):
-    direction: typing.Optional[Direction]
+    direction: Direction | None
     frame_count_bit: bool
     frame_count_valid: bool
     function: ReqFunction
@@ -51,7 +51,7 @@ class ReqFrame(typing.NamedTuple):
 
 
 class ResFrame(typing.NamedTuple):
-    direction: typing.Optional[Direction]
+    direction: Direction | None
     access_demand: bool
     data_flow_control: bool
     function: ResFunction
@@ -59,7 +59,7 @@ class ResFrame(typing.NamedTuple):
     data: Bytes
 
 
-Frame = typing.Union[ReqFrame, ResFrame]
+Frame = ReqFrame | ResFrame
 
 
 def get_broadcast_address(address_size: AddressSize):

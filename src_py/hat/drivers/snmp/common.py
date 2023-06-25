@@ -118,7 +118,7 @@ class Data(typing.NamedTuple):
 
 
 class Context(typing.NamedTuple):
-    engine_id: typing.Optional[str]
+    engine_id: str | None
     """engine id is not available in case of v1 and v2c"""
     name: str
     """name is used as community name in case of v1 and v2c"""
@@ -126,37 +126,37 @@ class Context(typing.NamedTuple):
 
 class Trap(typing.NamedTuple):
     context: Context
-    cause: typing.Optional[Cause]
+    cause: Cause | None
     """cause is available in case of v1"""
     oid: ObjectIdentifier
     timestamp: int
-    data: typing.List[Data]
+    data: Data | None
 
 
 class Inform(typing.NamedTuple):
     context: Context
-    data: typing.List[Data]
+    data: Data | None
 
 
 class GetDataReq(typing.NamedTuple):
-    names: typing.List[ObjectIdentifier]
+    names: list[ObjectIdentifier]
 
 
 class GetNextDataReq(typing.NamedTuple):
-    names: typing.List[ObjectIdentifier]
+    names: list[ObjectIdentifier]
 
 
 class GetBulkDataReq(typing.NamedTuple):
-    names: typing.List[ObjectIdentifier]
+    names: list[ObjectIdentifier]
 
 
 class SetDataReq(typing.NamedTuple):
-    data: typing.List[Data]
+    data: Data | None
 
 
-Request = typing.Union[GetDataReq,
-                       GetNextDataReq,
-                       GetBulkDataReq,
-                       SetDataReq]
+Request: typing.TypeAlias = (GetDataReq,
+                             GetNextDataReq,
+                             GetBulkDataReq,
+                             SetDataReq)
 
-Response = typing.Union[Error, typing.List[Data]]
+Response: typing.TypeAlias = Error | Data | None

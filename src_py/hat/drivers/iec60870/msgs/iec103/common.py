@@ -1,7 +1,8 @@
+from hat.drivers.iec60870.msgs.common import *  # NOQA
+
 import enum
 import typing
 
-from hat.drivers.iec60870.msgs.common import *  # NOQA
 from hat.drivers.iec60870.msgs.common import Bytes, Time
 
 
@@ -169,7 +170,7 @@ class TextValue(typing.NamedTuple):
 
 
 class BitstringValue(typing.NamedTuple):
-    value: typing.List[bool]
+    value: list[bool]
 
 
 class UIntValue(typing.NamedTuple):
@@ -301,30 +302,30 @@ class IndexValue(typing.NamedTuple):
     value: int
 
 
-Value = typing.Union[NoneValue,
-                     TextValue,
-                     BitstringValue,
-                     UIntValue,
-                     IntValue,
-                     FixedValue,
-                     UFixedValue,
-                     Real32Value,
-                     Real64Value,
-                     DoubleValue,
-                     SingleValue,
-                     ExtendedDoubleValue,
-                     MeasurandValue,
-                     TimeValue,
-                     IdentificationValue,
-                     RelativeTimeValue,
-                     IoAddressValue,
-                     DoubleWithTimeValue,
-                     DoubleWithRelativeTimeValue,
-                     MeasurandWithRelativeTimeValue,
-                     TextNumberValue,
-                     ReplyValue,
-                     ArrayValue,
-                     IndexValue]
+Value = (NoneValue |
+         TextValue |
+         BitstringValue |
+         UIntValue |
+         IntValue |
+         FixedValue |
+         UFixedValue |
+         Real32Value |
+         Real64Value |
+         DoubleValue |
+         SingleValue |
+         ExtendedDoubleValue |
+         MeasurandValue |
+         TimeValue |
+         IdentificationValue |
+         RelativeTimeValue |
+         IoAddressValue |
+         DoubleWithTimeValue |
+         DoubleWithRelativeTimeValue |
+         MeasurandWithRelativeTimeValue |
+         TextNumberValue |
+         ReplyValue |
+         ArrayValue |
+         IndexValue)
 
 
 class DescriptiveData(typing.NamedTuple):
@@ -381,7 +382,7 @@ class IoElement_GENERIC_DATA(typing.NamedTuple):
     """return_identifier in range [0, 255]"""
     counter: bool
     more_follows: bool
-    data: typing.List[typing.Tuple[Identification, DescriptiveData]]
+    data: list[tuple[Identification, DescriptiveData]]
 
 
 class IoElement_GENERIC_IDENTIFICATION(typing.NamedTuple):
@@ -390,7 +391,7 @@ class IoElement_GENERIC_IDENTIFICATION(typing.NamedTuple):
     identification: Identification
     counter: bool
     more_follows: bool
-    data: typing.List[DescriptiveData]
+    data: list[DescriptiveData]
 
 
 class IoElement_GENERAL_COMMAND(typing.NamedTuple):
@@ -402,7 +403,7 @@ class IoElement_GENERAL_COMMAND(typing.NamedTuple):
 class IoElement_GENERIC_COMMAND(typing.NamedTuple):
     return_identifier: int
     """return_identifier in range [0, 255]"""
-    data: typing.List[typing.Tuple[Identification, Description]]
+    data: list[tuple[Identification, Description]]
 
 
 class IoElement_LIST_OF_RECORDED_DISTURBANCES(typing.NamedTuple):
@@ -464,7 +465,7 @@ class IoElement_TRANSMISSION_OF_TAGS(typing.NamedTuple):
     """fault_number in range [0, 65535]"""
     tag_position: int
     """tag_position in range [0, 65535]"""
-    values: typing.List[typing.Tuple[IoAddress, DoubleValue]]
+    values: list[tuple[IoAddress, DoubleValue]]
 
 
 class IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES(typing.NamedTuple):
@@ -473,7 +474,7 @@ class IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES(typing.NamedTuple):
     channel: Channel
     element_number: int
     """element_number in range [0, 65535]"""
-    values: typing.List[float]
+    values: list[float]
     """values are in range [-1.0, 1.0)"""
 
 
@@ -484,37 +485,37 @@ class IoElement_END_OF_TRANSMISSION(typing.NamedTuple):
     channel: Channel
 
 
-IoElement = typing.Union[IoElement_TIME_TAGGED_MESSAGE,
-                         IoElement_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME,
-                         IoElement_MEASURANDS_1,
-                         IoElement_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME,
-                         IoElement_IDENTIFICATION,
-                         IoElement_TIME_SYNCHRONIZATION,
-                         IoElement_GENERAL_INTERROGATION,
-                         IoElement_GENERAL_INTERROGATION_TERMINATION,
-                         IoElement_MEASURANDS_2,
-                         IoElement_GENERIC_DATA,
-                         IoElement_GENERIC_IDENTIFICATION,
-                         IoElement_GENERAL_COMMAND,
-                         IoElement_GENERIC_COMMAND,
-                         IoElement_LIST_OF_RECORDED_DISTURBANCES,
-                         IoElement_ORDER_FOR_DISTURBANCE_DATA_TRANSMISSION,
-                         IoElement_ACKNOWLEDGEMENT_FOR_DISTURBANCE_DATA_TRANSMISSION,  # NOQA
-                         IoElement_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA,
-                         IoElement_READY_FOR_TRANSMISSION_OF_A_CHANNEL,
-                         IoElement_READY_FOR_TRANSMISSION_OF_TAGS,
-                         IoElement_TRANSMISSION_OF_TAGS,
-                         IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES,
-                         IoElement_END_OF_TRANSMISSION]
+IoElement = (IoElement_TIME_TAGGED_MESSAGE |
+             IoElement_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME |
+             IoElement_MEASURANDS_1 |
+             IoElement_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME |
+             IoElement_IDENTIFICATION |
+             IoElement_TIME_SYNCHRONIZATION |
+             IoElement_GENERAL_INTERROGATION |
+             IoElement_GENERAL_INTERROGATION_TERMINATION |
+             IoElement_MEASURANDS_2 |
+             IoElement_GENERIC_DATA |
+             IoElement_GENERIC_IDENTIFICATION |
+             IoElement_GENERAL_COMMAND |
+             IoElement_GENERIC_COMMAND |
+             IoElement_LIST_OF_RECORDED_DISTURBANCES |
+             IoElement_ORDER_FOR_DISTURBANCE_DATA_TRANSMISSION |
+             IoElement_ACKNOWLEDGEMENT_FOR_DISTURBANCE_DATA_TRANSMISSION |
+             IoElement_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA |
+             IoElement_READY_FOR_TRANSMISSION_OF_A_CHANNEL |
+             IoElement_READY_FOR_TRANSMISSION_OF_TAGS |
+             IoElement_TRANSMISSION_OF_TAGS |
+             IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES |
+             IoElement_END_OF_TRANSMISSION)
 
 
 class IO(typing.NamedTuple):
     address: IoAddress
-    elements: typing.List[IoElement]
+    elements: list[IoElement]
 
 
 class ASDU(typing.NamedTuple):
     type: AsduType
-    cause: typing.Union[Cause, OtherCause]
+    cause: Cause | OtherCause
     address: AsduAddress
-    ios: typing.List[IO]
+    ios: list[IO]

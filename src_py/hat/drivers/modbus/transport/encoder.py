@@ -1,6 +1,5 @@
 import itertools
 import struct
-import typing
 
 from hat.drivers.modbus.transport import common
 
@@ -30,7 +29,7 @@ def get_next_adu_size(modbus_type: common.ModbusType,
 def decode_adu(modbus_type: common.ModbusType,
                direction: common.Direction,
                data: common.Bytes
-               ) -> typing.Tuple[common.Adu, common.Bytes]:
+               ) -> tuple[common.Adu, common.Bytes]:
     if modbus_type == common.ModbusType.TCP:
         return _decode_tcp_adu(direction, data)
 

@@ -13,10 +13,10 @@ from hat.drivers.pnetgateway import transport
 mlog = logging.getLogger(__name__)
 
 
-StatusCb = aio.AsyncCallable[[common.Status], None]
+StatusCb: typing.TypeAlias = aio.AsyncCallable[[common.Status], None]
 """Status change callback"""
 
-DataCb = aio.AsyncCallable[[typing.List[common.Data]], None]
+DataCb: typing.TypeAlias = aio.AsyncCallable[[list[common.Data]], None]
 """Data change callback"""
 
 
@@ -25,7 +25,7 @@ async def connect(addr: tcp.Address,
                   password: str,
                   status_cb: StatusCb,
                   data_cb: DataCb,
-                  subscriptions: typing.Optional[typing.List[str]] = None,
+                  subscriptions: list[str] | None = None,
                   ) -> 'Connection':
     """Connect to PNET Gateway server
 
@@ -96,13 +96,13 @@ class Connection(aio.Resource):
         return self._pnet_status
 
     @property
-    def data(self) -> typing.Dict[str, common.Data]:
+    def data(self) -> dict[str, common.Data]:
         """Subscribed data"""
         return self._data
 
     async def change_data(self,
                           changes: typing.Iterable[common.Change]
-                          ) -> typing.List[bool]:
+                          ) -> list[bool]:
         """Send change data request to PNET Gateway server"""
         return await self._send_with_response(
             'change_data_request',
@@ -110,7 +110,7 @@ class Connection(aio.Resource):
 
     async def send_commands(self,
                             commands: typing.Iterable[common.Command]
-                            ) -> typing.List[bool]:
+                            ) -> list[bool]:
         """Send commands to PNET Gateway"""
         return await self._send_with_response(
             'command_request',

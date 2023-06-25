@@ -15,39 +15,40 @@ from hat.drivers.mms import encoder
 mlog = logging.getLogger(__name__)
 
 
-Address = acse.Address
+Address: typing.TypeAlias = acse.Address
 """Address"""
 
 
-IdentifiedEntity = acse.IdentifiedEntity
+IdentifiedEntity: typing.TypeAlias = acse.IdentifiedEntity
 """Identified entity"""
 
 
-ConnectionInfo = acse.ConnectionInfo
+ConnectionInfo: typing.TypeAlias = acse.ConnectionInfo
 """Connection info"""
 
 
-RequestCb = aio.AsyncCallable[['Connection', common.Request], common.Response]
+RequestCb: typing.TypeAlias = aio.AsyncCallable[['Connection', common.Request],
+                                                common.Response]
 """Request callback"""
 
 
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
 async def connect(request_cb: RequestCb,
                   addr: Address,
-                  local_tsel: typing.Optional[int] = None,
-                  remote_tsel: typing.Optional[int] = None,
-                  local_ssel: typing.Optional[int] = None,
-                  remote_ssel: typing.Optional[int] = None,
-                  local_psel: typing.Optional[int] = None,
-                  remote_psel: typing.Optional[int] = None,
-                  local_ap_title: typing.Optional[asn1.ObjectIdentifier] = None,  # NOQA
-                  remote_ap_title: typing.Optional[asn1.ObjectIdentifier] = None,  # NOQA
-                  local_ae_qualifier: typing.Optional[int] = None,
-                  remote_ae_qualifier: typing.Optional[int] = None,
-                  user_data: typing.Optional[IdentifiedEntity] = None
+                  local_tsel: int | None = None,
+                  remote_tsel: int | None = None,
+                  local_ssel: int | None = None,
+                  remote_ssel: int | None = None,
+                  local_psel: int | None = None,
+                  remote_psel: int | None = None,
+                  local_ap_title: asn1.ObjectIdentifier | None = None,
+                  remote_ap_title: asn1.ObjectIdentifier | None = None,
+                  local_ae_qualifier: int | None = None,
+                  remote_ae_qualifier: int | None = None,
+                  user_data: IdentifiedEntity | None = None
                   ) -> 'Connection':
     """Connect to ACSE server"""
     initiate_req = 'initiate-RequestPDU', {
@@ -167,7 +168,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._acse_server.addresses
 
@@ -356,7 +357,8 @@ _service_support[83] = True  # conclude
 _mms_syntax_name = (1, 0, 9506, 2, 1)
 # (iso, standard, iso9506, part, mms-annex-version1)
 _mms_app_context_name = (1, 0, 9506, 2, 3)
-with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
     _encoder = asn1.Encoder(asn1.Encoding.BER,
                             asn1.Repository.from_json(_path))
 

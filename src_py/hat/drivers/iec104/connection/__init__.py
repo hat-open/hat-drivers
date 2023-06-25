@@ -1,5 +1,3 @@
-import typing
-
 from hat import aio
 
 from hat.drivers import ssl
@@ -19,9 +17,9 @@ async def connect(addr: tcp.Address,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
                   receive_window_size: int = 8,
-                  ssl_ctx: typing.Optional[ssl.SSLContext] = None,
-                  update_key: typing.Optional[common.Bytes] = None,
-                  critical_functions: typing.Set[common.Function] = secure.default_critical_functions  # NOQA
+                  ssl_ctx: ssl.SSLContext | None = None,
+                  update_key: common.Bytes | None = None,
+                  critical_functions: set[common.Function] = secure.default_critical_functions  # NOQA
                   ) -> common.Connection:
     apci_conn = await apci.connect(addr=addr,
                                    response_timeout=response_timeout,
@@ -45,9 +43,9 @@ async def listen(connection_cb: ConnectionCb,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
-                 ssl_ctx: typing.Optional[ssl.SSLContext] = None,
-                 update_key: typing.Optional[common.Bytes] = None,
-                 critical_functions: typing.Set[common.Function] = secure.default_critical_functions  # NOQA
+                 ssl_ctx: ssl.SSLContext | None = None,
+                 update_key: common.Bytes | None = None,
+                 critical_functions: set[common.Function] = secure.default_critical_functions  # NOQA
                  ) -> 'Server':
     server = Server()
     server._connection_cb = connection_cb

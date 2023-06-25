@@ -3,7 +3,6 @@ from ssl import *  # NOQA
 import enum
 import pathlib
 import ssl
-import typing
 
 try:
     from hat.drivers.ssl import _ssl
@@ -24,10 +23,10 @@ class KeyUpdateType(enum.Enum):
 
 def create_ssl_ctx(protocol: SslProtocol,
                    verify_cert: bool = False,
-                   cert_path: typing.Optional[pathlib.PurePath] = None,
-                   key_path: typing.Optional[pathlib.PurePath] = None,
-                   ca_path: typing.Optional[pathlib.PurePath] = None,
-                   password: typing.Optional[str] = None
+                   cert_path: pathlib.PurePath | None = None,
+                   key_path: pathlib.PurePath | None = None,
+                   ca_path: pathlib.PurePath | None = None,
+                   password: str | None = None
                    ) -> ssl.SSLContext:
     ctx = ssl.SSLContext(protocol.value)
     ctx.check_hostname = False

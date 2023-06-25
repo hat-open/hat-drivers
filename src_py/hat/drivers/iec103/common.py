@@ -81,23 +81,23 @@ class MeasurandType(enum.Enum):
 
 
 class MeasurandValues(typing.NamedTuple):
-    values: typing.Dict[MeasurandType, MeasurandValue]
+    values: dict[MeasurandType, MeasurandValue]
 
 
 class Data(typing.NamedTuple):
     asdu_address: AsduAddress
     io_address: IoAddress
-    cause: typing.Union[DataCause, OtherCause]
-    value: typing.Union[DoubleWithTimeValue,
-                        DoubleWithRelativeTimeValue,
-                        MeasurandValues,
-                        MeasurandWithRelativeTimeValue]
+    cause: DataCause | OtherCause
+    value: (DoubleWithTimeValue |
+            DoubleWithRelativeTimeValue |
+            MeasurandValues |
+            MeasurandWithRelativeTimeValue)
 
 
 class GenericData(typing.NamedTuple):
     asdu_address: AsduAddress
     io_address: IoAddress
-    cause: typing.Union[GenericDataCause, OtherCause]
+    cause: GenericDataCause | OtherCause
     identification: Identification
     description: Description
     value: ArrayValue

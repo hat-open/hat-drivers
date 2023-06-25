@@ -4,7 +4,6 @@ import logging
 import typing
 
 from hat import aio
-from hat import util
 from hat.drivers import udp
 
 
@@ -19,9 +18,8 @@ class DeviceInfo(typing.NamedTuple):
     service: str
 
 
-DeviceInfoCb = aio.AsyncCallable[[DeviceInfo], None]
+DeviceInfoCb: typing.TypeAlias = aio.AsyncCallable[[DeviceInfo], None]
 """Device info callback"""
-util.register_type_alias('DeviceInfoCb')
 
 
 default_multicast_addr = udp.Address('239.255.255.250', 1900)

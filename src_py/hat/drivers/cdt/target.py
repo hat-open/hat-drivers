@@ -15,8 +15,7 @@ class TargetInfo(typing.NamedTuple):
     attached: bool
 
 
-async def getTargetInfos(conn: Connection
-                         ) -> typing.List[TargetInfo]:
+async def getTargetInfos(conn: Connection) -> list[TargetInfo]:
     res = await conn.call('Target.getTargets')
     return [TargetInfo(target_id=i['targetId'],
                        type=i['type'],
@@ -28,8 +27,8 @@ async def getTargetInfos(conn: Connection
 
 async def createTarget(conn: Connection,
                        url: str = '',
-                       width: typing.Optional[int] = None,
-                       height: typing.Optional[int] = None,
+                       width: int | None = None,
+                       height: int | None = None,
                        new_window: bool = False,
                        background: bool = False
                        ) -> 'Target':

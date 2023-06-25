@@ -123,7 +123,7 @@ class CauseType(enum.Enum):
 
 
 class Cause(typing.NamedTuple):
-    type: typing.Union[CauseType, OtherCauseType]
+    type: CauseType | OtherCauseType
     is_negative_confirm: bool
     is_test: bool
     originator_address: OriginatorAddress
@@ -167,10 +167,10 @@ class ProtectionQuality(typing.NamedTuple):
     time_invalid: bool
 
 
-Quality = typing.Union[IndicationQuality,
-                       MeasurementQuality,
-                       CounterQuality,
-                       ProtectionQuality]
+Quality = (IndicationQuality |
+           MeasurementQuality |
+           CounterQuality |
+           ProtectionQuality)
 
 
 class FreezeCode(enum.Enum):
@@ -255,9 +255,9 @@ class ProtectionCommandValue(typing.NamedTuple):
 
 
 class StatusValue(typing.NamedTuple):
-    value: typing.List[bool]
+    value: list[bool]
     """value length is 16"""
-    change: typing.List[bool]
+    change: list[bool]
     """change length is 16"""
 
 
@@ -601,74 +601,74 @@ class IoElement_F_DR_TA(typing.NamedTuple):
     creation_time: Time
 
 
-IoElement = typing.Union[IoElement_M_SP_NA,
-                         IoElement_M_SP_TA,
-                         IoElement_M_DP_NA,
-                         IoElement_M_DP_TA,
-                         IoElement_M_ST_NA,
-                         IoElement_M_ST_TA,
-                         IoElement_M_BO_NA,
-                         IoElement_M_BO_TA,
-                         IoElement_M_ME_NA,
-                         IoElement_M_ME_TA,
-                         IoElement_M_ME_NB,
-                         IoElement_M_ME_TB,
-                         IoElement_M_ME_NC,
-                         IoElement_M_ME_TC,
-                         IoElement_M_IT_NA,
-                         IoElement_M_IT_TA,
-                         IoElement_M_EP_TA,
-                         IoElement_M_EP_TB,
-                         IoElement_M_EP_TC,
-                         IoElement_M_PS_NA,
-                         IoElement_M_ME_ND,
-                         IoElement_M_SP_TB,
-                         IoElement_M_DP_TB,
-                         IoElement_M_ST_TB,
-                         IoElement_M_BO_TB,
-                         IoElement_M_ME_TD,
-                         IoElement_M_ME_TE,
-                         IoElement_M_ME_TF,
-                         IoElement_M_IT_TB,
-                         IoElement_M_EP_TD,
-                         IoElement_M_EP_TE,
-                         IoElement_M_EP_TF,
-                         IoElement_C_SC_NA,
-                         IoElement_C_DC_NA,
-                         IoElement_C_RC_NA,
-                         IoElement_C_SE_NA,
-                         IoElement_C_SE_NB,
-                         IoElement_C_SE_NC,
-                         IoElement_C_BO_NA,
-                         IoElement_M_EI_NA,
-                         IoElement_C_IC_NA,
-                         IoElement_C_CI_NA,
-                         IoElement_C_RD_NA,
-                         IoElement_C_CS_NA,
-                         IoElement_C_TS_NA,
-                         IoElement_C_RP_NA,
-                         IoElement_C_CD_NA,
-                         IoElement_P_ME_NA,
-                         IoElement_P_ME_NB,
-                         IoElement_P_ME_NC,
-                         IoElement_P_AC_NA,
-                         IoElement_F_FR_NA,
-                         IoElement_F_SR_NA,
-                         IoElement_F_SC_NA,
-                         IoElement_F_LS_NA,
-                         IoElement_F_AF_NA,
-                         IoElement_F_SG_NA,
-                         IoElement_F_DR_TA]
+IoElement = (IoElement_M_SP_NA |
+             IoElement_M_SP_TA |
+             IoElement_M_DP_NA |
+             IoElement_M_DP_TA |
+             IoElement_M_ST_NA |
+             IoElement_M_ST_TA |
+             IoElement_M_BO_NA |
+             IoElement_M_BO_TA |
+             IoElement_M_ME_NA |
+             IoElement_M_ME_TA |
+             IoElement_M_ME_NB |
+             IoElement_M_ME_TB |
+             IoElement_M_ME_NC |
+             IoElement_M_ME_TC |
+             IoElement_M_IT_NA |
+             IoElement_M_IT_TA |
+             IoElement_M_EP_TA |
+             IoElement_M_EP_TB |
+             IoElement_M_EP_TC |
+             IoElement_M_PS_NA |
+             IoElement_M_ME_ND |
+             IoElement_M_SP_TB |
+             IoElement_M_DP_TB |
+             IoElement_M_ST_TB |
+             IoElement_M_BO_TB |
+             IoElement_M_ME_TD |
+             IoElement_M_ME_TE |
+             IoElement_M_ME_TF |
+             IoElement_M_IT_TB |
+             IoElement_M_EP_TD |
+             IoElement_M_EP_TE |
+             IoElement_M_EP_TF |
+             IoElement_C_SC_NA |
+             IoElement_C_DC_NA |
+             IoElement_C_RC_NA |
+             IoElement_C_SE_NA |
+             IoElement_C_SE_NB |
+             IoElement_C_SE_NC |
+             IoElement_C_BO_NA |
+             IoElement_M_EI_NA |
+             IoElement_C_IC_NA |
+             IoElement_C_CI_NA |
+             IoElement_C_RD_NA |
+             IoElement_C_CS_NA |
+             IoElement_C_TS_NA |
+             IoElement_C_RP_NA |
+             IoElement_C_CD_NA |
+             IoElement_P_ME_NA |
+             IoElement_P_ME_NB |
+             IoElement_P_ME_NC |
+             IoElement_P_AC_NA |
+             IoElement_F_FR_NA |
+             IoElement_F_SR_NA |
+             IoElement_F_SC_NA |
+             IoElement_F_LS_NA |
+             IoElement_F_AF_NA |
+             IoElement_F_SG_NA |
+             IoElement_F_DR_TA)
 
 
 class IO(typing.NamedTuple):
     address: IoAddress
-    elements: typing.List[IoElement]
-    time: typing.Optional[Time]
+    elements: list[IoElement]
+    time: Time | None
 
 
 class ASDU(typing.NamedTuple):
     type: AsduType
     cause: Cause
     address: AsduAddress
-    ios: typing.List[IO]
+    ios: list[IO]

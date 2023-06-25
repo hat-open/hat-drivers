@@ -16,7 +16,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_slave(port: str,
                        addrs: typing.Iterable[common.Address],
-                       connection_cb: typing.Optional[ConnectionCb] = None,
+                       connection_cb: ConnectionCb | None = None,
                        baudrate: int = 9600,
                        bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
                        parity: serial.Parity = serial.Parity.NONE,

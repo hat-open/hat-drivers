@@ -18,9 +18,9 @@ Address = tpkt.Address
 
 class ConnectionInfo(typing.NamedTuple):
     local_addr: Address
-    local_tsel: typing.Optional[int]
+    local_tsel: int | None
     remote_addr: Address
-    remote_tsel: typing.Optional[int]
+    remote_tsel: int | None
 
 
 ConnectionCb = aio.AsyncCallable[['Connection'], None]
@@ -28,8 +28,8 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 
 
 async def connect(addr: Address,
-                  local_tsel: typing.Optional[int] = None,
-                  remote_tsel: typing.Optional[int] = None
+                  local_tsel: int | None = None,
+                  remote_tsel: int | None = None
                   ) -> 'Connection':
     """Create new COTP connection"""
     tpkt_conn = await tpkt.connect(addr)
@@ -97,7 +97,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._tpkt_server.addresses
 
@@ -236,9 +236,9 @@ class _CR(typing.NamedTuple):
     """connection reference selectet by initiator of connection request"""
     cls: int
     """transport protocol class"""
-    calling_tsel: typing.Optional[int]
+    calling_tsel: int | None
     """calling transport selector"""
-    called_tsel: typing.Optional[int]
+    called_tsel: int | None
     """responding transport selector"""
     max_tpdu: int
     """max tpdu size in octets"""
@@ -254,9 +254,9 @@ class _CC(typing.NamedTuple):
     """connection reference selected by initiator of connection confirm"""
     cls: int
     """transport protocol class"""
-    calling_tsel: typing.Optional[int]
+    calling_tsel: int | None
     """calling transport selector"""
-    called_tsel: typing.Optional[int]
+    called_tsel: int | None
     """responding transport selector"""
     max_tpdu: int
     """max tpdu size in octets"""

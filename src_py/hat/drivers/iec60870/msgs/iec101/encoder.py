@@ -43,7 +43,7 @@ class Encoder:
 
     def decode_asdu(self,
                     asdu_bytes: common.Bytes
-                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+                    ) -> tuple[common.ASDU, common.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
@@ -140,15 +140,13 @@ def encode_cause(cause: common.Cause,
 
 
 def decode_cause_type(value: int
-                      ) -> typing.Union[common.CauseType,
-                                        common.OtherCauseType]:
+                      ) -> common.CauseType | common.OtherCauseType:
     with contextlib.suppress(ValueError):
         return common.CauseType(value)
     return value
 
 
-def encode_cause_type(cause_type: typing.Union[common.CauseType,
-                                               common.OtherCauseType]
+def encode_cause_type(cause_type: common.CauseType | common.OtherCauseType
                       ) -> int:
     return (cause_type.value if isinstance(cause_type, common.CauseType)
             else cause_type)
@@ -156,7 +154,7 @@ def encode_cause_type(cause_type: typing.Union[common.CauseType,
 
 def decode_io_element(io_bytes: common.Bytes,
                       asdu_type: int
-                      ) -> typing.Tuple[common.IoElement, common.Bytes]:
+                      ) -> tuple[common.IoElement, common.Bytes]:
     asdu_type = common.AsduType(asdu_type)
 
     if asdu_type == common.AsduType.M_SP_NA:
@@ -962,7 +960,7 @@ def encode_io_element(element: common.IoElement,
 
 def decode_quality(io_bytes: common.Bytes,
                    quality_type: common.QualityType
-                   ) -> typing.Tuple[common.Quality, common.Bytes]:
+                   ) -> tuple[common.Quality, common.Bytes]:
     if quality_type == common.QualityType.INDICATION:
         invalid = bool(io_bytes[0] & 0x80)
         not_topical = bool(io_bytes[0] & 0x40)
@@ -1046,8 +1044,8 @@ def encode_quality(quality: common.Quality
 
 
 def decode_step_position_value(io_bytes: common.Bytes
-                               ) -> typing.Tuple[common.StepPositionValue,
-                                                 common.Bytes]:
+                               ) -> tuple[common.StepPositionValue,
+                                          common.Bytes]:
     value = (((-1 << 7) if io_bytes[0] & 0x40 else 0) |
              (io_bytes[0] & 0x7F))
     transient = bool(io_bytes[0] & 0x80)
@@ -1063,8 +1061,7 @@ def encode_step_position_value(value: common.StepPositionValue
 
 
 def decode_bitstring_value(io_bytes: common.Bytes
-                           ) -> typing.Tuple[common.BitstringValue,
-                                             common.Bytes]:
+                           ) -> tuple[common.BitstringValue, common.Bytes]:
     value = io_bytes[:4]
     bitstring_value = common.BitstringValue(value)
     return bitstring_value, io_bytes[4:]
@@ -1079,8 +1076,7 @@ def encode_bitstring_value(value: common.BitstringValue
 
 
 def decode_normalized_value(io_bytes: common.Bytes
-                            ) -> typing.Tuple[common.NormalizedValue,
-                                              common.Bytes]:
+                            ) -> tuple[common.NormalizedValue, common.Bytes]:
     value = struct.unpack('<h', io_bytes[:2])[0] / 0x7fff
     normalized_value = common.NormalizedValue(value)
     return normalized_value, io_bytes[2:]
@@ -1092,7 +1088,7 @@ def encode_normalized_value(value: common.NormalizedValue
 
 
 def decode_scaled_value(io_bytes: common.Bytes
-                        ) -> typing.Tuple[common.ScaledValue, common.Bytes]:
+                        ) -> tuple[common.ScaledValue, common.Bytes]:
     value = struct.unpack('<h', io_bytes[:2])[0]
     scaled_value = common.ScaledValue(value)
     return scaled_value, io_bytes[2:]
@@ -1104,8 +1100,7 @@ def encode_scaled_value(value: common.ScaledValue
 
 
 def decode_floating_value(io_bytes: common.Bytes
-                          ) -> typing.Tuple[common.FloatingValue,
-                                            common.Bytes]:
+                          ) -> tuple[common.FloatingValue, common.Bytes]:
     value = struct.unpack('<f', io_bytes[:4])[0]
     floating_value = common.FloatingValue(value)
     return floating_value, io_bytes[4:]
@@ -1117,8 +1112,8 @@ def encode_floating_value(value: common.FloatingValue
 
 
 def decode_binary_counter_value(io_bytes: common.Bytes
-                                ) -> typing.Tuple[common.BinaryCounterValue,
-                                                  common.Bytes]:
+                                ) -> tuple[common.BinaryCounterValue,
+                                           common.Bytes]:
     value = struct.unpack('<i', io_bytes[:4])[0]
     binary_counter_value = common.BinaryCounterValue(value)
     return binary_counter_value, io_bytes[4:]
@@ -1130,8 +1125,8 @@ def encode_binary_counter_value(value: common.BinaryCounterValue
 
 
 def decode_protection_start_value(io_bytes: common.Bytes
-                                  ) -> typing.Tuple[common.ProtectionStartValue,  # NOQA
-                                                    common.Bytes]:
+                                  ) -> tuple[common.ProtectionStartValue,
+                                             common.Bytes]:
     general = bool(io_bytes[0] & 0x01)
     l1 = bool(io_bytes[0] & 0x02)
     l2 = bool(io_bytes[0] & 0x04)
@@ -1158,8 +1153,8 @@ def encode_protection_start_value(value: common.ProtectionStartValue
 
 
 def decode_protection_command_value(io_bytes: common.Bytes
-                                    ) -> typing.Tuple[common.ProtectionCommandValue,  # NOQA
-                                                      common.Bytes]:
+                                    ) -> tuple[common.ProtectionCommandValue,
+                                               common.Bytes]:
     general = bool(io_bytes[0] & 0x01)
     l1 = bool(io_bytes[0] & 0x02)
     l2 = bool(io_bytes[0] & 0x04)
@@ -1180,8 +1175,7 @@ def encode_protection_command_value(value: common.ProtectionCommandValue
 
 
 def decode_status_value(io_bytes: common.Bytes
-                        ) -> typing.Tuple[common.StatusValue,
-                                          common.Bytes]:
+                        ) -> tuple[common.StatusValue, common.Bytes]:
     value = [bool(io_bytes[i // 8] & (1 << (i % 8)))
              for i in range(16)]
     change = [bool(io_bytes[2 + i // 8] & (1 << (i % 8)))

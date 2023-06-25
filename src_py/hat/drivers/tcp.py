@@ -14,7 +14,7 @@ from hat.drivers import ssl
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+Bytes: typing.TypeAlias = bytes | bytearray | memoryview
 
 
 class Address(typing.NamedTuple):
@@ -98,7 +98,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._addresses
 
@@ -148,7 +148,7 @@ class Connection(aio.Resource):
         return self._protocol.info
 
     @property
-    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
+    def ssl_object(self) -> ssl.SSLObject | ssl.SSLSocket | None:
         """SSL Object"""
         return self._protocol.ssl_object
 
@@ -194,7 +194,7 @@ class Protocol(asyncio.Protocol):
     """Asyncio protocol implementation"""
 
     def __init__(self,
-                 on_connected: typing.Optional[typing.Callable[['Protocol'], None]] = None):  # NOQA
+                 on_connected: typing.Callable[['Protocol'], None] | None = None):  # NOQA
         self._on_connected = on_connected
         self._loop = asyncio.get_running_loop()
         self._input_buffer = InputBuffer()
@@ -211,7 +211,7 @@ class Protocol(asyncio.Protocol):
         return self._info
 
     @property
-    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
+    def ssl_object(self) -> ssl.SSLObject | ssl.SSLSocket | None:
         return self._ssl_object
 
     def connection_made(self, transport: asyncio.Transport):
@@ -234,7 +234,7 @@ class Protocol(asyncio.Protocol):
             transport.abort()
             return
 
-    def connection_lost(self, exc: typing.Optional[Exception]):
+    def connection_lost(self, exc: Exception | None):
         self._transport = None
         self._write_queue = None
         drain_futures, self._drain_futures = self._drain_futures, None

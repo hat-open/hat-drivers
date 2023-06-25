@@ -61,7 +61,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._addresses
 

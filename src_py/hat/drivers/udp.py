@@ -13,11 +13,11 @@ class Address(typing.NamedTuple):
 
 class EndpointInfo(typing.NamedTuple):
     local_addr: Address
-    remote_addr: typing.Optional[Address]
+    remote_addr: Address | None
 
 
-async def create(local_addr: typing.Optional[Address] = None,
-                 remote_addr: typing.Optional[Address] = None,
+async def create(local_addr: Address | None = None,
+                 remote_addr: Address | None = None,
                  queue_size: int = 0,
                  **kwargs
                  ) -> 'Endpoint':
@@ -82,7 +82,7 @@ class Endpoint(aio.Resource):
 
     def send(self,
              data: bytes,
-             remote_addr: typing.Optional[Address] = None):
+             remote_addr: Address | None = None):
         """Send datagram
 
         If `remote_addr` is not set, `remote_addr` passed to :func:`create`
@@ -91,7 +91,7 @@ class Endpoint(aio.Resource):
         """
         self._transport.sendto(data, remote_addr or self._remote_addr)
 
-    async def receive(self) -> typing.Tuple[bytes, Address]:
+    async def receive(self) -> tuple[bytes, Address]:
         """Receive datagram"""
         data, addr = await self._queue.get()
         return data, addr

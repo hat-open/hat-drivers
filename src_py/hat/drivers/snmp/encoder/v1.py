@@ -17,18 +17,18 @@ class MsgType(enum.Enum):
 class BasicPdu(typing.NamedTuple):
     request_id: int
     error: common.Error
-    data: typing.List[common.Data]
+    data: list[common.Data]
 
 
 class TrapPdu(typing.NamedTuple):
     enterprise: common.ObjectIdentifier
-    addr: typing.Tuple[int, int, int, int]
+    addr: tuple[int, int, int, int]
     cause: common.Cause
     timestamp: int
-    data: typing.List[common.Data]
+    data: list[common.Data]
 
 
-Pdu = typing.Union[BasicPdu, TrapPdu]
+Pdu: typing.TypeAlias = BasicPdu | TrapPdu
 
 
 class Msg(typing.NamedTuple):

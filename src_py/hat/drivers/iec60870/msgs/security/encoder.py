@@ -14,21 +14,19 @@ from hat.drivers.iec60870.msgs.security import common
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-ASDU = typing.Union[common.ASDU,
-                    iec101.common.ASDU,
-                    iec104.common.ASDU]
+ASDU: typing.TypeAlias = common.ASDU | iec101.common.ASDU | iec104.common.ASDU
 
 
 class Encoder:
 
-    def __init__(self, encoder: typing.Union[iec101.encoder.Encoder,
-                                             iec104.encoder.Encoder]):
+    def __init__(self, encoder: (iec101.encoder.Encoder |
+                                 iec104.encoder.Encoder)):
         self._encoder = encoder
         self._buffer = None
 
     def decode_asdu(self,
                     asdu_bytes: common.Bytes
-                    ) -> typing.Tuple[typing.Optional[ASDU], common.Bytes]:
+                    ) -> tuple[ASDU | None, common.Bytes]:
         asdu_type = asdu_bytes[0]
         with contextlib.suppress(ValueError):
             asdu_type = common.AsduType(asdu_type)
@@ -42,7 +40,7 @@ class Encoder:
 
         return self._encoder.decode_asdu(asdu_bytes)
 
-    def encode_asdu(self, asdu: ASDU) -> typing.List[common.Bytes]:
+    def encode_asdu(self, asdu: ASDU) -> list[common.Bytes]:
         if isinstance(asdu, common.ASDU):
             return list(self._encode_asdu(asdu))
 

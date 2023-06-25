@@ -25,10 +25,10 @@ class BulkPdu(typing.NamedTuple):
     request_id: int
     non_repeaters: int
     max_repetitions: int
-    data: typing.List[common.Data]
+    data: list[common.Data]
 
 
-Pdu = typing.Union[BasicPdu, BulkPdu]
+Pdu: typing.TypeAlias = BasicPdu | BulkPdu
 
 
 class Msg(typing.NamedTuple):

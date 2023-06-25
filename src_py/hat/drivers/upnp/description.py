@@ -17,18 +17,18 @@ class Icon(typing.NamedTuple):
 
 
 class DeviceDescription(typing.NamedTuple):
-    url: typing.Optional[str]
+    url: str | None
     dev_type: str
     dev_name: str
     manufacturer: str
-    manufacturer_url: typing.Optional[str]
-    model_desc: typing.Optional[str]
+    manufacturer_url: str | None
+    model_desc: str | None
     model_name: str
-    model_number: typing.Optional[str]
-    model_url: typing.Optional[str]
-    serial_number: typing.Optional[str]
+    model_number: str | None
+    model_url: str | None
+    serial_number: str | None
     unique_dev_name: str
-    icons: typing.List[Icon]
+    icons: list[Icon]
 
 
 async def get_description(location: str) -> DeviceDescription:

@@ -13,15 +13,15 @@ from hat.drivers.modbus import transport
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
-SlaveCb = aio.AsyncCallable[['Slave'], None]
+SlaveCb: typing.TypeAlias = aio.AsyncCallable[['Slave'], None]
 """Slave callback"""
 
-ReadCb = aio.AsyncCallable[['Slave',
-                            int,
-                            common.DataType,
-                            int,
-                            typing.Optional[int]
-                            ], typing.Union[typing.List[int], common.Error]]
+ReadCb: typing.TypeAlias = aio.AsyncCallable[['Slave',
+                                              int,
+                                              common.DataType,
+                                              int,
+                                              int | None
+                                              ], list[int] | common.Error]
 """Read callback
 
 Args:
@@ -36,12 +36,12 @@ Returns:
 
 """
 
-WriteCb = aio.AsyncCallable[['Slave',
-                             int,
-                             common.DataType,
-                             int,
-                             typing.List[int]
-                             ], typing.Optional[common.Error]]
+WriteCb: typing.TypeAlias = aio.AsyncCallable[['Slave',
+                                               int,
+                                               common.DataType,
+                                               int,
+                                               list[int]
+                                               ], common.Error | None]
 """Write callback
 
 Args:
@@ -56,12 +56,12 @@ Returns:
 
 """
 
-WriteMaskCb = aio.AsyncCallable[['Slave',
-                                 int,
-                                 int,
-                                 int,
-                                 int
-                                 ], typing.Optional[common.Error]]
+WriteMaskCb: typing.TypeAlias = aio.AsyncCallable[['Slave',
+                                                   int,
+                                                   int,
+                                                   int,
+                                                   int
+                                                   ], common.Error | None]
 """Write mask callback
 
 Args:

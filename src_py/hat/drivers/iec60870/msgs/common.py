@@ -4,7 +4,7 @@ import time
 import typing
 
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+Bytes: typing.TypeAlias = bytes | bytearray | memoryview
 
 
 class CauseSize(enum.Enum):
@@ -34,35 +34,35 @@ class Time(typing.NamedTuple):
     size: TimeSize
     milliseconds: int
     """milliseconds in range [0, 59999]"""
-    invalid: typing.Optional[bool]
+    invalid: bool | None
     """available for size THREE, FOUR, SEVEN"""
-    minutes: typing.Optional[int]
+    minutes: int | None
     """available for size THREE, FOUR, SEVEN (minutes in range [0, 59])"""
-    summer_time: typing.Optional[bool]
+    summer_time: bool | None
     """available for size FOUR, SEVEN"""
-    hours: typing.Optional[int]
+    hours: int | None
     """available for size FOUR, SEVEN (hours in range [0, 23])"""
-    day_of_week: typing.Optional[int]
+    day_of_week: int | None
     """available for size SEVEN (day_of_week in range [1, 7])"""
-    day_of_month: typing.Optional[int]
+    day_of_month: int | None
     """available for size SEVEN (day_of_month in range [1, 31])"""
-    months: typing.Optional[int]
+    months: int | None
     """available for size SEVEN (months in range [1, 12])"""
-    years: typing.Optional[int]
+    years: int | None
     """available for size SEVEN (years in range [0, 99])"""
 
 
 class IO(typing.NamedTuple):
     address: int
-    elements: typing.List
-    time: typing.Optional[Time]
+    elements: list
+    time: Time | None
 
 
 class ASDU(typing.NamedTuple):
     type: int
     cause: int
     address: int
-    ios: typing.List[IO]
+    ios: list[IO]
 
 
 def time_from_datetime(dt: datetime.datetime,

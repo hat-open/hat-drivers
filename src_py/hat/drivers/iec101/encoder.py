@@ -18,7 +18,7 @@ class Encoder:
             io_address_size=io_address_size)
 
     def encode(self,
-               msgs: typing.List[common.Msg]
+               msgs: list[common.Msg]
                ) -> typing.Iterable[common.Bytes]:
         for asdu in _encode_msgs(msgs):
             yield self._encoder.encode_asdu(asdu)

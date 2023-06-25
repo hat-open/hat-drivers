@@ -26,20 +26,20 @@ SyntaxNames = copp.SyntaxNames
 
 class ConnectionInfo(typing.NamedTuple):
     local_addr: Address
-    local_tsel: typing.Optional[int]
-    local_ssel: typing.Optional[int]
-    local_psel: typing.Optional[int]
-    local_ap_title: typing.Optional[asn1.ObjectIdentifier]
-    local_ae_qualifier: typing.Optional[int]
+    local_tsel: int | None
+    local_ssel: int | None
+    local_psel: int | None
+    local_ap_title: asn1.ObjectIdentifier | None
+    local_ae_qualifier: int | None
     remote_addr: Address
-    remote_tsel: typing.Optional[int]
-    remote_ssel: typing.Optional[int]
-    remote_psel: typing.Optional[int]
-    remote_ap_title: typing.Optional[asn1.ObjectIdentifier]
-    remote_ae_qualifier: typing.Optional[int]
+    remote_tsel: int | None
+    remote_ssel: int | None
+    remote_psel: int | None
+    remote_ap_title: asn1.ObjectIdentifier | None
+    remote_ae_qualifier: int | None
 
 
-ValidateResult = typing.Optional[IdentifiedEntity]
+ValidateResult = IdentifiedEntity | None
 """Validate result"""
 
 
@@ -53,25 +53,26 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 
 # (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
 _acse_syntax_name = (2, 2, 1, 0, 1)
-with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
     _encoder = asn1.Encoder(asn1.Encoding.BER,
                             asn1.Repository.from_json(_path))
 
 
-async def connect(syntax_name_list: typing.List[asn1.ObjectIdentifier],
+async def connect(syntax_name_list: list[asn1.ObjectIdentifier],
                   app_context_name: asn1.ObjectIdentifier,
                   addr: Address,
-                  local_tsel: typing.Optional[int] = None,
-                  remote_tsel: typing.Optional[int] = None,
-                  local_ssel: typing.Optional[int] = None,
-                  remote_ssel: typing.Optional[int] = None,
-                  local_psel: typing.Optional[int] = None,
-                  remote_psel: typing.Optional[int] = None,
-                  local_ap_title: typing.Optional[asn1.ObjectIdentifier] = None,  # NOQA
-                  remote_ap_title: typing.Optional[asn1.ObjectIdentifier] = None,  # NOQA
-                  local_ae_qualifier: typing.Optional[int] = None,
-                  remote_ae_qualifier: typing.Optional[int] = None,
-                  user_data: typing.Optional[IdentifiedEntity] = None
+                  local_tsel: int | None = None,
+                  remote_tsel: int | None = None,
+                  local_ssel: int | None = None,
+                  remote_ssel: int | None = None,
+                  local_psel: int | None = None,
+                  remote_psel: int | None = None,
+                  local_ap_title: asn1.ObjectIdentifier | None = None,  # NOQA
+                  remote_ap_title: asn1.ObjectIdentifier | None = None,  # NOQA
+                  local_ae_qualifier: int | None = None,
+                  remote_ae_qualifier: int | None = None,
+                  user_data: IdentifiedEntity | None = None
                   ) -> 'Connection':
     """Connect to ACSE server"""
     syntax_names = SyntaxNames([_acse_syntax_name, *syntax_name_list])
@@ -201,7 +202,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._copp_server.addresses
 

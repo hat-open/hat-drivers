@@ -50,10 +50,10 @@ class Data(typing.NamedTuple):
 
 class Change(typing.NamedTuple):
     key: str
-    value: typing.Optional[json.Data]
-    quality: typing.Optional[Quality]
-    timestamp: typing.Optional[float]
-    source: typing.Optional[Source]
+    value: json.Data | None
+    quality: Quality | None
+    timestamp: float | None
+    source: Source | None
 
 
 class Command(typing.NamedTuple):

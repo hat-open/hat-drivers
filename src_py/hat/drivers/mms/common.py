@@ -52,7 +52,7 @@ class StatusRequest(typing.NamedTuple):
 class GetNameListRequest(typing.NamedTuple):
     object_class: ObjectClass
     object_scope: 'ObjectScope'
-    continue_after: typing.Optional[str]
+    continue_after: str | None
 
 
 class IdentifyRequest(typing.NamedTuple):
@@ -109,7 +109,7 @@ class StatusResponse(typing.NamedTuple):
 
 
 class GetNameListResponse(typing.NamedTuple):
-    identifiers: typing.List[str]
+    identifiers: list[str]
     more_follows: bool
 
 
@@ -117,7 +117,7 @@ class IdentifyResponse(typing.NamedTuple):
     vendor: str
     model: str
     revision: str
-    syntaxes: typing.Optional[typing.List[asn1.ObjectIdentifier]]
+    syntaxes: list[asn1.ObjectIdentifier] | None
 
 
 class GetVariableAccessAttributesResponse(typing.NamedTuple):
@@ -131,11 +131,11 @@ class GetNamedVariableListAttributesResponse(typing.NamedTuple):
 
 
 class ReadResponse(typing.NamedTuple):
-    results: typing.List[typing.Union[DataAccessError, 'Data']]
+    results: list[typing.Union[DataAccessError, 'Data']]
 
 
 class WriteResponse(typing.NamedTuple):
-    results: typing.List[typing.Optional[DataAccessError]]
+    results: list[DataAccessError | None]
 
 
 class DefineNamedVariableListResponse(typing.NamedTuple):
@@ -164,13 +164,13 @@ class EventNotificationUnconfirmed(typing.NamedTuple):
     enrollment: 'ObjectName'
     condition: 'ObjectName'
     severity: int
-    time: typing.Optional[typing.Union['Data', int]]
+    time: typing.Union['Data', int, None]
 
 
 class InformationReportUnconfirmed(typing.NamedTuple):
     specification: typing.Union[typing.List['VariableSpecification'],
                                 'ObjectName']
-    data: typing.List[typing.Union[DataAccessError, 'Data']]
+    data: list[typing.Union[DataAccessError, 'Data']]
 
 
 class UnsolicitedStatusUnconfirmed(typing.NamedTuple):
@@ -197,7 +197,7 @@ class BinaryTimeData(typing.NamedTuple):
 
 
 class BitStringData(typing.NamedTuple):
-    value: typing.List[bool]
+    value: list[bool]
 
 
 class BooleanData(typing.NamedTuple):
@@ -205,7 +205,7 @@ class BooleanData(typing.NamedTuple):
 
 
 class BooleanArrayData(typing.NamedTuple):
-    value: typing.List[bool]
+    value: list[bool]
 
 
 class FloatingPointData(typing.NamedTuple):
@@ -245,7 +245,7 @@ class UtcTimeData(typing.NamedTuple):
     leap_second: bool
     clock_failure: bool
     not_synchronized: bool
-    accuracy: typing.Optional[int]
+    accuracy: int | None
     """accurate fraction bits [0,24]"""
 
 
@@ -319,9 +319,8 @@ class OctetStringTypeDescription(typing.NamedTuple):
 
 
 class StructureTypeDescription(typing.NamedTuple):
-    components: typing.List[typing.Tuple[typing.Optional[str],
-                                         typing.Union['TypeDescription',
-                                                      'ObjectName']]]
+    components: list[tuple[str | None,
+                           typing.Union['TypeDescription', 'ObjectName']]]
 
 
 class UnsignedTypeDescription(typing.NamedTuple):
@@ -392,7 +391,7 @@ ObjectScope.register(VmdSpecificObjectScope)
 
 
 class AddressVariableSpecification(typing.NamedTuple):
-    address: typing.Union[int, str, asn1.Bytes]
+    address: int | str | asn1.Bytes
 
 
 class InvalidatedVariableSpecification(typing.NamedTuple):
@@ -408,8 +407,8 @@ class ScatteredAccessDescriptionVariableSpecification(typing.NamedTuple):
 
 
 class VariableDescriptionVariableSpecification(typing.NamedTuple):
-    address: typing.Union[int, str, asn1.Bytes]
-    type_specification: typing.Union[TypeDescription, ObjectName]
+    address: int | str | asn1.Bytes
+    type_specification: TypeDescription | ObjectName
 
 
 VariableSpecification = type('VariableSpecification', (abc.ABC, ), {})

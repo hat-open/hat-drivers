@@ -61,7 +61,7 @@ class Connection(aio.Resource):
     async def call(self,
                    method: str,
                    params: json.Data = {},
-                   session_id: typing.Optional[SessionId] = None
+                   session_id: SessionId | None = None
                    ) -> json.Data:
         if not self.is_open:
             raise ConnectionError()

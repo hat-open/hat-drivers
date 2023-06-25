@@ -1,5 +1,3 @@
-import typing
-
 from hat import aio
 
 from hat.drivers.iec101 import common
@@ -23,10 +21,10 @@ class Connection(aio.Resource):
     def async_group(self):
         return self._conn.async_group
 
-    async def send(self, msgs: typing.List[common.Msg]):
+    async def send(self, msgs: list[common.Msg]):
         for data in self._encoder.encode(msgs):
             await self._conn.send(data)
 
-    async def receive(self) -> typing.List[common.Msg]:
+    async def receive(self) -> list[common.Msg]:
         data = await self._conn.receive()
         return list(self._encoder.decode(data))

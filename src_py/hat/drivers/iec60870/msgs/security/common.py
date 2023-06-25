@@ -1,22 +1,20 @@
+from hat.drivers.iec60870.msgs.common import *  # NOQA
+
 import enum
 import typing
 
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs import iec104
-
-from hat.drivers.iec60870.msgs.common import *  # NOQA
 from hat.drivers.iec60870.msgs.common import Bytes, Time
 
 
 OriginatorAddress = iec101.common.OriginatorAddress
 
 # different sizes for iec101 and iec104
-AsduAddress = typing.Union[iec101.common.AsduAddress,
-                           iec104.common.AsduAddress]
+AsduAddress = iec101.common.AsduAddress | iec104.common.AsduAddress
 
 # different sizes for iec101 and iec104
-IoAddress = typing.Union[iec101.common.IoAddress,
-                         iec104.common.IoAddress]
+IoAddress = iec101.common.IoAddress | iec104.common.IoAddress
 
 OtherCauseType = iec101.common.OriginatorAddress
 
@@ -117,7 +115,7 @@ CauseType = enum.Enum('CauseType', [
 
 
 class Cause(typing.NamedTuple):
-    type: typing.Union[CauseType, OtherCauseType]
+    type: CauseType | OtherCauseType
     is_negative_confirm: bool
     is_test: bool
     originator_address: OriginatorAddress
@@ -131,7 +129,7 @@ class IoElement_S_IT_TC(typing.NamedTuple):
 class IoElement_S_CH_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    mac_algorithm: typing.Union[MacAlgorithm, int]
+    mac_algorithm: MacAlgorithm | int
     """MAC algorithm can be value in range [0, 255]"""
     reason: int
     """reason in range [0, 255] - only valid value is 1"""
@@ -159,11 +157,11 @@ class IoElement_S_KR_NA(typing.NamedTuple):
 class IoElement_S_KS_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    key_wrap_algorithm: typing.Union[KeyWrapAlgorithm, int]
+    key_wrap_algorithm: KeyWrapAlgorithm | int
     """Key wrap algorithm can be value in range [0, 255]"""
-    key_status: typing.Union[KeyStatus, int]
+    key_status: KeyStatus | int
     """Key status can be value in range [0, 255]"""
-    mac_algorithm: typing.Union[MacAlgorithm, int]
+    mac_algorithm: MacAlgorithm | int
     """MAC algorithm can be value in range [0, 255]"""
     data: Bytes
     """data length in range [8, 65535]"""
@@ -182,7 +180,7 @@ class IoElement_S_ER_NA(typing.NamedTuple):
     key_change_sequence: SequenceNumber
     user: UserNumber
     association_id: AssociationId
-    code: typing.Union[ErrorCode, int]
+    code: ErrorCode | int
     """Code can be value in range [0, 255]"""
     time: Time
     """Time size SEVEN"""
@@ -191,19 +189,19 @@ class IoElement_S_ER_NA(typing.NamedTuple):
 
 
 class IoElement_S_UC_NA_X(typing.NamedTuple):
-    key_change_method: typing.Union[KeyChangeMethod, int]
+    key_change_method: KeyChangeMethod | int
     """Key change method can be value in range [0, 255]"""
     data: Bytes
     """Data length in range [0, 65535]"""
 
 
 class IoElement_S_US_NA(typing.NamedTuple):
-    key_change_method: typing.Union[KeyChangeMethod, int]
+    key_change_method: KeyChangeMethod | int
     """Key change method can be value in range [0, 255]"""
-    operation: typing.Union[Operation, int]
+    operation: Operation | int
     """Operation can be value in range [0, 255]"""
     sequence: SequenceNumber
-    role: typing.Union[UserRole, int]
+    role: UserRole | int
     """Role can be value in range [0, 65535]"""
     role_expiry: int
     """Role expiry in range [0, 65535]"""
@@ -216,7 +214,7 @@ class IoElement_S_US_NA(typing.NamedTuple):
 
 
 class IoElement_S_UQ_NA(typing.NamedTuple):
-    key_change_method: typing.Union[KeyChangeMethod, int]
+    key_change_method: KeyChangeMethod | int
     """Key change method can be value in range [0, 255]"""
     name: Bytes
     """Name length in range [0, 65535]"""
@@ -251,27 +249,27 @@ class IoElement_S_UC_NA(typing.NamedTuple):
     mac: Bytes
 
 
-IoElement = typing.Union[IoElement_S_IT_TC,
-                         IoElement_S_CH_NA,
-                         IoElement_S_RP_NA,
-                         IoElement_S_AR_NA,
-                         IoElement_S_KR_NA,
-                         IoElement_S_KS_NA,
-                         IoElement_S_KC_NA,
-                         IoElement_S_ER_NA,
-                         IoElement_S_UC_NA_X,
-                         IoElement_S_US_NA,
-                         IoElement_S_UQ_NA,
-                         IoElement_S_UR_NA,
-                         IoElement_S_UK_NA,
-                         IoElement_S_UA_NA,
-                         IoElement_S_UC_NA]
+IoElement = (IoElement_S_IT_TC |
+             IoElement_S_CH_NA |
+             IoElement_S_RP_NA |
+             IoElement_S_AR_NA |
+             IoElement_S_KR_NA |
+             IoElement_S_KS_NA |
+             IoElement_S_KC_NA |
+             IoElement_S_ER_NA |
+             IoElement_S_UC_NA_X |
+             IoElement_S_US_NA |
+             IoElement_S_UQ_NA |
+             IoElement_S_UR_NA |
+             IoElement_S_UK_NA |
+             IoElement_S_UA_NA |
+             IoElement_S_UC_NA)
 
 
 class IO(typing.NamedTuple):
-    address: typing.Optional[IoAddress]
+    address: IoAddress | None
     element: IoElement
-    time: typing.Optional[Time]
+    time: Time | None
     """Time size SEVEN"""
 
 
@@ -279,4 +277,4 @@ class ASDU(typing.NamedTuple):
     type: AsduType
     cause: Cause
     address: AsduAddress
-    ios: typing.List[IO]
+    ios: list[IO]

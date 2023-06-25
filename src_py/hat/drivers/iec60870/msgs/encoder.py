@@ -4,12 +4,13 @@ import typing
 from hat.drivers.iec60870.msgs import common
 
 
-AsduType = int
-AsduTypeTimeSizes = typing.Dict[AsduType, common.TimeSize]
-DecodeIoElementCb = typing.Callable[[common.Bytes, AsduType],
-                                    typing.Tuple[typing.Any, common.Bytes]]
-EncodeIoElementCb = typing.Callable[[typing.Any, AsduType],
-                                    typing.Iterable[int]]
+AsduType: typing.TypeAlias = int
+AsduTypeTimeSizes: typing.TypeAlias = dict[AsduType, common.TimeSize]
+DecodeIoElementCb: typing.TypeAlias = typing.Callable[[common.Bytes, AsduType],
+                                                      tuple[typing.Any,
+                                                            common.Bytes]]
+EncodeIoElementCb: typing.TypeAlias = typing.Callable[[typing.Any, AsduType],
+                                                      typing.Iterable[int]]
 
 
 def decode_time(time_bytes: common.Bytes,
@@ -93,7 +94,7 @@ class Encoder:
 
     def decode_asdu(self,
                     asdu_bytes: common.Bytes
-                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+                    ) -> tuple[common.ASDU, common.Bytes]:
         asdu_type = asdu_bytes[0]
         io_number = asdu_bytes[1] & 0x7F
         is_sequence = bool(asdu_bytes[1] & 0x80)

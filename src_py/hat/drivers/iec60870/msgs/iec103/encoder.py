@@ -3,7 +3,6 @@ import contextlib
 import itertools
 import math
 import struct
-import typing
 
 from hat.drivers.iec60870.msgs import encoder
 from hat.drivers.iec60870.msgs.iec103 import common
@@ -23,7 +22,7 @@ class Encoder:
 
     def decode_asdu(self,
                     asdu_bytes: common.Bytes
-                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+                    ) -> tuple[common.ASDU, common.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)

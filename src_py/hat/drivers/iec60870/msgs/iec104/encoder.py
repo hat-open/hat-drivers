@@ -1,5 +1,3 @@
-import typing
-
 from hat.drivers.iec60870.msgs import encoder
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs.iec104 import common
@@ -83,7 +81,7 @@ class Encoder:
 
     def decode_asdu(self,
                     asdu_bytes: common.Bytes
-                    ) -> typing.Tuple[common.ASDU, common.Bytes]:
+                    ) -> tuple[common.ASDU, common.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)

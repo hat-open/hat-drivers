@@ -17,7 +17,7 @@ from hat.drivers import cosp
 mlog = logging.getLogger(__name__)
 
 
-IdentifiedEntity = typing.Tuple[asn1.ObjectIdentifier, asn1.Entity]
+IdentifiedEntity = tuple[asn1.ObjectIdentifier, asn1.Entity]
 """Identified entity"""
 
 
@@ -27,16 +27,16 @@ Address = cosp.Address
 
 class ConnectionInfo(typing.NamedTuple):
     local_addr: Address
-    local_tsel: typing.Optional[int]
-    local_ssel: typing.Optional[int]
-    local_psel: typing.Optional[int]
+    local_tsel: int | None
+    local_ssel: int | None
+    local_psel: int | None
     remote_addr: Address
-    remote_tsel: typing.Optional[int]
-    remote_ssel: typing.Optional[int]
-    remote_psel: typing.Optional[int]
+    remote_tsel: int | None
+    remote_ssel: int | None
+    remote_psel: int | None
 
 
-ValidateResult = typing.Optional[IdentifiedEntity]
+ValidateResult = IdentifiedEntity | None
 """Validate result"""
 
 
@@ -49,7 +49,8 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
     _encoder = asn1.Encoder(asn1.Encoding.BER,
                             asn1.Repository.from_json(_path))
 
@@ -62,7 +63,7 @@ class SyntaxNames:
 
     """
 
-    def __init__(self, syntax_names: typing.List[asn1.ObjectIdentifier]):
+    def __init__(self, syntax_names: list[asn1.ObjectIdentifier]):
         self._syntax_id_names = {(i * 2 + 1): name
                                  for i, name in enumerate(syntax_names)}
         self._syntax_name_ids = {v: k
@@ -79,13 +80,13 @@ class SyntaxNames:
 
 async def connect(syntax_names: SyntaxNames,
                   addr: Address,
-                  local_tsel: typing.Optional[int] = None,
-                  remote_tsel: typing.Optional[int] = None,
-                  local_ssel: typing.Optional[int] = None,
-                  remote_ssel: typing.Optional[int] = None,
-                  local_psel: typing.Optional[int] = None,
-                  remote_psel: typing.Optional[int] = None,
-                  user_data: typing.Optional[IdentifiedEntity] = None
+                  local_tsel: int | None = None,
+                  remote_tsel: int | None = None,
+                  local_ssel: int | None = None,
+                  remote_ssel: int | None = None,
+                  local_psel: int | None = None,
+                  remote_psel: int | None = None,
+                  user_data: IdentifiedEntity | None = None
                   ) -> 'Connection':
     """Connect to COPP server"""
     cp_ppdu = _cp_ppdu(syntax_names, local_psel, remote_psel, user_data)
@@ -186,7 +187,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._cosp_server.addresses
 
@@ -252,13 +253,13 @@ class Connection(aio.Resource):
         """Connect response's user data"""
         return self._conn_res_user_data
 
-    def close(self, user_data: typing.Optional[IdentifiedEntity] = None):
+    def close(self, user_data: IdentifiedEntity | None = None):
         """Close connection"""
         self._close_ppdu = _aru_ppdu(self._syntax_names, user_data)
         self._async_group.close()
 
     async def async_close(self,
-                          user_data: typing.Optional[IdentifiedEntity] = None):
+                          user_data: IdentifiedEntity | None = None):
         """Async close"""
         self.close(user_data)
         await self.wait_closed()

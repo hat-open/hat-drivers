@@ -19,12 +19,13 @@ __all__ = ['v1',
            'decode']
 
 
-with importlib.resources.path(__package__, 'asn1_repo.json') as _path:
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
     _encoder = asn1.Encoder(asn1.Encoding.BER,
                             asn1.Repository.from_json(_path))
 
 
-Msg = typing.Union[v1.Msg, v2c.Msg, v3.Msg]
+Msg: typing.TypeAlias = v1.Msg | v2c.Msg | v3.Msg
 
 
 def encode(msg: Msg) -> common.Bytes:

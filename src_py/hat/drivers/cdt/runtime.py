@@ -9,9 +9,9 @@ RemoteObjectId = str
 
 class RemoteObject(typing.NamedTuple):
     type: str
-    subtype: typing.Optional[str]
-    value: typing.Optional[json.Data]
-    id: typing.Optional[RemoteObjectId]
+    subtype: str | None
+    value: json.Data | None
+    id: RemoteObjectId | None
 
 
 class Runtime:

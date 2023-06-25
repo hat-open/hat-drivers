@@ -126,7 +126,7 @@ class CommandMsg(typing.NamedTuple):
     io_address: IoAddress
     command: Command
     is_negative_confirm: bool
-    time: typing.Optional[Time]
+    time: Time | None
     cause: CommandCause
 
 
@@ -140,17 +140,17 @@ class TestMsg(typing.NamedTuple):
     cause: ActivationCause
 
 
-Msg = typing.Union[DataMsg,
-                   CommandMsg,
-                   InitializationMsg,
-                   InterrogationMsg,
-                   CounterInterrogationMsg,
-                   ReadMsg,
-                   ClockSyncMsg,
-                   TestMsg,
-                   ResetMsg,
-                   ParameterMsg,
-                   ParameterActivationMsg]
+Msg = (DataMsg |
+       CommandMsg |
+       InitializationMsg |
+       InterrogationMsg |
+       CounterInterrogationMsg |
+       ReadMsg |
+       ClockSyncMsg |
+       TestMsg |
+       ResetMsg |
+       ParameterMsg |
+       ParameterActivationMsg)
 
 
 time_from_datetime = iec101.time_from_datetime
@@ -182,11 +182,11 @@ class Connection(aio.Resource):
         return self.conn.register_enabled_cb(cb)
 
     @abc.abstractmethod
-    def send(self, msgs: typing.List[Msg]):
+    def send(self, msgs: list[Msg]):
         pass
 
     @abc.abstractmethod
-    async def send_wait_ack(self, msgs: typing.List[Msg]):
+    async def send_wait_ack(self, msgs: list[Msg]):
         pass
 
     @abc.abstractmethod
@@ -194,7 +194,7 @@ class Connection(aio.Resource):
         pass
 
     @abc.abstractmethod
-    async def receive(self) -> typing.List[Msg]:
+    async def receive(self) -> list[Msg]:
         pass
 
 

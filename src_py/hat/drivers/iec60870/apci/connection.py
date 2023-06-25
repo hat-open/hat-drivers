@@ -29,7 +29,7 @@ async def connect(addr: tcp.Address,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
                   receive_window_size: int = 8,
-                  ssl_ctx: typing.Optional[ssl.SSLContext] = None
+                  ssl_ctx: ssl.SSLContext | None = None
                   ) -> 'Connection':
     """Connect to remote device
 
@@ -69,7 +69,7 @@ async def listen(connection_cb: ConnectionCb,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
-                 ssl_ctx: typing.Optional[ssl.SSLContext] = None
+                 ssl_ctx: ssl.SSLContext | None = None
                  ) -> tcp.Server:
     """Create new IEC104 slave and listen for incoming connections
 
@@ -162,7 +162,7 @@ class Connection(aio.Resource):
         return self._conn.info
 
     @property
-    def ssl_object(self) -> typing.Union[ssl.SSLObject, ssl.SSLSocket, None]:
+    def ssl_object(self) -> ssl.SSLObject | ssl.SSLSocket | None:
         """SSL Object"""
         return self._conn.ssl_object
 
@@ -462,8 +462,8 @@ class Connection(aio.Resource):
 
 
 class _SendQueueEntry(typing.NamedTuple):
-    data: typing.Optional[common.Bytes]
-    future: typing.Optional[asyncio.Future]
+    data: common.Bytes | None
+    future: asyncio.Future | None
     wait_ack: bool
 
 

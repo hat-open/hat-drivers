@@ -4,7 +4,6 @@ import contextlib
 import functools
 import logging
 import time
-import typing
 
 from hat import aio
 from hat.drivers import serial
@@ -63,8 +62,8 @@ class Master(aio.Resource):
                       addr: common.Address,
                       response_timeout: float = 15,
                       send_retry_count: int = 3,
-                      poll_class1_delay: typing.Optional[float] = 1,
-                      poll_class2_delay: typing.Optional[float] = None
+                      poll_class1_delay: float | None = 1,
+                      poll_class2_delay: float | None = None
                       ) -> Connection:
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')

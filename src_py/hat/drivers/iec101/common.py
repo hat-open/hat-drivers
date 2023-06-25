@@ -72,7 +72,7 @@ class DataResCause(enum.Enum):
     INTERROGATED_COUNTER04 = iec101.common.CauseType.INTERROGATED_COUNTER04.value  # NOQA
 
 
-DataCause = typing.Union[DataResCause, OtherCause]
+DataCause = DataResCause | OtherCause
 
 
 class CommandReqCause(enum.Enum):
@@ -90,7 +90,7 @@ class CommandResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-CommandCause = typing.Union[CommandReqCause, CommandResCause, OtherCause]
+CommandCause = CommandReqCause | CommandResCause | OtherCause
 
 
 class InitializationResCause(enum.Enum):
@@ -99,7 +99,7 @@ class InitializationResCause(enum.Enum):
     REMOTE_RESET = 2
 
 
-InitializationCause = typing.Union[InitializationResCause, OtherCause]
+InitializationCause = InitializationResCause | OtherCause
 
 
 class ReadReqCause(enum.Enum):
@@ -113,7 +113,7 @@ class ReadResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ReadCause = typing.Union[ReadReqCause, ReadResCause, OtherCause]
+ReadCause = ReadReqCause | ReadResCause | OtherCause
 
 
 class ClockSyncReqCause(enum.Enum):
@@ -129,9 +129,7 @@ class ClockSyncResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ClockSyncCause = typing.Union[ClockSyncReqCause,
-                              ClockSyncResCause,
-                              OtherCause]
+ClockSyncCause = ClockSyncReqCause | ClockSyncResCause | OtherCause
 
 
 class ActivationReqCause(enum.Enum):
@@ -146,9 +144,7 @@ class ActivationResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ActivationCause = typing.Union[ActivationReqCause,
-                               ActivationResCause,
-                               OtherCause]
+ActivationCause = ActivationReqCause | ActivationResCause | OtherCause
 
 
 class DelayReqCause(enum.Enum):
@@ -164,7 +160,7 @@ class DelayResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-DelayCause = typing.Union[DelayReqCause, DelayResCause, OtherCause]
+DelayCause = DelayReqCause | DelayResCause | OtherCause
 
 
 class ParameterReqCause(enum.Enum):
@@ -197,7 +193,7 @@ class ParameterResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ParameterCause = typing.Union[ParameterReqCause, ParameterResCause, OtherCause]
+ParameterCause = ParameterReqCause | ParameterResCause | OtherCause
 
 
 class ParameterActivationReqCause(enum.Enum):
@@ -214,9 +210,9 @@ class ParameterActivationResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ParameterActivationCause = typing.Union[ParameterActivationReqCause,
-                                        ParameterActivationResCause,
-                                        OtherCause]
+ParameterActivationCause = (ParameterActivationReqCause |
+                            ParameterActivationResCause |
+                            OtherCause)
 
 
 class SingleData(typing.NamedTuple):
@@ -241,7 +237,7 @@ class BitstringData(typing.NamedTuple):
 
 class NormalizedData(typing.NamedTuple):
     value: NormalizedValue
-    quality: typing.Optional[MeasurementQuality]
+    quality: MeasurementQuality | None
 
 
 class ScaledData(typing.NamedTuple):
@@ -285,18 +281,18 @@ class StatusData(typing.NamedTuple):
     quality: MeasurementQuality
 
 
-Data = typing.Union[SingleData,
-                    DoubleData,
-                    StepPositionData,
-                    BitstringData,
-                    NormalizedData,
-                    ScaledData,
-                    FloatingData,
-                    BinaryCounterData,
-                    ProtectionData,
-                    ProtectionStartData,
-                    ProtectionCommandData,
-                    StatusData]
+Data = (SingleData |
+        DoubleData |
+        StepPositionData |
+        BitstringData |
+        NormalizedData |
+        ScaledData |
+        FloatingData |
+        BinaryCounterData |
+        ProtectionData |
+        ProtectionStartData |
+        ProtectionCommandData |
+        StatusData)
 
 
 class SingleCommand(typing.NamedTuple):
@@ -339,13 +335,13 @@ class BitstringCommand(typing.NamedTuple):
     value: BitstringValue
 
 
-Command = typing.Union[SingleCommand,
-                       DoubleCommand,
-                       RegulatingCommand,
-                       NormalizedCommand,
-                       ScaledCommand,
-                       FloatingCommand,
-                       BitstringCommand]
+Command = (SingleCommand |
+           DoubleCommand |
+           RegulatingCommand |
+           NormalizedCommand |
+           ScaledCommand |
+           FloatingCommand |
+           BitstringCommand)
 
 
 class NormalizedParameter(typing.NamedTuple):
@@ -366,9 +362,7 @@ class FloatingParameter(typing.NamedTuple):
     """qualifier in range [0, 255]"""
 
 
-Parameter = typing.Union[NormalizedParameter,
-                         ScaledParameter,
-                         FloatingParameter]
+Parameter = NormalizedParameter | ScaledParameter | FloatingParameter
 
 
 class DataMsg(typing.NamedTuple):
@@ -377,7 +371,7 @@ class DataMsg(typing.NamedTuple):
     asdu_address: AsduAddress
     io_address: IoAddress
     data: Data
-    time: typing.Optional[Time]
+    time: Time | None
     cause: DataCause
 
 
@@ -481,18 +475,18 @@ class ParameterActivationMsg(typing.NamedTuple):
     cause: ParameterActivationCause
 
 
-Msg = typing.Union[DataMsg,
-                   CommandMsg,
-                   InitializationMsg,
-                   InterrogationMsg,
-                   CounterInterrogationMsg,
-                   ReadMsg,
-                   ClockSyncMsg,
-                   TestMsg,
-                   ResetMsg,
-                   DelayMsg,
-                   ParameterMsg,
-                   ParameterActivationMsg]
+Msg = (DataMsg |
+       CommandMsg |
+       InitializationMsg |
+       InterrogationMsg |
+       CounterInterrogationMsg |
+       ReadMsg |
+       ClockSyncMsg |
+       TestMsg |
+       ResetMsg |
+       DelayMsg |
+       ParameterMsg |
+       ParameterActivationMsg)
 
 
 time_from_datetime = iec101.common.time_from_datetime

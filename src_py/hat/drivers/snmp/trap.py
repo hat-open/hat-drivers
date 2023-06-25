@@ -1,7 +1,6 @@
 import asyncio
 import itertools
 import logging
-import typing
 
 from hat import aio
 from hat.drivers import udp
@@ -14,7 +13,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 InformCb = aio.AsyncCallable[[common.Version, common.Inform, udp.Address],
-                             typing.Optional[common.Error]]
+                             common.Error | None]
 """Inform callback"""
 
 
@@ -39,7 +38,7 @@ async def create_trap_sender(remote_addr: udp.Address,
 
 
 async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162),  # NOQA
-                               inform_cb: typing.Optional[InformCb] = None
+                               inform_cb: InformCb | None = None
                                ) -> 'TrapListener':
     """Create trap listener"""
     listener = TrapListener()
@@ -74,7 +73,7 @@ class TrapSender(aio.Resource):
 
     async def send_inform(self,
                           inform: common.Inform
-                          ) -> typing.Optional[common.Error]:
+                          ) -> common.Error | None:
         """Send inform"""
         if not self.is_open:
             raise ConnectionError()
@@ -135,8 +134,7 @@ class TrapListener(aio.Resource):
         """Async group"""
         return self._endpoint.async_group
 
-    async def receive(self) -> typing.Tuple[common.Trap,
-                                            udp.Address]:
+    async def receive(self) -> tuple[common.Trap, udp.Address]:
         """Receive trap"""
         try:
             return await self._receive_queue.get()

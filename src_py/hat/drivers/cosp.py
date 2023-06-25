@@ -17,7 +17,7 @@ from hat.drivers import cotp
 mlog = logging.getLogger(__name__)
 
 
-Data = typing.Union[bytes, bytearray, memoryview]
+Data: typing.TypeAlias = bytes | bytearray | memoryview
 """Data"""
 
 
@@ -27,14 +27,14 @@ Address = cotp.Address
 
 class ConnectionInfo(typing.NamedTuple):
     local_addr: Address
-    local_tsel: typing.Optional[int]
-    local_ssel: typing.Optional[int]
+    local_tsel: int | None
+    local_ssel: int | None
     remote_addr: Address
-    remote_tsel: typing.Optional[int]
-    remote_ssel: typing.Optional[int]
+    remote_tsel: int | None
+    remote_ssel: int | None
 
 
-ValidateResult = typing.Optional[Data]
+ValidateResult = Data | None
 """Validate result"""
 
 
@@ -47,11 +47,11 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 
 
 async def connect(addr: Address,
-                  local_tsel: typing.Optional[int] = None,
-                  remote_tsel: typing.Optional[int] = None,
-                  local_ssel: typing.Optional[int] = None,
-                  remote_ssel: typing.Optional[int] = None,
-                  user_data: typing.Optional[Data] = None
+                  local_tsel: int | None = None,
+                  remote_tsel: int | None = None,
+                  local_ssel: int | None = None,
+                  remote_ssel: int | None = None,
+                  user_data: Data | None = None
                   ) -> 'Connection':
     """Connect to COSP server"""
     cotp_conn = await cotp.connect(addr=addr,
@@ -129,7 +129,7 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> typing.List[Address]:
+    def addresses(self) -> list[Address]:
         """Listening addresses"""
         return self._cotp_server.addresses
 
@@ -176,14 +176,14 @@ class Connection(aio.Resource):
         """Connect response's user data"""
         return self._conn_res_user_data
 
-    def close(self, user_data: typing.Optional[Data] = None):
+    def close(self, user_data: Data | None = None):
         """Close connection"""
         self._close_spdu = _Spdu(_SpduType.FN,
                                  transport_disconnect=True,
                                  user_data=user_data)
         self._async_group.close()
 
-    async def async_close(self, user_data: typing.Optional[Data] = None):
+    async def async_close(self, user_data: Data | None = None):
         """Async close"""
         self.close(user_data)
         await self.wait_closed()
@@ -313,15 +313,15 @@ class _SpduType(enum.Enum):
 
 class _Spdu(typing.NamedTuple):
     type: _SpduType
-    extended_spdus: typing.Optional[bool] = None
-    version_number: typing.Optional[int] = None
-    transport_disconnect: typing.Optional[bool] = None
-    requirements: typing.Optional[Data] = None
-    beginning: typing.Optional[bool] = None
-    end: typing.Optional[bool] = None
-    calling_ssel: typing.Optional[int] = None
-    called_ssel: typing.Optional[int] = None
-    user_data: typing.Optional[Data] = None
+    extended_spdus: bool | None = None
+    version_number: int | None = None
+    transport_disconnect: bool | None = None
+    requirements: Data | None = None
+    beginning: bool | None = None
+    end: bool | None = None
+    calling_ssel: int | None = None
+    called_ssel: int | None = None
+    user_data: Data | None = None
     data: Data = b''
 
 

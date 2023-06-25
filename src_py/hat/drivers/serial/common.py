@@ -5,7 +5,7 @@ import typing
 from hat import aio
 
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+Bytes: typing.TypeAlias = bytes | bytearray | memoryview
 
 
 class ByteSize(enum.Enum):

@@ -1,12 +1,13 @@
 from hat.drivers.modbus.common import *  # NOQA
-from hat.drivers.modbus.common import Error
 
 import abc
 import enum
 import typing
 
+from hat.drivers.modbus.common import Error
 
-Bytes = typing.Union[bytes, bytearray, memoryview]
+
+Bytes: typing.TypeAlias = bytes | bytearray | memoryview
 
 
 class Direction(enum.Enum):
@@ -34,38 +35,38 @@ class ErrorRes(typing.NamedTuple):
 
 class ReadCoilsReq(typing.NamedTuple):
     address: int
-    quantity: typing.Optional[int]
+    quantity: int | None
 
 
 class ReadCoilsRes(typing.NamedTuple):
-    values: typing.List[int]
+    values: list[int]
 
 
 class ReadDiscreteInputsReq(typing.NamedTuple):
     address: int
-    quantity: typing.Optional[int]
+    quantity: int | None
 
 
 class ReadDiscreteInputsRes(typing.NamedTuple):
-    values: typing.List[int]
+    values: list[int]
 
 
 class ReadHoldingRegistersReq(typing.NamedTuple):
     address: int
-    quantity: typing.Optional[int]
+    quantity: int | None
 
 
 class ReadHoldingRegistersRes(typing.NamedTuple):
-    values: typing.List[int]
+    values: list[int]
 
 
 class ReadInputRegistersReq(typing.NamedTuple):
     address: int
-    quantity: typing.Optional[int]
+    quantity: int | None
 
 
 class ReadInputRegistersRes(typing.NamedTuple):
-    values: typing.List[int]
+    values: list[int]
 
 
 class WriteSingleCoilReq(typing.NamedTuple):
@@ -90,7 +91,7 @@ class WriteSingleRegisterRes(typing.NamedTuple):
 
 class WriteMultipleCoilsReq(typing.NamedTuple):
     address: int
-    values: typing.List[int]
+    values: list[int]
 
 
 class WriteMultipleCoilsRes(typing.NamedTuple):
@@ -100,7 +101,7 @@ class WriteMultipleCoilsRes(typing.NamedTuple):
 
 class WriteMultipleRegistersReq(typing.NamedTuple):
     address: int
-    values: typing.List[int]
+    values: list[int]
 
 
 class WriteMultipleRegistersRes(typing.NamedTuple):
@@ -125,7 +126,7 @@ class ReadFifoQueueReq(typing.NamedTuple):
 
 
 class ReadFifoQueueRes(typing.NamedTuple):
-    values: typing.List[int]
+    values: list[int]
 
 
 Request = type('Request', (abc.ABC, ), {})
@@ -155,7 +156,7 @@ Response.register(MaskWriteRegisterRes)
 Response.register(ReadFifoQueueRes)
 
 
-Pdu = typing.Union[Request, Response]
+Pdu: typing.TypeAlias = Request | Response
 
 
 class TcpAdu(typing.NamedTuple):
@@ -174,7 +175,7 @@ class AsciiAdu(typing.NamedTuple):
     pdu: Pdu
 
 
-Adu = typing.Union[TcpAdu, RtuAdu, AsciiAdu]
+Adu: typing.TypeAlias = TcpAdu | RtuAdu | AsciiAdu
 
 
 def get_pdu_function_code(pdu: Pdu) -> FunctionCode:

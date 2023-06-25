@@ -18,7 +18,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_tcp_master(modbus_type: common.ModbusType,
                             addr: tcp.Address,
-                            response_timeout: typing.Optional[float] = None,
+                            response_timeout: float | None = None,
                             **kwargs
                             ) -> 'Master':
     """Create TCP master
@@ -38,7 +38,7 @@ async def create_tcp_master(modbus_type: common.ModbusType,
 async def create_serial_master(modbus_type: common.ModbusType,
                                port: str, *,
                                silent_interval: float = 0.005,
-                               response_timeout: typing.Optional[float] = None,
+                               response_timeout: float | None = None,
                                **kwargs
                                ) -> 'Master':
     """Create serial master
@@ -64,7 +64,7 @@ class Master(aio.Resource):
     def __init__(self,
                  conn: transport.Connection,
                  modbus_type: common.ModbusType,
-                 response_timeout: typing.Optional[float]):
+                 response_timeout: float | None):
         self._conn = conn
         self._modbus_type = modbus_type
         self._response_timeout = response_timeout
@@ -91,7 +91,7 @@ class Master(aio.Resource):
                    data_type: common.DataType,
                    start_address: int,
                    quantity: int = 1
-                   ) -> typing.Union[typing.List[int], common.Error]:
+                   ) -> list[int] | common.Error:
         """Read data from modbus device
 
         Argument `quantity` is ignored if `data_type` is `QUEUE`.
@@ -153,7 +153,7 @@ class Master(aio.Resource):
                     data_type: common.DataType,
                     start_address: int,
                     values: typing.List[int]
-                    ) -> typing.Optional[common.Error]:
+                    ) -> common.Error | None:
         """Write data to modbus device
 
         Data types `DISCRETE_INPUT`, `INPUT_REGISTER` and `QUEUE` are not
@@ -221,7 +221,7 @@ class Master(aio.Resource):
                          address: int,
                          and_mask: int,
                          or_mask: int
-                         ) -> typing.Optional[common.Error]:
+                         ) -> common.Error | None:
         """Write mask to modbus device HOLDING_REGISTER
 
         Args:

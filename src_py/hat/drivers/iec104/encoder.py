@@ -12,7 +12,7 @@ class Encoder:
         self._encoder = iec104.encoder.Encoder()
 
     def encode(self,
-               msgs: typing.List[common.Msg]
+               msgs: list[common.Msg]
                ) -> typing.Iterable[common.Bytes]:
         for asdu in _encode_msgs(msgs):
             yield self._encoder.encode_asdu(asdu)
