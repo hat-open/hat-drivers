@@ -74,22 +74,22 @@ async def test_read(addr):
     result = await conn1.read(0)
     assert result == b''
 
-    conn1.write(data)
+    await conn1.write(data)
     await conn1.drain()
     result = await conn2.read(len(data))
     assert result == data
 
-    conn2.write(data)
+    await conn2.write(data)
     result = await conn1.read(len(data) - 1)
     assert result == data[:-1]
     result = await conn1.read(1)
     assert result == data[-1:]
 
-    conn2.write(data)
+    await conn2.write(data)
     result = await conn1.read(len(data) + 1)
     assert result == data
 
-    conn2.write(data)
+    await conn2.write(data)
     await conn2.async_close()
     result = await conn1.read()
     assert result == data
@@ -114,17 +114,17 @@ async def test_readexactly(addr):
     result = await conn1.readexactly(0)
     assert result == b''
 
-    conn1.write(data)
+    await conn1.write(data)
     result = await conn2.readexactly(len(data))
     assert result == data
 
-    conn2.write(data)
+    await conn2.write(data)
     result = await conn1.readexactly(len(data) - 1)
     assert result == data[:-1]
     result = await conn1.readexactly(1)
     assert result == data[-1:]
 
-    conn2.write(data)
+    await conn2.write(data)
     await conn2.async_close()
     with pytest.raises(ConnectionError):
         await conn1.readexactly(len(data) + 1)
@@ -184,13 +184,13 @@ async def test_example_docs():
 
     # send from conn1 to conn2
     data = b'123'
-    conn1.write(data)
+    await conn1.write(data)
     result = await conn2.readexactly(len(data))
     assert result == data
 
     # send from conn2 to conn1
     data = b'321'
-    conn2.write(data)
+    await conn2.write(data)
     result = await conn1.readexactly(len(data))
     assert result == data
 
@@ -212,7 +212,7 @@ async def test_large(addr, write_block_count, write_block_size,
     conn2 = await conn_queue.get()
 
     for _ in range(write_block_count):
-        conn1.write(b'x' * write_block_size)
+        conn1.async_group.spawn(conn1.write, b'x' * write_block_size)
 
     read_len = 0
     while read_len < write_block_size * write_block_count:

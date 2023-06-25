@@ -25,7 +25,7 @@ async def test_read_write(duration, addr, data_count, data_size):
     data = b'x' * data_size
     with duration(f'data_count: {data_count}; data_size: {data_size}'):
         for i in range(data_count):
-            conn1.write(data)
+            await conn1.write(data)
             await conn2.readexactly(len(data))
 
     await conn1.async_close()
