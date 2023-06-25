@@ -6,41 +6,47 @@ import logging
 import typing
 
 from hat import aio
+from hat import util
+
 from hat.drivers import tcp
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
-
-class Address(typing.NamedTuple):
-    host: str
-    port: int = 102
-
-
-class ConnectionInfo(typing.NamedTuple):
-    local_addr: Address
-    remote_addr: Address
-
-
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-async def connect(addr: Address) -> 'Connection':
-    """Create new TPKT connection"""
-    conn = await tcp.connect(tcp.Address(*addr))
-    return Connection(conn)
+async def connect(addr: tcp.Address,
+                  *,
+                  receive_queue_size: int = 1024,
+                  **kwargs
+                  ) -> 'Connection':
+    """Create new TPKT connection
+
+    Additional arguments are passed directly to `hat.tcp.connect`.
+
+    """
+    conn = await tcp.connect(addr, **kwargs)
+    return Connection(conn, receive_queue_size)
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: Address = Address('0.0.0.0')
+                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 *,
+                 receive_queue_size: int = 1024,
+                 **kwargs
                  ) -> 'Server':
-    """Create new TPKT listening server"""
+    """Create new TPKT listening server
+
+    Additional arguments are passed directly to `hat.tcp.listen`.
+
+    """
     server = Server()
     server._connection_cb = connection_cb
-    server._srv = await tcp.listen(server._on_connection, tcp.Address(*addr))
-    server._addresses = [Address(*i) for i in server._srv.addresses]
+    server._receive_queue_size = receive_queue_size
+    server._srv = await tcp.listen(server._on_connection, addr)
     return server
 
 
@@ -48,10 +54,6 @@ class Server(aio.Resource):
     """TPKT listening server
 
     For creation of new instance see `listen` coroutine.
-
-    Closing server doesn't close active incoming connections.
-
-    Closing server will cancel all running `connection_cb` coroutines.
 
     """
 
@@ -61,12 +63,12 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> list[Address]:
+    def addresses(self) -> list[tcp.Address]:
         """Listening addresses"""
-        return self._addresses
+        return self._srv.addresses
 
     async def _on_connection(self, conn):
-        conn = Connection(conn)
+        conn = Connection(conn, self._receive_queue_size)
         try:
             await aio.call(self._connection_cb, conn)
 
@@ -82,10 +84,11 @@ class Server(aio.Resource):
 class Connection(aio.Resource):
     """TPKT connection"""
 
-    def __init__(self, conn: tcp.Connection):
+    def __init__(self,
+                 conn: tcp.Connection,
+                 receive_queue_size: int):
         self._conn = conn
-        self._info = ConnectionInfo(*(Address(*i) for i in conn.info))
-        self._read_queue = aio.Queue()
+        self._receive_queue = aio.Queue(receive_queue_size)
         conn.async_group.spawn(self._read_loop)
 
     @property
@@ -94,20 +97,20 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> ConnectionInfo:
+    def info(self) -> tcp.ConnectionInfo:
         """Connection info"""
-        return self._info
+        return self._conn.info
 
-    async def read(self) -> bytes:
-        """Read data"""
+    async def receive(self) -> util.Bytes:
+        """Receive data"""
         try:
-            return await self._read_queue.get()
+            return await self._receive_queue.get()
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    def write(self, data: bytes):
-        """Write data"""
+    async def send(self, data: util.Bytes):
+        """Send data"""
         data_len = len(data)
 
         if data_len > 0xFFFB:
@@ -120,7 +123,8 @@ class Connection(aio.Resource):
         packet = bytes(itertools.chain(
             [3, 0, packet_length >> 8, packet_length & 0xFF],
             data))
-        self._conn.write(packet)
+
+        await self._conn.write(packet)
 
     async def _read_loop(self):
         try:
@@ -137,7 +141,7 @@ class Connection(aio.Resource):
 
                 data_length = packet_length - 4
                 data = await self._conn.readexactly(data_length)
-                await self._read_queue.put(data)
+                await self._receive_queue.put(data)
 
         except ConnectionError:
             pass
@@ -147,4 +151,4 @@ class Connection(aio.Resource):
 
         finally:
             self.close()
-            self._read_queue.close()
+            self._receive_queue.close()

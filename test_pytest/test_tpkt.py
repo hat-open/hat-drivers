@@ -3,12 +3,14 @@ import asyncio
 import pytest
 
 from hat import util
+
+from hat.drivers import tcp
 from hat.drivers import tpkt
 
 
 @pytest.fixture
 def addr():
-    return tpkt.Address('127.0.0.1', util.get_unused_tcp_port())
+    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_connect_listen(addr):
@@ -35,20 +37,20 @@ async def test_connect_listen(addr):
     assert conn2.is_closed
 
 
-async def test_read_write(addr):
+async def test_send_receive(addr):
     conn1_future = asyncio.Future()
     srv = await tpkt.listen(conn1_future.set_result, addr)
     conn2 = await tpkt.connect(addr)
     conn1 = await conn1_future
 
-    write_data = b'12345'
-    conn1.write(write_data)
-    read_data = await conn2.read()
-    assert write_data == read_data
+    send_data = b'12345'
+    await conn1.send(send_data)
+    receive_data = await conn2.receive()
+    assert send_data == receive_data
 
     await conn1.async_close()
     with pytest.raises(Exception):
-        await conn2.read()
+        await conn2.receive()
     await conn2.async_close()
     await srv.async_close()
 
@@ -63,21 +65,22 @@ async def test_invalid_connection_cb(addr):
 async def test_invalid_data(addr):
     conn_future = asyncio.Future()
     srv = await tpkt.listen(conn_future.set_result, addr)
-    reader, writer = await asyncio.open_connection(addr.host, addr.port)
-    conn = await conn_future
+    conn1 = await tcp.connect(addr)
+    conn2 = await conn_future
 
     with pytest.raises(Exception):
-        conn.write(b'')
+        await conn2.send(b'')
     with pytest.raises(Exception):
-        conn.write(bytes([0] * 0xffff))
+        await conn2.send(bytes([0] * 0xffff))
 
-    writer.write(b'\x00\x00\x00\x00')
+    await conn1.write(b'\x00\x00\x00\x00')
     with pytest.raises(Exception):
-        await conn.read()
+        await conn2.receive()
 
-    writer.write(b'\x03\x00\x00\x00')
+    await conn1.write(b'\x03\x00\x00\x00')
     with pytest.raises(Exception):
-        await conn.read()
+        await conn2.receive()
 
-    await conn.async_close()
+    await conn1.async_close()
+    await conn2.async_close()
     await srv.async_close()
