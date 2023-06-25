@@ -1,25 +1,28 @@
 """Connection oriented transport protocol"""
 
+import asyncio
+import collections
 import enum
+import itertools
 import logging
 import math
 import typing
 
 from hat import aio
+from hat import util
+
+from hat.drivers import tcp
 from hat.drivers import tpkt
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
-Address = tpkt.Address
-"""Address"""
-
 
 class ConnectionInfo(typing.NamedTuple):
-    local_addr: Address
+    local_addr: tcp.Address
     local_tsel: int | None
-    remote_addr: Address
+    remote_addr: tcp.Address
     remote_tsel: int | None
 
 
@@ -27,57 +30,40 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-async def connect(addr: Address,
+async def connect(addr: tcp.Address,
                   local_tsel: int | None = None,
-                  remote_tsel: int | None = None
+                  remote_tsel: int | None = None,
+                  *,
+                  receive_queue_size: int = 1024,
+                  send_queue_size: int = 1024
                   ) -> 'Connection':
     """Create new COTP connection"""
     tpkt_conn = await tpkt.connect(addr)
     try:
-        conn = await _create_outgoing_connection(tpkt_conn, local_tsel,
-                                                 remote_tsel)
+        conn = await _create_outgoing_connection(tpkt_conn,
+                                                 local_tsel, remote_tsel,
+                                                 receive_queue_size,
+                                                 send_queue_size)
         return conn
+
     except BaseException:
         await aio.uncancellable(tpkt_conn.async_close())
         raise
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: Address = Address('0.0.0.0')
+                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 *,
+                 receive_queue_size: int = 1024,
+                 send_queue_size: int = 1024
                  ) -> 'Server':
     """Create new COTP listening server"""
-
-    async def on_connection(tpkt_conn):
-        try:
-            try:
-                conn = await _create_incomming_connection(tpkt_conn)
-            except BaseException:
-                await aio.uncancellable(tpkt_conn.async_close())
-                raise
-            try:
-                await aio.call(connection_cb, conn)
-            except BaseException:
-                await aio.uncancellable(conn.async_close())
-                raise
-        except Exception as e:
-            mlog.error("error creating new incomming connection: %s", e,
-                       exc_info=e)
-
-    async def wait_tpkt_server_closed():
-        try:
-            await tpkt_server.wait_closed()
-        finally:
-            async_group.close()
-
-    async_group = aio.Group()
-    tpkt_server = await tpkt.listen(on_connection, addr)
-    async_group.spawn(aio.call_on_cancel, tpkt_server.async_close)
-    async_group.spawn(wait_tpkt_server_closed)
-
-    srv = Server()
-    srv._async_group = async_group
-    srv._tpkt_server = tpkt_server
-    return srv
+    server = Server()
+    server._connection_cb = connection_cb
+    server._receive_queue_size = receive_queue_size
+    server._send_queue_size = send_queue_size
+    server._srv = await tpkt.listen(server._on_connection, addr)
+    return server
 
 
 class Server(aio.Resource):
@@ -94,125 +80,210 @@ class Server(aio.Resource):
     @property
     def async_group(self) -> aio.Group:
         """Async group"""
-        return self._async_group
+        return self._srv.async_group
 
     @property
-    def addresses(self) -> list[Address]:
+    def addresses(self) -> list[tcp.Address]:
         """Listening addresses"""
-        return self._tpkt_server.addresses
+        return self._srv.addresses
 
+    async def _on_connection(self, tpkt_conn):
+        try:
+            try:
+                conn = await _create_incomming_connection(
+                    tpkt_conn, self._receive_queue_size, self._send_queue_size)
 
-def _create_connection(tpkt_conn, max_tpdu, local_tsel, remote_tsel):
-    conn = Connection()
-    conn._tpkt_conn = tpkt_conn
-    conn._max_tpdu = max_tpdu
-    conn._info = ConnectionInfo(local_tsel=local_tsel,
-                                remote_tsel=remote_tsel,
-                                **tpkt_conn.info._asdict())
-    conn._read_queue = aio.Queue()
-    conn._async_group = aio.Group()
-    conn._async_group.spawn(conn._read_loop)
-    return conn
+            except BaseException:
+                await aio.uncancellable(tpkt_conn.async_close())
+                raise
+
+            try:
+                await aio.call(self._connection_cb, conn)
+
+            except BaseException:
+                await aio.uncancellable(conn.async_close())
+                raise
+
+        except Exception as e:
+            mlog.error("error creating new incomming connection: %s", e,
+                       exc_info=e)
 
 
 class Connection(aio.Resource):
     """COTP connection
 
-    For creation of new instance see :func:`connect`
+    For creation of new instance see `connect` or `listen`.
 
     """
+
+    def __init__(self,
+                 conn: tpkt.Connection,
+                 max_tpdu: int,
+                 local_tsel: int | None,
+                 remote_tsel: int | None,
+                 receive_queue_size: int,
+                 send_queue_size: int):
+        self._conn = conn
+        self._max_tpdu = max_tpdu
+        self._loop = asyncio.get_running_loop()
+        self._info = ConnectionInfo(local_tsel=local_tsel,
+                                    remote_tsel=remote_tsel,
+                                    **conn.info._asdict())
+        self._receive_queue = aio.Queue(receive_queue_size)
+        self._send_queue = aio.Queue(send_queue_size)
+
+        self.async_group.spawn(self._receive_loop)
+        self.async_group.spawn(self._send_loop)
 
     @property
     def async_group(self) -> aio.Group:
         """Async group"""
-        return self._async_group
+        return self._conn.async_group
 
     @property
     def info(self) -> ConnectionInfo:
         """Connection info"""
         return self._info
 
-    async def read(self) -> bytes:
-        """Read data"""
-        return await self._read_queue.get()
-
-    def write(self, data: bytes):
-        """Write data"""
-        data = memoryview(data)
-        max_size = self._max_tpdu - 3
-        while len(data) > 0:
-            single_data, data = data[:max_size], data[max_size:]
-            tpdu = _DT(eot=not data, data=single_data)
-            tpdu_data = _encode(tpdu)
-            self._tpkt_conn.write(tpdu_data)
-
-    async def _read_loop(self):
+    async def receive(self) -> util.Bytes:
+        """Receive data"""
         try:
-            data = []
+            return await self._receive_queue.get()
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def send(self, data: util.Bytes):
+        """Send data"""
+        try:
+            await self._send_queue.put((data, None))
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def drain(self):
+        """Drain output buffer"""
+        try:
+            future = self._loop.create_future()
+            await self._send_queue.put((None, future))
+            await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def _receive_loop(self):
+        try:
+            data_queue = collections.deque()
             while True:
-                tpdu_data = await self._tpkt_conn.read()
-                tpdu = _decode(memoryview(tpdu_data))
-                if isinstance(tpdu, _DT):
-                    data += tpdu.data
-                    if tpdu.eot:
-                        await self._read_queue.put(bytes(data))
-                        data = []
-                elif isinstance(tpdu, _DR) or isinstance(tpdu, _ER):
-                    self._async_group.close()
+                tpdu_bytes = await self._conn.receive()
+                tpdu = _decode(memoryview(tpdu_bytes))
+
+                if isinstance(tpdu, _DR) or isinstance(tpdu, _ER):
                     mlog.info("received disconnect request / error")
                     break
+
+                if not isinstance(tpdu, _DT):
+                    continue
+
+                data_queue.append(tpdu.data)
+
+                if not tpdu.eot:
+                    continue
+
+                data = bytes(itertools.chain.from_iterable(data_queue))
+                data_queue.clear()
+
+                await self._receive_queue.put(data)
+
         except Exception as e:
-            mlog.error("error while reading: %s", e, exc_info=e)
+            mlog.error("receive loop error: %s", e, exc_info=e)
+
         finally:
-            self._async_group.close()
-            self._read_queue.close()
-            await aio.uncancellable(self._tpkt_conn.async_close())
+            self.close()
+            self._receive_queue.close()
+
+    async def _send_loop(self):
+        future = None
+        try:
+            while True:
+                data, future = await self._send_queue.get()
+
+                if data is None:
+                    await self._conn.drain()
+
+                else:
+                    data = memoryview(data)
+                    max_size = self._max_tpdu - 3
+
+                    while data:
+                        single_data, data = data[:max_size], data[max_size:]
+
+                        tpdu = _DT(eot=not data, data=single_data)
+                        tpdu_bytes = _encode(tpdu)
+                        await self._conn.send(tpdu_bytes)
+
+                if future and not future.done():
+                    future.set_result(None)
+
+        except Exception as e:
+            mlog.error("send loop error: %s", e, exc_info=e)
+
+        finally:
+            self.close()
+            self._send_queue.close()
+
+            while True:
+                if future and not future.done():
+                    future.set_result(None)
+                if self._send_queue.empty():
+                    break
+                _, future = self._send_queue.get_nowait()
 
 
-_last_src = 0
+_next_srcs = ((i % 0xFFFF) + 1 for i in itertools.count(0))
 
 
-async def _create_outgoing_connection(tpkt_conn, local_tsel, remote_tsel):
-    global _last_src
-
-    _last_src = _last_src + 1 if _last_src < 0xFFFF else 1
-    cr_tpdu = _CR(src=_last_src,
+async def _create_outgoing_connection(conn, local_tsel, remote_tsel,
+                                      receive_queue_size, send_queue_size):
+    cr_tpdu = _CR(src=next(_next_srcs),
                   cls=0,
                   calling_tsel=local_tsel,
                   called_tsel=remote_tsel,
                   max_tpdu=2048,
                   pref_max_tpdu=None)
-    tpkt_conn.write(_encode(cr_tpdu))
+    cr_tpdu_bytes = _encode(cr_tpdu)
+    await conn.send(cr_tpdu_bytes)
 
-    cc_tpdu_data = await tpkt_conn.read()
-    cc_tpdu = _decode(memoryview(cc_tpdu_data))
+    cc_tpdu_bytes = await conn.receive()
+    cc_tpdu = _decode(memoryview(cc_tpdu_bytes))
     _validate_connect_response(cr_tpdu, cc_tpdu)
 
     max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
     calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
-    return _create_connection(tpkt_conn, max_tpdu, calling_tsel, called_tsel)
+    return Connection(conn, max_tpdu, calling_tsel, called_tsel,
+                      receive_queue_size, send_queue_size)
 
 
-async def _create_incomming_connection(tpkt_conn):
-    global _last_src
-
-    cr_tpdu_data = await tpkt_conn.read()
-    cr_tpdu = _decode(memoryview(cr_tpdu_data))
+async def _create_incomming_connection(conn, receive_queue_size,
+                                       send_queue_size):
+    cr_tpdu_bytes = await conn.receive()
+    cr_tpdu = _decode(memoryview(cr_tpdu_bytes))
     _validate_connect_request(cr_tpdu)
 
-    _last_src = _last_src + 1 if _last_src < 0xFFFF else 1
     cc_tpdu = _CC(dst=cr_tpdu.src,
-                  src=_last_src,
+                  src=next(_next_srcs),
                   cls=0,
                   calling_tsel=cr_tpdu.calling_tsel,
                   called_tsel=cr_tpdu.called_tsel,
                   max_tpdu=_calculate_cc_max_tpdu(cr_tpdu),
                   pref_max_tpdu=None)
-    tpkt_conn.write(_encode(cc_tpdu))
+    cc_tpdu_bytes = _encode(cc_tpdu)
+    await conn.send(cc_tpdu_bytes)
 
     max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
     calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
-    return _create_connection(tpkt_conn, max_tpdu, called_tsel, calling_tsel)
+    return Connection(conn, max_tpdu, called_tsel, calling_tsel,
+                      receive_queue_size, send_queue_size)
 
 
 class _TpduType(enum.Enum):
@@ -285,6 +356,7 @@ class _ER(typing.NamedTuple):
 def _validate_connect_request(cr_tpdu):
     if not isinstance(cr_tpdu, _CR):
         raise Exception("received message is not of type CR")
+
     if cr_tpdu.cls != 0:
         raise Exception(f"received class {cr_tpdu.cls} "
                         "(only class 0 is supported)")
@@ -293,18 +365,22 @@ def _validate_connect_request(cr_tpdu):
 def _validate_connect_response(cr_tpdu, cc_tpdu):
     if not isinstance(cc_tpdu, _CC):
         raise Exception("received message is not of type CC")
+
     if (cr_tpdu.calling_tsel is not None and
             cc_tpdu.calling_tsel is not None and
             cr_tpdu.calling_tsel != cc_tpdu.calling_tsel):
         raise Exception(f"received calling tsel {cc_tpdu.calling_tsel} "
                         f"instead of {cr_tpdu.calling_tsel}")
+
     if (cr_tpdu.called_tsel is not None and
             cc_tpdu.called_tsel is not None and
             cr_tpdu.called_tsel != cc_tpdu.called_tsel):
         raise Exception(f"received calling tsel {cc_tpdu.called_tsel} "
                         f"instead of {cr_tpdu.called_tsel}")
+
     if cc_tpdu.dst != cr_tpdu.src:
         raise Exception("received message with invalid sequence number")
+
     if cc_tpdu.cls != 0:
         raise Exception(f"received class {cc_tpdu.cls} "
                         f"(only class 0 is supported)")
@@ -316,8 +392,10 @@ def _calculate_max_tpdu(cr_tpdu, cc_tpdu):
 
     if not cr_tpdu.max_tpdu and not cc_tpdu.max_tpdu:
         return 128
+
     elif cr_tpdu.max_tpdu and not cc_tpdu.max_tpdu:
         return cr_tpdu.max_tpdu
+
     return cc_tpdu.max_tpdu
 
 
@@ -327,8 +405,10 @@ def _calculate_cc_max_tpdu(cr_tpdu):
 
     if cr_tpdu.max_tpdu:
         return cr_tpdu.max_tpdu
+
     elif cr_tpdu.pref_max_tpdu:
         return cr_tpdu.pref_max_tpdu
+
     return 128
 
 
@@ -336,57 +416,80 @@ def _get_tsels(cr_tpdu, cc_tpdu):
     calling_tsel = (cr_tpdu.calling_tsel
                     if cr_tpdu.calling_tsel is not None
                     else cc_tpdu.calling_tsel)
+
     called_tsel = (cr_tpdu.called_tsel
                    if cr_tpdu.called_tsel is not None
                    else cc_tpdu.called_tsel)
+
     return calling_tsel, called_tsel
 
 
 def _encode(tpdu):
     if isinstance(tpdu, _DT):
         tpdu_type = _TpduType.DT
+
     elif isinstance(tpdu, _CR):
         tpdu_type = _TpduType.CR
+
     elif isinstance(tpdu, _CC):
         tpdu_type = _TpduType.CC
+
     elif isinstance(tpdu, _DR):
         tpdu_type = _TpduType.DR
+
     elif isinstance(tpdu, _ER):
         tpdu_type = _TpduType.ER
+
     else:
         raise ValueError('invalid tpdu')
 
-    header = [tpdu_type.value]
+    header = collections.deque()
+    header.append(tpdu_type.value)
 
     if tpdu_type == _TpduType.DT:
-        header += [0x80 if tpdu.eot else 0]
-        return bytes([len(header), *header, *tpdu.data])
+        header.append(0x80 if tpdu.eot else 0)
+        return bytes(itertools.chain([len(header)], header, tpdu.data))
 
     if tpdu_type == _TpduType.CR:
-        header += [0, 0]
+        header.extend([0, 0])
+
     else:
-        header += tpdu.dst.to_bytes(2, 'big')
+        header.extend(tpdu.dst.to_bytes(2, 'big'))
 
     if tpdu_type == _TpduType.ER:
-        header += [tpdu.cause]
+        header.append(tpdu.cause)
+
     else:
-        header += tpdu.src.to_bytes(2, 'big')
+        header.extend(tpdu.src.to_bytes(2, 'big'))
 
     if tpdu_type == _TpduType.DR:
-        header += [tpdu.reason]
+        header.append(tpdu.reason)
+
     elif tpdu_type == _TpduType.CR or tpdu_type == _TpduType.CC:
-        header += [tpdu.cls << 4]
+        header.append(tpdu.cls << 4)
+
         if tpdu.calling_tsel is not None:
-            header += [0xC1, 2, *tpdu.calling_tsel.to_bytes(2, 'big')]
+            header.append(0xC1)
+            header.append(2)
+            header.extend(tpdu.calling_tsel.to_bytes(2, 'big'))
+
         if tpdu.called_tsel is not None:
-            header += [0xC2, 2, *tpdu.called_tsel.to_bytes(2, 'big')]
+            header.append(0xC2)
+            header.append(2)
+            header.extend(tpdu.called_tsel.to_bytes(2, 'big'))
+
         if tpdu.max_tpdu is not None:
-            header += [0xC0, 1, tpdu.max_tpdu.bit_length() - 1]
+            header.append(0xC0)
+            header.append(1)
+            header.append(tpdu.max_tpdu.bit_length() - 1)
+
         if tpdu.pref_max_tpdu is not None:
             pref_max_tpdu_data = _uint_to_bebytes(tpdu.pref_max_tpdu // 128)
-            header += [0xC0, len(pref_max_tpdu_data), *pref_max_tpdu_data]
+            header.append(0xC0)
+            header.append(len(pref_max_tpdu_data))
+            header.extend(pref_max_tpdu_data)
 
-    return bytes([len(header), *header])
+    return bytes(itertools.chain([len(header)], header))
 
 
 def _decode(data):

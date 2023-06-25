@@ -126,6 +126,10 @@ class Connection(aio.Resource):
 
         await self._conn.write(packet)
 
+    async def drain(self):
+        """Drain output buffer"""
+        await self._conn.drain()
+
     async def _read_loop(self):
         try:
             while True:
