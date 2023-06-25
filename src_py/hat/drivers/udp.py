@@ -1,9 +1,15 @@
 """Asyncio UDP endpoint wrapper"""
 
 import asyncio
+import logging
 import typing
 
 from hat import aio
+from hat import util
+
+
+mlog: logging.Logger = logging.getLogger(__name__)
+"""Module logger"""
 
 
 class Address(typing.NamedTuple):
@@ -43,7 +49,12 @@ async def create(local_addr: Address | None = None,
             endpoint._async_group.close()
 
         def datagram_received(self, data, addr):
-            endpoint._queue.put_nowait((data, Address(addr[0], addr[1])))
+            try:
+                endpoint._queue.put_nowait(
+                    (data, Address(addr[0], addr[1])))
+
+            except aio.QueueFullError:
+                mlog.warning('receive queue full - dropping datagram')
 
     loop = asyncio.get_running_loop()
     endpoint._transport, endpoint._protocol = \
@@ -81,7 +92,7 @@ class Endpoint(aio.Resource):
         return self._queue.empty()
 
     def send(self,
-             data: bytes,
+             data: util.Bytes,
              remote_addr: Address | None = None):
         """Send datagram
 
@@ -89,9 +100,17 @@ class Endpoint(aio.Resource):
         is used.
 
         """
+        if not self.is_open:
+            raise ConnectionError()
+
         self._transport.sendto(data, remote_addr or self._remote_addr)
 
-    async def receive(self) -> tuple[bytes, Address]:
+    async def receive(self) -> tuple[util.Bytes, Address]:
         """Receive datagram"""
-        data, addr = await self._queue.get()
+        try:
+            data, addr = await self._queue.get()
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
         return data, addr
