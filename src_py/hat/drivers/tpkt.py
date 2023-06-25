@@ -19,8 +19,6 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 
 async def connect(addr: tcp.Address,
-                  *,
-                  tpkt_receive_queue_size: int = 1024,
                   **kwargs
                   ) -> 'Connection':
     """Create new TPKT connection
@@ -29,13 +27,11 @@ async def connect(addr: tcp.Address,
 
     """
     conn = await tcp.connect(addr, **kwargs)
-    return Connection(conn, tpkt_receive_queue_size)
+    return Connection(conn)
 
 
 async def listen(connection_cb: ConnectionCb,
                  addr: tcp.Address = tcp.Address('0.0.0.0', 102),
-                 *,
-                 tpkt_receive_queue_size: int = 1024,
                  **kwargs
                  ) -> 'Server':
     """Create new TPKT listening server
@@ -45,7 +41,6 @@ async def listen(connection_cb: ConnectionCb,
     """
     server = Server()
     server._connection_cb = connection_cb
-    server._receive_queue_size = tpkt_receive_queue_size
 
     server._srv = await tcp.listen(server._on_connection, addr, **kwargs)
 
@@ -70,7 +65,7 @@ class Server(aio.Resource):
         return self._srv.addresses
 
     async def _on_connection(self, conn):
-        conn = Connection(conn, self._receive_queue_size)
+        conn = Connection(conn)
         try:
             await aio.call(self._connection_cb, conn)
 
@@ -87,11 +82,12 @@ class Connection(aio.Resource):
     """TPKT connection"""
 
     def __init__(self,
-                 conn: tcp.Connection,
-                 receive_queue_size: int):
+                 conn: tcp.Connection):
         self._conn = conn
-        self._receive_queue = aio.Queue(receive_queue_size)
-        conn.async_group.spawn(self._read_loop)
+        self._loop = asyncio.get_running_loop()
+        self._receive_futures = aio.Queue()
+
+        self.async_group.spawn(self._read_loop)
 
     @property
     def async_group(self) -> aio.Group:
@@ -106,7 +102,9 @@ class Connection(aio.Resource):
     async def receive(self) -> util.Bytes:
         """Receive data"""
         try:
-            return await self._receive_queue.get()
+            future = self._loop.create_future()
+            self._receive_futures.put_nowait(future)
+            return await future
 
         except aio.QueueClosedError:
             raise ConnectionError()
@@ -133,6 +131,7 @@ class Connection(aio.Resource):
         await self._conn.drain()
 
     async def _read_loop(self):
+        future = None
         try:
             while True:
                 header = await self._conn.readexactly(4)
@@ -147,7 +146,11 @@ class Connection(aio.Resource):
 
                 data_length = packet_length - 4
                 data = await self._conn.readexactly(data_length)
-                await self._receive_queue.put(data)
+
+                while not future or future.done():
+                    future = await self._receive_futures.get()
+
+                future.set_result(data)
 
         except ConnectionError:
             pass
@@ -157,4 +160,11 @@ class Connection(aio.Resource):
 
         finally:
             self.close()
-            self._receive_queue.close()
+            self._receive_futures.close()
+
+            while True:
+                if future and not future.done():
+                    future.set_exception(ConnectionError())
+                if self._receive_futures.empty():
+                    break
+                future = self._receive_futures.get_nowait()

@@ -1,11 +1,7 @@
-"""Connection oriented transport protocol"""
-
 import asyncio
 import collections
-import enum
 import itertools
 import logging
-import math
 import typing
 
 from hat import aio
@@ -13,6 +9,8 @@ from hat import util
 
 from hat.drivers import tcp
 from hat.drivers import tpkt
+from hat.drivers.cotp import common
+from hat.drivers.cotp import encoder
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -184,13 +182,13 @@ class Connection(aio.Resource):
             data_queue = collections.deque()
             while True:
                 tpdu_bytes = await self._conn.receive()
-                tpdu = _decode(memoryview(tpdu_bytes))
+                tpdu = encoder.decode(memoryview(tpdu_bytes))
 
-                if isinstance(tpdu, _DR) or isinstance(tpdu, _ER):
+                if isinstance(tpdu, (common.DR, common.ER)):
                     mlog.info("received disconnect request / error")
                     break
 
-                if not isinstance(tpdu, _DT):
+                if not isinstance(tpdu, common.DT):
                     continue
 
                 data_queue.append(tpdu.data)
@@ -226,8 +224,8 @@ class Connection(aio.Resource):
                     while data:
                         single_data, data = data[:max_size], data[max_size:]
 
-                        tpdu = _DT(eot=not data, data=single_data)
-                        tpdu_bytes = _encode(tpdu)
+                        tpdu = common.DT(eot=not data, data=single_data)
+                        tpdu_bytes = encoder.encode(tpdu)
                         await self._conn.send(tpdu_bytes)
 
                 if future and not future.done():
@@ -253,17 +251,17 @@ _next_srcs = ((i % 0xFFFF) + 1 for i in itertools.count(0))
 
 async def _create_outgoing_connection(conn, local_tsel, remote_tsel,
                                       receive_queue_size, send_queue_size):
-    cr_tpdu = _CR(src=next(_next_srcs),
-                  cls=0,
-                  calling_tsel=local_tsel,
-                  called_tsel=remote_tsel,
-                  max_tpdu=2048,
-                  pref_max_tpdu=None)
-    cr_tpdu_bytes = _encode(cr_tpdu)
+    cr_tpdu = common.CR(src=next(_next_srcs),
+                        cls=0,
+                        calling_tsel=local_tsel,
+                        called_tsel=remote_tsel,
+                        max_tpdu=2048,
+                        pref_max_tpdu=None)
+    cr_tpdu_bytes = encoder.encode(cr_tpdu)
     await conn.send(cr_tpdu_bytes)
 
     cc_tpdu_bytes = await conn.receive()
-    cc_tpdu = _decode(memoryview(cc_tpdu_bytes))
+    cc_tpdu = encoder.decode(memoryview(cc_tpdu_bytes))
     _validate_connect_response(cr_tpdu, cc_tpdu)
 
     max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
@@ -275,17 +273,17 @@ async def _create_outgoing_connection(conn, local_tsel, remote_tsel,
 async def _create_incomming_connection(conn, receive_queue_size,
                                        send_queue_size):
     cr_tpdu_bytes = await conn.receive()
-    cr_tpdu = _decode(memoryview(cr_tpdu_bytes))
+    cr_tpdu = encoder.decode(memoryview(cr_tpdu_bytes))
     _validate_connect_request(cr_tpdu)
 
-    cc_tpdu = _CC(dst=cr_tpdu.src,
-                  src=next(_next_srcs),
-                  cls=0,
-                  calling_tsel=cr_tpdu.calling_tsel,
-                  called_tsel=cr_tpdu.called_tsel,
-                  max_tpdu=_calculate_cc_max_tpdu(cr_tpdu),
-                  pref_max_tpdu=None)
-    cc_tpdu_bytes = _encode(cc_tpdu)
+    cc_tpdu = common.CC(dst=cr_tpdu.src,
+                        src=next(_next_srcs),
+                        cls=0,
+                        calling_tsel=cr_tpdu.calling_tsel,
+                        called_tsel=cr_tpdu.called_tsel,
+                        max_tpdu=_calculate_cc_max_tpdu(cr_tpdu),
+                        pref_max_tpdu=None)
+    cc_tpdu_bytes = encoder.encode(cc_tpdu)
     await conn.send(cc_tpdu_bytes)
 
     max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
@@ -294,75 +292,8 @@ async def _create_incomming_connection(conn, receive_queue_size,
                       receive_queue_size, send_queue_size)
 
 
-class _TpduType(enum.Enum):
-    DT = 0xF0
-    CR = 0xE0
-    CC = 0xD0
-    DR = 0x80
-    ER = 0x70
-
-
-class _DT(typing.NamedTuple):
-    """Data TPDU"""
-    eot: bool
-    """end of transmition flag"""
-    data: memoryview
-
-
-class _CR(typing.NamedTuple):
-    """Connection request TPDU"""
-    src: int
-    """connection reference selectet by initiator of connection request"""
-    cls: int
-    """transport protocol class"""
-    calling_tsel: int | None
-    """calling transport selector"""
-    called_tsel: int | None
-    """responding transport selector"""
-    max_tpdu: int
-    """max tpdu size in octets"""
-    pref_max_tpdu: int
-    """preferred max tpdu size in octets"""
-
-
-class _CC(typing.NamedTuple):
-    """Connection confirm TPDU"""
-    dst: int
-    """connection reference selected by initiator of connection request"""
-    src: int
-    """connection reference selected by initiator of connection confirm"""
-    cls: int
-    """transport protocol class"""
-    calling_tsel: int | None
-    """calling transport selector"""
-    called_tsel: int | None
-    """responding transport selector"""
-    max_tpdu: int
-    """max tpdu size in octets"""
-    pref_max_tpdu: int
-    """preferred max tpdu size in octets"""
-
-
-class _DR(typing.NamedTuple):
-    """Disconnect request TPDU"""
-    dst: int
-    """connection reference selected by remote entity"""
-    src: int
-    """connection reference selected by initiator of disconnect request"""
-    reason: int
-    """reason for disconnection"""
-
-
-class _ER(typing.NamedTuple):
-    """Error TPDU"""
-    dst: int
-    """connection reference selected by remote entity"""
-    cause: int
-    """reject cause"""
-
-
 def _validate_connect_request(cr_tpdu):
-    if not isinstance(cr_tpdu, _CR):
+    if not isinstance(cr_tpdu, common.CR):
         raise Exception("received message is not of type CR")
 
     if cr_tpdu.cls != 0:
@@ -371,7 +302,7 @@ def _validate_connect_request(cr_tpdu):
 
 
 def _validate_connect_response(cr_tpdu, cc_tpdu):
-    if not isinstance(cc_tpdu, _CC):
+    if not isinstance(cc_tpdu, common.CC):
         raise Exception("received message is not of type CC")
 
     if (cr_tpdu.calling_tsel is not None and
@@ -430,151 +361,3 @@ def _get_tsels(cr_tpdu, cc_tpdu):
                    else cc_tpdu.called_tsel)
 
     return calling_tsel, called_tsel
-
-
-def _encode(tpdu):
-    if isinstance(tpdu, _DT):
-        tpdu_type = _TpduType.DT
-
-    elif isinstance(tpdu, _CR):
-        tpdu_type = _TpduType.CR
-
-    elif isinstance(tpdu, _CC):
-        tpdu_type = _TpduType.CC
-
-    elif isinstance(tpdu, _DR):
-        tpdu_type = _TpduType.DR
-
-    elif isinstance(tpdu, _ER):
-        tpdu_type = _TpduType.ER
-
-    else:
-        raise ValueError('invalid tpdu')
-
-    header = collections.deque()
-    header.append(tpdu_type.value)
-
-    if tpdu_type == _TpduType.DT:
-        header.append(0x80 if tpdu.eot else 0)
-        return bytes(itertools.chain([len(header)], header, tpdu.data))
-
-    if tpdu_type == _TpduType.CR:
-        header.extend([0, 0])
-
-    else:
-        header.extend(tpdu.dst.to_bytes(2, 'big'))
-
-    if tpdu_type == _TpduType.ER:
-        header.append(tpdu.cause)
-
-    else:
-        header.extend(tpdu.src.to_bytes(2, 'big'))
-
-    if tpdu_type == _TpduType.DR:
-        header.append(tpdu.reason)
-
-    elif tpdu_type == _TpduType.CR or tpdu_type == _TpduType.CC:
-        header.append(tpdu.cls << 4)
-
-        if tpdu.calling_tsel is not None:
-            header.append(0xC1)
-            header.append(2)
-            header.extend(tpdu.calling_tsel.to_bytes(2, 'big'))
-
-        if tpdu.called_tsel is not None:
-            header.append(0xC2)
-            header.append(2)
-            header.extend(tpdu.called_tsel.to_bytes(2, 'big'))
-
-        if tpdu.max_tpdu is not None:
-            header.append(0xC0)
-            header.append(1)
-            header.append(tpdu.max_tpdu.bit_length() - 1)
-
-        if tpdu.pref_max_tpdu is not None:
-            pref_max_tpdu_data = _uint_to_bebytes(tpdu.pref_max_tpdu // 128)
-            header.append(0xC0)
-            header.append(len(pref_max_tpdu_data))
-            header.extend(pref_max_tpdu_data)
-
-    return bytes(itertools.chain([len(header)], header))
-
-
-def _decode(data):
-    length_indicator = data[0]
-    if length_indicator >= len(data) or length_indicator > 254:
-        raise ValueError("invalid length indicator")
-
-    header = data[:length_indicator + 1]
-    tpdu_data = data[length_indicator + 1:]
-    tpdu_type = _TpduType(header[1] & 0xF0)
-
-    if tpdu_type == _TpduType.DT:
-        eot = bool(header[2] & 0x80)
-        return _DT(eot=eot,
-                   data=tpdu_data)
-
-    if tpdu_type in (_TpduType.CR, _TpduType.CC, _TpduType.DR):
-        src = (header[4] << 8) | header[5]
-
-    if tpdu_type in (_TpduType.CC, _TpduType.DR, _TpduType.ER):
-        dst = (header[2] << 8) | header[3]
-
-    if tpdu_type in (_TpduType.CR, _TpduType.CC):
-        cls = header[6] >> 4
-        calling_tsel = None
-        called_tsel = None
-        max_tpdu = None
-        pref_max_tpdu = None
-        vp_data = header[7:]
-        while vp_data:
-            k, v, vp_data = (vp_data[0],
-                             vp_data[2:2 + vp_data[1]],
-                             vp_data[2 + vp_data[1]:])
-            if k == 0xC1:
-                calling_tsel = _bebytes_to_uint(v)
-            elif k == 0xC2:
-                called_tsel = _bebytes_to_uint(v)
-            elif k == 0xC0:
-                max_tpdu = 1 << v[0]
-            elif k == 0xF0:
-                pref_max_tpdu = 128 * _bebytes_to_uint(v)
-
-    if tpdu_type == _TpduType.CR:
-        return _CR(src=src,
-                   cls=cls,
-                   calling_tsel=calling_tsel,
-                   called_tsel=called_tsel,
-                   max_tpdu=max_tpdu,
-                   pref_max_tpdu=pref_max_tpdu)
-
-    if tpdu_type == _TpduType.CC:
-        return _CC(dst=dst,
-                   src=src,
-                   cls=cls,
-                   calling_tsel=calling_tsel,
-                   called_tsel=called_tsel,
-                   max_tpdu=max_tpdu,
-                   pref_max_tpdu=pref_max_tpdu)
-
-    if tpdu_type == _TpduType.DR:
-        reason = header[6]
-        return _DR(dst=dst,
-                   src=src,
-                   reason=reason)
-
-    if tpdu_type == _TpduType.ER:
-        cause = header[4]
-        return _ER(dst=dst,
-                   cause=cause)
-
-    raise ValueError("invalid tpdu code")
-
-
-def _bebytes_to_uint(b):
-    return int.from_bytes(b, 'big')
-
-
-def _uint_to_bebytes(x):
-    bytes_len = max(math.ceil(x.bit_length() / 8), 1)
-    return x.to_bytes(bytes_len, 'big')
