@@ -20,33 +20,35 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 async def connect(addr: tcp.Address,
                   *,
-                  receive_queue_size: int = 1024,
+                  tpkt_receive_queue_size: int = 1024,
                   **kwargs
                   ) -> 'Connection':
     """Create new TPKT connection
 
-    Additional arguments are passed directly to `hat.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
 
     """
     conn = await tcp.connect(addr, **kwargs)
-    return Connection(conn, receive_queue_size)
+    return Connection(conn, tpkt_receive_queue_size)
 
 
 async def listen(connection_cb: ConnectionCb,
                  addr: tcp.Address = tcp.Address('0.0.0.0', 102),
                  *,
-                 receive_queue_size: int = 1024,
+                 tpkt_receive_queue_size: int = 1024,
                  **kwargs
                  ) -> 'Server':
     """Create new TPKT listening server
 
-    Additional arguments are passed directly to `hat.tcp.listen`.
+    Additional arguments are passed directly to `hat.drivers.tcp.listen`.
 
     """
     server = Server()
     server._connection_cb = connection_cb
-    server._receive_queue_size = receive_queue_size
-    server._srv = await tcp.listen(server._on_connection, addr)
+    server._receive_queue_size = tpkt_receive_queue_size
+
+    server._srv = await tcp.listen(server._on_connection, addr, **kwargs)
+
     return server
 
 

@@ -31,19 +31,24 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 
 
 async def connect(addr: tcp.Address,
+                  *,
                   local_tsel: int | None = None,
                   remote_tsel: int | None = None,
-                  *,
-                  receive_queue_size: int = 1024,
-                  send_queue_size: int = 1024
+                  cotp_receive_queue_size: int = 1024,
+                  cotp_send_queue_size: int = 1024,
+                  **kwargs
                   ) -> 'Connection':
-    """Create new COTP connection"""
-    tpkt_conn = await tpkt.connect(addr)
+    """Create new COTP connection
+
+    Additional arguments are passed directly to `hat.drivers.tpkt.connect`.
+
+    """
+    tpkt_conn = await tpkt.connect(addr, **kwargs)
     try:
         conn = await _create_outgoing_connection(tpkt_conn,
                                                  local_tsel, remote_tsel,
-                                                 receive_queue_size,
-                                                 send_queue_size)
+                                                 cotp_receive_queue_size,
+                                                 cotp_send_queue_size)
         return conn
 
     except BaseException:
@@ -54,26 +59,29 @@ async def connect(addr: tcp.Address,
 async def listen(connection_cb: ConnectionCb,
                  addr: tcp.Address = tcp.Address('0.0.0.0', 102),
                  *,
-                 receive_queue_size: int = 1024,
-                 send_queue_size: int = 1024
+                 cotp_receive_queue_size: int = 1024,
+                 cotp_send_queue_size: int = 1024,
+                 **kwargs
                  ) -> 'Server':
-    """Create new COTP listening server"""
+    """Create new COTP listening server
+
+    Additional arguments are passed directly to `hat.drivers.tpkt.listen`.
+
+    """
     server = Server()
     server._connection_cb = connection_cb
-    server._receive_queue_size = receive_queue_size
-    server._send_queue_size = send_queue_size
-    server._srv = await tpkt.listen(server._on_connection, addr)
+    server._receive_queue_size = cotp_receive_queue_size
+    server._send_queue_size = cotp_send_queue_size
+
+    server._srv = await tpkt.listen(server._on_connection, addr, **kwargs)
+
     return server
 
 
 class Server(aio.Resource):
     """COTP listening server
 
-    For creation of new instance see `listen` coroutine
-
-    Closing server doesn't close active incoming connections.
-
-    Closing server will cancel all running `connection_cb` coroutines.
+    For creation of new instance see `listen` coroutine.
 
     """
 
