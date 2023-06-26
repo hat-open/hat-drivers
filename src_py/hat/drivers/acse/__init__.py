@@ -61,7 +61,8 @@ async def connect(addr: tcp.Address,
                   ) -> 'Connection':
     """Connect to ACSE server
 
-    Additional arguments are passed directly to `hat.drivers.copp.connect`.
+    Additional arguments are passed directly to `hat.drivers.copp.connect`
+    (`syntax_names` is set by this coroutine).
 
     """
     syntax_names = copp.SyntaxNames([_acse_syntax_name, *syntax_name_list])

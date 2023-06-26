@@ -2,6 +2,7 @@ import datetime
 import struct
 
 from hat import asn1
+
 from hat.drivers.mms import common
 
 
