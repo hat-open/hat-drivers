@@ -6,32 +6,30 @@ import typing
 
 from hat import aio
 from hat import asn1
+
 from hat.drivers import copp
+from hat.drivers import tcp
 
 
 mlog = logging.getLogger(__name__)
 
+# (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
+_acse_syntax_name = (2, 2, 1, 0, 1)
 
-IdentifiedEntity = copp.IdentifiedEntity
-"""Identified entity"""
-
-
-Address = copp.Address
-"""Address"""
-
-
-SyntaxNames = copp.SyntaxNames
-"""Syntax names"""
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
 
 
 class ConnectionInfo(typing.NamedTuple):
-    local_addr: Address
+    local_addr: tcp.Address
     local_tsel: int | None
     local_ssel: int | None
     local_psel: int | None
     local_ap_title: asn1.ObjectIdentifier | None
     local_ae_qualifier: int | None
-    remote_addr: Address
+    remote_addr: tcp.Address
     remote_tsel: int | None
     remote_ssel: int | None
     remote_psel: int | None
@@ -39,81 +37,76 @@ class ConnectionInfo(typing.NamedTuple):
     remote_ae_qualifier: int | None
 
 
-ValidateResult = IdentifiedEntity | None
-"""Validate result"""
-
-
-ValidateCb = aio.AsyncCallable[[SyntaxNames, IdentifiedEntity], ValidateResult]
+ValidateCb: typing.TypeAlias = aio.AsyncCallable[[copp.SyntaxNames,
+                                                  copp.IdentifiedEntity],
+                                                 copp.IdentifiedEntity | None]
 """Validate callback"""
 
-
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-# (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
-_acse_syntax_name = (2, 2, 1, 0, 1)
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    _encoder = asn1.Encoder(asn1.Encoding.BER,
-                            asn1.Repository.from_json(_path))
-
-
-async def connect(syntax_name_list: list[asn1.ObjectIdentifier],
+async def connect(addr: tcp.Address,
+                  syntax_name_list: list[asn1.ObjectIdentifier],
                   app_context_name: asn1.ObjectIdentifier,
-                  addr: Address,
-                  local_tsel: int | None = None,
-                  remote_tsel: int | None = None,
-                  local_ssel: int | None = None,
-                  remote_ssel: int | None = None,
-                  local_psel: int | None = None,
-                  remote_psel: int | None = None,
-                  local_ap_title: asn1.ObjectIdentifier | None = None,  # NOQA
-                  remote_ap_title: asn1.ObjectIdentifier | None = None,  # NOQA
+                  user_data: copp.IdentifiedEntity | None = None,
+                  *,
+                  local_ap_title: asn1.ObjectIdentifier | None = None,
+                  remote_ap_title: asn1.ObjectIdentifier | None = None,
                   local_ae_qualifier: int | None = None,
                   remote_ae_qualifier: int | None = None,
-                  user_data: IdentifiedEntity | None = None
+                  acse_receive_queue_size: int = 1024,
+                  acse_send_queue_size: int = 1024,
+                  **kwargs
                   ) -> 'Connection':
-    """Connect to ACSE server"""
-    syntax_names = SyntaxNames([_acse_syntax_name, *syntax_name_list])
+    """Connect to ACSE server
+
+    Additional arguments are passed directly to `hat.drivers.copp.connect`.
+
+    """
+    syntax_names = copp.SyntaxNames([_acse_syntax_name, *syntax_name_list])
     aarq_apdu = _aarq_apdu(syntax_names, app_context_name,
                            local_ap_title, remote_ap_title,
                            local_ae_qualifier, remote_ae_qualifier,
                            user_data)
     copp_user_data = _acse_syntax_name, _encode(aarq_apdu)
-    copp_conn = await copp.connect(syntax_names=syntax_names,
-                                   addr=addr,
-                                   local_tsel=local_tsel,
-                                   remote_tsel=remote_tsel,
-                                   local_ssel=local_ssel,
-                                   remote_ssel=remote_ssel,
-                                   local_psel=local_psel,
-                                   remote_psel=remote_psel,
-                                   user_data=copp_user_data)
+    copp_conn = await copp.connect(addr, syntax_names, copp_user_data,
+                                   **kwargs)
+
     try:
         aare_apdu_syntax_name, aare_apdu_entity = copp_conn.conn_res_user_data
         if aare_apdu_syntax_name != _acse_syntax_name:
             raise Exception("invalid syntax name")
+
         aare_apdu = _decode(aare_apdu_entity)
         if aare_apdu[0] != 'aare' or aare_apdu[1]['result'] != 0:
             raise Exception("invalid apdu")
+
         calling_ap_title, called_ap_title = _get_ap_titles(aarq_apdu)
         calling_ae_qualifier, called_ae_qualifier = _get_ae_qualifiers(
             aarq_apdu)
-        return _create_connection(copp_conn, aarq_apdu, aare_apdu,
-                                  calling_ap_title, called_ap_title,
-                                  calling_ae_qualifier, called_ae_qualifier)
+        return Connection(copp_conn, aarq_apdu, aare_apdu,
+                          calling_ap_title, called_ap_title,
+                          calling_ae_qualifier, called_ae_qualifier,
+                          acse_receive_queue_size, acse_send_queue_size)
+
     except Exception:
-        await aio.uncancellable(
-            _close_connection(copp_conn, _abrt_apdu(1)))
+        await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
         raise
 
 
 async def listen(validate_cb: ValidateCb,
                  connection_cb: ConnectionCb,
-                 addr: Address = Address('0.0.0.0', 102)
+                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 *,
+                 bind_connections: bool = False,
+                 acse_receive_queue_size: int = 1024,
+                 acse_send_queue_size: int = 1024,
+                 **kwargs
                  ) -> 'Server':
     """Create ACSE listening server
+
+    Additional arguments are passed directly to `hat.drivers.copp.listen`.
 
     Args:
         validate_cb: callback function or coroutine called on new
@@ -122,18 +115,53 @@ async def listen(validate_cb: ValidateCb,
         addr: local listening address
 
     """
+    server = Server()
+    server._validate_cb = validate_cb
+    server._connection_cb = connection_cb
+    server._bind_connections = bind_connections
+    server._receive_queue_size = acse_receive_queue_size
+    server._send_queue_size = acse_send_queue_size
 
-    async def on_validate(syntax_names, user_data):
+    server._srv = await copp.listen(server._on_validate,
+                                    server._on_connection,
+                                    addr,
+                                    bind_connections=False,
+                                    **kwargs)
+
+    return server
+
+
+class Server(aio.Resource):
+    """ACSE listening server
+
+    For creating new server see `listen`.
+
+    """
+
+    @property
+    def async_group(self) -> aio.Group:
+        """Async group"""
+        return self._srv.async_group
+
+    @property
+    def addresses(self) -> list[tcp.Address]:
+        """Listening addresses"""
+        return self._srv.addresses
+
+    async def _on_validate(self, syntax_names, user_data):
         aarq_apdu_syntax_name, aarq_apdu_entity = user_data
         if aarq_apdu_syntax_name != _acse_syntax_name:
             raise Exception('invalid acse syntax name')
+
         aarq_apdu = _decode(aarq_apdu_entity)
         if aarq_apdu[0] != 'aarq':
             raise Exception('not aarq message')
+
         aarq_external = aarq_apdu[1]['user-information'][0]
         if aarq_external.direct_ref is not None:
             if aarq_external.direct_ref != _encoder.syntax_name:
                 raise Exception('invalid encoder identifier')
+
         _, called_ap_title = _get_ap_titles(aarq_apdu)
         _, called_ae_qualifier = _get_ae_qualifiers(aarq_apdu)
         _, called_ap_invocation_identifier = \
@@ -143,8 +171,10 @@ async def listen(validate_cb: ValidateCb,
 
         aarq_user_data = (syntax_names.get_name(aarq_external.indirect_ref),
                           aarq_external.data)
-        user_validate_result = await aio.call(
-            validate_cb, syntax_names, aarq_user_data)
+
+        user_validate_result = await aio.call(self._validate_cb, syntax_names,
+                                              aarq_user_data)
+
         aare_apdu = _aare_apdu(syntax_names,
                                user_validate_result,
                                called_ap_title, called_ae_qualifier,
@@ -152,94 +182,89 @@ async def listen(validate_cb: ValidateCb,
                                called_ae_invocation_identifier)
         return _acse_syntax_name, _encode(aare_apdu)
 
-    async def on_connection(copp_conn):
+    async def _on_connection(self, copp_conn):
         try:
-            aarq_apdu = _decode(copp_conn.conn_req_user_data[1])
-            aare_apdu = _decode(copp_conn.conn_res_user_data[1])
-            calling_ap_title, called_ap_title = _get_ap_titles(aarq_apdu)
-            calling_ae_qualifier, called_ae_qualifier = _get_ae_qualifiers(
-                aarq_apdu)
-            conn = _create_connection(
-                copp_conn, aarq_apdu, aare_apdu,
-                called_ap_title, calling_ap_title,
-                called_ae_qualifier, calling_ae_qualifier)
-            await aio.call(connection_cb, conn)
-        except BaseException as e:
+            try:
+                aarq_apdu = _decode(copp_conn.conn_req_user_data[1])
+                aare_apdu = _decode(copp_conn.conn_res_user_data[1])
+
+                calling_ap_title, called_ap_title = _get_ap_titles(aarq_apdu)
+                calling_ae_qualifier, called_ae_qualifier = _get_ae_qualifiers(
+                    aarq_apdu)
+
+                conn = Connection(copp_conn, aarq_apdu, aare_apdu,
+                                  calling_ap_title, called_ap_title,
+                                  calling_ae_qualifier, called_ae_qualifier,
+                                  self._receive_queue_size,
+                                  self._send_queue_size)
+
+                await aio.call(self._connection_cb, conn)
+
+            except BaseException:
+                await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
+                raise
+
+        except Exception as e:
             mlog.error("error creating new incomming connection: %s", e,
                        exc_info=e)
-            await aio.uncancellable(
-                _close_connection(copp_conn, _abrt_apdu(1)))
+            return
 
-    async def wait_copp_server_closed():
+        if not self._bind_connections:
+            return
+
         try:
-            await copp_server.wait_closed()
-        finally:
-            async_group.close()
+            await conn.wait_closed()
 
-    async_group = aio.Group()
-    copp_server = await copp.listen(on_validate, on_connection, addr)
-    async_group.spawn(aio.call_on_cancel, copp_server.async_close)
-    async_group.spawn(wait_copp_server_closed)
-
-    srv = Server()
-    srv._async_group = async_group
-    srv._copp_server = copp_server
-    return srv
-
-
-class Server(aio.Resource):
-    """ACSE listening server
-
-    For creating new server see :func:`listen`
-
-    Closing server doesn't close active incomming connections
-
-    """
-
-    @property
-    def async_group(self) -> aio.Group:
-        """Async group"""
-        return self._async_group
-
-    @property
-    def addresses(self) -> list[Address]:
-        """Listening addresses"""
-        return self._copp_server.addresses
-
-
-def _create_connection(copp_conn, aarq_apdu, aare_apdu,
-                       local_ap_title, remote_ap_title,
-                       local_ae_qualifier, remote_ae_qualifier):
-    aarq_external = aarq_apdu[1]['user-information'][0]
-    aare_external = aare_apdu[1]['user-information'][0]
-    conn_req_user_data = (
-        copp_conn.syntax_names.get_name(aarq_external.indirect_ref),
-        aarq_external.data)
-    conn_res_user_data = (
-        copp_conn.syntax_names.get_name(aare_external.indirect_ref),
-        aare_external.data)
-
-    conn = Connection()
-    conn._copp_conn = copp_conn
-    conn._conn_req_user_data = conn_req_user_data
-    conn._conn_res_user_data = conn_res_user_data
-    conn._info = ConnectionInfo(local_ap_title=local_ap_title,
-                                local_ae_qualifier=local_ae_qualifier,
-                                remote_ap_title=remote_ap_title,
-                                remote_ae_qualifier=remote_ae_qualifier,
-                                **copp_conn.info._asdict())
-    conn._read_queue = aio.Queue()
-    conn._async_group = aio.Group()
-    conn._async_group.spawn(conn._read_loop)
-    return conn
+        except BaseException:
+            await aio.uncancellable(conn.async_close())
+            raise
 
 
 class Connection(aio.Resource):
     """ACSE connection
 
-    For creating new connection see :func:`connect`
+    For creating new connection see `connect` or `listen`.
 
     """
+
+    def __init__(self,
+                 conn: copp.Connection,
+                 aarq_apdu: asn1.Value,
+                 aare_apdu: asn1.Value,
+                 local_ap_title: asn1.ObjectIdentifier | None,
+                 remote_ap_title: asn1.ObjectIdentifier | None,
+                 local_ae_qualifier: int | None,
+                 remote_ae_qualifier: int | None,
+                 receive_queue_size: int,
+                 send_queue_size: int):
+        aarq_external = aarq_apdu[1]['user-information'][0]
+        aare_external = aare_apdu[1]['user-information'][0]
+
+        conn_req_user_data = (
+            conn.syntax_names.get_name(aarq_external.indirect_ref),
+            aarq_external.data)
+        conn_res_user_data = (
+            conn.syntax_names.get_name(aare_external.indirect_ref),
+            aare_external.data)
+
+        self._conn = conn
+        self._conn_req_user_data = conn_req_user_data
+        self._conn_res_user_data = conn_res_user_data
+        self._info = ConnectionInfo(local_ap_title=local_ap_title,
+                                    local_ae_qualifier=local_ae_qualifier,
+                                    remote_ap_title=remote_ap_title,
+                                    remote_ae_qualifier=remote_ae_qualifier,
+                                    **conn.info._asdict())
+        self._close_apdu = _abrt_apdu(0)
+        self._receive_queue = aio.Queue(receive_queue_size)
+        self._send_queue = aio.Queue(send_queue_size)
+        self._async_group = aio.Group()
+
+        self.async_group.spawn(aio.call_on_cancel, self._on_close)
+        self.async_group.spawn(self._receive_loop)
+        self.async_group.spawn(self._send_loop)
+        self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
+                               self.close)
 
     @property
     def async_group(self) -> aio.Group:
@@ -252,70 +277,144 @@ class Connection(aio.Resource):
         return self._info
 
     @property
-    def conn_req_user_data(self) -> IdentifiedEntity:
+    def conn_req_user_data(self) -> copp.IdentifiedEntity:
         """Connect request's user data"""
         return self._conn_req_user_data
 
     @property
-    def conn_res_user_data(self) -> IdentifiedEntity:
+    def conn_res_user_data(self) -> copp.IdentifiedEntity:
         """Connect response's user data"""
         return self._conn_res_user_data
 
-    async def read(self) -> IdentifiedEntity:
-        """Read data"""
-        return await self._read_queue.get()
+    async def receive(self) -> copp.IdentifiedEntity:
+        """Receive data"""
+        try:
+            return await self._receive_queue.get()
 
-    def write(self, data: IdentifiedEntity):
-        """Write data"""
-        self._copp_conn.write(data)
+        except aio.QueueClosedError:
+            raise ConnectionError()
 
-    async def _read_loop(self):
-        close_apdu = _abrt_apdu(0)
+    async def send(self, data: copp.IdentifiedEntity):
+        """Send data"""
+        try:
+            await self._send_queue.put((data, None))
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def drain(self):
+        """Drain output buffer"""
+        try:
+            future = self._loop.create_future()
+            await self._send_queue.put((None, future))
+            await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
+    async def _on_close(self):
+        await _close_copp(self._conn, self._close_apdu)
+
+    async def _close(self, apdu):
+        if not self.is_open:
+            return
+
+        self._close_apdu = apdu
+        self._async_group.close()
+
+    async def _receive_loop(self):
         try:
             while True:
-                syntax_name, entity = await self._copp_conn.read()
+                syntax_name, entity = await self._conn.receive()
+
                 if syntax_name == _acse_syntax_name:
                     if entity[0] == 'abrt':
                         close_apdu = None
+
                     elif entity[0] == 'rlrq':
                         close_apdu = _rlre_apdu()
+
                     else:
                         close_apdu = _abrt_apdu(1)
+
+                    self._close(close_apdu)
                     break
-                await self._read_queue.put((syntax_name, entity))
+
+                await self._receive_queue.put((syntax_name, entity))
+
+        except ConnectionError:
+            pass
+
+        except Exception as e:
+            mlog.error("receive loop error: %s", e, exc_info=e)
+
         finally:
-            self._async_group.close()
-            self._read_queue.close()
-            await aio.uncancellable(
-                _close_connection(self._copp_conn, close_apdu))
+            self._close(_abrt_apdu(1))
+            self._receive_queue.close()
+
+    async def _send_loop(self):
+        future = None
+        try:
+            while True:
+                data, future = await self._send_queue.get()
+
+                if data is None:
+                    await self._conn.drain()
+
+                else:
+                    await self._conn.send(data)
+
+                if future and not future.done():
+                    future.set_result(None)
+
+        except ConnectionError:
+            pass
+
+        except Exception as e:
+            mlog.error("send loop error: %s", e, exc_info=e)
+
+        finally:
+            self._close(_abrt_apdu(1))
+            self._send_queue.close()
+
+            while True:
+                if future and not future.done():
+                    future.set_result(None)
+                if self._send_queue.empty():
+                    break
+                _, future = self._send_queue.get_nowait()
 
 
-async def _close_connection(copp_conn, apdu):
+async def _close_copp(copp_conn, apdu):
     data = (_acse_syntax_name, _encode(apdu)) if apdu else None
     await copp_conn.async_close(data)
 
 
 def _get_ap_titles(aarq_apdu):
     calling = None
-    called = None
     if 'calling-AP-title' in aarq_apdu[1]:
         if aarq_apdu[1]['calling-AP-title'][0] == 'ap-title-form2':
             calling = aarq_apdu[1]['calling-AP-title'][1]
+
+    called = None
     if 'called-AP-title' in aarq_apdu[1]:
         if aarq_apdu[1]['called-AP-title'][0] == 'ap-title-form2':
             called = aarq_apdu[1]['called-AP-title'][1]
+
     return calling, called
 
 
 def _get_ae_qualifiers(aarq_apdu):
     calling = None
-    called = None
     if 'calling-AE-qualifier' in aarq_apdu[1]:
         if aarq_apdu[1]['calling-AE-qualifier'][0] == 'ap-qualifier-form2':
             calling = aarq_apdu[1]['calling-AE-qualifier'][1]
+
+    called = None
     if 'called-AE-qualifier' in aarq_apdu[1]:
         if aarq_apdu[1]['called-AE-qualifier'][0] == 'ap-qualifier-form2':
             called = aarq_apdu[1]['called-AE-qualifier'][1]
+
     return calling, called
 
 
@@ -336,21 +435,27 @@ def _aarq_apdu(syntax_names, app_context_name,
                calling_ae_qualifier, called_ae_qualifier,
                user_data):
     aarq_apdu = 'aarq', {'application-context-name': app_context_name}
+
     if calling_ap_title is not None:
         aarq_apdu[1]['calling-AP-title'] = 'ap-title-form2', calling_ap_title
+
     if called_ap_title is not None:
         aarq_apdu[1]['called-AP-title'] = 'ap-title-form2', called_ap_title
+
     if calling_ae_qualifier is not None:
         aarq_apdu[1]['calling-AE-qualifier'] = ('ae-qualifier-form2',
                                                 calling_ae_qualifier)
+
     if called_ae_qualifier is not None:
         aarq_apdu[1]['called-AE-qualifier'] = ('ae-qualifier-form2',
                                                called_ae_qualifier)
+
     if user_data:
         aarq_apdu[1]['user-information'] = [
             asn1.External(direct_ref=_encoder.syntax_name,
                           indirect_ref=syntax_names.get_id(user_data[0]),
                           data=user_data[1])]
+
     return aarq_apdu
 
 
@@ -366,18 +471,23 @@ def _aare_apdu(syntax_names, user_data,
             asn1.External(direct_ref=_encoder.syntax_name,
                           indirect_ref=syntax_names.get_id(user_data[0]),
                           data=user_data[1])]}
+
     if responding_ap_title is not None:
         aare_apdu[1]['responding-AP-title'] = ('ap-title-form2',
                                                responding_ap_title)
+
     if responding_ae_qualifier is not None:
         aare_apdu[1]['responding-AE-qualifier'] = ('ae-qualifier-form2',
                                                    responding_ae_qualifier)
+
     if responding_ap_invocation_identifier is not None:
         aare_apdu[1]['responding-AP-invocation-identifier'] = \
             responding_ap_invocation_identifier
+
     if responding_ae_invocation_identifier is not None:
         aare_apdu[1]['responding-AE-invocation-identifier'] = \
             responding_ae_invocation_identifier
+
     return aare_apdu
 
 

@@ -13,6 +13,11 @@ from hat.drivers import tcp
 
 mlog = logging.getLogger(__name__)
 
+with importlib.resources.as_file(importlib.resources.files(__package__) /
+                                 'asn1_repo.json') as _path:
+    _encoder = asn1.Encoder(asn1.Encoding.BER,
+                            asn1.Repository.from_json(_path))
+
 
 class ConnectionInfo(typing.NamedTuple):
     local_addr: tcp.Address
@@ -177,8 +182,8 @@ class Server(aio.Resource):
 
                 conn = Connection(cosp_conn, syntax_names, cp_ppdu, cpa_ppdu,
                                   calling_psel, called_psel,
-                                  self._copp_receive_queue_size,
-                                  self._copp_send_queue_size)
+                                  self._receive_queue_size,
+                                  self._send_queue_size)
 
                 await aio.call(self._connection_cb, conn)
 
@@ -216,8 +221,8 @@ class Connection(aio.Resource):
                  cpa_ppdu: asn1.Value,
                  local_psel: int | None,
                  remote_psel: int | None,
-                 copp_receive_queue_size: int,
-                 copp_send_queue_size: int):
+                 receive_queue_size: int,
+                 send_queue_size: int):
         cp_user_data = cp_ppdu['normal-mode-parameters']['user-data']
         cpa_user_data = cpa_ppdu['normal-mode-parameters']['user-data']
 
@@ -238,8 +243,8 @@ class Connection(aio.Resource):
                                     remote_psel=remote_psel,
                                     **conn.info._asdict())
         self._close_ppdu = _arp_ppdu()
-        self._receive_queue = aio.Queue(copp_receive_queue_size)
-        self._copp_send_queue_size = aio.Queue(copp_send_queue_size)
+        self._receive_queue = aio.Queue(receive_queue_size)
+        self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
@@ -485,12 +490,6 @@ def _sytax_names_from_cp_ppdu(cp_ppdu):
     syntax_names._syntax_name_ids = {
         v: k for k, v in syntax_names._syntax_id_names.items()}
     return syntax_names
-
-
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    _encoder = asn1.Encoder(asn1.Encoding.BER,
-                            asn1.Repository.from_json(_path))
 
 
 def _encode(name, value):
