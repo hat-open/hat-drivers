@@ -1,4 +1,5 @@
 from hat import json
+
 from hat.drivers.pnetgateway import common
 
 

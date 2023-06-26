@@ -2,6 +2,7 @@ import pytest
 
 from hat import aio
 from hat import util
+
 from hat.drivers import snmp
 from hat.drivers import udp
 from hat.drivers.snmp import encoder

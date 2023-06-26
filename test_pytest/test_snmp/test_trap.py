@@ -1,6 +1,7 @@
 import pytest
 
 from hat import util
+
 from hat.drivers import udp
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder

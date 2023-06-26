@@ -4,6 +4,7 @@ import logging
 import typing
 
 from hat import aio
+
 from hat.drivers import tcp
 from hat.drivers.pnetgateway import common
 from hat.drivers.pnetgateway import encoder
@@ -26,8 +27,11 @@ async def connect(addr: tcp.Address,
                   status_cb: StatusCb,
                   data_cb: DataCb,
                   subscriptions: list[str] | None = None,
+                  **kwargs
                   ) -> 'Connection':
     """Connect to PNET Gateway server
+
+    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
 
     Args:
         address: PNET Gateway server address
@@ -49,13 +53,13 @@ async def connect(addr: tcp.Address,
     conn._next_ids = itertools.count(0)
     conn._id_futures = {}
 
-    conn._conn = transport.Transport(await tcp.connect(addr))
+    conn._conn = transport.Transport(await tcp.connect(addr, **kwargs))
 
     try:
-        conn._conn.send({'type': 'authentication_request',
-                         'body': {'username': username,
-                                  'password': password,
-                                  'subscriptions': subscriptions}})
+        await conn._conn.send({'type': 'authentication_request',
+                               'body': {'username': username,
+                                        'password': password,
+                                        'subscriptions': subscriptions}})
 
         msg = None
         while msg is None or msg['type'] != 'authentication_response':
@@ -129,7 +133,7 @@ class Connection(aio.Resource):
         self._id_futures[msg_id] = future
 
         try:
-            self._conn.send(msg)
+            await self._conn.send(msg)
             return await future
 
         finally:

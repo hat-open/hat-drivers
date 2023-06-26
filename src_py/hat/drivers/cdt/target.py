@@ -1,6 +1,7 @@
 import typing
 
 from hat import json
+
 from hat.drivers.cdt.connection import SessionId, Connection
 
 

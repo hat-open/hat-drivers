@@ -2,6 +2,7 @@ import abc
 import logging
 
 from hat import aio
+from hat import util
 
 from hat.drivers import serial
 from hat.drivers import tcp
@@ -72,11 +73,11 @@ class Connection(aio.Resource):
         mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)
 
     @abc.abstractmethod
-    async def _write(self, data: common.Bytes):
+    async def _write(self, data: util.Bytes):
         pass
 
     @abc.abstractmethod
-    async def _read(self, size: int) -> common.Bytes:
+    async def _read(self, size: int) -> util.Bytes:
         pass
 
     @abc.abstractmethod
@@ -165,7 +166,7 @@ class _TcpConnection(Connection):
         return self._log_prefix
 
     async def _write(self, data):
-        self._conn.write(data)
+        await self._conn.write(data)
         await self._conn.drain()
 
     async def _read(self, size):

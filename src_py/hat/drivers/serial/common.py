@@ -1,11 +1,8 @@
 import abc
 import enum
-import typing
 
 from hat import aio
-
-
-Bytes: typing.TypeAlias = bytes | bytearray | memoryview
+from hat import util
 
 
 class ByteSize(enum.Enum):
@@ -38,7 +35,7 @@ class Endpoint(aio.Resource):
         """Port name"""
 
     @abc.abstractmethod
-    async def read(self, size: int) -> Bytes:
+    async def read(self, size: int) -> util.Bytes:
         """Read
 
         Args:
@@ -50,7 +47,7 @@ class Endpoint(aio.Resource):
         """
 
     @abc.abstractmethod
-    async def write(self, data: Bytes):
+    async def write(self, data: util.Bytes):
         """Write
 
         Raises:

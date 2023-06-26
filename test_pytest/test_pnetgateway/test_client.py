@@ -4,8 +4,8 @@ import pytest
 
 from hat import util
 from hat import aio
-from hat.drivers import tcp
 
+from hat.drivers import tcp
 from hat.drivers.pnetgateway import client
 from hat.drivers.pnetgateway import common
 from hat.drivers.pnetgateway import encoder
@@ -60,10 +60,10 @@ async def test_connect(addr):
                             'subscriptions': None}}
     assert not conn1_future.done()
 
-    conn2.send({'type': 'authentication_response',
-                'body': {'success': True,
-                         'status': 'CONNECTED',
-                         'data': []}})
+    await conn2.send({'type': 'authentication_response',
+                      'body': {'success': True,
+                               'status': 'CONNECTED',
+                               'data': []}})
     conn1 = await conn1_future
     assert conn1.is_open
 
@@ -89,10 +89,10 @@ async def test_data_changed(addr):
     conn2 = transport.Transport(conn2)
     msg = await conn2.receive()
     assert msg['type'] == 'authentication_request'
-    conn2.send({'type': 'authentication_response',
-                'body': {'success': True,
-                         'status': 'CONNECTED',
-                         'data': [encoder.data_to_json(data)]}})
+    await conn2.send({'type': 'authentication_response',
+                      'body': {'success': True,
+                               'status': 'CONNECTED',
+                               'data': [encoder.data_to_json(data)]}})
     conn1 = await conn1_future
 
     assert data_queue.empty()
@@ -100,8 +100,8 @@ async def test_data_changed(addr):
 
     for i in range(10):
         new_data = data._replace(value=i)
-        conn2.send({'type': 'data_changed_unsolicited',
-                    'body': {'data': [encoder.data_to_json(new_data)]}})
+        await conn2.send({'type': 'data_changed_unsolicited',
+                          'body': {'data': [encoder.data_to_json(new_data)]}})
         change = await data_queue.get()
         assert change == [new_data]
         assert conn1.data == {new_data.key: new_data}
@@ -130,26 +130,26 @@ async def test_status_changed(addr):
     conn2 = transport.Transport(conn2)
     msg = await conn2.receive()
     assert msg['type'] == 'authentication_request'
-    conn2.send({'type': 'authentication_response',
-                'body': {'success': True,
-                         'status': 'CONNECTED',
-                         'data': [encoder.data_to_json(data)]}})
+    await conn2.send({'type': 'authentication_response',
+                      'body': {'success': True,
+                               'status': 'CONNECTED',
+                               'data': [encoder.data_to_json(data)]}})
     conn1 = await conn1_future
 
     assert conn1.pnet_status == common.Status.CONNECTED
     assert conn1.data == {data.key: data}
 
-    conn2.send({'type': 'status_changed_unsolicited',
-                'body': {'status': 'DISCONNECTED',
-                         'data': []}})
+    await conn2.send({'type': 'status_changed_unsolicited',
+                      'body': {'status': 'DISCONNECTED',
+                               'data': []}})
 
     status = await status_queue.get()
     assert status == common.Status.DISCONNECTED
     assert conn1.data == {}
 
-    conn2.send({'type': 'status_changed_unsolicited',
-                'body': {'status': 'CONNECTED',
-                         'data': [encoder.data_to_json(data)]}})
+    await conn2.send({'type': 'status_changed_unsolicited',
+                      'body': {'status': 'CONNECTED',
+                               'data': [encoder.data_to_json(data)]}})
 
     status = await status_queue.get()
     assert conn1.pnet_status == common.Status.CONNECTED
@@ -180,10 +180,10 @@ async def test_change_data(success, addr):
     conn2 = transport.Transport(conn2)
     msg = await conn2.receive()
     assert msg['type'] == 'authentication_request'
-    conn2.send({'type': 'authentication_response',
-                'body': {'success': True,
-                         'status': 'CONNECTED',
-                         'data': []}})
+    await conn2.send({'type': 'authentication_response',
+                      'body': {'success': True,
+                               'status': 'CONNECTED',
+                               'data': []}})
     conn1 = await conn1_future
 
     future = asyncio.ensure_future(
@@ -194,9 +194,9 @@ async def test_change_data(success, addr):
     assert msg['body']['data'] == [encoder.change_to_json(change)]
     assert not future.done()
 
-    conn2.send({'type': 'change_data_response',
-                'body': {'id': msg['body']['id'],
-                         'success': success}})
+    await conn2.send({'type': 'change_data_response',
+                      'body': {'id': msg['body']['id'],
+                               'success': success}})
     result = await future
 
     assert result == success
@@ -224,10 +224,10 @@ async def test_send_commands(success, addr):
     conn2 = transport.Transport(conn2)
     msg = await conn2.receive()
     assert msg['type'] == 'authentication_request'
-    conn2.send({'type': 'authentication_response',
-                'body': {'success': True,
-                         'status': 'CONNECTED',
-                         'data': []}})
+    await conn2.send({'type': 'authentication_response',
+                      'body': {'success': True,
+                               'status': 'CONNECTED',
+                               'data': []}})
     conn1 = await conn1_future
 
     future = asyncio.ensure_future(
@@ -238,9 +238,9 @@ async def test_send_commands(success, addr):
     assert msg['body']['data'] == [encoder.command_to_json(cmd)]
     assert not future.done()
 
-    conn2.send({'type': 'command_response',
-                'body': {'id': msg['body']['id'],
-                         'success': success}})
+    await conn2.send({'type': 'command_response',
+                      'body': {'id': msg['body']['id'],
+                               'success': success}})
     result = await future
 
     assert result == success

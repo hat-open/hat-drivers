@@ -1,7 +1,6 @@
 """Asyncio serial communication driver"""
 
-from hat.drivers.serial.common import (Bytes,
-                                       ByteSize,
+from hat.drivers.serial.common import (ByteSize,
                                        Parity,
                                        StopBits,
                                        Endpoint)
@@ -15,8 +14,7 @@ except ImportError:
     native_serial = None
 
 
-__all__ = ['Bytes',
-           'ByteSize',
+__all__ = ['ByteSize',
            'Parity',
            'StopBits',
            'Endpoint',

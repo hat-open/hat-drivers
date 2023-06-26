@@ -4,11 +4,6 @@ import typing
 from hat import asn1
 
 
-Bytes = asn1.Bytes
-
-ObjectIdentifier = asn1.ObjectIdentifier
-
-
 class Version(enum.Enum):
     V1 = 0
     V2C = 1
@@ -113,7 +108,7 @@ class Data(typing.NamedTuple):
 
     """
     type: DataType
-    name: ObjectIdentifier
+    name: asn1.ObjectIdentifier
     value: typing.Any
 
 
@@ -128,7 +123,7 @@ class Trap(typing.NamedTuple):
     context: Context
     cause: Cause | None
     """cause is available in case of v1"""
-    oid: ObjectIdentifier
+    oid: asn1.ObjectIdentifier
     timestamp: int
     data: Data | None
 
@@ -139,24 +134,24 @@ class Inform(typing.NamedTuple):
 
 
 class GetDataReq(typing.NamedTuple):
-    names: list[ObjectIdentifier]
+    names: list[asn1.ObjectIdentifier]
 
 
 class GetNextDataReq(typing.NamedTuple):
-    names: list[ObjectIdentifier]
+    names: list[asn1.ObjectIdentifier]
 
 
 class GetBulkDataReq(typing.NamedTuple):
-    names: list[ObjectIdentifier]
+    names: list[asn1.ObjectIdentifier]
 
 
 class SetDataReq(typing.NamedTuple):
     data: Data | None
 
 
-Request: typing.TypeAlias = (GetDataReq,
-                             GetNextDataReq,
-                             GetBulkDataReq,
+Request: typing.TypeAlias = (GetDataReq |
+                             GetNextDataReq |
+                             GetBulkDataReq |
                              SetDataReq)
 
 Response: typing.TypeAlias = Error | Data | None

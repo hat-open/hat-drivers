@@ -10,6 +10,7 @@ import pytest
 
 from hat import aio
 from hat import util
+
 from hat.drivers import modbus
 from hat.drivers import serial
 from hat.drivers import tcp

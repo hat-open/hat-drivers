@@ -3,6 +3,7 @@ import itertools
 import logging
 
 from hat import aio
+
 from hat.drivers import udp
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder

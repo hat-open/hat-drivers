@@ -1,6 +1,4 @@
-from hat.drivers.snmp.common import (Bytes,
-                                     ObjectIdentifier,
-                                     Version,
+from hat.drivers.snmp.common import (Version,
                                      ErrorType,
                                      CauseType,
                                      DataType,
@@ -28,9 +26,7 @@ from hat.drivers.snmp.agent import (RequestCb,
                                     Agent)
 
 
-__all__ = ['Bytes',
-           'ObjectIdentifier',
-           'Version',
+__all__ = ['Version',
            'ErrorType',
            'CauseType',
            'DataType',

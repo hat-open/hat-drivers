@@ -2,8 +2,8 @@ import pytest
 
 from hat import util
 from hat import aio
-from hat.drivers import tcp
 
+from hat.drivers import tcp
 from hat.drivers.pnetgateway import transport
 
 
@@ -30,11 +30,11 @@ async def test_transport(data, addr):
     assert conn1.is_open
     assert conn2.is_open
 
-    conn1.send(data)
+    await conn1.send(data)
     received = await conn2.receive()
     assert data == received
 
-    conn2.send(data)
+    await conn2.send(data)
     received = await conn1.receive()
     assert data == received
 

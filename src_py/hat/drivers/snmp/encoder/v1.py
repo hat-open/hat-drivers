@@ -21,7 +21,7 @@ class BasicPdu(typing.NamedTuple):
 
 
 class TrapPdu(typing.NamedTuple):
-    enterprise: common.ObjectIdentifier
+    enterprise: asn1.ObjectIdentifier
     addr: tuple[int, int, int, int]
     cause: common.Cause
     timestamp: int

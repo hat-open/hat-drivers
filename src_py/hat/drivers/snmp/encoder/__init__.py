@@ -2,6 +2,7 @@ import importlib.resources
 import typing
 
 from hat import asn1
+from hat import util
 import hat.asn1.ber
 import hat.asn1.common
 
@@ -28,7 +29,7 @@ with importlib.resources.as_file(importlib.resources.files(__package__) /
 Msg: typing.TypeAlias = v1.Msg | v2c.Msg | v3.Msg
 
 
-def encode(msg: Msg) -> common.Bytes:
+def encode(msg: Msg) -> util.Bytes:
     if isinstance(msg, v1.Msg):
         data = v1.encode_msg(msg)
         return _encoder.encode('RFC1157-SNMP', 'Message', data)
@@ -44,7 +45,7 @@ def encode(msg: Msg) -> common.Bytes:
     raise ValueError('unsupported message')
 
 
-def decode(msg_bytes: common.Bytes) -> Msg:
+def decode(msg_bytes: util.Bytes) -> Msg:
     entity, _ = _encoder.decode_entity(msg_bytes)
     version = _get_version(entity)
 

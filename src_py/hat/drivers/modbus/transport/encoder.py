@@ -1,6 +1,8 @@
 import itertools
 import struct
 
+from hat import util
+
 from hat.drivers.modbus.transport import common
 
 try:
@@ -12,7 +14,7 @@ except ImportError:
 
 def get_next_adu_size(modbus_type: common.ModbusType,
                       direction: common.Direction,
-                      data: common.Bytes
+                      data: util.Bytes
                       ) -> int:
     if modbus_type == common.ModbusType.TCP:
         return _get_next_tcp_adu_size(data)
@@ -28,8 +30,8 @@ def get_next_adu_size(modbus_type: common.ModbusType,
 
 def decode_adu(modbus_type: common.ModbusType,
                direction: common.Direction,
-               data: common.Bytes
-               ) -> tuple[common.Adu, common.Bytes]:
+               data: util.Bytes
+               ) -> tuple[common.Adu, util.Bytes]:
     if modbus_type == common.ModbusType.TCP:
         return _decode_tcp_adu(direction, data)
 
@@ -42,7 +44,7 @@ def decode_adu(modbus_type: common.ModbusType,
     raise ValueError("unsupported modbus type")
 
 
-def encode_adu(adu: common.Adu) -> common.Bytes:
+def encode_adu(adu: common.Adu) -> util.Bytes:
     if isinstance(adu, common.TcpAdu):
         return _encode_tcp_adu(adu)
 

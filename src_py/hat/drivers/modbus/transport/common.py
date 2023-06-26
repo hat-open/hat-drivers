@@ -7,7 +7,18 @@ import typing
 from hat.drivers.modbus.common import Error
 
 
-Bytes: typing.TypeAlias = bytes | bytearray | memoryview
+Request = type('Request', (abc.ABC, ), {})
+Response = type('Response', (abc.ABC, ), {})
+
+
+def request(cls):
+    Request.register(cls)
+    return cls
+
+
+def response(cls):
+    Response.register(cls)
+    return cls
 
 
 class Direction(enum.Enum):
@@ -28,132 +39,126 @@ class FunctionCode(enum.Enum):
     READ_FIFO_QUEUE = 24
 
 
+@response
 class ErrorRes(typing.NamedTuple):
     fc: FunctionCode
     error: Error
 
 
+@request
 class ReadCoilsReq(typing.NamedTuple):
     address: int
     quantity: int | None
 
 
+@response
 class ReadCoilsRes(typing.NamedTuple):
     values: list[int]
 
 
+@request
 class ReadDiscreteInputsReq(typing.NamedTuple):
     address: int
     quantity: int | None
 
 
+@response
 class ReadDiscreteInputsRes(typing.NamedTuple):
     values: list[int]
 
 
+@request
 class ReadHoldingRegistersReq(typing.NamedTuple):
     address: int
     quantity: int | None
 
 
+@response
 class ReadHoldingRegistersRes(typing.NamedTuple):
     values: list[int]
 
 
+@request
 class ReadInputRegistersReq(typing.NamedTuple):
     address: int
     quantity: int | None
 
 
+@response
 class ReadInputRegistersRes(typing.NamedTuple):
     values: list[int]
 
 
+@request
 class WriteSingleCoilReq(typing.NamedTuple):
     address: int
     value: int
 
 
+@response
 class WriteSingleCoilRes(typing.NamedTuple):
     address: int
     value: int
 
 
+@request
 class WriteSingleRegisterReq(typing.NamedTuple):
     address: int
     value: int
 
 
+@response
 class WriteSingleRegisterRes(typing.NamedTuple):
     address: int
     value: int
 
 
+@request
 class WriteMultipleCoilsReq(typing.NamedTuple):
     address: int
     values: list[int]
 
 
+@response
 class WriteMultipleCoilsRes(typing.NamedTuple):
     address: int
     quantity: int
 
 
+@request
 class WriteMultipleRegistersReq(typing.NamedTuple):
     address: int
     values: list[int]
 
 
+@response
 class WriteMultipleRegistersRes(typing.NamedTuple):
     address: int
     quantity: int
 
 
+@request
 class MaskWriteRegisterReq(typing.NamedTuple):
     address: int
     and_mask: int
     or_mask: int
 
 
+@response
 class MaskWriteRegisterRes(typing.NamedTuple):
     address: int
     and_mask: int
     or_mask: int
 
 
+@request
 class ReadFifoQueueReq(typing.NamedTuple):
     address: int
 
 
+@response
 class ReadFifoQueueRes(typing.NamedTuple):
     values: list[int]
-
-
-Request = type('Request', (abc.ABC, ), {})
-Request.register(ReadCoilsReq)
-Request.register(ReadDiscreteInputsReq)
-Request.register(ReadHoldingRegistersReq)
-Request.register(ReadInputRegistersReq)
-Request.register(WriteSingleCoilReq)
-Request.register(WriteSingleRegisterReq)
-Request.register(WriteMultipleCoilsReq)
-Request.register(WriteMultipleRegistersReq)
-Request.register(MaskWriteRegisterReq)
-Request.register(ReadFifoQueueReq)
-
-
-Response = type('Response', (abc.ABC, ), {})
-Response.register(ErrorRes)
-Response.register(ReadCoilsRes)
-Response.register(ReadDiscreteInputsRes)
-Response.register(ReadHoldingRegistersRes)
-Response.register(ReadInputRegistersRes)
-Response.register(WriteSingleCoilRes)
-Response.register(WriteSingleRegisterRes)
-Response.register(WriteMultipleCoilsRes)
-Response.register(WriteMultipleRegistersRes)
-Response.register(MaskWriteRegisterRes)
-Response.register(ReadFifoQueueRes)
 
 
 Pdu: typing.TypeAlias = Request | Response

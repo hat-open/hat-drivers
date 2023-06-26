@@ -20,9 +20,9 @@ class Transport(aio.Resource):
         msg = json.decode(msg_str)
         return msg
 
-    def send(self, msg: json.Data):
+    async def send(self, msg: json.Data):
         msg_str = json.encode(msg)
         msg_bytes = msg_str.encode('utf-8')
         size = len(msg_bytes)
         size_bytes = size.to_bytes(4, 'big')
-        self._conn.write(size_bytes + msg_bytes)
+        await self._conn.write(size_bytes + msg_bytes)
