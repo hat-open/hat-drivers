@@ -1,7 +1,6 @@
 """Manufacturing Message Specification"""
 
 from hat.drivers.mms.connection import (
-    Address,
     ConnectionInfo,
     RequestCb,
     ConnectionCb,
@@ -89,7 +88,6 @@ from hat.drivers.mms.common import (
 
 
 __all__ = [
-    'Address',
     'ConnectionInfo',
     'RequestCb',
     'ConnectionCb',

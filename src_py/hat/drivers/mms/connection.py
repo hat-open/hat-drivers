@@ -2,12 +2,15 @@
 
 import asyncio
 import importlib.resources
+import itertools
 import logging
 import typing
 
 from hat import aio
 from hat import asn1
+
 from hat.drivers import acse
+from hat.drivers import tcp
 from hat.drivers.mms import common
 from hat.drivers.mms import encoder
 
@@ -15,42 +18,34 @@ from hat.drivers.mms import encoder
 mlog = logging.getLogger(__name__)
 
 
-Address: typing.TypeAlias = acse.Address
-"""Address"""
-
-
-IdentifiedEntity: typing.TypeAlias = acse.IdentifiedEntity
-"""Identified entity"""
-
-
 ConnectionInfo: typing.TypeAlias = acse.ConnectionInfo
 """Connection info"""
 
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
+"""Connection callback"""
 
 RequestCb: typing.TypeAlias = aio.AsyncCallable[['Connection', common.Request],
                                                 common.Response]
 """Request callback"""
 
+UnconfirmedCb: typing.TypeAlias = aio.AsyncCallable[['Connection',
+                                                     common.Unconfirmed],
+                                                    None]
+"""Unconfirmed callback"""
 
-ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
-"""Connection callback"""
 
-
-async def connect(request_cb: RequestCb,
-                  addr: Address,
-                  local_tsel: int | None = None,
-                  remote_tsel: int | None = None,
-                  local_ssel: int | None = None,
-                  remote_ssel: int | None = None,
-                  local_psel: int | None = None,
-                  remote_psel: int | None = None,
-                  local_ap_title: asn1.ObjectIdentifier | None = None,
-                  remote_ap_title: asn1.ObjectIdentifier | None = None,
-                  local_ae_qualifier: int | None = None,
-                  remote_ae_qualifier: int | None = None,
-                  user_data: IdentifiedEntity | None = None
+async def connect(addr: tcp.Address,
+                  request_cb: RequestCb | None = None,
+                  unconfirmed_cb: UnconfirmedCb | None = None,
+                  **kwargs
                   ) -> 'Connection':
-    """Connect to ACSE server"""
+    """Connect to MMS server
+
+    Additional arguments are passed directly to `hat.drivers.acse.connect`
+    (`syntax_name_list`, `app_context_name` and `user_data` are set by
+    this coroutine).
+
+    """
     initiate_req = 'initiate-RequestPDU', {
         'proposedMaxServOutstandingCalling': 5,
         'proposedMaxServOutstandingCalled': 5,
@@ -59,38 +54,40 @@ async def connect(request_cb: RequestCb,
             'proposedParameterCBB': _parameter_cbb,
             'servicesSupportedCalling': _service_support}}
     req_user_data = _encode(initiate_req)
+
     acse_conn = await acse.connect(syntax_name_list=[_mms_syntax_name],
                                    app_context_name=_mms_app_context_name,
                                    addr=addr,
-                                   local_tsel=local_tsel,
-                                   remote_tsel=remote_tsel,
-                                   local_ssel=local_ssel,
-                                   remote_ssel=remote_ssel,
-                                   local_psel=local_psel,
-                                   remote_psel=remote_psel,
-                                   local_ap_title=local_ap_title,
-                                   remote_ap_title=remote_ap_title,
-                                   local_ae_qualifier=local_ae_qualifier,
-                                   remote_ae_qualifier=remote_ae_qualifier,
-                                   user_data=(_mms_syntax_name, req_user_data))
+                                   user_data=(_mms_syntax_name, req_user_data),
+                                   **kwargs)
+
     try:
         res_syntax_name, res_user_data = acse_conn.conn_res_user_data
         if res_syntax_name != _mms_syntax_name:
             raise Exception("invalid syntax name")
+
         initiate_res = _decode(res_user_data)
         if initiate_res[0] != 'initiate-ResponsePDU':
             raise Exception("invalid initiate response")
-        return _create_connection(request_cb, acse_conn)
+
+        return Connection(acse_conn, request_cb, unconfirmed_cb)
+
     except Exception:
         await aio.uncancellable(acse_conn.async_close())
         raise
 
 
 async def listen(connection_cb: ConnectionCb,
-                 request_cb: RequestCb,
-                 addr: Address = Address('0.0.0.0', 102)
+                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 request_cb: RequestCb | None = None,
+                 unconfirmed_cb: UnconfirmedCb | None = None,
+                 *,
+                 bind_connections: bool = False,
+                 **kwargs
                  ) -> 'Server':
     """Create MMS listening server
+
+    Additional arguments are passed directly to `hat.drivers.acse.listen`.
 
     Args:
         connection_cb: new connection callback
@@ -98,14 +95,47 @@ async def listen(connection_cb: ConnectionCb,
         addr: local listening address
 
     """
+    server = Server()
+    server._connection_cb = connection_cb
+    server._request_cb = request_cb
+    server._unconfirmed_cb = unconfirmed_cb
+    server._bind_connections = bind_connections
 
-    async def on_validate(syntax_names, user_data):
+    server._srv = await acse.listen(server._on_validate,
+                                    server._on_connection,
+                                    addr,
+                                    bind_connections=False,
+                                    **kwargs)
+
+    return server
+
+
+class Server(aio.Resource):
+    """MMS listening server
+
+    For creating new server see `listen`.
+
+    """
+
+    @property
+    def async_group(self) -> aio.Group:
+        """Async group"""
+        return self._srv.async_group
+
+    @property
+    def addresses(self) -> list[tcp.Address]:
+        """Listening addresses"""
+        return self._acse_server.addresses
+
+    async def _on_validate(self, syntax_names, user_data):
         syntax_name, req_user_data = user_data
         if syntax_name != _mms_syntax_name:
             raise Exception('invalid mms syntax name')
+
         initiate_req = _decode(req_user_data)
         if initiate_req[0] != 'initiate-RequestPDU':
             raise Exception('invalid initiate request')
+
         initiate_res = 'initiate-ResponsePDU', {
             'negotiatedMaxServOutstandingCalling': 5,
             'negotiatedMaxServOutstandingCalled': 5,
@@ -117,80 +147,65 @@ async def listen(connection_cb: ConnectionCb,
         if 'localDetailCalling' in initiate_req[1]:
             initiate_res[1]['localDetailCalled'] = \
                 initiate_req[1]['localDetailCalling']
+
         res_user_data = _encode(initiate_res)
         return _mms_syntax_name, res_user_data
 
-    async def on_connection(acse_conn):
+    async def _on_connection(self, acse_conn):
         try:
             try:
-                conn = _create_connection(request_cb, acse_conn)
+                conn = Connection(acse_conn, self._request_cb,
+                                  self._unconfirmed_cb)
+
             except Exception:
                 await aio.uncancellable(acse_conn.async_close())
                 raise
+
             try:
-                await aio.call(connection_cb, conn)
+                await aio.call(self._connection_cb, conn)
+
             except BaseException:
                 await aio.uncancellable(conn.async_close())
                 raise
+
         except Exception as e:
             mlog.error("error creating new incomming connection: %s",
                        e, exc_info=e)
+            return
 
-    async def wait_acse_server_closed():
+        if not self._bind_connections:
+            return
+
         try:
-            await acse_server.wait_closed()
-        finally:
-            async_group.close()
+            await conn.wait_closed()
 
-    async_group = aio.Group()
-    acse_server = await acse.listen(on_validate, on_connection, addr)
-    async_group.spawn(aio.call_on_cancel, acse_server.async_close)
-    async_group.spawn(wait_acse_server_closed)
-
-    srv = Server()
-    srv._async_group = async_group
-    srv._acse_server = acse_server
-    return srv
-
-
-class Server(aio.Resource):
-    """MMS listening server
-
-    For creating new server see :func:`listen`
-
-    Closing server doesn't close active incomming connections
-
-    """
-
-    @property
-    def async_group(self) -> aio.Group:
-        """Async group"""
-        return self._async_group
-
-    @property
-    def addresses(self) -> list[Address]:
-        """Listening addresses"""
-        return self._acse_server.addresses
-
-
-def _create_connection(request_cb, acse_conn):
-    conn = Connection()
-    conn._request_cb = request_cb
-    conn._acse_conn = acse_conn
-    conn._last_invoke_id = 0
-    conn._unconfirmed_queue = aio.Queue()
-    conn._response_futures = {}
-    conn._async_group = aio.Group()
-    conn._async_group.spawn(conn._read_loop)
-    return conn
+        except BaseException:
+            await aio.uncancellable(conn.async_close())
+            raise
 
 
 class Connection(aio.Resource):
     """MMS connection
 
-    For creating new connection see :func:`connect`
+    For creating new connection see `connect` or `listen`.
 
     """
+
+    def __init__(self,
+                 conn: acse.Connection,
+                 request_cb: RequestCb,
+                 unconfirmed_cb: UnconfirmedCb):
+        self._conn = conn
+        self._request_cb = request_cb
+        self._unconfirmed_cb = unconfirmed_cb
+
+        self._loop = asyncio.get_running_loop()
+        self._next_invoke_ids = itertools.count(0)
+        self._response_futures = {}
+        self._close_pdu = 'conclude-RequestPDU', None
+        self._async_group = aio.Group()
+
+        self._async_group.spawn(self._read_loop)
 
     @property
     def async_group(self) -> aio.Group:
@@ -200,131 +215,140 @@ class Connection(aio.Resource):
     @property
     def info(self) -> ConnectionInfo:
         """Connection info"""
-        return self._acse_conn.info
+        return self._conn.info
 
-    async def receive_unconfirmed(self) -> common.Unconfirmed:
-        """Receive unconfirmed message
-
-        Raises:
-            ConnectionError: in case connection is not open
-
-        """
-        try:
-            return await self._unconfirmed_queue.get()
-        except aio.QueueClosedError:
-            raise ConnectionError('connection is not open')
-
-    def send_unconfirmed(self, unconfirmed: common.Unconfirmed):
+    async def send_unconfirmed(self, unconfirmed: common.Unconfirmed):
         """Send unconfirmed message"""
+        if not self.is_open:
+            raise ConnectionError()
+
         pdu = 'unconfirmed-PDU', {
             'service': encoder.encode_unconfirmed(unconfirmed)}
         data = _mms_syntax_name, _encode(pdu)
-        self._acse_conn.write(data)
+        await self._conn.send(data)
 
     async def send_confirmed(self,
                              req: common.Request
                              ) -> common.Response:
-        """Send confirmed request and wait for response
+        """Send confirmed request and wait for response"""
+        if not self.is_open:
+            raise ConnectionError()
 
-        Raises:
-            ConnectionError: in case connection is not open
-
-        """
-        if self._async_group.is_closing:
-            raise ConnectionError('connection is not open')
-        invoke_id = self._last_invoke_id + 1
+        invoke_id = next(self._next_invoke_ids)
         pdu = 'confirmed-RequestPDU', {
             'invokeID': invoke_id,
             'service': encoder.encode_request(req)}
         data = _mms_syntax_name, _encode(pdu)
-        self._acse_conn.write(data)
-        self._last_invoke_id = invoke_id
-        self._response_futures[invoke_id] = asyncio.Future()
-        try:
-            return await self._response_futures[invoke_id]
-        finally:
-            del self._response_futures[invoke_id]
+        await self._conn.send(data)
 
-    async def _read_loop(self):
-        running = True
+        if not self.is_open:
+            raise ConnectionError()
+
         try:
-            while running:
-                syntax_name, entity = await self._acse_conn.read()
+            future = self._loop.create_future()
+            self._response_futures[invoke_id] = future
+            return await future
+
+        finally:
+            self._response_futures.pop(invoke_id, None)
+
+    async def _on_close(self):
+        if self._conn.is_open:
+            try:
+                data = _mms_syntax_name, _encode(self._close_pdu)
+                await self._conn.send(data)
+                await self._conn.drain()
+
+                # TODO: wait for response in case of conclude-RequestPDU
+
+            except Exception as e:
+                mlog.error("on close error: %s", e, exc_info=e)
+
+        await self._conn.async_close()
+
+    async def _receive_loop(self):
+        try:
+            while True:
+                syntax_name, entity = await self._conn.receive()
                 if syntax_name != _mms_syntax_name:
                     continue
+
                 pdu = _decode(entity)
-                running = await self._process_pdu(pdu)
-        except asyncio.CancelledError:
-            pdu = 'conclude-RequestPDU', None
-            data = _mms_syntax_name, _encode(pdu)
-            self._acse_conn.write(data)
-            # TODO: wait for response
-            raise
+                name, data = pdu
+
+                if name == 'unconfirmed-PDU':
+                    await self._process_unconfirmed(data)
+
+                elif name == 'confirmed-RequestPDU':
+                    await self._process_request(data)
+
+                elif name == 'confirmed-ResponsePDU':
+                    await self._process_response(data)
+
+                elif name == 'confirmed-ErrorPDU':
+                    await self._process_error(data)
+
+                elif name == 'conclude-RequestPDU':
+                    self._close_pdu = 'conclude-ResponsePDU', None
+                    break
+
+                else:
+                    raise Exception('unsupported pdu')
+
+        except ConnectionError:
+            pass
+
+        except Exception as e:
+            mlog.error("receive loop error: %s", e, exc_info=e)
+
         finally:
-            self._async_group.close()
-            self._unconfirmed_queue.close()
+            self.close()
+
             for response_future in self._response_futures.values():
                 if not response_future.done():
-                    response_future.set_exception(
-                        ConnectionError('connection is not open'))
-            await aio.uncancellable(self._acse_conn.async_close())
+                    response_future.set_exception(ConnectionError())
 
-    async def _process_pdu(self, pdu):
-        name, data = pdu
+    async def _process_unconfirmed(self, data):
+        unconfirmed = encoder.decode_unconfirmed(data['service'])
+        await self._unconfirmed_queue.put(unconfirmed)
 
-        if name == 'unconfirmed-PDU':
-            unconfirmed = encoder.decode_unconfirmed(data['service'])
-            await self._unconfirmed_queue.put(unconfirmed)
-            return True
+    async def _process_request(self, data):
+        invoke_id = data['invokeID']
+        req = encoder.decode_request(data['service'])
+        res = await aio.call(self._request_cb, self, req)
+        if isinstance(res, common.ErrorResponse):
+            res_pdu = 'confirmed-ErrorPDU', {
+                'invokeID': invoke_id,
+                'serviceError': {
+                    'errorClass': (res.error_class.value, res.value)}}
+        else:
+            res_pdu = 'confirmed-ResponsePDU', {
+                'invokeID': invoke_id,
+                'service': encoder.encode_response(res)}
+        res_data = _mms_syntax_name, _encode(res_pdu)
+        self._acse_conn.write(res_data)
 
-        elif name == 'confirmed-RequestPDU':
-            invoke_id = data['invokeID']
-            req = encoder.decode_request(data['service'])
-            res = await aio.call(self._request_cb, self, req)
-            if isinstance(res, common.ErrorResponse):
-                res_pdu = 'confirmed-ErrorPDU', {
-                    'invokeID': invoke_id,
-                    'serviceError': {
-                        'errorClass': (res.error_class.value, res.value)}}
-            else:
-                res_pdu = 'confirmed-ResponsePDU', {
-                    'invokeID': invoke_id,
-                    'service': encoder.encode_response(res)}
-            res_data = _mms_syntax_name, _encode(res_pdu)
-            self._acse_conn.write(res_data)
-            return True
+    async def _process_response(self, data):
+        invoke_id = data['invokeID']
+        res = encoder.decode_response(data['service'])
+        future = self._response_futures.get(invoke_id)
+        if future and not future.done():
+            future.set_result(res)
+        else:
+            mlog.warn(f"dropping confirmed response "
+                      f"(invoke_id: {invoke_id})")
 
-        elif name == 'confirmed-ResponsePDU':
-            invoke_id = data['invokeID']
-            res = encoder.decode_response(data['service'])
-            future = self._response_futures.get(invoke_id)
-            if future and not future.done():
-                future.set_result(res)
-            else:
-                mlog.warn(f"dropping confirmed response "
-                          f"(invoke_id: {invoke_id})")
-            return True
-
-        elif name == 'confirmed-ErrorPDU':
-            invoke_id = data['invokeID']
-            error_class_name, value = data['serviceError']['errorClass']
-            error_class = common.ErrorClass(error_class_name)
-            res = common.ErrorResponse(error_class, value)
-            future = self._response_futures.get(invoke_id)
-            if future and not future.done():
-                future.set_result(res)
-            else:
-                mlog.warn(f"dropping confirmed error "
-                          f"(invoke_id: {invoke_id})")
-            return True
-
-        elif name == 'conclude-RequestPDU':
-            res_pdu = 'conclude-ResponsePDU', None
-            res_data = _mms_syntax_name, _encode(res_pdu)
-            self._acse_conn.write(res_data)
-            return False
-
-        return False
+    async def _process_error(self, data):
+        invoke_id = data['invokeID']
+        error_class_name, value = data['serviceError']['errorClass']
+        error_class = common.ErrorClass(error_class_name)
+        res = common.ErrorResponse(error_class, value)
+        future = self._response_futures.get(invoke_id)
+        if future and not future.done():
+            future.set_result(res)
+        else:
+            mlog.warn(f"dropping confirmed error "
+                      f"(invoke_id: {invoke_id})")
 
 
 _parameter_cbb = [False] * 10  # 18
@@ -352,11 +376,12 @@ _service_support[79] = True  # informationReport
 _service_support[18] = True  # output
 _service_support[83] = True  # conclude
 
-
 # (iso, standard, iso9506, part, mms-abstract-syntax-version1)
 _mms_syntax_name = (1, 0, 9506, 2, 1)
+
 # (iso, standard, iso9506, part, mms-annex-version1)
 _mms_app_context_name = (1, 0, 9506, 2, 3)
+
 with importlib.resources.as_file(importlib.resources.files(__package__) /
                                  'asn1_repo.json') as _path:
     _encoder = asn1.Encoder(asn1.Encoding.BER,

@@ -68,14 +68,14 @@ async def listen(validate_cb: ValidateCb,
                  connection_cb: ConnectionCb,
                  addr: tcp.Address = tcp.Address('0.0.0.0', 102),
                  *,
+                 bind_connections: bool = False,
                  cosp_receive_queue_size: int = 1024,
                  cosp_send_queue_size: int = 1024,
                  **kwargs
                  ) -> 'Server':
     """Create COSP listening server
 
-    Additional arguments are passed directly to `hat.drivers.cotp.listen`
-    (`bind_connections` additionaly processed).
+    Additional arguments are passed directly to `hat.drivers.cotp.listen`.
 
     Args:
         validate_cb: callback function or coroutine called on new
@@ -87,9 +87,9 @@ async def listen(validate_cb: ValidateCb,
     server = Server()
     server._validate_cb = validate_cb
     server._connection_cb = connection_cb
+    server._bind_connections = bind_connections
     server._receive_queue_size = cosp_receive_queue_size
     server._send_queue_size = cosp_send_queue_size
-    server._bind_connections = kwargs.pop('bind_connections', False)
 
     server._srv = await cotp.listen(server._on_connection, addr,
                                     bind_connections=False,
@@ -180,8 +180,6 @@ class Connection(aio.Resource):
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
-
-        return conn
 
     @property
     def async_group(self) -> aio.Group:
