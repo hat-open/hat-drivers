@@ -8,11 +8,12 @@ from hat import aio
 from hat import util
 
 from hat.drivers import mms
+from hat.drivers import tcp
 
 
 @pytest.fixture
 async def addr():
-    return mms.Address('127.0.0.1', util.get_unused_tcp_port())
+    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_listen(addr):
@@ -20,10 +21,7 @@ async def test_listen(addr):
     def on_connection(conn):
         raise NotImplementedError()
 
-    def on_request(conn, req):
-        raise NotImplementedError()
-
-    server = await mms.listen(on_connection, on_request, addr)
+    server = await mms.listen(on_connection, addr)
 
     assert server.is_open
     assert len(server.addresses) == 1
@@ -34,16 +32,12 @@ async def test_listen(addr):
 @pytest.mark.parametrize("conn_count", [1, 2, 10])
 async def test_connect(addr, conn_count):
     server_conn_queue = aio.Queue()
-
-    def on_request(conn, req):
-        raise NotImplementedError()
-
-    server = await mms.listen(server_conn_queue.put_nowait, on_request, addr)
+    server = await mms.listen(server_conn_queue.put_nowait, addr)
 
     conns = collections.deque()
 
     for _ in range(conn_count):
-        client_conn = await mms.connect(on_request, addr)
+        client_conn = await mms.connect(addr)
         server_conn = await server_conn_queue.get()
 
         conns.append((client_conn, server_conn))
@@ -133,8 +127,9 @@ async def test_request_response(addr, req, res):
         return res
 
     server_conn_queue = aio.Queue()
-    server = await mms.listen(server_conn_queue.put_nowait, on_request, addr)
-    client_conn = await mms.connect(on_request, addr)
+    server = await mms.listen(server_conn_queue.put_nowait, addr,
+                              request_cb=on_request)
+    client_conn = await mms.connect(addr, request_cb=on_request)
     server_conn = await server_conn_queue.get()
     await server.async_close()
 
@@ -186,21 +181,25 @@ async def test_request_response(addr, req, res):
 ])
 async def test_unconfirmed(addr, msg):
 
-    def on_request(conn, req):
-        raise NotImplementedError()
-
     server_conn_queue = aio.Queue()
-    server = await mms.listen(server_conn_queue.put_nowait, on_request, addr)
-    client_conn = await mms.connect(on_request, addr)
+    server_unconfirmed_queue = aio.Queue()
+    server = await mms.listen(
+        server_conn_queue.put_nowait, addr,
+        unconfirmed_cb=lambda _, msg: server_unconfirmed_queue.put_nowait(msg))
+
+    client_unconfirmed_queue = aio.Queue()
+    client_conn = await mms.connect(
+        addr,
+        unconfirmed_cb=lambda _, msg: client_unconfirmed_queue.put_nowait(msg))
     server_conn = await server_conn_queue.get()
     await server.async_close()
 
-    client_conn.send_unconfirmed(msg)
-    result = await server_conn.receive_unconfirmed()
+    await client_conn.send_unconfirmed(msg)
+    result = await server_unconfirmed_queue.get()
     assert result == msg
 
-    server_conn.send_unconfirmed(msg)
-    result = await client_conn.receive_unconfirmed()
+    await server_conn.send_unconfirmed(msg)
+    result = await client_unconfirmed_queue.get()
     assert result == msg
 
     await server_conn.async_close()
@@ -238,8 +237,9 @@ async def test_type_description_serialization(addr, type_description):
         return res
 
     server_conn_queue = aio.Queue()
-    server = await mms.listen(server_conn_queue.put_nowait, on_request, addr)
-    client_conn = await mms.connect(on_request, addr)
+    server = await mms.listen(server_conn_queue.put_nowait, addr,
+                              request_cb=on_request)
+    client_conn = await mms.connect(addr)
     server_conn = await server_conn_queue.get()
     await server.async_close()
 
@@ -284,8 +284,9 @@ async def test_data_serialization(addr, data):
         return res
 
     server_conn_queue = aio.Queue()
-    server = await mms.listen(server_conn_queue.put_nowait, on_request, addr)
-    client_conn = await mms.connect(on_request, addr)
+    server = await mms.listen(server_conn_queue.put_nowait, addr,
+                              request_cb=on_request)
+    client_conn = await mms.connect(addr)
     server_conn = await server_conn_queue.get()
     await server.async_close()
 

@@ -1,5 +1,6 @@
 """Connection oriented presentation protocol"""
 
+import asyncio
 import importlib.resources
 import logging
 import typing
@@ -82,19 +83,19 @@ async def connect(addr: tcp.Address,
     """
     cp_ppdu = _cp_ppdu(syntax_names, local_psel, remote_psel, user_data)
     cp_ppdu_data = _encode('CP-type', cp_ppdu)
-    cosp_conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
+    conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
 
     try:
-        cpa_ppdu = _decode('CPA-PPDU', cosp_conn.conn_res_user_data)
+        cpa_ppdu = _decode('CPA-PPDU', conn.conn_res_user_data)
         _validate_connect_response(cp_ppdu, cpa_ppdu)
 
         calling_psel, called_psel = _get_psels(cp_ppdu)
-        return Connection(cosp_conn, syntax_names, cp_ppdu, cpa_ppdu,
+        return Connection(conn, syntax_names, cp_ppdu, cpa_ppdu,
                           calling_psel, called_psel,
                           copp_receive_queue_size, copp_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_cosp(cosp_conn, _arp_ppdu()))
+        await aio.uncancellable(_close_cosp(conn, _arp_ppdu()))
         raise
 
 
@@ -185,10 +186,15 @@ class Server(aio.Resource):
                                   self._receive_queue_size,
                                   self._send_queue_size)
 
+            except Exception:
+                await aio.uncancellable(_close_cosp(cosp_conn, _arp_ppdu()))
+                raise
+
+            try:
                 await aio.call(self._connection_cb, conn)
 
             except BaseException:
-                await aio.uncancellable(_close_cosp(cosp_conn, _arp_ppdu()))
+                await aio.uncancellable(conn.async_close())
                 raise
 
         except Exception as e:
@@ -239,6 +245,7 @@ class Connection(aio.Resource):
         self._syntax_names = syntax_names
         self._conn_req_user_data = conn_req_user_data
         self._conn_res_user_data = conn_res_user_data
+        self._loop = asyncio.get_running_loop()
         self._info = ConnectionInfo(local_psel=local_psel,
                                     remote_psel=remote_psel,
                                     **conn.info._asdict())
@@ -316,7 +323,7 @@ class Connection(aio.Resource):
     async def _on_close(self):
         await _close_cosp(self._conn, self._close_ppdu)
 
-    async def _close(self, ppdu):
+    def _close(self, ppdu):
         if not self.is_open:
             return
 
@@ -335,6 +342,9 @@ class Connection(aio.Resource):
                 data = pdv_list['presentation-data-values'][1]
 
                 await self._receive_queue.put((syntax_name, data))
+
+        except ConnectionError:
+            pass
 
         except Exception as e:
             mlog.error("receive loop error: %s", e, exc_info=e)
@@ -359,6 +369,9 @@ class Connection(aio.Resource):
 
                 if future and not future.done():
                     future.set_result(None)
+
+        except ConnectionError:
+            pass
 
         except Exception as e:
             mlog.error("send loop error: %s", e, exc_info=e)

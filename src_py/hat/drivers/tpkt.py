@@ -65,8 +65,8 @@ class Server(aio.Resource):
         return self._srv.addresses
 
     async def _on_connection(self, conn):
-        conn = Connection(conn)
         try:
+            conn = Connection(conn)
             await aio.call(self._connection_cb, conn)
 
         except Exception as e:

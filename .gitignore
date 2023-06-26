@@ -8,5 +8,6 @@
 /src_py/hat/drivers/serial/_native_serial.*
 /src_py/hat/drivers/ssl/_ssl.*
 /test_pytest/.coverage
+/test_pytest/.coverage
 /test_pytest/profile
 __pycache__

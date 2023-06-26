@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import logging
 import typing
@@ -14,9 +15,12 @@ from hat.drivers.cosp import encoder
 mlog = logging.getLogger(__name__)
 
 _params_requirements = b'\x00\x02'
+
 _params_version = 2
+
 _ab_spdu = common.Spdu(type=common.SpduType.AB,
                        transport_disconnect=True)
+
 _dn_spdu = common.Spdu(type=common.SpduType.DN)
 
 
@@ -51,16 +55,29 @@ async def connect(addr: tcp.Address,
     Additional arguments are passed directly to `hat.drivers.cotp.connect`.
 
     """
-    cotp_conn = await cotp.connect(addr, **kwargs)
+    conn = await cotp.connect(addr, **kwargs)
+
     try:
-        conn = await _create_outgoing_connection(cotp_conn, user_data,
-                                                 local_ssel, remote_ssel,
-                                                 cosp_receive_queue_size,
-                                                 cosp_send_queue_size)
-        return conn
+        cn_spdu = common.Spdu(type=common.SpduType.CN,
+                              extended_spdus=False,
+                              version_number=_params_version,
+                              requirements=_params_requirements,
+                              calling_ssel=local_ssel,
+                              called_ssel=remote_ssel,
+                              user_data=user_data)
+        cn_spdu_bytes = encoder.encode(cn_spdu)
+        await conn.send(cn_spdu_bytes)
+
+        ac_spdu_bytes = await conn.receive()
+        ac_spdu = encoder.decode(memoryview(ac_spdu_bytes))
+        _validate_connect_response(cn_spdu, ac_spdu)
+
+        calling_ssel, called_ssel = _get_ssels(cn_spdu, ac_spdu)
+        return Connection(conn, cn_spdu, ac_spdu, calling_ssel, called_ssel,
+                          cosp_receive_queue_size, cosp_send_queue_size)
 
     except BaseException:
-        await aio.uncancellable(_close_cotp(cotp_conn, _ab_spdu))
+        await aio.uncancellable(_close_cotp(conn, _ab_spdu))
         raise
 
 
@@ -118,9 +135,28 @@ class Server(aio.Resource):
     async def _on_connection(self, cotp_conn):
         try:
             try:
-                conn = await _create_incomming_connection(
-                    self._validate_cb, cotp_conn,
-                    self._receive_queue_size, self._send_queue_size)
+                cn_spdu_bytes = await cotp_conn.receive()
+                cn_spdu = encoder.decode(memoryview(cn_spdu_bytes))
+                _validate_connect_request(cn_spdu)
+
+                res_user_data = await aio.call(self._validate_cb,
+                                               cn_spdu.user_data)
+
+                ac_spdu = common.Spdu(type=common.SpduType.AC,
+                                      extended_spdus=False,
+                                      version_number=_params_version,
+                                      requirements=_params_requirements,
+                                      calling_ssel=cn_spdu.calling_ssel,
+                                      called_ssel=cn_spdu.called_ssel,
+                                      user_data=res_user_data)
+                ac_spdu_bytes = encoder.encode(ac_spdu)
+                await cotp_conn.send(ac_spdu_bytes)
+
+                calling_ssel, called_ssel = _get_ssels(cn_spdu, ac_spdu)
+                conn = Connection(cotp_conn, cn_spdu, ac_spdu,
+                                  called_ssel, calling_ssel,
+                                  self._receive_queue_size,
+                                  self._send_queue_size)
 
             except BaseException:
                 await aio.uncancellable(_close_cotp(cotp_conn, _ab_spdu))
@@ -167,6 +203,7 @@ class Connection(aio.Resource):
         self._conn = conn
         self._conn_req_user_data = cn_spdu.user_data
         self._conn_res_user_data = ac_spdu.user_data
+        self._loop = asyncio.get_running_loop()
         self._info = ConnectionInfo(local_ssel=local_ssel,
                                     remote_ssel=remote_ssel,
                                     **conn.info._asdict())
@@ -241,7 +278,7 @@ class Connection(aio.Resource):
     async def _on_close(self):
         await _close_cotp(self._conn, self._close_spdu)
 
-    async def _close(self, spdu):
+    def _close(self, spdu):
         if not self.is_open:
             return
 
@@ -252,7 +289,7 @@ class Connection(aio.Resource):
         try:
             data = bytearray()
             while True:
-                spdu_bytes = await self._cotp_conn.read()
+                spdu_bytes = await self._conn.receive()
                 spdu = encoder.decode(memoryview(spdu_bytes))
 
                 if spdu.type == common.SpduType.DT:
@@ -273,6 +310,9 @@ class Connection(aio.Resource):
                 else:
                     self._close(_ab_spdu)
                     break
+
+        except ConnectionError:
+            pass
 
         except Exception as e:
             mlog.error("receive loop error: %s", e, exc_info=e)
@@ -303,6 +343,9 @@ class Connection(aio.Resource):
                 if future and not future.done():
                     future.set_result(None)
 
+        except ConnectionError:
+            pass
+
         except Exception as e:
             mlog.error("send loop error: %s", e, exc_info=e)
 
@@ -316,50 +359,6 @@ class Connection(aio.Resource):
                 if self._send_queue.empty():
                     break
                 _, future = self._send_queue.get_nowait()
-
-
-async def _create_outgoing_connection(conn, user_data,
-                                      local_ssel, remote_ssel,
-                                      receive_queue_size, send_queue_size):
-    cn_spdu = common.Spdu(type=common.SpduType.CN,
-                          extended_spdus=False,
-                          version_number=_params_version,
-                          requirements=_params_requirements,
-                          calling_ssel=local_ssel,
-                          called_ssel=remote_ssel,
-                          user_data=user_data)
-    cn_spdu_bytes = encoder.encode(cn_spdu)
-    await conn.send(cn_spdu_bytes)
-
-    ac_spdu_bytes = await conn.receive()
-    ac_spdu = encoder.decode(memoryview(ac_spdu_bytes))
-    _validate_connect_response(cn_spdu, ac_spdu)
-
-    calling_ssel, called_ssel = _get_ssels(cn_spdu, ac_spdu)
-    return Connection(conn, cn_spdu, ac_spdu, calling_ssel, called_ssel,
-                      receive_queue_size, send_queue_size)
-
-
-async def _create_incomming_connection(validate_cb, conn,
-                                       receive_queue_size, send_queue_size):
-    cn_spdu_bytes = await conn.receive()
-    cn_spdu = encoder.decode(memoryview(cn_spdu_bytes))
-    _validate_connect_request(cn_spdu)
-
-    res_user_data = await aio.call(validate_cb, cn_spdu.user_data)
-    ac_spdu = common.Spdu(type=common.SpduType.AC,
-                          extended_spdus=False,
-                          version_number=_params_version,
-                          requirements=_params_requirements,
-                          calling_ssel=cn_spdu.calling_ssel,
-                          called_ssel=cn_spdu.called_ssel,
-                          user_data=res_user_data)
-    ac_spdu_bytes = encoder.encode(ac_spdu)
-    await conn.send(ac_spdu_bytes)
-
-    calling_ssel, called_ssel = _get_ssels(cn_spdu, ac_spdu)
-    return Connection(conn, cn_spdu, ac_spdu, called_ssel, calling_ssel,
-                      receive_queue_size, send_queue_size)
 
 
 async def _close_cotp(cotp_conn, spdu):

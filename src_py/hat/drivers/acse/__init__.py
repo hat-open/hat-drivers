@@ -1,5 +1,6 @@
 """Association Controll Service Element"""
 
+import asyncio
 import importlib.resources
 import logging
 import typing
@@ -71,11 +72,10 @@ async def connect(addr: tcp.Address,
                            local_ae_qualifier, remote_ae_qualifier,
                            user_data)
     copp_user_data = _acse_syntax_name, _encode(aarq_apdu)
-    copp_conn = await copp.connect(addr, syntax_names, copp_user_data,
-                                   **kwargs)
+    conn = await copp.connect(addr, syntax_names, copp_user_data, **kwargs)
 
     try:
-        aare_apdu_syntax_name, aare_apdu_entity = copp_conn.conn_res_user_data
+        aare_apdu_syntax_name, aare_apdu_entity = conn.conn_res_user_data
         if aare_apdu_syntax_name != _acse_syntax_name:
             raise Exception("invalid syntax name")
 
@@ -86,13 +86,13 @@ async def connect(addr: tcp.Address,
         calling_ap_title, called_ap_title = _get_ap_titles(aarq_apdu)
         calling_ae_qualifier, called_ae_qualifier = _get_ae_qualifiers(
             aarq_apdu)
-        return Connection(copp_conn, aarq_apdu, aare_apdu,
+        return Connection(conn, aarq_apdu, aare_apdu,
                           calling_ap_title, called_ap_title,
                           calling_ae_qualifier, called_ae_qualifier,
                           acse_receive_queue_size, acse_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
+        await aio.uncancellable(_close_copp(conn, _abrt_apdu(1)))
         raise
 
 
@@ -199,10 +199,15 @@ class Server(aio.Resource):
                                   self._receive_queue_size,
                                   self._send_queue_size)
 
+            except Exception:
+                await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
+                raise
+
+            try:
                 await aio.call(self._connection_cb, conn)
 
             except BaseException:
-                await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
+                await aio.uncancellable(conn.async_close())
                 raise
 
         except Exception as e:
@@ -251,6 +256,7 @@ class Connection(aio.Resource):
         self._conn = conn
         self._conn_req_user_data = conn_req_user_data
         self._conn_res_user_data = conn_res_user_data
+        self._loop = asyncio.get_running_loop()
         self._info = ConnectionInfo(local_ap_title=local_ap_title,
                                     local_ae_qualifier=local_ae_qualifier,
                                     remote_ap_title=remote_ap_title,
@@ -316,7 +322,7 @@ class Connection(aio.Resource):
     async def _on_close(self):
         await _close_copp(self._conn, self._close_apdu)
 
-    async def _close(self, apdu):
+    def _close(self, apdu):
         if not self.is_open:
             return
 

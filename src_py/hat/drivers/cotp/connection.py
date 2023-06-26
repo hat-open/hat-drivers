@@ -14,7 +14,8 @@ from hat.drivers.cotp import encoder
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
-"""Module logger"""
+
+_next_srcs = ((i % 0xFFFF) + 1 for i in itertools.count(0))
 
 
 class ConnectionInfo(typing.NamedTuple):
@@ -41,16 +42,30 @@ async def connect(addr: tcp.Address,
     Additional arguments are passed directly to `hat.drivers.tpkt.connect`.
 
     """
-    tpkt_conn = await tpkt.connect(addr, **kwargs)
+    conn = await tpkt.connect(addr, **kwargs)
+
     try:
-        conn = await _create_outgoing_connection(tpkt_conn,
-                                                 local_tsel, remote_tsel,
-                                                 cotp_receive_queue_size,
-                                                 cotp_send_queue_size)
-        return conn
+        cr_tpdu = common.CR(src=next(_next_srcs),
+                            cls=0,
+                            calling_tsel=local_tsel,
+                            called_tsel=remote_tsel,
+                            max_tpdu=2048,
+                            pref_max_tpdu=None)
+        cr_tpdu_bytes = encoder.encode(cr_tpdu)
+        await conn.send(cr_tpdu_bytes)
+
+        cc_tpdu_bytes = await conn.receive()
+        cc_tpdu = encoder.decode(memoryview(cc_tpdu_bytes))
+        _validate_connect_response(cr_tpdu, cc_tpdu)
+
+        max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
+        calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
+
+        return Connection(conn, max_tpdu, calling_tsel, called_tsel,
+                          cotp_receive_queue_size, cotp_send_queue_size)
 
     except BaseException:
-        await aio.uncancellable(tpkt_conn.async_close())
+        await aio.uncancellable(conn.async_close())
         raise
 
 
@@ -96,8 +111,26 @@ class Server(aio.Resource):
     async def _on_connection(self, tpkt_conn):
         try:
             try:
-                conn = await _create_incomming_connection(
-                    tpkt_conn, self._receive_queue_size, self._send_queue_size)
+                cr_tpdu_bytes = await tpkt_conn.receive()
+                cr_tpdu = encoder.decode(memoryview(cr_tpdu_bytes))
+                _validate_connect_request(cr_tpdu)
+
+                cc_tpdu = common.CC(dst=cr_tpdu.src,
+                                    src=next(_next_srcs),
+                                    cls=0,
+                                    calling_tsel=cr_tpdu.calling_tsel,
+                                    called_tsel=cr_tpdu.called_tsel,
+                                    max_tpdu=_calculate_cc_max_tpdu(cr_tpdu),
+                                    pref_max_tpdu=None)
+                cc_tpdu_bytes = encoder.encode(cc_tpdu)
+                await tpkt_conn.send(cc_tpdu_bytes)
+
+                max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
+                calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
+                conn = Connection(tpkt_conn, max_tpdu,
+                                  called_tsel, calling_tsel,
+                                  self._receive_queue_size,
+                                  self._send_queue_size)
 
             except BaseException:
                 await aio.uncancellable(tpkt_conn.async_close())
@@ -201,6 +234,9 @@ class Connection(aio.Resource):
 
                 await self._receive_queue.put(data)
 
+        except ConnectionError:
+            pass
+
         except Exception as e:
             mlog.error("receive loop error: %s", e, exc_info=e)
 
@@ -231,6 +267,9 @@ class Connection(aio.Resource):
                 if future and not future.done():
                     future.set_result(None)
 
+        except ConnectionError:
+            pass
+
         except Exception as e:
             mlog.error("send loop error: %s", e, exc_info=e)
 
@@ -244,52 +283,6 @@ class Connection(aio.Resource):
                 if self._send_queue.empty():
                     break
                 _, future = self._send_queue.get_nowait()
-
-
-_next_srcs = ((i % 0xFFFF) + 1 for i in itertools.count(0))
-
-
-async def _create_outgoing_connection(conn, local_tsel, remote_tsel,
-                                      receive_queue_size, send_queue_size):
-    cr_tpdu = common.CR(src=next(_next_srcs),
-                        cls=0,
-                        calling_tsel=local_tsel,
-                        called_tsel=remote_tsel,
-                        max_tpdu=2048,
-                        pref_max_tpdu=None)
-    cr_tpdu_bytes = encoder.encode(cr_tpdu)
-    await conn.send(cr_tpdu_bytes)
-
-    cc_tpdu_bytes = await conn.receive()
-    cc_tpdu = encoder.decode(memoryview(cc_tpdu_bytes))
-    _validate_connect_response(cr_tpdu, cc_tpdu)
-
-    max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
-    calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
-    return Connection(conn, max_tpdu, calling_tsel, called_tsel,
-                      receive_queue_size, send_queue_size)
-
-
-async def _create_incomming_connection(conn, receive_queue_size,
-                                       send_queue_size):
-    cr_tpdu_bytes = await conn.receive()
-    cr_tpdu = encoder.decode(memoryview(cr_tpdu_bytes))
-    _validate_connect_request(cr_tpdu)
-
-    cc_tpdu = common.CC(dst=cr_tpdu.src,
-                        src=next(_next_srcs),
-                        cls=0,
-                        calling_tsel=cr_tpdu.calling_tsel,
-                        called_tsel=cr_tpdu.called_tsel,
-                        max_tpdu=_calculate_cc_max_tpdu(cr_tpdu),
-                        pref_max_tpdu=None)
-    cc_tpdu_bytes = encoder.encode(cc_tpdu)
-    await conn.send(cc_tpdu_bytes)
-
-    max_tpdu = _calculate_max_tpdu(cr_tpdu, cc_tpdu)
-    calling_tsel, called_tsel = _get_tsels(cr_tpdu, cc_tpdu)
-    return Connection(conn, max_tpdu, called_tsel, calling_tsel,
-                      receive_queue_size, send_queue_size)
 
 
 def _validate_connect_request(cr_tpdu):

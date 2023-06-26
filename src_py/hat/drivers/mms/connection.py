@@ -87,13 +87,11 @@ async def connect(addr: tcp.Address,
             'proposedParameterCBB': _parameter_cbb,
             'servicesSupportedCalling': _service_support}}
     req_user_data = _encode(initiate_req)
-    acse_conn = await acse.connect(addr, [_mms_syntax_name],
-                                   _mms_app_context_name,
-                                   (_mms_syntax_name, req_user_data),
-                                   **kwargs)
+    conn = await acse.connect(addr, [_mms_syntax_name], _mms_app_context_name,
+                              (_mms_syntax_name, req_user_data), **kwargs)
 
     try:
-        res_syntax_name, res_user_data = acse_conn.conn_res_user_data
+        res_syntax_name, res_user_data = conn.conn_res_user_data
         if res_syntax_name != _mms_syntax_name:
             raise Exception("invalid syntax name")
 
@@ -101,10 +99,10 @@ async def connect(addr: tcp.Address,
         if initiate_res[0] != 'initiate-ResponsePDU':
             raise Exception("invalid initiate response")
 
-        return Connection(acse_conn, request_cb, unconfirmed_cb)
+        return Connection(conn, request_cb, unconfirmed_cb)
 
     except Exception:
-        await aio.uncancellable(acse_conn.async_close())
+        await aio.uncancellable(conn.async_close())
         raise
 
 
@@ -229,7 +227,6 @@ class Connection(aio.Resource):
         self._conn = conn
         self._request_cb = request_cb
         self._unconfirmed_cb = unconfirmed_cb
-
         self._loop = asyncio.get_running_loop()
         self._next_invoke_ids = itertools.count(0)
         self._response_futures = {}
@@ -371,7 +368,7 @@ class Connection(aio.Resource):
                 'service': encoder.encode_response(res)}
 
         res_data = _mms_syntax_name, _encode(res_pdu)
-        await self._acse_conn.send(res_data)
+        await self._conn.send(res_data)
 
     async def _process_response(self, data):
         invoke_id = data['invokeID']
@@ -379,7 +376,8 @@ class Connection(aio.Resource):
 
         future = self._response_futures.get(invoke_id)
         if not future or future.done():
-            mlog.warn("dropping confirmed response (invoke_id: %s)", invoke_id)
+            mlog.warning("dropping confirmed response (invoke_id: %s)",
+                         invoke_id)
             return
 
         future.set_result(res)
@@ -392,7 +390,7 @@ class Connection(aio.Resource):
 
         future = self._response_futures.get(invoke_id)
         if not future or future.done():
-            mlog.warn("dropping confirmed error (invoke_id: %s)", invoke_id)
+            mlog.warning("dropping confirmed error (invoke_id: %s)", invoke_id)
             return
 
         future.set_result(res)
