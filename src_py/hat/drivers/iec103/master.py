@@ -4,6 +4,7 @@ import datetime
 import enum
 import itertools
 import logging
+import typing
 
 from hat import aio
 
@@ -15,8 +16,9 @@ from hat.drivers.iec60870.msgs import iec103
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-DataCb = aio.AsyncCallable[[common.Data], None]
-GenericDataCb = aio.AsyncCallable[[common.GenericData], None]
+DataCb: typing.TypeAlias = aio.AsyncCallable[[common.Data], None]
+
+GenericDataCb: typing.TypeAlias = aio.AsyncCallable[[common.GenericData], None]
 
 
 class MasterConnection(aio.Resource):

@@ -4,41 +4,40 @@ import typing
 from hat.drivers.iec60870.msgs import iec103
 
 
-Bytes = iec103.common.Bytes
-AsduAddress = iec103.common.AsduAddress
-OtherCause = iec103.common.OtherCause
-Description = iec103.common.Description
-IoAddress = iec103.common.IoAddress
-Identification = iec103.common.Identification
-TimeSize = iec103.common.TimeSize
-Time = iec103.common.Time
+AsduAddress: typing.TypeAlias = iec103.common.AsduAddress
+OtherCause: typing.TypeAlias = iec103.common.OtherCause
+Description: typing.TypeAlias = iec103.common.Description
+IoAddress: typing.TypeAlias = iec103.common.IoAddress
+Identification: typing.TypeAlias = iec103.common.Identification
+TimeSize: typing.TypeAlias = iec103.common.TimeSize
+Time: typing.TypeAlias = iec103.common.Time
 
-ValueType = iec103.common.ValueType
-NoneValue = iec103.common.NoneValue
-TextValue = iec103.common.TextValue
-BitstringValue = iec103.common.BitstringValue
-UIntValue = iec103.common.UIntValue
-IntValue = iec103.common.IntValue
-UFixedValue = iec103.common.UFixedValue
-FixedValue = iec103.common.FixedValue
-Real32Value = iec103.common.Real32Value
-Real64Value = iec103.common.Real64Value
-DoubleValue = iec103.common.DoubleValue
-SingleValue = iec103.common.SingleValue
-ExtendedDoubleValue = iec103.common.ExtendedDoubleValue
-MeasurandValue = iec103.common.MeasurandValue
-TimeValue = iec103.common.TimeValue
-IdentificationValue = iec103.common.IdentificationValue
-RelativeTimeValue = iec103.common.RelativeTimeValue
-IoAddressValue = iec103.common.IoAddressValue
-DoubleWithTimeValue = iec103.common.DoubleWithTimeValue
-DoubleWithRelativeTimeValue = iec103.common.DoubleWithRelativeTimeValue
-MeasurandWithRelativeTimeValue = iec103.common.MeasurandWithRelativeTimeValue
-TextNumberValue = iec103.common.TextNumberValue
-ReplyValue = iec103.common.ReplyValue
-ArrayValue = iec103.common.ArrayValue
-IndexValue = iec103.common.IndexValue
-Value = iec103.common.Value
+ValueType: typing.TypeAlias = iec103.common.ValueType
+NoneValue: typing.TypeAlias = iec103.common.NoneValue
+TextValue: typing.TypeAlias = iec103.common.TextValue
+BitstringValue: typing.TypeAlias = iec103.common.BitstringValue
+UIntValue: typing.TypeAlias = iec103.common.UIntValue
+IntValue: typing.TypeAlias = iec103.common.IntValue
+UFixedValue: typing.TypeAlias = iec103.common.UFixedValue
+FixedValue: typing.TypeAlias = iec103.common.FixedValue
+Real32Value: typing.TypeAlias = iec103.common.Real32Value
+Real64Value: typing.TypeAlias = iec103.common.Real64Value
+DoubleValue: typing.TypeAlias = iec103.common.DoubleValue
+SingleValue: typing.TypeAlias = iec103.common.SingleValue
+ExtendedDoubleValue: typing.TypeAlias = iec103.common.ExtendedDoubleValue
+MeasurandValue: typing.TypeAlias = iec103.common.MeasurandValue
+TimeValue: typing.TypeAlias = iec103.common.TimeValue
+IdentificationValue: typing.TypeAlias = iec103.common.IdentificationValue
+RelativeTimeValue: typing.TypeAlias = iec103.common.RelativeTimeValue
+IoAddressValue: typing.TypeAlias = iec103.common.IoAddressValue
+DoubleWithTimeValue: typing.TypeAlias = iec103.common.DoubleWithTimeValue
+DoubleWithRelativeTimeValue: typing.TypeAlias = iec103.common.DoubleWithRelativeTimeValue  # NOQA
+MeasurandWithRelativeTimeValue: typing.TypeAlias = iec103.common.MeasurandWithRelativeTimeValue  # NOQA
+TextNumberValue: typing.TypeAlias = iec103.common.TextNumberValue
+ReplyValue: typing.TypeAlias = iec103.common.ReplyValue
+ArrayValue: typing.TypeAlias = iec103.common.ArrayValue
+IndexValue: typing.TypeAlias = iec103.common.IndexValue
+Value: typing.TypeAlias = iec103.common.Value
 
 
 class DataCause(enum.Enum):
