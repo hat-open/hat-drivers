@@ -5,6 +5,7 @@ import typing
 
 from hat import aio
 from hat import util
+
 from hat.drivers import ssl
 from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
@@ -15,7 +16,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
@@ -29,9 +30,14 @@ async def connect(addr: tcp.Address,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
                   receive_window_size: int = 8,
-                  ssl_ctx: ssl.SSLContext | None = None
+                  *,
+                  send_queue_size: int = 1024,
+                  receive_queue_size: int = 1024,
+                  **kwargs
                   ) -> 'Connection':
     """Connect to remote device
+
+    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
 
     Args:
         addr: remote server's address
@@ -40,13 +46,15 @@ async def connect(addr: tcp.Address,
         test_timeout: test timeout (t3) in seconds
         send_window_size: send window size (k)
         receive_window_size: receive window size (w)
-        ssl_ctx: optional ssl context argument
+        send_queue_size: size of send queue
+        receive_queue_size: size of receive queue
 
     """
-    conn = await tcp.connect(addr, ssl=ssl_ctx)
+    conn = await tcp.connect(addr, **kwargs)
 
     try:
-        _write_apdu(conn, common.APDUU(common.ApduFunction.STARTDT_ACT))
+        apdu = common.APDUU(common.ApduFunction.STARTDT_ACT)
+        await _write_apdu(conn, apdu)
         await aio.wait_for(_wait_startdt_con(conn), response_timeout)
 
     except Exception:
@@ -59,7 +67,9 @@ async def connect(addr: tcp.Address,
                       supervisory_timeout=supervisory_timeout,
                       test_timeout=test_timeout,
                       send_window_size=send_window_size,
-                      receive_window_size=receive_window_size)
+                      receive_window_size=receive_window_size,
+                      send_queue_size=send_queue_size,
+                      receive_queue_size=receive_queue_size)
 
 
 async def listen(connection_cb: ConnectionCb,
@@ -69,11 +79,15 @@ async def listen(connection_cb: ConnectionCb,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
-                 ssl_ctx: ssl.SSLContext | None = None
+                 *,
+                 send_queue_size: int = 1024,
+                 receive_queue_size: int = 1024,
+                 bind_connections: bool = True,
+                 **kwargs
                  ) -> tcp.Server:
     """Create new IEC104 slave and listen for incoming connections
 
-    Closing server closes all incoming connections.
+    Additional arguments are passed directly to `hat.drivers.tcp.listen`.
 
     Args:
         connection_cb: new connection callback
@@ -83,33 +97,35 @@ async def listen(connection_cb: ConnectionCb,
         test_timeout: test timeout (t3) in seconds
         send_window_size: send window size (k)
         receive_window_size: receive window size (w)
-        ssl_ctx: optional ssl context argument
+        bind_connections: bind connections (see `hat.drivers.tcp.listen`)
 
     """
 
     async def on_connection(conn):
         try:
-            conn = Connection(conn=conn,
-                              always_enabled=False,
-                              response_timeout=response_timeout,
-                              supervisory_timeout=supervisory_timeout,
-                              test_timeout=test_timeout,
-                              send_window_size=send_window_size,
-                              receive_window_size=receive_window_size)
+            try:
+                conn = Connection(conn=conn,
+                                  always_enabled=False,
+                                  response_timeout=response_timeout,
+                                  supervisory_timeout=supervisory_timeout,
+                                  test_timeout=test_timeout,
+                                  send_window_size=send_window_size,
+                                  receive_window_size=receive_window_size,
+                                  send_queue_size=send_queue_size,
+                                  receive_queue_size=receive_queue_size)
 
-            await aio.call(connection_cb, conn)
+                await aio.call(connection_cb, conn)
 
-            await conn.wait_closing()
+            except BaseException:
+                await aio.uncancellable(conn.async_close())
+                raise
 
         except Exception as e:
-            mlog.error("connection callback error: %s", e, exc_info=e)
-
-        finally:
-            conn.close()
+            mlog.error("on connection error: %s", e, exc_info=e)
 
     return await tcp.listen(on_connection, addr,
-                            bind_connections=True,
-                            ssl=ssl_ctx)
+                            bind_connections=bind_connections,
+                            **kwargs)
 
 
 class Connection(aio.Resource):
@@ -126,7 +142,9 @@ class Connection(aio.Resource):
                  supervisory_timeout: float,
                  test_timeout: float,
                  send_window_size: int,
-                 receive_window_size: int):
+                 receive_window_size: int,
+                 send_queue_size: int,
+                 receive_queue_size: int):
         self._conn = conn
         self._always_enabled = always_enabled
         self._is_enabled = always_enabled
@@ -136,8 +154,8 @@ class Connection(aio.Resource):
         self._test_timeout = test_timeout
         self._send_window_size = send_window_size
         self._receive_window_size = receive_window_size
-        self._receive_queue = aio.Queue()
-        self._send_queue = aio.Queue()
+        self._receive_queue = aio.Queue(receive_queue_size)
+        self._send_queue = aio.Queue(send_queue_size)
         self._test_event = asyncio.Event()
         self._ssn = 0
         self._rsn = 0
@@ -146,6 +164,7 @@ class Connection(aio.Resource):
         self._supervisory_handle = None
         self._waiting_ack_handles = {}
         self._waiting_ack_cv = asyncio.Condition()
+        self._loop = asyncio.get_running_loop()
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -177,52 +196,46 @@ class Connection(aio.Resource):
         """Register enable callback"""
         return self._enabled_cbs.register(cb)
 
-    def send(self, data: common.Bytes):
-        """Send data
-
-        Raises:
-            ConnectionError
-
-        """
-        entry = _SendQueueEntry(data, None, False)
-        try:
-            self._send_queue.put_nowait(entry)
-
-        except aio.QueueClosedError:
-            raise ConnectionError()
-
-    async def send_wait_ack(self, data: common.Bytes):
-        """Send data and wait for acknowledgement
+    async def send(self,
+                   data: util.Bytes,
+                   wait_ack: bool = False):
+        """Send data and optionally wait for acknowledgement
 
         Raises:
             ConnectionDisabledError
             ConnectionError
 
         """
-        entry = _SendQueueEntry(data, asyncio.Future(), True)
+        future = self._loop.create_future() if wait_ack else None
+        entry = _SendQueueEntry(data, future, wait_ack)
+
         try:
-            self._send_queue.put_nowait(entry)
-            await entry.future
+            await self._send_queue.put(entry)
+
+            if wait_ack:
+                await future
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
     async def drain(self, wait_ack: bool = False):
-        """Drain
+        """Drain and optionally wait for acknowledgement
 
         Raises:
             ConnectionError
 
         """
-        entry = _SendQueueEntry(None, asyncio.Future(), wait_ack)
+        future = self._loop.create_future()
+        entry = _SendQueueEntry(None, future, wait_ack)
+
         try:
-            self._send_queue.put_nowait(entry)
-            await entry.future
+            await self._send_queue.put(entry)
+            await future
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def receive(self) -> common.Bytes:
+    async def receive(self) -> util.Bytes:
         """Receive data
 
         Raises:
@@ -240,11 +253,11 @@ class Connection(aio.Resource):
         self.close()
 
     def _on_supervisory_timeout(self):
-        self._supervisory_handle = None
+        self.async_group.spawn(self._on_supervisory_timeout_async)
 
+    async def _on_supervisory_timeout_async(self):
         try:
-            _write_apdu(self._conn, common.APDUS(self._rsn))
-            self._w = 0
+            await self._write_apdus()
 
         except Exception as e:
             mlog.warning('supervisory timeout error: %s', e, exc_info=e)
@@ -332,8 +345,8 @@ class Connection(aio.Resource):
                 await asyncio.sleep(self._test_timeout)
 
                 self._test_event.clear()
-                _write_apdu(self._conn,
-                            common.APDUU(common.ApduFunction.TESTFR_ACT))
+                await _write_apdu(self._conn,
+                                  common.APDUU(common.ApduFunction.TESTFR_ACT))
 
                 await aio.wait_for(self._test_event.wait(),
                                    self._response_timeout)
@@ -347,27 +360,25 @@ class Connection(aio.Resource):
     async def _process_apduu(self, apdu):
         if apdu.function == common.ApduFunction.STARTDT_ACT:
             self._is_enabled = True
-            _write_apdu(self._conn,
-                        common.APDUU(common.ApduFunction.STARTDT_CON))
+            await _write_apdu(self._conn,
+                              common.APDUU(common.ApduFunction.STARTDT_CON))
 
             mlog.debug("send data enabled")
             self._enabled_cbs.notify(True)
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
             if not self._always_enabled:
-                _write_apdu(self._conn, common.APDUS(self._rsn))
-                self._w = 0
-                self._stop_supervisory_timeout()
+                await self._write_apdus()
                 self._is_enabled = False
-                _write_apdu(self._conn,
-                            common.APDUU(common.ApduFunction.STOPDT_CON))
+                await _write_apdu(self._conn,
+                                  common.APDUU(common.ApduFunction.STOPDT_CON))
 
                 mlog.debug("send data disabled")
                 self._enabled_cbs.notify(False)
 
         elif apdu.function == common.ApduFunction.TESTFR_ACT:
-            _write_apdu(self._conn,
-                        common.APDUU(common.ApduFunction.TESTFR_CON))
+            await _write_apdu(self._conn,
+                              common.APDUU(common.ApduFunction.TESTFR_CON))
 
         elif apdu.function == common.ApduFunction.TESTFR_CON:
             self._test_event.set()
@@ -385,13 +396,11 @@ class Connection(aio.Resource):
         self._start_supervisory_timeout()
 
         if apdu.data:
-            self._receive_queue.put_nowait(apdu.data)
+            await self._receive_queue.put(apdu.data)
 
         self._w += 1
         if self._w >= self._receive_window_size:
-            _write_apdu(self._conn, common.APDUS(self._rsn))
-            self._w = 0
-            self._stop_supervisory_timeout()
+            await self._write_apdus()
 
     async def _write_apdui(self, data):
         if self._ssn in self._waiting_ack_handles:
@@ -406,17 +415,22 @@ class Connection(aio.Resource):
             mlog.debug("send data not enabled - discarding message")
             return
 
-        _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
-                                             rsn=self._rsn,
-                                             data=data))
+        await _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
+                                                   rsn=self._rsn,
+                                                   data=data))
         self._w = 0
         self._stop_supervisory_timeout()
 
-        handle = asyncio.get_event_loop().call_later(self._response_timeout,
-                                                     self._on_response_timeout)
+        handle = self._loop.call_later(self._response_timeout,
+                                       self._on_response_timeout)
         self._waiting_ack_handles[self._ssn] = handle
         self._ssn = (self._ssn + 1) % 0x8000
         return handle
+
+    async def _write_apdus(self):
+        await _write_apdu(self._conn, common.APDUS(self._rsn))
+        self._w = 0
+        self._stop_supervisory_timeout()
 
     async def _wait_ack(self, handle, future):
         try:
@@ -450,7 +464,7 @@ class Connection(aio.Resource):
         if self._supervisory_handle:
             return
 
-        self._supervisory_handle = asyncio.get_event_loop().call_later(
+        self._supervisory_handle = self._loop.call_later(
             self._supervisory_timeout, self._on_supervisory_timeout)
 
     def _stop_supervisory_timeout(self):
@@ -462,7 +476,7 @@ class Connection(aio.Resource):
 
 
 class _SendQueueEntry(typing.NamedTuple):
-    data: common.Bytes | None
+    data: util.Bytes | None
     future: asyncio.Future | None
     wait_ack: bool
 
@@ -479,9 +493,9 @@ async def _read_apdu(conn):
     return encoder.decode(memoryview(data))
 
 
-def _write_apdu(conn, apdu):
+async def _write_apdu(conn, apdu):
     data = encoder.encode(apdu)
-    conn.write(data)
+    await conn.write(data)
 
 
 async def _wait_startdt_con(conn):

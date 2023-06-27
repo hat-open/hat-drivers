@@ -3,13 +3,15 @@ from hat.drivers.iec60870.msgs.common import *  # NOQA
 import enum
 import typing
 
-from hat.drivers.iec60870.msgs.common import Bytes, Time
+from hat import util
+
+from hat.drivers.iec60870.msgs.common import Time
 
 
-AsduAddress = int
+AsduAddress: typing.TypeAlias = int
 """ASDU address in range [0, 255]"""
 
-OtherCause = int
+OtherCause: typing.TypeAlias = int
 """Other cause in range [0, 255]"""
 
 
@@ -166,7 +168,7 @@ class NoneValue(typing.NamedTuple):
 
 
 class TextValue(typing.NamedTuple):
-    value: Bytes
+    value: util.Bytes
 
 
 class BitstringValue(typing.NamedTuple):
@@ -302,30 +304,30 @@ class IndexValue(typing.NamedTuple):
     value: int
 
 
-Value = (NoneValue |
-         TextValue |
-         BitstringValue |
-         UIntValue |
-         IntValue |
-         FixedValue |
-         UFixedValue |
-         Real32Value |
-         Real64Value |
-         DoubleValue |
-         SingleValue |
-         ExtendedDoubleValue |
-         MeasurandValue |
-         TimeValue |
-         IdentificationValue |
-         RelativeTimeValue |
-         IoAddressValue |
-         DoubleWithTimeValue |
-         DoubleWithRelativeTimeValue |
-         MeasurandWithRelativeTimeValue |
-         TextNumberValue |
-         ReplyValue |
-         ArrayValue |
-         IndexValue)
+Value: typing.TypeAlias = (NoneValue |
+                           TextValue |
+                           BitstringValue |
+                           UIntValue |
+                           IntValue |
+                           FixedValue |
+                           UFixedValue |
+                           Real32Value |
+                           Real64Value |
+                           DoubleValue |
+                           SingleValue |
+                           ExtendedDoubleValue |
+                           MeasurandValue |
+                           TimeValue |
+                           IdentificationValue |
+                           RelativeTimeValue |
+                           IoAddressValue |
+                           DoubleWithTimeValue |
+                           DoubleWithRelativeTimeValue |
+                           MeasurandWithRelativeTimeValue |
+                           TextNumberValue |
+                           ReplyValue |
+                           ArrayValue |
+                           IndexValue)
 
 
 class DescriptiveData(typing.NamedTuple):
@@ -352,9 +354,9 @@ class IoElement_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME(typing.NamedTuple):
 class IoElement_IDENTIFICATION(typing.NamedTuple):
     compatibility: int
     """compatibility in range [0, 255]"""
-    value: Bytes
+    value: util.Bytes
     """value length is 8"""
-    software: Bytes
+    software: util.Bytes
     """software length is 4"""
 
 
@@ -485,28 +487,29 @@ class IoElement_END_OF_TRANSMISSION(typing.NamedTuple):
     channel: Channel
 
 
-IoElement = (IoElement_TIME_TAGGED_MESSAGE |
-             IoElement_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME |
-             IoElement_MEASURANDS_1 |
-             IoElement_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME |
-             IoElement_IDENTIFICATION |
-             IoElement_TIME_SYNCHRONIZATION |
-             IoElement_GENERAL_INTERROGATION |
-             IoElement_GENERAL_INTERROGATION_TERMINATION |
-             IoElement_MEASURANDS_2 |
-             IoElement_GENERIC_DATA |
-             IoElement_GENERIC_IDENTIFICATION |
-             IoElement_GENERAL_COMMAND |
-             IoElement_GENERIC_COMMAND |
-             IoElement_LIST_OF_RECORDED_DISTURBANCES |
-             IoElement_ORDER_FOR_DISTURBANCE_DATA_TRANSMISSION |
-             IoElement_ACKNOWLEDGEMENT_FOR_DISTURBANCE_DATA_TRANSMISSION |
-             IoElement_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA |
-             IoElement_READY_FOR_TRANSMISSION_OF_A_CHANNEL |
-             IoElement_READY_FOR_TRANSMISSION_OF_TAGS |
-             IoElement_TRANSMISSION_OF_TAGS |
-             IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES |
-             IoElement_END_OF_TRANSMISSION)
+IoElement: typing.TypeAlias = (
+    IoElement_TIME_TAGGED_MESSAGE |
+    IoElement_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME |
+    IoElement_MEASURANDS_1 |
+    IoElement_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME |
+    IoElement_IDENTIFICATION |
+    IoElement_TIME_SYNCHRONIZATION |
+    IoElement_GENERAL_INTERROGATION |
+    IoElement_GENERAL_INTERROGATION_TERMINATION |
+    IoElement_MEASURANDS_2 |
+    IoElement_GENERIC_DATA |
+    IoElement_GENERIC_IDENTIFICATION |
+    IoElement_GENERAL_COMMAND |
+    IoElement_GENERIC_COMMAND |
+    IoElement_LIST_OF_RECORDED_DISTURBANCES |
+    IoElement_ORDER_FOR_DISTURBANCE_DATA_TRANSMISSION |
+    IoElement_ACKNOWLEDGEMENT_FOR_DISTURBANCE_DATA_TRANSMISSION |
+    IoElement_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA |
+    IoElement_READY_FOR_TRANSMISSION_OF_A_CHANNEL |
+    IoElement_READY_FOR_TRANSMISSION_OF_TAGS |
+    IoElement_TRANSMISSION_OF_TAGS |
+    IoElement_TRANSMISSION_OF_DISTURBANCE_VALUES |
+    IoElement_END_OF_TRANSMISSION)
 
 
 class IO(typing.NamedTuple):

@@ -1,3 +1,5 @@
+from hat import util
+
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link.connection import Connection
@@ -27,8 +29,8 @@ class _Connection(Connection):
     def async_group(self):
         return self._async_group
 
-    async def send(self, data: common.Bytes):
+    async def send(self, data: util.Bytes):
         pass
 
-    async def receive(self) -> common.Bytes:
+    async def receive(self) -> util.Bytes:
         pass

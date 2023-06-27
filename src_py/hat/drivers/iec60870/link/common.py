@@ -1,10 +1,10 @@
 import enum
 import typing
 
+from hat import util
 
-Bytes = bytes | bytearray | memoryview
 
-Address = int | None
+Address: typing.TypeAlias = int | None
 """addres is ``None`` or in range [0, 255] or in range [0, 65535]"""
 
 
@@ -47,7 +47,7 @@ class ReqFrame(typing.NamedTuple):
     frame_count_valid: bool
     function: ReqFunction
     address: Address
-    data: Bytes
+    data: util.Bytes
 
 
 class ResFrame(typing.NamedTuple):
@@ -56,10 +56,10 @@ class ResFrame(typing.NamedTuple):
     data_flow_control: bool
     function: ResFunction
     address: Address
-    data: Bytes
+    data: util.Bytes
 
 
-Frame = ReqFrame | ResFrame
+Frame: typing.TypeAlias = ReqFrame | ResFrame
 
 
 def get_broadcast_address(address_size: AddressSize):

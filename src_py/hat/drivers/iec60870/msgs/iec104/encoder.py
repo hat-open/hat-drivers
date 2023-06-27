@@ -1,3 +1,5 @@
+from hat import util
+
 from hat.drivers.iec60870.msgs import encoder
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs.iec104 import common
@@ -80,8 +82,8 @@ class Encoder:
         return self._encoder.io_address_size
 
     def decode_asdu(self,
-                    asdu_bytes: common.Bytes
-                    ) -> tuple[common.ASDU, common.Bytes]:
+                    asdu_bytes: util.Bytes
+                    ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
@@ -98,7 +100,7 @@ class Encoder:
                            ios=ios)
         return asdu, rest
 
-    def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
+    def encode_asdu(self, asdu: common.ASDU) -> util.Bytes:
         asdu_type = asdu.type.value
         cause = iec101.encoder.encode_cause(asdu.cause, common.CauseSize.TWO)
         address = asdu.address

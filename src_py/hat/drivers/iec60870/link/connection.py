@@ -1,18 +1,19 @@
 import abc
+import typing
 
 from hat import aio
-from hat.drivers.iec60870.link import common
+from hat import util
 
 
-ConnectionCb = aio.AsyncCallable[['Connection'], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 
 class Connection(aio.Resource):
 
     @abc.abstractmethod
-    async def send(self, data: common.Bytes):
+    async def send(self, data: util.Bytes):
         pass
 
     @abc.abstractmethod
-    async def receive(self) -> common.Bytes:
+    async def receive(self) -> util.Bytes:
         pass

@@ -4,9 +4,6 @@ import time
 import typing
 
 
-Bytes: typing.TypeAlias = bytes | bytearray | memoryview
-
-
 class CauseSize(enum.Enum):
     ONE = 1
     TWO = 2
@@ -75,6 +72,7 @@ def time_from_datetime(dt: datetime.datetime,
         dt.replace(microsecond=0) +
         datetime.timedelta(milliseconds=round(dt.microsecond / 1000)))
     local_time = time.localtime(dt_rounded.timestamp())
+
     return Time(
         size=TimeSize.SEVEN,
         milliseconds=(local_time.tm_sec * 1000 +
@@ -96,6 +94,7 @@ def time_to_datetime(t: Time
     # TODO maybe allow diferent time size (use now for time)
     if t.size != TimeSize.SEVEN:
         raise ValueError('unsupported time size')
+
     local_dt = datetime.datetime(
         year=2000 + t.years if t.years < 70 else 1900 + t.years,
         month=t.months,
@@ -105,4 +104,5 @@ def time_to_datetime(t: Time
         second=int(t.milliseconds / 1000),
         microsecond=(t.milliseconds % 1000) * 1000,
         fold=not t.summer_time)
+
     return local_dt.astimezone(tz=datetime.timezone.utc)

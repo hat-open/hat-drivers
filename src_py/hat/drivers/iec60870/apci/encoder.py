@@ -1,9 +1,11 @@
 import itertools
 
+from hat import util
+
 from hat.drivers.iec60870.apci import common
 
 
-def get_next_apdu_size(data: common.Bytes) -> int:
+def get_next_apdu_size(data: util.Bytes) -> int:
     if len(data) < 2:
         return 2
 
@@ -16,7 +18,7 @@ def get_next_apdu_size(data: common.Bytes) -> int:
     return data[1] + 2
 
 
-def decode(data: common.Bytes) -> common.APDU:
+def decode(data: util.Bytes) -> common.APDU:
     if data[0] != 0x68:
         raise Exception('invalid start identifier')
 
@@ -41,7 +43,7 @@ def decode(data: common.Bytes) -> common.APDU:
                         data=data)
 
 
-def encode(apdu: common.APDU) -> common.Bytes:
+def encode(apdu: common.APDU) -> util.Bytes:
     if isinstance(apdu, common.APDUI):
         if apdu.ssn > 0x7FFF:
             raise ValueError('invalid send sequence number')

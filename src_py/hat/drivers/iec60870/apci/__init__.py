@@ -1,7 +1,6 @@
 """IEC 60870-5 APCI layer"""
 
-from hat.drivers.iec60870.apci.common import (Bytes,
-                                              SequenceNumber)
+from hat.drivers.iec60870.apci.common import SequenceNumber
 from hat.drivers.iec60870.apci.connection import (ConnectionCb,
                                                   ConnectionDisabledError,
                                                   connect,
@@ -9,8 +8,7 @@ from hat.drivers.iec60870.apci.connection import (ConnectionCb,
                                                   Connection)
 
 
-__all__ = ['Bytes',
-           'SequenceNumber',
+__all__ = ['SequenceNumber',
            'ConnectionCb',
            'ConnectionDisabledError',
            'connect',

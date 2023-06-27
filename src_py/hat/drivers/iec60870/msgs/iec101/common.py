@@ -1,20 +1,23 @@
+from hat.drivers.iec60870.msgs.common import *  # NOQA
+
 import enum
 import typing
 
-from hat.drivers.iec60870.msgs.common import *  # NOQA
-from hat.drivers.iec60870.msgs.common import Bytes, Time
+from hat import util
+
+from hat.drivers.iec60870.msgs.common import Time
 
 
-OriginatorAddress = int
+OriginatorAddress: typing.TypeAlias = int
 """Originator address in range [0, 255] - 0 if not available"""
 
-AsduAddress = int
+AsduAddress: typing.TypeAlias = int
 """ASDU address in range [0, 255] or [0, 65535]"""
 
-IoAddress = int
+IoAddress: typing.TypeAlias = int
 """IO address in range [0, 255] or [0, 65535] or [0, 16777215]"""
 
-OtherCauseType = int
+OtherCauseType: typing.TypeAlias = int
 """Other cause type in range [0, 63]"""
 
 
@@ -167,10 +170,10 @@ class ProtectionQuality(typing.NamedTuple):
     time_invalid: bool
 
 
-Quality = (IndicationQuality |
-           MeasurementQuality |
-           CounterQuality |
-           ProtectionQuality)
+Quality: typing.TypeAlias = (IndicationQuality |
+                             MeasurementQuality |
+                             CounterQuality |
+                             ProtectionQuality)
 
 
 class FreezeCode(enum.Enum):
@@ -210,7 +213,7 @@ class StepPositionValue(typing.NamedTuple):
 
 
 class BitstringValue(typing.NamedTuple):
-    value: Bytes
+    value: util.Bytes
     """bitstring encoded as 4 bytes"""
 
 
@@ -587,7 +590,7 @@ class IoElement_F_SG_NA(typing.NamedTuple):
     """file_name in range [0, 65535]"""
     section_name: int
     """section_name in range [0, 255]"""
-    segment: Bytes
+    segment: util.Bytes
 
 
 class IoElement_F_DR_TA(typing.NamedTuple):
@@ -601,64 +604,64 @@ class IoElement_F_DR_TA(typing.NamedTuple):
     creation_time: Time
 
 
-IoElement = (IoElement_M_SP_NA |
-             IoElement_M_SP_TA |
-             IoElement_M_DP_NA |
-             IoElement_M_DP_TA |
-             IoElement_M_ST_NA |
-             IoElement_M_ST_TA |
-             IoElement_M_BO_NA |
-             IoElement_M_BO_TA |
-             IoElement_M_ME_NA |
-             IoElement_M_ME_TA |
-             IoElement_M_ME_NB |
-             IoElement_M_ME_TB |
-             IoElement_M_ME_NC |
-             IoElement_M_ME_TC |
-             IoElement_M_IT_NA |
-             IoElement_M_IT_TA |
-             IoElement_M_EP_TA |
-             IoElement_M_EP_TB |
-             IoElement_M_EP_TC |
-             IoElement_M_PS_NA |
-             IoElement_M_ME_ND |
-             IoElement_M_SP_TB |
-             IoElement_M_DP_TB |
-             IoElement_M_ST_TB |
-             IoElement_M_BO_TB |
-             IoElement_M_ME_TD |
-             IoElement_M_ME_TE |
-             IoElement_M_ME_TF |
-             IoElement_M_IT_TB |
-             IoElement_M_EP_TD |
-             IoElement_M_EP_TE |
-             IoElement_M_EP_TF |
-             IoElement_C_SC_NA |
-             IoElement_C_DC_NA |
-             IoElement_C_RC_NA |
-             IoElement_C_SE_NA |
-             IoElement_C_SE_NB |
-             IoElement_C_SE_NC |
-             IoElement_C_BO_NA |
-             IoElement_M_EI_NA |
-             IoElement_C_IC_NA |
-             IoElement_C_CI_NA |
-             IoElement_C_RD_NA |
-             IoElement_C_CS_NA |
-             IoElement_C_TS_NA |
-             IoElement_C_RP_NA |
-             IoElement_C_CD_NA |
-             IoElement_P_ME_NA |
-             IoElement_P_ME_NB |
-             IoElement_P_ME_NC |
-             IoElement_P_AC_NA |
-             IoElement_F_FR_NA |
-             IoElement_F_SR_NA |
-             IoElement_F_SC_NA |
-             IoElement_F_LS_NA |
-             IoElement_F_AF_NA |
-             IoElement_F_SG_NA |
-             IoElement_F_DR_TA)
+IoElement: typing.TypeAlias = (IoElement_M_SP_NA |
+                               IoElement_M_SP_TA |
+                               IoElement_M_DP_NA |
+                               IoElement_M_DP_TA |
+                               IoElement_M_ST_NA |
+                               IoElement_M_ST_TA |
+                               IoElement_M_BO_NA |
+                               IoElement_M_BO_TA |
+                               IoElement_M_ME_NA |
+                               IoElement_M_ME_TA |
+                               IoElement_M_ME_NB |
+                               IoElement_M_ME_TB |
+                               IoElement_M_ME_NC |
+                               IoElement_M_ME_TC |
+                               IoElement_M_IT_NA |
+                               IoElement_M_IT_TA |
+                               IoElement_M_EP_TA |
+                               IoElement_M_EP_TB |
+                               IoElement_M_EP_TC |
+                               IoElement_M_PS_NA |
+                               IoElement_M_ME_ND |
+                               IoElement_M_SP_TB |
+                               IoElement_M_DP_TB |
+                               IoElement_M_ST_TB |
+                               IoElement_M_BO_TB |
+                               IoElement_M_ME_TD |
+                               IoElement_M_ME_TE |
+                               IoElement_M_ME_TF |
+                               IoElement_M_IT_TB |
+                               IoElement_M_EP_TD |
+                               IoElement_M_EP_TE |
+                               IoElement_M_EP_TF |
+                               IoElement_C_SC_NA |
+                               IoElement_C_DC_NA |
+                               IoElement_C_RC_NA |
+                               IoElement_C_SE_NA |
+                               IoElement_C_SE_NB |
+                               IoElement_C_SE_NC |
+                               IoElement_C_BO_NA |
+                               IoElement_M_EI_NA |
+                               IoElement_C_IC_NA |
+                               IoElement_C_CI_NA |
+                               IoElement_C_RD_NA |
+                               IoElement_C_CS_NA |
+                               IoElement_C_TS_NA |
+                               IoElement_C_RP_NA |
+                               IoElement_C_CD_NA |
+                               IoElement_P_ME_NA |
+                               IoElement_P_ME_NB |
+                               IoElement_P_ME_NC |
+                               IoElement_P_AC_NA |
+                               IoElement_F_FR_NA |
+                               IoElement_F_SR_NA |
+                               IoElement_F_SC_NA |
+                               IoElement_F_LS_NA |
+                               IoElement_F_AF_NA |
+                               IoElement_F_SG_NA |
+                               IoElement_F_DR_TA)
 
 
 class IO(typing.NamedTuple):

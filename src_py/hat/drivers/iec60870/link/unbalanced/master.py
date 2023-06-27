@@ -6,6 +6,8 @@ import logging
 import time
 
 from hat import aio
+from hat import util
+
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
@@ -208,7 +210,7 @@ class _MasterConnection(Connection):
     def async_group(self):
         return self._async_group
 
-    async def send(self, data: common.Bytes):
+    async def send(self, data: util.Bytes):
         if not data:
             return
 
@@ -221,7 +223,7 @@ class _MasterConnection(Connection):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def receive(self) -> common.Bytes:
+    async def receive(self) -> util.Bytes:
         try:
             return await self._receive_queue.get()
 

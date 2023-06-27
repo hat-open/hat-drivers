@@ -1,9 +1,10 @@
 import asyncio
-import contextlib
 
 import pytest
 
 from hat import aio
+from hat import util
+
 from hat.drivers import tcp
 from hat.drivers.iec60870 import apci
 from hat.drivers.iec60870.apci import common
@@ -14,228 +15,172 @@ pytestmark = pytest.mark.timeout(1)
 
 
 @pytest.fixture
-def server_port(unused_tcp_port_factory):
-    return unused_tcp_port_factory()
+def addr():
+    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
-@contextlib.asynccontextmanager
-async def server(port,
-                 connection_cb=lambda _: None,
-                 response_timeout=15,
-                 supervisory_timeout=10,
-                 test_timeout=20,
-                 send_window_size=12,
-                 receive_window_size=8):
-    server = await apci.listen(connection_cb=connection_cb,
-                               addr=tcp.Address(host='localhost',
-                                                port=port),
-                               response_timeout=response_timeout,
-                               supervisory_timeout=supervisory_timeout,
-                               test_timeout=test_timeout,
-                               send_window_size=send_window_size,
-                               receive_window_size=receive_window_size)
-    try:
-        yield server
-    finally:
-        await server.async_close()
+async def test_connect(addr):
+    srv_conn_queue = aio.Queue()
+    srv = await apci.listen(srv_conn_queue.put_nowait, addr)
+
+    conn = await apci.connect(addr)
+    assert conn.is_open
+
+    await conn.async_close()
+    await srv.async_close()
 
 
-@contextlib.asynccontextmanager
-async def server_conn_queue(port,
-                            response_timeout=15,
-                            supervisory_timeout=10,
-                            test_timeout=20,
-                            send_window_size=12,
-                            receive_window_size=8):
-    conn_queue = aio.Queue()
-    async with server(port=port,
-                      connection_cb=conn_queue.put_nowait,
-                      response_timeout=response_timeout,
-                      supervisory_timeout=supervisory_timeout,
-                      test_timeout=test_timeout,
-                      send_window_size=send_window_size,
-                      receive_window_size=receive_window_size):
-        yield conn_queue
-
-
-@contextlib.asynccontextmanager
-async def mock_server(server_port,
-                      connection_cb=lambda _: None,
-                      bind_connections=True):
-    server = await tcp.listen(connection_cb=connection_cb,
-                              addr=tcp.Address(host='localhost',
-                                               port=server_port),
-                              bind_connections=bind_connections)
-    try:
-        yield server
-    finally:
-        await server.async_close()
-
-
-@pytest.fixture
-async def conn_queue(server_port):
-    async with server_conn_queue(server_port) as cq:
-        yield cq
-
-
-async def test_connect(server_port):
-    # connect failure, no server
-    addr_srv = tcp.Address(host='127.0.0.1', port=server_port)
+async def test_connect_no_server(addr):
     with pytest.raises(ConnectionRefusedError):
-        await apci.connect(addr=addr_srv)
-
-    # mock_server does not respont with STARTDT_CON -> connect does not end
-    async with mock_server(server_port):
-        # response_timeout expires
-        with pytest.raises(Exception):
-            await apci.connect(addr=addr_srv, response_timeout=0.1)
-        # response_timeout expires
-        # with pytest.raises(asyncio.TimeoutError):
-        #     await asyncio.wait_for(
-        #         apci.connect(addr=addr_srv, response_timeout=15), 0.1)
-
-    async with server(server_port):
-        conn = await apci.connect(addr=addr_srv, response_timeout=0.1)
-        assert isinstance(conn, apci.Connection)
-        assert conn.is_open
-
-    assert conn.is_closed
+        await apci.connect(addr)
 
 
-async def test_server(server_port):
+async def test_connect_no_startdt_con(addr):
+    srv_conn_queue = aio.Queue()
+    srv = await tcp.listen(srv_conn_queue.put_nowait, addr)
+
+    with pytest.raises(Exception):
+        await apci.connect(addr, response_timeout=0.1)
+
+    srv_conn = await srv_conn_queue.get()
+    await srv_conn.async_close()
+    await srv.async_close()
+
+
+async def test_listen(addr):
+    srv_conn_queue = aio.Queue()
+    srv = await apci.listen(srv_conn_queue.put_nowait, addr)
+
+    assert srv.is_open
+    assert srv.addresses == [addr]
+
+    conn = await apci.connect(addr)
+    srv_conn = await srv_conn_queue.get()
+
+    assert srv_conn.is_open
+    assert srv_conn.info.local_addr == addr
+
+    assert srv_conn.info.local_addr == conn.info.remote_addr
+    assert srv_conn.info.remote_addr == conn.info.local_addr
+
+    await srv.async_close()
+    assert srv_conn.is_closed
+
+    await conn.wait_closed()
+
+
+async def test_send_receive(addr):
     conn_queue = aio.Queue()
-    addr_srv = tcp.Address(host='127.0.0.1', port=server_port)
+    srv = await apci.listen(conn_queue.put_nowait, addr)
+    conn1 = await apci.connect(addr)
+    conn2 = await conn_queue.get()
 
-    server = await apci.listen(connection_cb=conn_queue.put_nowait,
-                               addr=addr_srv)
-
-    assert server.is_open
-    assert server.addresses == [addr_srv]
-
-    conn_cli = await apci.connect(addr=addr_srv)
-    conn_srv = await conn_queue.get()
-
-    assert isinstance(conn_srv, apci.Connection)
-    assert conn_srv.is_open
-    assert conn_srv.info.local_addr == addr_srv
-
-    assert conn_srv.info.local_addr == conn_cli.info.remote_addr
-    assert conn_srv.info.remote_addr == conn_cli.info.local_addr
-
-    await server.async_close()
-    assert server.is_closed
-    assert conn_cli.is_closed
-    assert conn_srv.is_closed
-
-
-async def test_connection(conn_queue, server_port):
-    conn_cli = await apci.connect(
-        addr=tcp.Address(host='127.0.0.1', port=server_port))
-    conn_srv = await conn_queue.get()
-
-    # client -> server
     asdu_data = b'\xab\x12'
-    conn_cli.send(asdu_data)
-    res = await conn_srv.receive()
+    await conn1.send(asdu_data)
+    res = await conn2.receive()
     assert asdu_data == res
 
-    # server -> client
     asdu_data = b'\xcd\x34\x56'
-    conn_srv.send(asdu_data)
-    res = await conn_cli.receive()
+    await conn2.send(asdu_data)
+    res = await conn1.receive()
     assert asdu_data == res
 
-    await conn_srv.async_close()
-    await conn_cli.wait_closed()
+    await conn1.async_close()
+    await conn2.async_close()
+    await srv.async_close()
 
     with pytest.raises(ConnectionError):
-        conn_cli.send(asdu_data)
+        await conn1.send(asdu_data)
 
     with pytest.raises(ConnectionError):
-        await conn_cli.receive()
+        await conn2.receive()
 
 
-async def test_drain(server_port):
-    supervisory_timeout = 0.1
-    async with server_conn_queue(server_port,
-                                 supervisory_timeout=supervisory_timeout,
-                                 receive_window_size=15) as conn_queue:
-        conn_cli = await apci.connect(
-            addr=tcp.Address(host='127.0.0.1', port=server_port),
-            send_window_size=10)
-        conn_srv = await conn_queue.get()
+async def test_drain(addr):
+    conn_queue = aio.Queue()
+    srv = await apci.listen(conn_queue.put_nowait, addr,
+                            supervisory_timeout=0.1,
+                            receive_window_size=15)
+    conn1 = await apci.connect(addr,
+                               send_window_size=10)
+    conn2 = await conn_queue.get()
 
-        conn_cli.send(b'\xab\x12')
-        await asyncio.wait_for(conn_cli.drain(), 0.1)
+    await conn1.send(b'\xab\x12')
+    await asyncio.wait_for(conn1.drain(), 0.1)
 
-        conn_srv.send(b'\xab\x12')
-        await asyncio.wait_for(conn_srv.drain(), 0.1)
+    await conn2.send(b'\xab\x12')
+    await asyncio.wait_for(conn2.drain(), 0.1)
 
-        # messages are not sent becaues there are more than send_window_size
-        # so drain should not end until supervisory timeout elapses
-        for _ in range(15):
-            conn_cli.send(b'\xab\x12')
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(conn_cli.drain(), 0.05)
-        await conn_cli.drain()
+    # messages are not sent becaues there are more than send_window_size
+    # so drain should not end until supervisory timeout elapses
+    for _ in range(15):
+        await conn1.send(b'\xab\x12')
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(conn1.drain(), 0.05)
+    await conn1.drain()
 
-        await conn_cli.async_close()
+    await conn1.async_close()
+    await conn2.async_close()
+    await srv.async_close()
 
 
-async def test_window_size_supervisory_timeout(server_port):
+async def test_window_size_supervisory_timeout(addr):
     send_window_size = 10
     receive_window_size = 15
-    supervisory_timeout = 0.1
-    async with server_conn_queue(
-            server_port,
-            receive_window_size=receive_window_size,
-            supervisory_timeout=supervisory_timeout) as conn_queue:
 
-        conn_cli = await apci.connect(
-            addr=tcp.Address(host='127.0.0.1', port=server_port),
-            send_window_size=send_window_size)
-        conn_srv = await conn_queue.get()
+    conn_queue = aio.Queue()
+    srv = await apci.listen(conn_queue.put_nowait, addr,
+                            supervisory_timeout=0.1,
+                            receive_window_size=receive_window_size)
+    conn1 = await apci.connect(addr,
+                               send_window_size=send_window_size)
+    conn2 = await conn_queue.get()
 
-        for i in range(send_window_size + 5):
-            conn_cli.send((i).to_bytes(1, byteorder='little'))
+    for i in range(send_window_size + 5):
+        await conn1.send((i).to_bytes(1, byteorder='little'))
 
-        for i in range(send_window_size):
-            asdu_bytes = await conn_srv.receive()
-            assert i == int.from_bytes(asdu_bytes, byteorder='little')
+    for i in range(send_window_size):
+        asdu_bytes = await conn2.receive()
+        assert i == int.from_bytes(asdu_bytes, byteorder='little')
 
-        # client sends 10 (send_window_size) out of 15 because waits for ack,
-        # but server does not send ack until receives 15 (receive_window_size)
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(conn_srv.receive(), 0.05)
+    # client sends 10 (send_window_size) out of 15 because waits for ack,
+    # but server does not send ack until receives 15 (receive_window_size)
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(conn2.receive(), 0.05)
 
-        for i in range(send_window_size, send_window_size + 5):
-            asdu_bytes = await conn_srv.receive()
-            assert i == int.from_bytes(asdu_bytes, byteorder='little')
+    for i in range(send_window_size, send_window_size + 5):
+        asdu_bytes = await conn2.receive()
+        assert i == int.from_bytes(asdu_bytes, byteorder='little')
+
+    await conn1.async_close()
+    await conn2.async_close()
+    await srv.async_close()
 
 
-async def test_test_timeout(server_port):
+async def test_test_timeout(addr):
     conn_queue = aio.Queue()
 
-    async def on_conn(conn):
+    async def on_connection(conn):
         conn_queue.put_nowait(conn)
-        await conn.readexactly(6)
-        conn.write(
-            encoder.encode(common.APDUU(common.ApduFunction.STARTDT_CON)))
 
-    test_timeout = 0.1
-    response_timeout = 0.1
-    async with mock_server(server_port, connection_cb=on_conn,
-                           bind_connections=False):
-        conn = await apci.connect(
-            addr=tcp.Address(host='127.0.0.1', port=server_port),
-            test_timeout=test_timeout, response_timeout=response_timeout)
-        assert conn.is_open
-        conn_srv = await conn_queue.get()
+        await conn.readexactly(6)
+
+        apdu = common.APDUU(common.ApduFunction.STARTDT_CON)
+        apdu_bytes = encoder.encode(apdu)
+        await conn.write(apdu_bytes)
+
+    srv = await tcp.listen(on_connection, addr,
+                           bind_connections=False)
+    conn1 = await apci.connect(addr,
+                               test_timeout=0.1,
+                               response_timeout=0.1)
+    conn2 = await conn_queue.get()
+    await srv.async_close()
 
     # tcp server is closed, apci conn closes after ->
     # test_timeout + response_timeout
     await asyncio.sleep(0.05)
-    assert conn.is_open
-    await conn.wait_closed()
+    assert conn1.is_open
+    await conn1.wait_closed()
 
-    await conn_srv.async_close()
+    await conn2.async_close()

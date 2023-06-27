@@ -3,31 +3,34 @@ from hat.drivers.iec60870.msgs.common import *  # NOQA
 import enum
 import typing
 
+from hat import util
+
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs import iec104
-from hat.drivers.iec60870.msgs.common import Bytes, Time
+from hat.drivers.iec60870.msgs.common import Time
 
 
-OriginatorAddress = iec101.common.OriginatorAddress
-
-# different sizes for iec101 and iec104
-AsduAddress = iec101.common.AsduAddress | iec104.common.AsduAddress
+OriginatorAddress: typing.TypeAlias = iec101.common.OriginatorAddress
 
 # different sizes for iec101 and iec104
-IoAddress = iec101.common.IoAddress | iec104.common.IoAddress
+AsduAddress: typing.TypeAlias = (iec101.common.AsduAddress |
+                                 iec104.common.AsduAddress)
 
-OtherCauseType = iec101.common.OriginatorAddress
+# different sizes for iec101 and iec104
+IoAddress: typing.TypeAlias = iec101.common.IoAddress | iec104.common.IoAddress
 
-BinaryCounterValue = iec101.common.BinaryCounterValue
+OtherCauseType: typing.TypeAlias = iec101.common.OriginatorAddress
+
+BinaryCounterValue: typing.TypeAlias = iec101.common.BinaryCounterValue
 
 
-AssociationId = int
+AssociationId: typing.TypeAlias = int
 """Association ID in range [0, 65535]"""
 
-SequenceNumber = int
+SequenceNumber: typing.TypeAlias = int
 """Sequnce number in range [0, 4294967295]"""
 
-UserNumber = int
+UserNumber: typing.TypeAlias = int
 """User number in range [0, 65535]"""
 
 
@@ -133,21 +136,21 @@ class IoElement_S_CH_NA(typing.NamedTuple):
     """MAC algorithm can be value in range [0, 255]"""
     reason: int
     """reason in range [0, 255] - only valid value is 1"""
-    data: Bytes
+    data: util.Bytes
     """data length in range [4, 65535]"""
 
 
 class IoElement_S_RP_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    mac: Bytes
+    mac: util.Bytes
 
 
 class IoElement_S_AR_NA(typing.NamedTuple):
-    asdu: Bytes
+    asdu: util.Bytes
     sequence: SequenceNumber
     user: UserNumber
-    mac: Bytes
+    mac: util.Bytes
 
 
 class IoElement_S_KR_NA(typing.NamedTuple):
@@ -163,15 +166,15 @@ class IoElement_S_KS_NA(typing.NamedTuple):
     """Key status can be value in range [0, 255]"""
     mac_algorithm: MacAlgorithm | int
     """MAC algorithm can be value in range [0, 255]"""
-    data: Bytes
+    data: util.Bytes
     """data length in range [8, 65535]"""
-    mac: Bytes
+    mac: util.Bytes
 
 
 class IoElement_S_KC_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    wrapped_key: Bytes
+    wrapped_key: util.Bytes
     """wrapped key length in range [8, 65535]"""
 
 
@@ -184,14 +187,14 @@ class IoElement_S_ER_NA(typing.NamedTuple):
     """Code can be value in range [0, 255]"""
     time: Time
     """Time size SEVEN"""
-    text: Bytes
+    text: util.Bytes
     """Text length in range [0, 65535]"""
 
 
 class IoElement_S_UC_NA_X(typing.NamedTuple):
     key_change_method: KeyChangeMethod | int
     """Key change method can be value in range [0, 255]"""
-    data: Bytes
+    data: util.Bytes
     """Data length in range [0, 65535]"""
 
 
@@ -205,65 +208,65 @@ class IoElement_S_US_NA(typing.NamedTuple):
     """Role can be value in range [0, 65535]"""
     role_expiry: int
     """Role expiry in range [0, 65535]"""
-    name: Bytes
+    name: util.Bytes
     """Name length in range [0, 65535]"""
-    public_key: Bytes
+    public_key: util.Bytes
     """Public key length in range [0, 65535]"""
-    certification: Bytes
+    certification: util.Bytes
     """Certification length in range [0, 65535]"""
 
 
 class IoElement_S_UQ_NA(typing.NamedTuple):
     key_change_method: KeyChangeMethod | int
     """Key change method can be value in range [0, 255]"""
-    name: Bytes
+    name: util.Bytes
     """Name length in range [0, 65535]"""
-    data: Bytes
+    data: util.Bytes
     """Data length in range [4, 65535]"""
 
 
 class IoElement_S_UR_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    data: Bytes
+    data: util.Bytes
     """Data length in range [4, 65535]"""
 
 
 class IoElement_S_UK_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    encrypted_update_key: Bytes
+    encrypted_update_key: util.Bytes
     """Encrypted update key length in range [16, 65535]"""
-    mac: Bytes
+    mac: util.Bytes
 
 
 class IoElement_S_UA_NA(typing.NamedTuple):
     sequence: SequenceNumber
     user: UserNumber
-    encrypted_update_key: Bytes
+    encrypted_update_key: util.Bytes
     """Encrypted update key length in range [16, 65535]"""
-    signature: Bytes
+    signature: util.Bytes
 
 
 class IoElement_S_UC_NA(typing.NamedTuple):
-    mac: Bytes
+    mac: util.Bytes
 
 
-IoElement = (IoElement_S_IT_TC |
-             IoElement_S_CH_NA |
-             IoElement_S_RP_NA |
-             IoElement_S_AR_NA |
-             IoElement_S_KR_NA |
-             IoElement_S_KS_NA |
-             IoElement_S_KC_NA |
-             IoElement_S_ER_NA |
-             IoElement_S_UC_NA_X |
-             IoElement_S_US_NA |
-             IoElement_S_UQ_NA |
-             IoElement_S_UR_NA |
-             IoElement_S_UK_NA |
-             IoElement_S_UA_NA |
-             IoElement_S_UC_NA)
+IoElement: typing.TypeAlias = (IoElement_S_IT_TC |
+                               IoElement_S_CH_NA |
+                               IoElement_S_RP_NA |
+                               IoElement_S_AR_NA |
+                               IoElement_S_KR_NA |
+                               IoElement_S_KS_NA |
+                               IoElement_S_KC_NA |
+                               IoElement_S_ER_NA |
+                               IoElement_S_UC_NA_X |
+                               IoElement_S_US_NA |
+                               IoElement_S_UQ_NA |
+                               IoElement_S_UR_NA |
+                               IoElement_S_UK_NA |
+                               IoElement_S_UA_NA |
+                               IoElement_S_UC_NA)
 
 
 class IO(typing.NamedTuple):

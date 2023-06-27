@@ -3,6 +3,7 @@ import struct
 import typing
 
 from hat import util
+
 from hat.drivers.iec60870.msgs import encoder
 from hat.drivers.iec60870.msgs.iec101 import common
 
@@ -42,8 +43,8 @@ class Encoder:
         return self._encoder.io_address_size
 
     def decode_asdu(self,
-                    asdu_bytes: common.Bytes
-                    ) -> tuple[common.ASDU, common.Bytes]:
+                    asdu_bytes: util.Bytes
+                    ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
@@ -60,7 +61,7 @@ class Encoder:
                            ios=ios)
         return asdu, rest
 
-    def encode_asdu(self, asdu: common.ASDU) -> common.Bytes:
+    def encode_asdu(self, asdu: common.ASDU) -> util.Bytes:
         asdu_type = asdu.type.value
         cause = encode_cause(asdu.cause, self._cause_size)
         address = asdu.address
@@ -152,9 +153,9 @@ def encode_cause_type(cause_type: common.CauseType | common.OtherCauseType
             else cause_type)
 
 
-def decode_io_element(io_bytes: common.Bytes,
+def decode_io_element(io_bytes: util.Bytes,
                       asdu_type: int
-                      ) -> tuple[common.IoElement, common.Bytes]:
+                      ) -> tuple[common.IoElement, util.Bytes]:
     asdu_type = common.AsduType(asdu_type)
 
     if asdu_type == common.AsduType.M_SP_NA:
@@ -958,9 +959,9 @@ def encode_io_element(element: common.IoElement,
         raise ValueError('unsupported IO element')
 
 
-def decode_quality(io_bytes: common.Bytes,
+def decode_quality(io_bytes: util.Bytes,
                    quality_type: common.QualityType
-                   ) -> tuple[common.Quality, common.Bytes]:
+                   ) -> tuple[common.Quality, util.Bytes]:
     if quality_type == common.QualityType.INDICATION:
         invalid = bool(io_bytes[0] & 0x80)
         not_topical = bool(io_bytes[0] & 0x40)
@@ -1043,9 +1044,9 @@ def encode_quality(quality: common.Quality
         raise ValueError('unsupported quality')
 
 
-def decode_step_position_value(io_bytes: common.Bytes
+def decode_step_position_value(io_bytes: util.Bytes
                                ) -> tuple[common.StepPositionValue,
-                                          common.Bytes]:
+                                          util.Bytes]:
     value = (((-1 << 7) if io_bytes[0] & 0x40 else 0) |
              (io_bytes[0] & 0x7F))
     transient = bool(io_bytes[0] & 0x80)
@@ -1060,8 +1061,8 @@ def encode_step_position_value(value: common.StepPositionValue
            (value.value & 0x7F))
 
 
-def decode_bitstring_value(io_bytes: common.Bytes
-                           ) -> tuple[common.BitstringValue, common.Bytes]:
+def decode_bitstring_value(io_bytes: util.Bytes
+                           ) -> tuple[common.BitstringValue, util.Bytes]:
     value = io_bytes[:4]
     bitstring_value = common.BitstringValue(value)
     return bitstring_value, io_bytes[4:]
@@ -1075,8 +1076,8 @@ def encode_bitstring_value(value: common.BitstringValue
     yield value.value[3]
 
 
-def decode_normalized_value(io_bytes: common.Bytes
-                            ) -> tuple[common.NormalizedValue, common.Bytes]:
+def decode_normalized_value(io_bytes: util.Bytes
+                            ) -> tuple[common.NormalizedValue, util.Bytes]:
     value = struct.unpack('<h', io_bytes[:2])[0] / 0x7fff
     normalized_value = common.NormalizedValue(value)
     return normalized_value, io_bytes[2:]
@@ -1087,8 +1088,8 @@ def encode_normalized_value(value: common.NormalizedValue
     yield from struct.pack('<h', round(value.value * 0x7fff))
 
 
-def decode_scaled_value(io_bytes: common.Bytes
-                        ) -> tuple[common.ScaledValue, common.Bytes]:
+def decode_scaled_value(io_bytes: util.Bytes
+                        ) -> tuple[common.ScaledValue, util.Bytes]:
     value = struct.unpack('<h', io_bytes[:2])[0]
     scaled_value = common.ScaledValue(value)
     return scaled_value, io_bytes[2:]
@@ -1099,8 +1100,8 @@ def encode_scaled_value(value: common.ScaledValue
     yield from struct.pack('<h', value.value)
 
 
-def decode_floating_value(io_bytes: common.Bytes
-                          ) -> tuple[common.FloatingValue, common.Bytes]:
+def decode_floating_value(io_bytes: util.Bytes
+                          ) -> tuple[common.FloatingValue, util.Bytes]:
     value = struct.unpack('<f', io_bytes[:4])[0]
     floating_value = common.FloatingValue(value)
     return floating_value, io_bytes[4:]
@@ -1111,9 +1112,9 @@ def encode_floating_value(value: common.FloatingValue
     yield from struct.pack('<f', value.value)
 
 
-def decode_binary_counter_value(io_bytes: common.Bytes
+def decode_binary_counter_value(io_bytes: util.Bytes
                                 ) -> tuple[common.BinaryCounterValue,
-                                           common.Bytes]:
+                                           util.Bytes]:
     value = struct.unpack('<i', io_bytes[:4])[0]
     binary_counter_value = common.BinaryCounterValue(value)
     return binary_counter_value, io_bytes[4:]
@@ -1124,9 +1125,9 @@ def encode_binary_counter_value(value: common.BinaryCounterValue
     yield from struct.pack('<i', value.value)
 
 
-def decode_protection_start_value(io_bytes: common.Bytes
+def decode_protection_start_value(io_bytes: util.Bytes
                                   ) -> tuple[common.ProtectionStartValue,
-                                             common.Bytes]:
+                                             util.Bytes]:
     general = bool(io_bytes[0] & 0x01)
     l1 = bool(io_bytes[0] & 0x02)
     l2 = bool(io_bytes[0] & 0x04)
@@ -1152,9 +1153,9 @@ def encode_protection_start_value(value: common.ProtectionStartValue
            (0x20 if value.reverse else 0x00))
 
 
-def decode_protection_command_value(io_bytes: common.Bytes
+def decode_protection_command_value(io_bytes: util.Bytes
                                     ) -> tuple[common.ProtectionCommandValue,
-                                               common.Bytes]:
+                                               util.Bytes]:
     general = bool(io_bytes[0] & 0x01)
     l1 = bool(io_bytes[0] & 0x02)
     l2 = bool(io_bytes[0] & 0x04)
@@ -1174,8 +1175,8 @@ def encode_protection_command_value(value: common.ProtectionCommandValue
            (0x08 if value.l3 else 0x00))
 
 
-def decode_status_value(io_bytes: common.Bytes
-                        ) -> tuple[common.StatusValue, common.Bytes]:
+def decode_status_value(io_bytes: util.Bytes
+                        ) -> tuple[common.StatusValue, util.Bytes]:
     value = [bool(io_bytes[i // 8] & (1 << (i % 8)))
              for i in range(16)]
     change = [bool(io_bytes[2 + i // 8] & (1 << (i % 8)))

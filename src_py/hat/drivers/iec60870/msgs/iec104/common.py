@@ -7,13 +7,13 @@ from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs.common import Time
 
 
-OriginatorAddress = int
+OriginatorAddress: typing.TypeAlias = int
 """Originator address in range [0, 255] - 0 if not available"""
 
-AsduAddress = int
+AsduAddress: typing.TypeAlias = int
 """ASDU address in range [0, 65535]"""
 
-IoAddress = int
+IoAddress: typing.TypeAlias = int
 """IO address in range [0, 16777215]"""
 
 
@@ -73,78 +73,78 @@ class AsduType(enum.Enum):
     F_DR_TA = iec101.common.AsduType.F_DR_TA.value
 
 
-CauseType = iec101.common.CauseType
-OtherCauseType = iec101.common.OtherCauseType
-Cause = iec101.common.Cause
+CauseType: typing.TypeAlias = iec101.common.CauseType
+OtherCauseType: typing.TypeAlias = iec101.common.OtherCauseType
+Cause: typing.TypeAlias = iec101.common.Cause
 
-QualityType = iec101.common.QualityType
-IndicationQuality = iec101.common.IndicationQuality
-MeasurementQuality = iec101.common.MeasurementQuality
-CounterQuality = iec101.common.CounterQuality
-ProtectionQuality = iec101.common.ProtectionQuality
-Quality = iec101.common.Quality
+QualityType: typing.TypeAlias = iec101.common.QualityType
+IndicationQuality: typing.TypeAlias = iec101.common.IndicationQuality
+MeasurementQuality: typing.TypeAlias = iec101.common.MeasurementQuality
+CounterQuality: typing.TypeAlias = iec101.common.CounterQuality
+ProtectionQuality: typing.TypeAlias = iec101.common.ProtectionQuality
+Quality: typing.TypeAlias = iec101.common.Quality
 
-FreezeCode = iec101.common.FreezeCode
+FreezeCode: typing.TypeAlias = iec101.common.FreezeCode
 
-SingleValue = iec101.common.SingleValue
-DoubleValue = iec101.common.DoubleValue
-RegulatingValue = iec101.common.RegulatingValue
-StepPositionValue = iec101.common.StepPositionValue
-BitstringValue = iec101.common.BitstringValue
-NormalizedValue = iec101.common.NormalizedValue
-ScaledValue = iec101.common.ScaledValue
-FloatingValue = iec101.common.FloatingValue
-BinaryCounterValue = iec101.common.BinaryCounterValue
-ProtectionValue = iec101.common.ProtectionValue
-ProtectionStartValue = iec101.common.ProtectionStartValue
-ProtectionCommandValue = iec101.common.ProtectionCommandValue
-StatusValue = iec101.common.StatusValue
+SingleValue: typing.TypeAlias = iec101.common.SingleValue
+DoubleValue: typing.TypeAlias = iec101.common.DoubleValue
+RegulatingValue: typing.TypeAlias = iec101.common.RegulatingValue
+StepPositionValue: typing.TypeAlias = iec101.common.StepPositionValue
+BitstringValue: typing.TypeAlias = iec101.common.BitstringValue
+NormalizedValue: typing.TypeAlias = iec101.common.NormalizedValue
+ScaledValue: typing.TypeAlias = iec101.common.ScaledValue
+FloatingValue: typing.TypeAlias = iec101.common.FloatingValue
+BinaryCounterValue: typing.TypeAlias = iec101.common.BinaryCounterValue
+ProtectionValue: typing.TypeAlias = iec101.common.ProtectionValue
+ProtectionStartValue: typing.TypeAlias = iec101.common.ProtectionStartValue
+ProtectionCommandValue: typing.TypeAlias = iec101.common.ProtectionCommandValue
+StatusValue: typing.TypeAlias = iec101.common.StatusValue
 
-IoElement_M_SP_NA = iec101.common.IoElement_M_SP_NA
-IoElement_M_DP_NA = iec101.common.IoElement_M_DP_NA
-IoElement_M_ST_NA = iec101.common.IoElement_M_ST_NA
-IoElement_M_BO_NA = iec101.common.IoElement_M_BO_NA
-IoElement_M_ME_NA = iec101.common.IoElement_M_ME_NA
-IoElement_M_ME_NB = iec101.common.IoElement_M_ME_NB
-IoElement_M_ME_NC = iec101.common.IoElement_M_ME_NC
-IoElement_M_IT_NA = iec101.common.IoElement_M_IT_NA
-IoElement_M_PS_NA = iec101.common.IoElement_M_PS_NA
-IoElement_M_ME_ND = iec101.common.IoElement_M_ME_ND
-IoElement_M_SP_TB = iec101.common.IoElement_M_SP_TB
-IoElement_M_DP_TB = iec101.common.IoElement_M_DP_TB
-IoElement_M_ST_TB = iec101.common.IoElement_M_ST_TB
-IoElement_M_BO_TB = iec101.common.IoElement_M_BO_TB
-IoElement_M_ME_TD = iec101.common.IoElement_M_ME_TD
-IoElement_M_ME_TE = iec101.common.IoElement_M_ME_TE
-IoElement_M_ME_TF = iec101.common.IoElement_M_ME_TF
-IoElement_M_IT_TB = iec101.common.IoElement_M_IT_TB
-IoElement_M_EP_TD = iec101.common.IoElement_M_EP_TD
-IoElement_M_EP_TE = iec101.common.IoElement_M_EP_TE
-IoElement_M_EP_TF = iec101.common.IoElement_M_EP_TF
-IoElement_C_SC_NA = iec101.common.IoElement_C_SC_NA
-IoElement_C_DC_NA = iec101.common.IoElement_C_DC_NA
-IoElement_C_RC_NA = iec101.common.IoElement_C_RC_NA
-IoElement_C_SE_NA = iec101.common.IoElement_C_SE_NA
-IoElement_C_SE_NB = iec101.common.IoElement_C_SE_NB
-IoElement_C_SE_NC = iec101.common.IoElement_C_SE_NC
-IoElement_C_BO_NA = iec101.common.IoElement_C_BO_NA
-IoElement_M_EI_NA = iec101.common.IoElement_M_EI_NA
-IoElement_C_IC_NA = iec101.common.IoElement_C_IC_NA
-IoElement_C_CI_NA = iec101.common.IoElement_C_CI_NA
-IoElement_C_RD_NA = iec101.common.IoElement_C_RD_NA
-IoElement_C_CS_NA = iec101.common.IoElement_C_CS_NA
-IoElement_C_RP_NA = iec101.common.IoElement_C_RP_NA
-IoElement_P_ME_NA = iec101.common.IoElement_P_ME_NA
-IoElement_P_ME_NB = iec101.common.IoElement_P_ME_NB
-IoElement_P_ME_NC = iec101.common.IoElement_P_ME_NC
-IoElement_P_AC_NA = iec101.common.IoElement_P_AC_NA
-IoElement_F_FR_NA = iec101.common.IoElement_F_FR_NA
-IoElement_F_SR_NA = iec101.common.IoElement_F_SR_NA
-IoElement_F_SC_NA = iec101.common.IoElement_F_SC_NA
-IoElement_F_LS_NA = iec101.common.IoElement_F_LS_NA
-IoElement_F_AF_NA = iec101.common.IoElement_F_AF_NA
-IoElement_F_SG_NA = iec101.common.IoElement_F_SG_NA
-IoElement_F_DR_TA = iec101.common.IoElement_F_DR_TA
+IoElement_M_SP_NA: typing.TypeAlias = iec101.common.IoElement_M_SP_NA
+IoElement_M_DP_NA: typing.TypeAlias = iec101.common.IoElement_M_DP_NA
+IoElement_M_ST_NA: typing.TypeAlias = iec101.common.IoElement_M_ST_NA
+IoElement_M_BO_NA: typing.TypeAlias = iec101.common.IoElement_M_BO_NA
+IoElement_M_ME_NA: typing.TypeAlias = iec101.common.IoElement_M_ME_NA
+IoElement_M_ME_NB: typing.TypeAlias = iec101.common.IoElement_M_ME_NB
+IoElement_M_ME_NC: typing.TypeAlias = iec101.common.IoElement_M_ME_NC
+IoElement_M_IT_NA: typing.TypeAlias = iec101.common.IoElement_M_IT_NA
+IoElement_M_PS_NA: typing.TypeAlias = iec101.common.IoElement_M_PS_NA
+IoElement_M_ME_ND: typing.TypeAlias = iec101.common.IoElement_M_ME_ND
+IoElement_M_SP_TB: typing.TypeAlias = iec101.common.IoElement_M_SP_TB
+IoElement_M_DP_TB: typing.TypeAlias = iec101.common.IoElement_M_DP_TB
+IoElement_M_ST_TB: typing.TypeAlias = iec101.common.IoElement_M_ST_TB
+IoElement_M_BO_TB: typing.TypeAlias = iec101.common.IoElement_M_BO_TB
+IoElement_M_ME_TD: typing.TypeAlias = iec101.common.IoElement_M_ME_TD
+IoElement_M_ME_TE: typing.TypeAlias = iec101.common.IoElement_M_ME_TE
+IoElement_M_ME_TF: typing.TypeAlias = iec101.common.IoElement_M_ME_TF
+IoElement_M_IT_TB: typing.TypeAlias = iec101.common.IoElement_M_IT_TB
+IoElement_M_EP_TD: typing.TypeAlias = iec101.common.IoElement_M_EP_TD
+IoElement_M_EP_TE: typing.TypeAlias = iec101.common.IoElement_M_EP_TE
+IoElement_M_EP_TF: typing.TypeAlias = iec101.common.IoElement_M_EP_TF
+IoElement_C_SC_NA: typing.TypeAlias = iec101.common.IoElement_C_SC_NA
+IoElement_C_DC_NA: typing.TypeAlias = iec101.common.IoElement_C_DC_NA
+IoElement_C_RC_NA: typing.TypeAlias = iec101.common.IoElement_C_RC_NA
+IoElement_C_SE_NA: typing.TypeAlias = iec101.common.IoElement_C_SE_NA
+IoElement_C_SE_NB: typing.TypeAlias = iec101.common.IoElement_C_SE_NB
+IoElement_C_SE_NC: typing.TypeAlias = iec101.common.IoElement_C_SE_NC
+IoElement_C_BO_NA: typing.TypeAlias = iec101.common.IoElement_C_BO_NA
+IoElement_M_EI_NA: typing.TypeAlias = iec101.common.IoElement_M_EI_NA
+IoElement_C_IC_NA: typing.TypeAlias = iec101.common.IoElement_C_IC_NA
+IoElement_C_CI_NA: typing.TypeAlias = iec101.common.IoElement_C_CI_NA
+IoElement_C_RD_NA: typing.TypeAlias = iec101.common.IoElement_C_RD_NA
+IoElement_C_CS_NA: typing.TypeAlias = iec101.common.IoElement_C_CS_NA
+IoElement_C_RP_NA: typing.TypeAlias = iec101.common.IoElement_C_RP_NA
+IoElement_P_ME_NA: typing.TypeAlias = iec101.common.IoElement_P_ME_NA
+IoElement_P_ME_NB: typing.TypeAlias = iec101.common.IoElement_P_ME_NB
+IoElement_P_ME_NC: typing.TypeAlias = iec101.common.IoElement_P_ME_NC
+IoElement_P_AC_NA: typing.TypeAlias = iec101.common.IoElement_P_AC_NA
+IoElement_F_FR_NA: typing.TypeAlias = iec101.common.IoElement_F_FR_NA
+IoElement_F_SR_NA: typing.TypeAlias = iec101.common.IoElement_F_SR_NA
+IoElement_F_SC_NA: typing.TypeAlias = iec101.common.IoElement_F_SC_NA
+IoElement_F_LS_NA: typing.TypeAlias = iec101.common.IoElement_F_LS_NA
+IoElement_F_AF_NA: typing.TypeAlias = iec101.common.IoElement_F_AF_NA
+IoElement_F_SG_NA: typing.TypeAlias = iec101.common.IoElement_F_SG_NA
+IoElement_F_DR_TA: typing.TypeAlias = iec101.common.IoElement_F_DR_TA
 
 
 class IoElement_C_SC_TA(typing.NamedTuple):
@@ -192,59 +192,60 @@ class IoElement_C_TS_TA(typing.NamedTuple):
     """counter in range [0, 65535]"""
 
 
-IoElement = (IoElement_M_SP_NA |
-             IoElement_M_DP_NA |
-             IoElement_M_ST_NA |
-             IoElement_M_BO_NA |
-             IoElement_M_ME_NA |
-             IoElement_M_ME_NB |
-             IoElement_M_ME_NC |
-             IoElement_M_IT_NA |
-             IoElement_M_PS_NA |
-             IoElement_M_ME_ND |
-             IoElement_M_SP_TB |
-             IoElement_M_DP_TB |
-             IoElement_M_ST_TB |
-             IoElement_M_BO_TB |
-             IoElement_M_ME_TD |
-             IoElement_M_ME_TE |
-             IoElement_M_ME_TF |
-             IoElement_M_IT_TB |
-             IoElement_M_EP_TD |
-             IoElement_M_EP_TE |
-             IoElement_M_EP_TF |
-             IoElement_C_SC_NA |
-             IoElement_C_DC_NA |
-             IoElement_C_RC_NA |
-             IoElement_C_SE_NA |
-             IoElement_C_SE_NB |
-             IoElement_C_SE_NC |
-             IoElement_C_BO_NA |
-             IoElement_C_SC_TA |
-             IoElement_C_DC_TA |
-             IoElement_C_RC_TA |
-             IoElement_C_SE_TA |
-             IoElement_C_SE_TB |
-             IoElement_C_SE_TC |
-             IoElement_C_BO_TA |
-             IoElement_M_EI_NA |
-             IoElement_C_IC_NA |
-             IoElement_C_CI_NA |
-             IoElement_C_RD_NA |
-             IoElement_C_CS_NA |
-             IoElement_C_RP_NA |
-             IoElement_C_TS_TA |
-             IoElement_P_ME_NA |
-             IoElement_P_ME_NB |
-             IoElement_P_ME_NC |
-             IoElement_P_AC_NA |
-             IoElement_F_FR_NA |
-             IoElement_F_SR_NA |
-             IoElement_F_SC_NA |
-             IoElement_F_LS_NA |
-             IoElement_F_AF_NA |
-             IoElement_F_SG_NA |
-             IoElement_F_DR_TA)
+IoElement: typing.TypeAlias = (
+    IoElement_M_SP_NA |
+    IoElement_M_DP_NA |
+    IoElement_M_ST_NA |
+    IoElement_M_BO_NA |
+    IoElement_M_ME_NA |
+    IoElement_M_ME_NB |
+    IoElement_M_ME_NC |
+    IoElement_M_IT_NA |
+    IoElement_M_PS_NA |
+    IoElement_M_ME_ND |
+    IoElement_M_SP_TB |
+    IoElement_M_DP_TB |
+    IoElement_M_ST_TB |
+    IoElement_M_BO_TB |
+    IoElement_M_ME_TD |
+    IoElement_M_ME_TE |
+    IoElement_M_ME_TF |
+    IoElement_M_IT_TB |
+    IoElement_M_EP_TD |
+    IoElement_M_EP_TE |
+    IoElement_M_EP_TF |
+    IoElement_C_SC_NA |
+    IoElement_C_DC_NA |
+    IoElement_C_RC_NA |
+    IoElement_C_SE_NA |
+    IoElement_C_SE_NB |
+    IoElement_C_SE_NC |
+    IoElement_C_BO_NA |
+    IoElement_C_SC_TA |
+    IoElement_C_DC_TA |
+    IoElement_C_RC_TA |
+    IoElement_C_SE_TA |
+    IoElement_C_SE_TB |
+    IoElement_C_SE_TC |
+    IoElement_C_BO_TA |
+    IoElement_M_EI_NA |
+    IoElement_C_IC_NA |
+    IoElement_C_CI_NA |
+    IoElement_C_RD_NA |
+    IoElement_C_CS_NA |
+    IoElement_C_RP_NA |
+    IoElement_C_TS_TA |
+    IoElement_P_ME_NA |
+    IoElement_P_ME_NB |
+    IoElement_P_ME_NC |
+    IoElement_P_AC_NA |
+    IoElement_F_FR_NA |
+    IoElement_F_SR_NA |
+    IoElement_F_SC_NA |
+    IoElement_F_LS_NA |
+    IoElement_F_AF_NA |
+    IoElement_F_SG_NA |
+    IoElement_F_DR_TA)
 
 
 class IO(typing.NamedTuple):

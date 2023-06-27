@@ -1,5 +1,7 @@
 import itertools
 
+from hat import util
+
 from hat.drivers.iec60870.link import common
 
 
@@ -11,7 +13,7 @@ class Encoder:
         self._address_size = address_size
         self._direction_valid = direction_valid
 
-    def get_next_frame_size(self, data: common.Bytes) -> int:
+    def get_next_frame_size(self, data: util.Bytes) -> int:
         if not data or data[0] == 0xE5:
             return 1
 
@@ -32,7 +34,7 @@ class Encoder:
 
         raise Exception('invalid start identifier')
 
-    def decode(self, data: common.Bytes) -> common.Frame:
+    def decode(self, data: util.Bytes) -> common.Frame:
         if data[0] == 0xE5:
             return _short_ack
 
@@ -91,7 +93,7 @@ class Encoder:
 
         return frame
 
-    def encode(self, frame: common.Frame) -> common.Bytes:
+    def encode(self, frame: common.Frame) -> util.Bytes:
         if frame._replace(direction=None) == _short_ack:
             return b'\xE5'
 

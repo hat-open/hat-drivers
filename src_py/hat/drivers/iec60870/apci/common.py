@@ -1,10 +1,10 @@
 import enum
 import typing
 
+from hat import util
 
-Bytes = bytes | bytearray | memoryview
 
-SequenceNumber = int
+SequenceNumber: typing.TypeAlias = int
 """sequence number in range [0, 0x7FFF]"""
 
 
@@ -20,7 +20,7 @@ class ApduFunction(enum.Enum):
 class APDUI(typing.NamedTuple):
     ssn: SequenceNumber
     rsn: SequenceNumber
-    data: Bytes
+    data: util.Bytes
 
 
 class APDUS(typing.NamedTuple):
@@ -31,4 +31,4 @@ class APDUU(typing.NamedTuple):
     function: ApduFunction
 
 
-APDU = APDUI | APDUS | APDUU
+APDU: typing.TypeAlias = APDUI | APDUS | APDUU

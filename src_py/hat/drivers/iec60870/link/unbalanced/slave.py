@@ -4,11 +4,12 @@ import time
 import typing
 
 from hat import aio
+from hat import util
+
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
-from hat.drivers.iec60870.link.connection import (ConnectionCb,
-                                                  Connection)
+from hat.drivers.iec60870.link.connection import ConnectionCb, Connection
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -145,7 +146,7 @@ class _SlaveConnection(Connection):
     def async_group(self):
         return self._async_group
 
-    async def send(self, data: common.Bytes):
+    async def send(self, data: util.Bytes):
         if not data:
             return
 
@@ -157,7 +158,7 @@ class _SlaveConnection(Connection):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def receive(self) -> common.Bytes:
+    async def receive(self) -> util.Bytes:
         try:
             return await self._receive_queue.get()
 

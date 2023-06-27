@@ -5,6 +5,8 @@ import itertools
 import logging
 import typing
 
+from hat import util
+
 from hat.drivers.iec60870.msgs import iec101
 from hat.drivers.iec60870.msgs import iec104
 from hat.drivers.iec60870.msgs.encoder import encode_time, decode_time
@@ -25,8 +27,8 @@ class Encoder:
         self._buffer = None
 
     def decode_asdu(self,
-                    asdu_bytes: common.Bytes
-                    ) -> tuple[ASDU | None, common.Bytes]:
+                    asdu_bytes: util.Bytes
+                    ) -> tuple[ASDU | None, util.Bytes]:
         asdu_type = asdu_bytes[0]
         with contextlib.suppress(ValueError):
             asdu_type = common.AsduType(asdu_type)
@@ -40,7 +42,7 @@ class Encoder:
 
         return self._encoder.decode_asdu(asdu_bytes)
 
-    def encode_asdu(self, asdu: ASDU) -> list[common.Bytes]:
+    def encode_asdu(self, asdu: ASDU) -> list[util.Bytes]:
         if isinstance(asdu, common.ASDU):
             return list(self._encode_asdu(asdu))
 
@@ -227,7 +229,7 @@ class _Buffer(typing.NamedTuple):
     asdu_address: common.AsduAddress
     prev_first: bool
     prev_segment: int
-    prev_io_bytes: common.Bytes
+    prev_io_bytes: util.Bytes
     all_io_bytes: typing.Iterable[int]
 
 
