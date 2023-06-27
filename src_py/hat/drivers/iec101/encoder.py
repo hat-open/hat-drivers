@@ -2,6 +2,8 @@ import contextlib
 import enum
 import typing
 
+from hat import util
+
 from hat.drivers.iec101 import common
 from hat.drivers.iec60870.msgs import iec101
 
@@ -19,12 +21,12 @@ class Encoder:
 
     def encode(self,
                msgs: list[common.Msg]
-               ) -> typing.Iterable[common.Bytes]:
+               ) -> typing.Iterable[util.Bytes]:
         for asdu in _encode_msgs(msgs):
             yield self._encoder.encode_asdu(asdu)
 
     def decode(self,
-               data: common.Bytes
+               data: util.Bytes
                ) -> typing.Iterable[common.Msg]:
         asdu, _ = self._encoder.decode_asdu(data)
         yield from _decode_asdu(asdu)

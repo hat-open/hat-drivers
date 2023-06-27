@@ -4,6 +4,7 @@ import math
 import pytest
 
 from hat import aio
+
 from hat.drivers import iec101
 from hat.drivers.iec60870 import link
 from hat.drivers.iec60870 import msgs as app

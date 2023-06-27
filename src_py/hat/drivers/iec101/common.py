@@ -4,40 +4,39 @@ import typing
 from hat.drivers.iec60870.msgs import iec101
 
 
-Bytes = iec101.common.Bytes
-CauseSize = iec101.common.CauseSize
-AsduAddressSize = iec101.common.AsduAddressSize
-IoAddressSize = iec101.common.IoAddressSize
-TimeSize = iec101.common.TimeSize
-Time = iec101.common.Time
+CauseSize: typing.TypeAlias = iec101.common.CauseSize
+AsduAddressSize: typing.TypeAlias = iec101.common.AsduAddressSize
+IoAddressSize: typing.TypeAlias = iec101.common.IoAddressSize
+TimeSize: typing.TypeAlias = iec101.common.TimeSize
+Time: typing.TypeAlias = iec101.common.Time
 
-OriginatorAddress = iec101.common.OriginatorAddress
-AsduAddress = iec101.common.AsduAddress
-IoAddress = iec101.common.IoAddress
+OriginatorAddress: typing.TypeAlias = iec101.common.OriginatorAddress
+AsduAddress: typing.TypeAlias = iec101.common.AsduAddress
+IoAddress: typing.TypeAlias = iec101.common.IoAddress
 
-IndicationQuality = iec101.common.IndicationQuality
-MeasurementQuality = iec101.common.MeasurementQuality
-CounterQuality = iec101.common.CounterQuality
-ProtectionQuality = iec101.common.ProtectionQuality
-Quality = iec101.common.Quality
+IndicationQuality: typing.TypeAlias = iec101.common.IndicationQuality
+MeasurementQuality: typing.TypeAlias = iec101.common.MeasurementQuality
+CounterQuality: typing.TypeAlias = iec101.common.CounterQuality
+ProtectionQuality: typing.TypeAlias = iec101.common.ProtectionQuality
+Quality: typing.TypeAlias = iec101.common.Quality
 
-FreezeCode = iec101.common.FreezeCode
+FreezeCode: typing.TypeAlias = iec101.common.FreezeCode
 
-SingleValue = iec101.common.SingleValue
-DoubleValue = iec101.common.DoubleValue
-RegulatingValue = iec101.common.RegulatingValue
-StepPositionValue = iec101.common.StepPositionValue
-BitstringValue = iec101.common.BitstringValue
-NormalizedValue = iec101.common.NormalizedValue
-ScaledValue = iec101.common.ScaledValue
-FloatingValue = iec101.common.FloatingValue
-BinaryCounterValue = iec101.common.BinaryCounterValue
-ProtectionValue = iec101.common.ProtectionValue
-ProtectionStartValue = iec101.common.ProtectionStartValue
-ProtectionCommandValue = iec101.common.ProtectionCommandValue
-StatusValue = iec101.common.StatusValue
+SingleValue: typing.TypeAlias = iec101.common.SingleValue
+DoubleValue: typing.TypeAlias = iec101.common.DoubleValue
+RegulatingValue: typing.TypeAlias = iec101.common.RegulatingValue
+StepPositionValue: typing.TypeAlias = iec101.common.StepPositionValue
+BitstringValue: typing.TypeAlias = iec101.common.BitstringValue
+NormalizedValue: typing.TypeAlias = iec101.common.NormalizedValue
+ScaledValue: typing.TypeAlias = iec101.common.ScaledValue
+FloatingValue: typing.TypeAlias = iec101.common.FloatingValue
+BinaryCounterValue: typing.TypeAlias = iec101.common.BinaryCounterValue
+ProtectionValue: typing.TypeAlias = iec101.common.ProtectionValue
+ProtectionStartValue: typing.TypeAlias = iec101.common.ProtectionStartValue
+ProtectionCommandValue: typing.TypeAlias = iec101.common.ProtectionCommandValue
+StatusValue: typing.TypeAlias = iec101.common.StatusValue
 
-OtherCause = int
+OtherCause: typing.TypeAlias = int
 """Other cause in range [0, 63]"""
 
 
@@ -72,7 +71,7 @@ class DataResCause(enum.Enum):
     INTERROGATED_COUNTER04 = iec101.common.CauseType.INTERROGATED_COUNTER04.value  # NOQA
 
 
-DataCause = DataResCause | OtherCause
+DataCause: typing.TypeAlias = DataResCause | OtherCause
 
 
 class CommandReqCause(enum.Enum):
@@ -90,7 +89,7 @@ class CommandResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-CommandCause = CommandReqCause | CommandResCause | OtherCause
+CommandCause: typing.TypeAlias = CommandReqCause | CommandResCause | OtherCause
 
 
 class InitializationResCause(enum.Enum):
@@ -99,7 +98,7 @@ class InitializationResCause(enum.Enum):
     REMOTE_RESET = 2
 
 
-InitializationCause = InitializationResCause | OtherCause
+InitializationCause: typing.TypeAlias = InitializationResCause | OtherCause
 
 
 class ReadReqCause(enum.Enum):
@@ -113,7 +112,7 @@ class ReadResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ReadCause = ReadReqCause | ReadResCause | OtherCause
+ReadCause: typing.TypeAlias = ReadReqCause | ReadResCause | OtherCause
 
 
 class ClockSyncReqCause(enum.Enum):
@@ -129,7 +128,9 @@ class ClockSyncResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ClockSyncCause = ClockSyncReqCause | ClockSyncResCause | OtherCause
+ClockSyncCause: typing.TypeAlias = (ClockSyncReqCause |
+                                    ClockSyncResCause |
+                                    OtherCause)
 
 
 class ActivationReqCause(enum.Enum):
@@ -144,7 +145,9 @@ class ActivationResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ActivationCause = ActivationReqCause | ActivationResCause | OtherCause
+ActivationCause: typing.TypeAlias = (ActivationReqCause |
+                                     ActivationResCause |
+                                     OtherCause)
 
 
 class DelayReqCause(enum.Enum):
@@ -160,7 +163,7 @@ class DelayResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-DelayCause = DelayReqCause | DelayResCause | OtherCause
+DelayCause: typing.TypeAlias = DelayReqCause | DelayResCause | OtherCause
 
 
 class ParameterReqCause(enum.Enum):
@@ -193,7 +196,9 @@ class ParameterResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ParameterCause = ParameterReqCause | ParameterResCause | OtherCause
+ParameterCause: typing.TypeAlias = (ParameterReqCause |
+                                    ParameterResCause |
+                                    OtherCause)
 
 
 class ParameterActivationReqCause(enum.Enum):
@@ -210,9 +215,9 @@ class ParameterActivationResCause(enum.Enum):
     UNKNOWN_IO_ADDRESS = iec101.common.CauseType.UNKNOWN_IO_ADDRESS.value
 
 
-ParameterActivationCause = (ParameterActivationReqCause |
-                            ParameterActivationResCause |
-                            OtherCause)
+ParameterActivationCause: typing.TypeAlias = (ParameterActivationReqCause |
+                                              ParameterActivationResCause |
+                                              OtherCause)
 
 
 class SingleData(typing.NamedTuple):
@@ -281,18 +286,18 @@ class StatusData(typing.NamedTuple):
     quality: MeasurementQuality
 
 
-Data = (SingleData |
-        DoubleData |
-        StepPositionData |
-        BitstringData |
-        NormalizedData |
-        ScaledData |
-        FloatingData |
-        BinaryCounterData |
-        ProtectionData |
-        ProtectionStartData |
-        ProtectionCommandData |
-        StatusData)
+Data: typing.TypeAlias = (SingleData |
+                          DoubleData |
+                          StepPositionData |
+                          BitstringData |
+                          NormalizedData |
+                          ScaledData |
+                          FloatingData |
+                          BinaryCounterData |
+                          ProtectionData |
+                          ProtectionStartData |
+                          ProtectionCommandData |
+                          StatusData)
 
 
 class SingleCommand(typing.NamedTuple):
@@ -335,13 +340,13 @@ class BitstringCommand(typing.NamedTuple):
     value: BitstringValue
 
 
-Command = (SingleCommand |
-           DoubleCommand |
-           RegulatingCommand |
-           NormalizedCommand |
-           ScaledCommand |
-           FloatingCommand |
-           BitstringCommand)
+Command: typing.TypeAlias = (SingleCommand |
+                             DoubleCommand |
+                             RegulatingCommand |
+                             NormalizedCommand |
+                             ScaledCommand |
+                             FloatingCommand |
+                             BitstringCommand)
 
 
 class NormalizedParameter(typing.NamedTuple):
@@ -362,7 +367,9 @@ class FloatingParameter(typing.NamedTuple):
     """qualifier in range [0, 255]"""
 
 
-Parameter = NormalizedParameter | ScaledParameter | FloatingParameter
+Parameter: typing.TypeAlias = (NormalizedParameter |
+                               ScaledParameter |
+                               FloatingParameter)
 
 
 class DataMsg(typing.NamedTuple):
@@ -475,18 +482,18 @@ class ParameterActivationMsg(typing.NamedTuple):
     cause: ParameterActivationCause
 
 
-Msg = (DataMsg |
-       CommandMsg |
-       InitializationMsg |
-       InterrogationMsg |
-       CounterInterrogationMsg |
-       ReadMsg |
-       ClockSyncMsg |
-       TestMsg |
-       ResetMsg |
-       DelayMsg |
-       ParameterMsg |
-       ParameterActivationMsg)
+Msg: typing.TypeAlias = (DataMsg |
+                         CommandMsg |
+                         InitializationMsg |
+                         InterrogationMsg |
+                         CounterInterrogationMsg |
+                         ReadMsg |
+                         ClockSyncMsg |
+                         TestMsg |
+                         ResetMsg |
+                         DelayMsg |
+                         ParameterMsg |
+                         ParameterActivationMsg)
 
 
 time_from_datetime = iec101.common.time_from_datetime

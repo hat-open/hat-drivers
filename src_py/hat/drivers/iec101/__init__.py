@@ -1,7 +1,6 @@
 """IEC 60870-5-101 communication protocol"""
 
-from hat.drivers.iec101.common import (Bytes,
-                                       CauseSize,
+from hat.drivers.iec101.common import (CauseSize,
                                        AsduAddressSize,
                                        IoAddressSize,
                                        TimeSize,
@@ -97,8 +96,7 @@ from hat.drivers.iec101.common import (Bytes,
 from hat.drivers.iec101.connection import Connection
 
 
-__all__ = ['Bytes',
-           'CauseSize',
+__all__ = ['CauseSize',
            'AsduAddressSize',
            'IoAddressSize',
            'TimeSize',
