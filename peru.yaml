@@ -8,4 +8,4 @@ git module hat-util:
 
 # cp module hat-util:
 #     path: ../hat-util
-#     pick: src_c/hat
+#     pick: src_c

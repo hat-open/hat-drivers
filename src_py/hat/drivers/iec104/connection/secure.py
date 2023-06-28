@@ -1,8 +1,11 @@
+# TODO WIP
+
 import asyncio
 import logging
 import typing
 
 from hat import aio
+from hat import util
 
 from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
@@ -24,7 +27,7 @@ class SecureConnection(common.Connection):
     def __init__(self,
                  conn: apci.Connection,
                  is_master: bool,
-                 update_key: common.Bytes,
+                 update_key: util.Bytes,
                  critical_functions: typing.Set[common.Function] = default_critical_functions):  # NOQA
         self._conn = conn
         self._is_master = is_master
@@ -39,16 +42,9 @@ class SecureConnection(common.Connection):
     def conn(self) -> apci.Connection:
         return self._conn
 
-    def send(self, msgs: typing.List[common.Msg]):
-        try:
-            for msg in msgs:
-                entry = _SendQueueEntry(msg, None, False)
-                self._send_queue.put_nowait(entry)
-
-        except aio.QueueClosedError:
-            raise ConnectionError()
-
-    async def send_wait_ack(self, msgs: typing.List[common.Msg]):
+    async def send(self,
+                   msgs: typing.List[common.Msg],
+                   wait_ack: bool = False):
         try:
             for i, msg in enumerate(msgs):
                 entry = (_SendQueueEntry(msg, asyncio.Future(), True)

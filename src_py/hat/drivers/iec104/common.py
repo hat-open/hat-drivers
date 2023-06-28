@@ -10,113 +10,112 @@ from hat.drivers import tcp
 from hat.drivers.iec60870 import apci
 
 
-Bytes = iec101.Bytes
-TimeSize = iec101.TimeSize
-Time = iec101.Time
+TimeSize: typing.TypeAlias = iec101.TimeSize
+Time: typing.TypeAlias = iec101.Time
 
-OriginatorAddress = iec101.OriginatorAddress
+OriginatorAddress: typing.TypeAlias = iec101.OriginatorAddress
 """Originator address in range [0, 255] - 0 if not available"""
-AsduAddress = iec101.AsduAddress
+AsduAddress: typing.TypeAlias = iec101.AsduAddress
 """ASDU address in range [0, 65535]"""
-IoAddress = iec101.IoAddress
+IoAddress: typing.TypeAlias = iec101.IoAddress
 """IO address in range [0, 16777215]"""
 
-IndicationQuality = iec101.IndicationQuality
-MeasurementQuality = iec101.MeasurementQuality
-CounterQuality = iec101.CounterQuality
-ProtectionQuality = iec101.ProtectionQuality
-Quality = iec101.Quality
+IndicationQuality: typing.TypeAlias = iec101.IndicationQuality
+MeasurementQuality: typing.TypeAlias = iec101.MeasurementQuality
+CounterQuality: typing.TypeAlias = iec101.CounterQuality
+ProtectionQuality: typing.TypeAlias = iec101.ProtectionQuality
+Quality: typing.TypeAlias = iec101.Quality
 
-FreezeCode = iec101.FreezeCode
+FreezeCode: typing.TypeAlias = iec101.FreezeCode
 
-SingleValue = iec101.SingleValue
-DoubleValue = iec101.DoubleValue
-RegulatingValue = iec101.RegulatingValue
-StepPositionValue = iec101.StepPositionValue
-BitstringValue = iec101.BitstringValue
-NormalizedValue = iec101.NormalizedValue
-ScaledValue = iec101.ScaledValue
-FloatingValue = iec101.FloatingValue
-BinaryCounterValue = iec101.BinaryCounterValue
-ProtectionValue = iec101.ProtectionValue
-ProtectionStartValue = iec101.ProtectionStartValue
-ProtectionCommandValue = iec101.ProtectionCommandValue
-StatusValue = iec101.StatusValue
+SingleValue: typing.TypeAlias = iec101.SingleValue
+DoubleValue: typing.TypeAlias = iec101.DoubleValue
+RegulatingValue: typing.TypeAlias = iec101.RegulatingValue
+StepPositionValue: typing.TypeAlias = iec101.StepPositionValue
+BitstringValue: typing.TypeAlias = iec101.BitstringValue
+NormalizedValue: typing.TypeAlias = iec101.NormalizedValue
+ScaledValue: typing.TypeAlias = iec101.ScaledValue
+FloatingValue: typing.TypeAlias = iec101.FloatingValue
+BinaryCounterValue: typing.TypeAlias = iec101.BinaryCounterValue
+ProtectionValue: typing.TypeAlias = iec101.ProtectionValue
+ProtectionStartValue: typing.TypeAlias = iec101.ProtectionStartValue
+ProtectionCommandValue: typing.TypeAlias = iec101.ProtectionCommandValue
+StatusValue: typing.TypeAlias = iec101.StatusValue
 
-OtherCause = int
+OtherCause: typing.TypeAlias = int
 """Other cause in range [0, 63]"""
 
-DataResCause = iec101.DataResCause
-DataCause = iec101.DataCause
+DataResCause: typing.TypeAlias = iec101.DataResCause
+DataCause: typing.TypeAlias = iec101.DataCause
 
-CommandReqCause = iec101.CommandReqCause
-CommandResCause = iec101.CommandResCause
-CommandCause = iec101.CommandCause
+CommandReqCause: typing.TypeAlias = iec101.CommandReqCause
+CommandResCause: typing.TypeAlias = iec101.CommandResCause
+CommandCause: typing.TypeAlias = iec101.CommandCause
 
-InitializationResCause = iec101.InitializationResCause
-InitializationCause = iec101.InitializationCause
+InitializationResCause: typing.TypeAlias = iec101.InitializationResCause
+InitializationCause: typing.TypeAlias = iec101.InitializationCause
 
-ReadReqCause = iec101.ReadReqCause
-ReadResCause = iec101.ReadResCause
-ReadCause = iec101.ReadCause
+ReadReqCause: typing.TypeAlias = iec101.ReadReqCause
+ReadResCause: typing.TypeAlias = iec101.ReadResCause
+ReadCause: typing.TypeAlias = iec101.ReadCause
 
-ClockSyncReqCause = iec101.ClockSyncReqCause
-ClockSyncResCause = iec101.ClockSyncResCause
-ClockSyncCause = iec101.ClockSyncCause
+ClockSyncReqCause: typing.TypeAlias = iec101.ClockSyncReqCause
+ClockSyncResCause: typing.TypeAlias = iec101.ClockSyncResCause
+ClockSyncCause: typing.TypeAlias = iec101.ClockSyncCause
 
-ActivationReqCause = iec101.ActivationReqCause
-ActivationResCause = iec101.ActivationResCause
-ActivationCause = iec101.ActivationCause
+ActivationReqCause: typing.TypeAlias = iec101.ActivationReqCause
+ActivationResCause: typing.TypeAlias = iec101.ActivationResCause
+ActivationCause: typing.TypeAlias = iec101.ActivationCause
 
-DelayReqCause = iec101.DelayReqCause
-DelayResCause = iec101.DelayResCause
-DelayCause = iec101.DelayCause
+DelayReqCause: typing.TypeAlias = iec101.DelayReqCause
+DelayResCause: typing.TypeAlias = iec101.DelayResCause
+DelayCause: typing.TypeAlias = iec101.DelayCause
 
-ParameterReqCause = iec101.ParameterReqCause
-ParameterResCause = iec101.ParameterResCause
-ParameterCause = iec101.ParameterCause
+ParameterReqCause: typing.TypeAlias = iec101.ParameterReqCause
+ParameterResCause: typing.TypeAlias = iec101.ParameterResCause
+ParameterCause: typing.TypeAlias = iec101.ParameterCause
 
-ParameterActivationReqCause = iec101.ParameterActivationReqCause
-ParameterActivationResCause = iec101.ParameterActivationResCause
-ParameterActivationCause = iec101.ParameterActivationCause
+ParameterActivationReqCause: typing.TypeAlias = iec101.ParameterActivationReqCause  # NOQA
+ParameterActivationResCause: typing.TypeAlias = iec101.ParameterActivationResCause  # NOQA
+ParameterActivationCause: typing.TypeAlias = iec101.ParameterActivationCause
 
-SingleData = iec101.SingleData
-DoubleData = iec101.DoubleData
-StepPositionData = iec101.StepPositionData
-BitstringData = iec101.BitstringData
-NormalizedData = iec101.NormalizedData
-ScaledData = iec101.ScaledData
-FloatingData = iec101.FloatingData
-BinaryCounterData = iec101.BinaryCounterData
-ProtectionData = iec101.ProtectionData
-ProtectionStartData = iec101.ProtectionStartData
-ProtectionCommandData = iec101.ProtectionCommandData
-StatusData = iec101.StatusData
-Data = iec101.Data
+SingleData: typing.TypeAlias = iec101.SingleData
+DoubleData: typing.TypeAlias = iec101.DoubleData
+StepPositionData: typing.TypeAlias = iec101.StepPositionData
+BitstringData: typing.TypeAlias = iec101.BitstringData
+NormalizedData: typing.TypeAlias = iec101.NormalizedData
+ScaledData: typing.TypeAlias = iec101.ScaledData
+FloatingData: typing.TypeAlias = iec101.FloatingData
+BinaryCounterData: typing.TypeAlias = iec101.BinaryCounterData
+ProtectionData: typing.TypeAlias = iec101.ProtectionData
+ProtectionStartData: typing.TypeAlias = iec101.ProtectionStartData
+ProtectionCommandData: typing.TypeAlias = iec101.ProtectionCommandData
+StatusData: typing.TypeAlias = iec101.StatusData
+Data: typing.TypeAlias = iec101.Data
 
-SingleCommand = iec101.SingleCommand
-DoubleCommand = iec101.DoubleCommand
-RegulatingCommand = iec101.RegulatingCommand
-NormalizedCommand = iec101.NormalizedCommand
-ScaledCommand = iec101.ScaledCommand
-FloatingCommand = iec101.FloatingCommand
-BitstringCommand = iec101.BitstringCommand
-Command = iec101.Command
+SingleCommand: typing.TypeAlias = iec101.SingleCommand
+DoubleCommand: typing.TypeAlias = iec101.DoubleCommand
+RegulatingCommand: typing.TypeAlias = iec101.RegulatingCommand
+NormalizedCommand: typing.TypeAlias = iec101.NormalizedCommand
+ScaledCommand: typing.TypeAlias = iec101.ScaledCommand
+FloatingCommand: typing.TypeAlias = iec101.FloatingCommand
+BitstringCommand: typing.TypeAlias = iec101.BitstringCommand
+Command: typing.TypeAlias = iec101.Command
 
-NormalizedParameter = iec101.NormalizedParameter
-ScaledParameter = iec101.ScaledParameter
-FloatingParameter = iec101.FloatingParameter
-Parameter = iec101.Parameter
+NormalizedParameter: typing.TypeAlias = iec101.NormalizedParameter
+ScaledParameter: typing.TypeAlias = iec101.ScaledParameter
+FloatingParameter: typing.TypeAlias = iec101.FloatingParameter
+Parameter: typing.TypeAlias = iec101.Parameter
 
-DataMsg = iec101.DataMsg
-InitializationMsg = iec101.InitializationMsg
-InterrogationMsg = iec101.InterrogationMsg
-CounterInterrogationMsg = iec101.CounterInterrogationMsg
-ReadMsg = iec101.ReadMsg
-ClockSyncMsg = iec101.ClockSyncMsg
-ResetMsg = iec101.ResetMsg
-ParameterMsg = iec101.ParameterMsg
-ParameterActivationMsg = iec101.ParameterActivationMsg
+DataMsg: typing.TypeAlias = iec101.DataMsg
+InitializationMsg: typing.TypeAlias = iec101.InitializationMsg
+InterrogationMsg: typing.TypeAlias = iec101.InterrogationMsg
+CounterInterrogationMsg: typing.TypeAlias = iec101.CounterInterrogationMsg
+ReadMsg: typing.TypeAlias = iec101.ReadMsg
+ClockSyncMsg: typing.TypeAlias = iec101.ClockSyncMsg
+ResetMsg: typing.TypeAlias = iec101.ResetMsg
+ParameterMsg: typing.TypeAlias = iec101.ParameterMsg
+ParameterActivationMsg: typing.TypeAlias = iec101.ParameterActivationMsg
 
 
 class CommandMsg(typing.NamedTuple):
@@ -140,17 +139,17 @@ class TestMsg(typing.NamedTuple):
     cause: ActivationCause
 
 
-Msg = (DataMsg |
-       CommandMsg |
-       InitializationMsg |
-       InterrogationMsg |
-       CounterInterrogationMsg |
-       ReadMsg |
-       ClockSyncMsg |
-       TestMsg |
-       ResetMsg |
-       ParameterMsg |
-       ParameterActivationMsg)
+Msg: typing.TypeAlias = (DataMsg |
+                         CommandMsg |
+                         InitializationMsg |
+                         InterrogationMsg |
+                         CounterInterrogationMsg |
+                         ReadMsg |
+                         ClockSyncMsg |
+                         TestMsg |
+                         ResetMsg |
+                         ParameterMsg |
+                         ParameterActivationMsg)
 
 
 time_from_datetime = iec101.time_from_datetime
@@ -182,11 +181,7 @@ class Connection(aio.Resource):
         return self.conn.register_enabled_cb(cb)
 
     @abc.abstractmethod
-    def send(self, msgs: list[Msg]):
-        pass
-
-    @abc.abstractmethod
-    async def send_wait_ack(self, msgs: list[Msg]):
+    async def send(self, msgs: list[Msg], wait_ack: bool):
         pass
 
     @abc.abstractmethod
@@ -199,7 +194,7 @@ class Connection(aio.Resource):
 
 
 class Function(enum.Enum):
-    DATA = 'data',
+    DATA = 'data'
     COMMAND = 'command'
     INITIALIZATION = 'initialization'
     INTERROGATION = 'interrogation'

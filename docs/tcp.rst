@@ -49,7 +49,7 @@ Asyncio wrapper for TCP communication.
         @property
         def info(self) -> ConnectionInfo: ...
 
-        def write(self, data: bytes): ...
+        async def write(self, data: bytes): ...
 
         async def drain(self): ...
 
@@ -72,13 +72,13 @@ Example usage::
 
     # send from conn1 to conn2
     data = b'123'
-    conn1.write(data)
+    await conn1.write(data)
     result = await conn2.readexactly(len(data))
     assert result == data
 
     # send from conn2 to conn1
     data = b'321'
-    conn2.write(data)
+    await conn2.write(data)
     result = await conn1.readexactly(len(data))
     assert result == data
 

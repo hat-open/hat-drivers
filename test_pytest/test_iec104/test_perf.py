@@ -47,7 +47,7 @@ async def test_data_sequence(duration, addr, window_size, data_count):
 
     with duration(f'data count: {data_count}; window_size: {window_size}'):
         for _ in range(data_count):
-            conn1.send([msg])
+            await conn1.send([msg])
             await conn2.receive()
 
     await conn1.async_close()
@@ -85,7 +85,7 @@ async def test_data_paralel(duration, addr, window_size, data_count):
 
     async def producer(conn):
         for _ in range(data_count):
-            conn.send([msg])
+            await conn.send([msg])
 
     async def consumer(conn):
         for _ in range(data_count):
@@ -93,10 +93,10 @@ async def test_data_paralel(duration, addr, window_size, data_count):
 
     async_group = aio.Group()
     with duration(f'data count: {data_count}; window_size: {window_size}'):
-        async_group.spawn(producer, conn1)
-        async_group.spawn(consumer, conn2)
-        await async_group.async_close(cancel=False)
+        await asyncio.gather(async_group.spawn(producer, conn1),
+                             async_group.spawn(consumer, conn2))
 
+    await async_group.async_close()
     await conn1.async_close()
     await conn2.async_close()
     await srv.async_close()

@@ -16,20 +16,14 @@ class RegularConnection(common.Connection):
     def conn(self) -> apci.Connection:
         return self._conn
 
-    def send(self, msgs: typing.List[common.Msg]):
-        for data in self._encoder.encode(msgs):
-            self._conn.send(data)
-
-    async def send_wait_ack(self, msgs: typing.List[common.Msg]):
+    async def send(self,
+                   msgs: typing.List[common.Msg],
+                   wait_ack: bool = False):
         data = collections.deque(self._encoder.encode(msgs))
-        if not data:
-            return
-
-        last = data.pop()
-        for i in data:
-            self._conn.send(i)
-
-        await self._conn.send_wait_ack(last)
+        while data:
+            head = data.popleft()
+            head_wait_ack = False if data else wait_ack
+            await self._conn.send(head, head_wait_ack)
 
     async def drain(self, wait_ack: bool = False):
         await self._conn.drain(wait_ack)

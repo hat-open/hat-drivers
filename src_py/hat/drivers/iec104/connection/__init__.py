@@ -1,6 +1,8 @@
-from hat import aio
+import typing
 
-from hat.drivers import ssl
+from hat import aio
+from hat import util
+
 from hat.drivers import tcp
 from hat.drivers.iec104 import common
 from hat.drivers.iec104.connection import regular
@@ -8,7 +10,7 @@ from hat.drivers.iec104.connection import secure
 from hat.drivers.iec60870 import apci
 
 
-ConnectionCb = aio.AsyncCallable[[common.Connection], None]
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[[common.Connection], None]
 
 
 async def connect(addr: tcp.Address,
@@ -17,9 +19,9 @@ async def connect(addr: tcp.Address,
                   test_timeout: float = 20,
                   send_window_size: int = 12,
                   receive_window_size: int = 8,
-                  ssl_ctx: ssl.SSLContext | None = None,
-                  update_key: common.Bytes | None = None,
-                  critical_functions: set[common.Function] = secure.default_critical_functions  # NOQA
+                  update_key: util.Bytes | None = None,
+                  critical_functions: set[common.Function] = secure.default_critical_functions,  # NOQA
+                  **kwargs
                   ) -> common.Connection:
     apci_conn = await apci.connect(addr=addr,
                                    response_timeout=response_timeout,
@@ -27,7 +29,7 @@ async def connect(addr: tcp.Address,
                                    test_timeout=test_timeout,
                                    send_window_size=send_window_size,
                                    receive_window_size=receive_window_size,
-                                   ssl_ctx=ssl_ctx)
+                                   **kwargs)
 
     if update_key is not None:
         return secure.SecureConnection(apci_conn, True, update_key,
@@ -43,9 +45,9 @@ async def listen(connection_cb: ConnectionCb,
                  test_timeout: float = 20,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
-                 ssl_ctx: ssl.SSLContext | None = None,
-                 update_key: common.Bytes | None = None,
-                 critical_functions: set[common.Function] = secure.default_critical_functions  # NOQA
+                 update_key: util.Bytes | None = None,
+                 critical_functions: set[common.Function] = secure.default_critical_functions,  # NOQA
+                 **kwargs
                  ) -> 'Server':
     server = Server()
     server._connection_cb = connection_cb
@@ -58,7 +60,7 @@ async def listen(connection_cb: ConnectionCb,
                                     test_timeout=test_timeout,
                                     send_window_size=send_window_size,
                                     receive_window_size=receive_window_size,
-                                    ssl_ctx=ssl_ctx)
+                                    **kwargs)
     return server
 
 

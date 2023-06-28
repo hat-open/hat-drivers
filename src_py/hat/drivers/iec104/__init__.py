@@ -1,7 +1,6 @@
 """IEC 60870-5-104 communication protocol"""
 
-from hat.drivers.iec104.common import (Bytes,
-                                       TimeSize,
+from hat.drivers.iec104.common import (TimeSize,
                                        Time,
                                        OriginatorAddress,
                                        AsduAddress,
@@ -98,8 +97,7 @@ from hat.drivers.iec104.connection import (ConnectionCb,
                                            Server)
 
 
-__all__ = ['Bytes',
-           'TimeSize',
+__all__ = ['TimeSize',
            'Time',
            'OriginatorAddress',
            'AsduAddress',
