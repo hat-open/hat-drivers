@@ -6,7 +6,7 @@ import pytest
 
 from hat.drivers import iec104
 from hat.drivers.iec104.encoder import Encoder
-from hat.drivers.iec60870 import msgs as app
+from hat.drivers.iec60870.encodings import iec104 as encoding
 
 
 def gen_qualities(amount, quality_class):
@@ -541,19 +541,19 @@ def asdu_other_cause():
 
     # DataMsg
     data_causes = {i.name for i in iec104.DataResCause}
-    for cause in app.iec104.common.CauseType:
+    for cause in encoding.CauseType:
         if cause.name in data_causes:
             continue
-        yield app.iec104.common.ASDU(
-                type=app.iec104.common.AsduType.M_SP_NA,
-                cause=app.iec104.common.Cause(type=cause,
-                                              is_negative_confirm=False,
-                                              is_test=False,
-                                              originator_address=0),
+        yield encoding.ASDU(
+                type=encoding.AsduType.M_SP_NA,
+                cause=encoding.Cause(type=cause,
+                                     is_negative_confirm=False,
+                                     is_test=False,
+                                     originator_address=0),
                 address=13,
-                ios=[app.iec104.common.IO(
+                ios=[encoding.IO(
                         address=123,
-                        elements=[app.iec104.common.IoElement_M_SP_NA(
+                        elements=[encoding.IoElement_M_SP_NA(
                             value=iec104.SingleValue.ON,
                             quality=iec104.IndicationQuality(
                                 invalid=False,
@@ -565,19 +565,19 @@ def asdu_other_cause():
     # CommandMsg
     cmd_causes = set(i.name for i in (*iec104.CommandReqCause,
                                       *iec104.CommandResCause))
-    for cause in app.iec104.common.CauseType:
+    for cause in encoding.CauseType:
         if cause.name in cmd_causes:
             continue
-        yield app.iec104.common.ASDU(
-                type=app.iec104.common.AsduType.C_SC_NA,
-                cause=app.iec104.common.Cause(type=cause,
-                                              is_negative_confirm=False,
-                                              is_test=False,
-                                              originator_address=0),
+        yield encoding.ASDU(
+                type=encoding.AsduType.C_SC_NA,
+                cause=encoding.Cause(type=cause,
+                                     is_negative_confirm=False,
+                                     is_test=False,
+                                     originator_address=0),
                 address=13,
-                ios=[app.iec104.common.IO(
+                ios=[encoding.IO(
                         address=123,
-                        elements=[app.iec104.common.IoElement_C_SC_NA(
+                        elements=[encoding.IoElement_C_SC_NA(
                             value=iec104.SingleValue.ON,
                             select=True,
                             qualifier=1)],
@@ -588,8 +588,8 @@ def asdu_other_cause():
 # def test_other_cause(asdu):
 
 
-#     # asdu is encoded with app.iec104.encoder.Encoder to bytes
-#     encoder = app.iec104.encoder.Encoder()
+#     # asdu is encoded with encoding.Encoder to bytes
+#     encoder = encoding.Encoder()
 #     asdu_bytes = encoder.encode_asdu(asdu)
 
 #     encoder = Encoder()
@@ -612,25 +612,25 @@ def asdu_other_cause():
 
 #     ioes_number = 3
 
-#     # asdu is encoded with app.iec104.encoder.Encoder to bytes
-#     quality = app.iec104.common.MeasurementQuality(invalid=False,
+#     # asdu is encoded with encoding.Encoder to bytes
+#     quality = encoding.MeasurementQuality(invalid=False,
 #                                                    not_topical=False,
 #                                                    substituted=False,
 #                                                    blocked=False,
 #                                                    overflow=False)
 #     io_address = 123
-#     asdu = app.iec104.common.ASDU(
-#                 type=app.iec104.common.AsduType.M_ME_NB,
-#                 cause=app.iec104.common.Cause(
-#                     type=app.iec104.common.CauseType.SPONTANEOUS,
+#     asdu = encoding.ASDU(
+#                 type=encoding.AsduType.M_ME_NB,
+#                 cause=encoding.Cause(
+#                     type=encoding.CauseType.SPONTANEOUS,
 #                     is_negative_confirm=False,
 #                     is_test=False,
 #                     originator_address=0),
 #                 address=13,
-#                 ios=[app.iec104.common.IO(
+#                 ios=[encoding.IO(
 #                         address=io_address,
 #                         elements=[
-#                             app.iec104.common.IoElement_M_ME_NB(
+#                             encoding.IoElement_M_ME_NB(
 #                                 value=iec104.ScaledValue(value=v),
 #                                 quality=quality)
 #                             for v in range(ioes_number)],

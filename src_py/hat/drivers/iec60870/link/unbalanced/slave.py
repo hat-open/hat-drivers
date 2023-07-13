@@ -9,7 +9,6 @@ from hat import util
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
-from hat.drivers.iec60870.link.connection import ConnectionCb, Connection
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_slave(port: str,
                        addrs: typing.Iterable[common.Address],
-                       connection_cb: ConnectionCb | None = None,
+                       connection_cb: common.ConnectionCb | None = None,
                        baudrate: int = 9600,
                        bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
                        parity: serial.Parity = serial.Parity.NONE,
@@ -118,8 +117,8 @@ class Slave(aio.Resource):
         if conn and conn.is_open:
             return conn
 
-        conn = _SlaveConnection(self.async_group.create_subgroup(),
-                                addr, self._keep_alive_timeout)
+        conn = _Connection(self.async_group.create_subgroup(), addr,
+                           self._keep_alive_timeout)
         self._conns[addr] = conn
 
         if self._connection_cb:
@@ -128,7 +127,7 @@ class Slave(aio.Resource):
         return conn
 
 
-class _SlaveConnection(Connection):
+class _Connection(common.Connection):
 
     def __init__(self, async_group, addr, keep_alive_timeout):
         self._async_group = async_group
@@ -145,6 +144,10 @@ class _SlaveConnection(Connection):
     @property
     def async_group(self):
         return self._async_group
+
+    @property
+    def address(self):
+        return self._addr
 
     async def send(self, data: util.Bytes):
         if not data:

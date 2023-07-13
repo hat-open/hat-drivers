@@ -1,8 +1,12 @@
+import abc
 import enum
 import typing
 
+from hat import aio
 from hat import util
 
+
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 Address: typing.TypeAlias = int | None
 """addres is ``None`` or in range [0, 255] or in range [0, 65535]"""
@@ -60,6 +64,22 @@ class ResFrame(typing.NamedTuple):
 
 
 Frame: typing.TypeAlias = ReqFrame | ResFrame
+
+
+class Connection(aio.Resource):
+
+    @property
+    @abc.abstractmethod
+    def address(self) -> Address:
+        pass
+
+    @abc.abstractmethod
+    async def send(self, data: util.Bytes):
+        pass
+
+    @abc.abstractmethod
+    async def receive(self) -> util.Bytes:
+        pass
 
 
 def get_broadcast_address(address_size: AddressSize):

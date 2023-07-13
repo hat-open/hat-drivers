@@ -11,7 +11,6 @@ from hat import util
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
-from hat.drivers.iec60870.link.connection import Connection
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -66,11 +65,11 @@ class Master(aio.Resource):
                       send_retry_count: int = 3,
                       poll_class1_delay: float | None = 1,
                       poll_class2_delay: float | None = None
-                      ) -> Connection:
+                      ) -> common.Connection:
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
 
-        conn = _MasterConnection()
+        conn = _Connection()
         conn._addr = addr
         conn._send_retry_count = send_retry_count
         conn._send_queue = aio.Queue()
@@ -204,11 +203,15 @@ class Master(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class _MasterConnection(Connection):
+class _Connection(common.Connection):
 
     @property
     def async_group(self):
         return self._async_group
+
+    @property
+    def address(self):
+        return self._addr
 
     async def send(self, data: util.Bytes):
         if not data:

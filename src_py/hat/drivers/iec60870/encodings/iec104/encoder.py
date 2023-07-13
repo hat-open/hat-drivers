@@ -1,8 +1,8 @@
 from hat import util
 
-from hat.drivers.iec60870.msgs import encoder
-from hat.drivers.iec60870.msgs import iec101
-from hat.drivers.iec60870.msgs.iec104 import common
+from hat.drivers.iec60870.encodings import encoder
+from hat.drivers.iec60870.encodings import iec101
+from hat.drivers.iec60870.encodings.iec104 import common
 
 
 iec101_asdu_types = {common.AsduType.M_SP_NA.value,
@@ -87,7 +87,7 @@ class Encoder:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
         asdu_type = common.AsduType(asdu.type)
-        cause = iec101.encoder.decode_cause(asdu.cause, common.CauseSize.TWO)
+        cause = iec101.decode_cause(asdu.cause, common.CauseSize.TWO)
         address = asdu.address
         ios = [common.IO(address=io.address,
                          elements=io.elements,
@@ -102,7 +102,7 @@ class Encoder:
 
     def encode_asdu(self, asdu: common.ASDU) -> util.Bytes:
         asdu_type = asdu.type.value
-        cause = iec101.encoder.encode_cause(asdu.cause, common.CauseSize.TWO)
+        cause = iec101.encode_cause(asdu.cause, common.CauseSize.TWO)
         address = asdu.address
         ios = [encoder.common.IO(address=io.address,
                                  elements=io.elements,
@@ -118,7 +118,7 @@ class Encoder:
 
 
 _asdu_type_time_sizes = {
-    **{k: v for k, v in iec101.encoder.asdu_type_time_sizes.items()
+    **{k: v for k, v in iec101.asdu_type_time_sizes.items()
        if k in iec101_asdu_types},
     **{common.AsduType.C_SC_TA.value: common.TimeSize.SEVEN,
        common.AsduType.C_DC_TA.value: common.TimeSize.SEVEN,
@@ -134,7 +134,7 @@ def _decode_io_element(io_bytes, asdu_type):
     asdu_type = common.AsduType(asdu_type)
 
     if asdu_type.value in iec101_asdu_types:
-        return iec101.encoder.decode_io_element(io_bytes, asdu_type.value)
+        return iec101.decode_io_element(io_bytes, asdu_type.value)
 
     if asdu_type == common.AsduType.C_SC_TA:
         value = common.SingleValue(io_bytes[0] & 1)
@@ -170,7 +170,7 @@ def _decode_io_element(io_bytes, asdu_type):
         return element, io_bytes
 
     if asdu_type == common.AsduType.C_SE_TA:
-        value, io_bytes = iec101.encoder.decode_normalized_value(io_bytes)
+        value, io_bytes = iec101.decode_normalized_value(io_bytes)
         select = bool(io_bytes[0] & 0x80)
         io_bytes = io_bytes[1:]
 
@@ -179,7 +179,7 @@ def _decode_io_element(io_bytes, asdu_type):
         return element, io_bytes
 
     if asdu_type == common.AsduType.C_SE_TB:
-        value, io_bytes = iec101.encoder.decode_scaled_value(io_bytes)
+        value, io_bytes = iec101.decode_scaled_value(io_bytes)
         select = bool(io_bytes[0] & 0x80)
         io_bytes = io_bytes[1:]
 
@@ -188,7 +188,7 @@ def _decode_io_element(io_bytes, asdu_type):
         return element, io_bytes
 
     if asdu_type == common.AsduType.C_SE_TC:
-        value, io_bytes = iec101.encoder.decode_floating_value(io_bytes)
+        value, io_bytes = iec101.decode_floating_value(io_bytes)
         select = bool(io_bytes[0] & 0x80)
         io_bytes = io_bytes[1:]
 
@@ -197,7 +197,7 @@ def _decode_io_element(io_bytes, asdu_type):
         return element, io_bytes
 
     if asdu_type == common.AsduType.C_BO_TA:
-        value, io_bytes = iec101.encoder.decode_bitstring_value(io_bytes)
+        value, io_bytes = iec101.decode_bitstring_value(io_bytes)
 
         element = common.IoElement_C_BO_TA(value=value)
         return element, io_bytes
@@ -216,7 +216,7 @@ def _encode_io_element(element, asdu_type):
     asdu_type = common.AsduType(asdu_type)
 
     if asdu_type.value in iec101_asdu_types:
-        yield from iec101.encoder.encode_io_element(element, asdu_type.value)
+        yield from iec101.encode_io_element(element, asdu_type.value)
 
     elif isinstance(element, common.IoElement_C_SC_TA):
         yield (element.value.value |
@@ -234,19 +234,19 @@ def _encode_io_element(element, asdu_type):
                ((element.qualifier & 0x1F) << 2))
 
     elif isinstance(element, common.IoElement_C_SE_TA):
-        yield from iec101.encoder.encode_normalized_value(element.value)
+        yield from iec101.encode_normalized_value(element.value)
         yield (0x80 if element.select else 0)
 
     elif isinstance(element, common.IoElement_C_SE_TB):
-        yield from iec101.encoder.encode_scaled_value(element.value)
+        yield from iec101.encode_scaled_value(element.value)
         yield (0x80 if element.select else 0)
 
     elif isinstance(element, common.IoElement_C_SE_TC):
-        yield from iec101.encoder.encode_floating_value(element.value)
+        yield from iec101.encode_floating_value(element.value)
         yield (0x80 if element.select else 0)
 
     elif isinstance(element, common.IoElement_C_BO_TA):
-        yield from iec101.encoder.encode_bitstring_value(element.value)
+        yield from iec101.encode_bitstring_value(element.value)
 
     elif isinstance(element, common.IoElement_C_TS_TA):
         yield from element.counter.to_bytes(2, 'little')

@@ -7,22 +7,21 @@ import typing
 
 from hat import util
 
-from hat.drivers.iec60870.msgs import iec101
-from hat.drivers.iec60870.msgs import iec104
-from hat.drivers.iec60870.msgs.encoder import encode_time, decode_time
-from hat.drivers.iec60870.msgs.security import common
+from hat.drivers.iec60870.encodings import iec101
+from hat.drivers.iec60870.encodings import iec104
+from hat.drivers.iec60870.encodings.encoder import encode_time, decode_time
+from hat.drivers.iec60870.encodings.security import common
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-ASDU: typing.TypeAlias = common.ASDU | iec101.common.ASDU | iec104.common.ASDU
+ASDU: typing.TypeAlias = common.ASDU | iec101.ASDU | iec104.ASDU
 
 
 class Encoder:
 
-    def __init__(self, encoder: (iec101.encoder.Encoder |
-                                 iec104.encoder.Encoder)):
+    def __init__(self, encoder: iec101.Encoder | iec104.Encoder):
         self._encoder = encoder
         self._buffer = None
 
@@ -247,8 +246,8 @@ def _decode_io_count(qualifier_bytes, asdu_type):
 
 def _decode_cause(cause_bytes, cause_size):
     cause, rest = _decode_int(cause_bytes, cause_size.value)
-    cause = iec101.encoder.decode_cause(cause=cause,
-                                        cause_size=cause_size)
+    cause = iec101.decode_cause(cause=cause,
+                                cause_size=cause_size)
 
     cause_type = (cause.type.value if isinstance(cause.type, enum.Enum)
                   else cause.type)
@@ -265,19 +264,19 @@ def _decode_cause(cause_bytes, cause_size):
 def _encode_cause(cause, cause_size):
     cause_type = (cause.type.value if isinstance(cause.type, enum.Enum)
                   else cause.type)
-    cause = iec101.common.Cause(type=cause_type,
-                                is_negative_confirm=cause.is_negative_confirm,
-                                is_test=cause.is_test,
-                                originator_address=cause.originator_address)
+    cause = iec101.Cause(type=cause_type,
+                         is_negative_confirm=cause.is_negative_confirm,
+                         is_test=cause.is_test,
+                         originator_address=cause.originator_address)
 
-    cause = iec101.encoder.encode_cause(cause, cause_size)
+    cause = iec101.encode_cause(cause, cause_size)
     return _encode_int(cause, cause_size.value)
 
 
 def _decode_io_element(io_bytes, encoder, asdu_type):
     if asdu_type == common.AsduType.S_IT_TC:
         association_id, rest = _decode_int(io_bytes, 2)
-        value, rest = iec101.encoder.decode_binary_counter_value(rest)
+        value, rest = iec101.decode_binary_counter_value(rest)
 
         element = common.IoElement_S_IT_TC(association_id=association_id,
                                            value=value)
@@ -509,7 +508,7 @@ def _decode_io_element(io_bytes, encoder, asdu_type):
 def _encode_io_element(element, encoder):
     if isinstance(element, common.IoElement_S_IT_TC):
         yield from _encode_int(element.association_id, 2)
-        yield from iec101.encoder.encode_binary_counter_value(element.value)
+        yield from iec101.encode_binary_counter_value(element.value)
 
     elif isinstance(element, common.IoElement_S_CH_NA):
         mac_algorithm = (element.mac_algorithm.value

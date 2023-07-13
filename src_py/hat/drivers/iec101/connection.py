@@ -21,6 +21,10 @@ class Connection(aio.Resource):
     def async_group(self):
         return self._conn.async_group
 
+    @property
+    def address(self) -> link.Address:
+        return self._conn.address
+
     async def send(self, msgs: list[common.Msg]):
         for data in self._encoder.encode(msgs):
             await self._conn.send(data)

@@ -181,7 +181,7 @@ class Connection(aio.Resource):
         return self.conn.register_enabled_cb(cb)
 
     @abc.abstractmethod
-    async def send(self, msgs: list[Msg], wait_ack: bool):
+    async def send(self, msgs: list[Msg], wait_ack: bool = False):
         pass
 
     @abc.abstractmethod

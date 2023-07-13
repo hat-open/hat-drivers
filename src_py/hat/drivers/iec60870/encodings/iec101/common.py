@@ -1,11 +1,11 @@
-from hat.drivers.iec60870.msgs.common import *  # NOQA
+from hat.drivers.iec60870.encodings.common import *  # NOQA
 
 import enum
 import typing
 
 from hat import util
 
-from hat.drivers.iec60870.msgs.common import Time
+from hat.drivers.iec60870.encodings.common import Time
 
 
 OriginatorAddress: typing.TypeAlias = int

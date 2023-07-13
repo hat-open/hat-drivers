@@ -41,11 +41,11 @@ build_docs_dir = build_dir / 'docs'
 def task_clean_all():
     """Clean all"""
     return {'actions': [(common.rm_rf, [
-            build_dir,
-            *src_py_dir.rglob('asn1_repo.json'),
-            *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
-            *(src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
-            *(src_py_dir / 'hat/drivers/modbus/transport').glob('_encoder.*')])]}  # NOQA
+        build_dir,
+        *src_py_dir.rglob('asn1_repo.json'),
+        *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
+        *(src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
+        *(src_py_dir / 'hat/drivers/modbus/transport').glob('_encoder.*')])]}
 
 
 def task_build():

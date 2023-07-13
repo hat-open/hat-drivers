@@ -4,8 +4,8 @@ import typing
 
 from hat import util
 
-from hat.drivers.iec60870.msgs import encoder
-from hat.drivers.iec60870.msgs.iec101 import common
+from hat.drivers.iec60870.encodings import encoder
+from hat.drivers.iec60870.encodings.iec101 import common
 
 
 class Encoder:

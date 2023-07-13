@@ -1,27 +1,26 @@
-from hat.drivers.iec60870.msgs.common import *  # NOQA
+from hat.drivers.iec60870.encodings.common import *  # NOQA
 
 import enum
 import typing
 
 from hat import util
 
-from hat.drivers.iec60870.msgs import iec101
-from hat.drivers.iec60870.msgs import iec104
-from hat.drivers.iec60870.msgs.common import Time
+from hat.drivers.iec60870.encodings import iec101
+from hat.drivers.iec60870.encodings import iec104
+from hat.drivers.iec60870.encodings.common import Time
 
 
-OriginatorAddress: typing.TypeAlias = iec101.common.OriginatorAddress
-
-# different sizes for iec101 and iec104
-AsduAddress: typing.TypeAlias = (iec101.common.AsduAddress |
-                                 iec104.common.AsduAddress)
+OriginatorAddress: typing.TypeAlias = iec101.OriginatorAddress
 
 # different sizes for iec101 and iec104
-IoAddress: typing.TypeAlias = iec101.common.IoAddress | iec104.common.IoAddress
+AsduAddress: typing.TypeAlias = iec101.AsduAddress | iec104.AsduAddress
 
-OtherCauseType: typing.TypeAlias = iec101.common.OriginatorAddress
+# different sizes for iec101 and iec104
+IoAddress: typing.TypeAlias = iec101.IoAddress | iec104.IoAddress
 
-BinaryCounterValue: typing.TypeAlias = iec101.common.BinaryCounterValue
+OtherCauseType: typing.TypeAlias = iec101.OriginatorAddress
+
+BinaryCounterValue: typing.TypeAlias = iec101.BinaryCounterValue
 
 
 AssociationId: typing.TypeAlias = int
@@ -111,7 +110,7 @@ class UserRole(enum.Enum):
 
 
 CauseType = enum.Enum('CauseType', [
-    *((cause.name, cause.value) for cause in iec101.common.CauseType),
+    *((cause.name, cause.value) for cause in iec101.CauseType),
     ('AUTHENTICATION', 14),
     ('SESSION_KEY_MAINTENANCE', 15),
     ('UPDATE_KEY_MAINTENANCE', 16)])

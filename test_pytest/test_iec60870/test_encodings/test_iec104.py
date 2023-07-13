@@ -3,8 +3,7 @@ import math
 
 import pytest
 
-from hat.drivers.iec60870.msgs.iec104 import common
-from hat.drivers.iec60870.msgs.iec104 import encoder
+from hat.drivers.iec60870.encodings import iec104
 
 
 def gen_times(amount):
@@ -22,8 +21,8 @@ def gen_times(amount):
     while True:
         for values in zip(*samples.values()):
             time_dict = dict(zip(samples.keys(), values))
-            yield common.Time(**time_dict,
-                              size=common.TimeSize.SEVEN)
+            yield iec104.Time(**time_dict,
+                              size=iec104.TimeSize.SEVEN)
             cnt += 1
             if cnt == amount:
                 return
@@ -54,15 +53,15 @@ def gen_causes(amount):
     cnt = 0
     while True:
         for (cause_type, is_negative_confirm, is_test, orig_addr) in zip(
-                (common.CauseType.SPONTANEOUS,
-                 common.CauseType.INTERROGATED_STATION,
-                 common.CauseType.ACTIVATION,
-                 common.CauseType.REMOTE_COMMAND,
-                 common.CauseType.UNKNOWN_CAUSE),
+                (iec104.CauseType.SPONTANEOUS,
+                 iec104.CauseType.INTERROGATED_STATION,
+                 iec104.CauseType.ACTIVATION,
+                 iec104.CauseType.REMOTE_COMMAND,
+                 iec104.CauseType.UNKNOWN_CAUSE),
                 (True, False, True, False, True),
                 (False, True, False, True, False),
                 (0, 255, 123, 13, 1)):
-            yield common.Cause(
+            yield iec104.Cause(
                 type=cause_type,
                 is_negative_confirm=is_negative_confirm,
                 is_test=is_test,
@@ -96,9 +95,9 @@ def assert_asdu_float(asdu1, asdu2):
 
 def assert_encode_decode(asdu_type, value, quality, cause, asdu,  io, time,
                          ioe_kwargs={}, assert_asdu=assert_asdu_default):
-    _encoder = encoder.Encoder()
+    _encoder = iec104.Encoder()
 
-    io_element_class = getattr(common, f"IoElement_{asdu_type.name}")
+    io_element_class = getattr(iec104, f"IoElement_{asdu_type.name}")
     ioe_dict = {**ioe_kwargs}
     if asdu_type.name[:-1].endswith('_N'):
         time = None
@@ -107,11 +106,11 @@ def assert_encode_decode(asdu_type, value, quality, cause, asdu,  io, time,
     if quality:
         ioe_dict['quality'] = quality
     io_element = io_element_class(**ioe_dict)
-    ios = [common.IO(
+    ios = [iec104.IO(
                 address=io,
                 elements=[io_element],
                 time=time)]
-    asdu = common.ASDU(
+    asdu = iec104.ASDU(
         type=asdu_type,
         cause=cause,
         address=asdu,
@@ -122,12 +121,12 @@ def assert_encode_decode(asdu_type, value, quality, cause, asdu,  io, time,
     assert_asdu(asdu_decoded, asdu)
 
 
-@pytest.mark.parametrize("value", common.SingleValue)
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_SP_NA,
-                                       common.AsduType.M_SP_TB])
+@pytest.mark.parametrize("value", iec104.SingleValue)
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_SP_NA,
+                                       iec104.AsduType.M_SP_TB])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.IndicationQuality),
+    zip(gen_qualities(3, iec104.IndicationQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
@@ -136,12 +135,12 @@ def test_m_sp(asdu_type, value, quality, cause, asdu, io, time):
     assert_encode_decode(asdu_type, value, quality, cause, asdu, io, time)
 
 
-@pytest.mark.parametrize("value", common.DoubleValue)
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_DP_NA,
-                                       common.AsduType.M_DP_TB])
+@pytest.mark.parametrize("value", iec104.DoubleValue)
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_DP_NA,
+                                       iec104.AsduType.M_DP_TB])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.IndicationQuality),
+    zip(gen_qualities(3, iec104.IndicationQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
@@ -153,18 +152,18 @@ def test_m_dp(asdu_type, value, quality, cause, asdu, io, time):
 
 @pytest.mark.parametrize("value", [-64, -13, 0, 17, 63])
 @pytest.mark.parametrize("transient", [True, False])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_ST_NA,
-                                       common.AsduType.M_ST_TB])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_ST_NA,
+                                       iec104.AsduType.M_ST_TB])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_st(asdu_type, value, quality, cause, asdu,
               io, time, transient):
-    value = common.StepPositionValue(value=value,
+    value = iec104.StepPositionValue(value=value,
                                      transient=transient)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time)
@@ -172,55 +171,55 @@ def test_m_st(asdu_type, value, quality, cause, asdu,
 
 @pytest.mark.parametrize("value", [
     b'\xff' * 4, b'\x00' * 4, b'\x12\xab\xff\x00'])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_BO_NA,
-                                       common.AsduType.M_BO_TB])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_BO_NA,
+                                       iec104.AsduType.M_BO_TB])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_bo(asdu_type, value, quality, cause, asdu, io, time):
-    value = common.BitstringValue(value=value)
+    value = iec104.BitstringValue(value=value)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time)
 
 
 @pytest.mark.parametrize("value", (-1.0, 0.9999, -0.123, 0.456, 0))
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_ME_NA,
-                                       common.AsduType.M_ME_ND,
-                                       common.AsduType.M_ME_TD])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_ME_NA,
+                                       iec104.AsduType.M_ME_ND,
+                                       iec104.AsduType.M_ME_TD])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_me_normalized(asdu_type, value, quality, cause, asdu,
                          io, time):
-    if asdu_type == common.AsduType.M_ME_ND:
+    if asdu_type == iec104.AsduType.M_ME_ND:
         quality = None
-    value = common.BitstringValue(value=value)
+    value = iec104.BitstringValue(value=value)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time,
                          assert_asdu=assert_asdu_float)
 
 
 @pytest.mark.parametrize("value", (-2**15, -123, 0, 456, 2**15-1))
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_ME_NB,
-                                       common.AsduType.M_ME_TE])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_ME_NB,
+                                       iec104.AsduType.M_ME_TE])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_me_scaled(asdu_type, value, quality, cause, asdu,
                      io, time):
-    value = common.ScaledValue(value=value)
+    value = iec104.ScaledValue(value=value)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time)
 
@@ -230,46 +229,46 @@ def test_m_me_scaled(asdu_type, value, quality, cause, asdu,
                                    0,
                                    12345.678,
                                    16777216.1234))
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_ME_NC,
-                                       common.AsduType.M_ME_TF])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_ME_NC,
+                                       iec104.AsduType.M_ME_TF])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_me_floating(asdu_type, value, quality, cause, asdu, io,
                        time):
-    value = common.FloatingValue(value=value)
+    value = iec104.FloatingValue(value=value)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time,
                          assert_asdu=assert_asdu_float)
 
 
 @pytest.mark.parametrize("value", [-2**31, -123, 0, 456, 2**31-1])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_IT_NA,
-                                       common.AsduType.M_IT_TB])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_IT_NA,
+                                       iec104.AsduType.M_IT_TB])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.CounterQuality),
+    zip(gen_qualities(3, iec104.CounterQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
         gen_times(3)))
 def test_m_it(asdu_type, value, quality, cause, asdu,
               io, time):
-    value = common.BinaryCounterValue(value=value)
+    value = iec104.BinaryCounterValue(value=value)
     assert_encode_decode(asdu_type, value, quality, cause, asdu,
                          io, time)
 
 
-@pytest.mark.parametrize("value", common.ProtectionValue)
+@pytest.mark.parametrize("value", iec104.ProtectionValue)
 @pytest.mark.parametrize("elapsed_time", [0, 123, 65535])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_EP_TD])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_EP_TD])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.ProtectionQuality),
+    zip(gen_qualities(3, iec104.ProtectionQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
@@ -282,14 +281,14 @@ def test_protect_value(asdu_type, value, quality, cause, asdu,
 
 
 @pytest.mark.parametrize("value", [
-    common.ProtectionStartValue(*([True] * 6)),
-    common.ProtectionStartValue(*([False] * 6)),
-    common.ProtectionStartValue(*([True, False] * 3))])
+    iec104.ProtectionStartValue(*([True] * 6)),
+    iec104.ProtectionStartValue(*([False] * 6)),
+    iec104.ProtectionStartValue(*([True, False] * 3))])
 @pytest.mark.parametrize("duration_time", [0, 123, 65535])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_EP_TE])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_EP_TE])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.ProtectionQuality),
+    zip(gen_qualities(3, iec104.ProtectionQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
@@ -303,14 +302,14 @@ def test_protect_start(asdu_type, value, quality, cause, asdu,
 
 
 @pytest.mark.parametrize("value", [
-    common.ProtectionCommandValue(*([True] * 4)),
-    common.ProtectionCommandValue(*([False] * 4)),
-    common.ProtectionCommandValue(*([True, False] * 2))])
+    iec104.ProtectionCommandValue(*([True] * 4)),
+    iec104.ProtectionCommandValue(*([False] * 4)),
+    iec104.ProtectionCommandValue(*([True, False] * 2))])
 @pytest.mark.parametrize("operating_time", [0, 123, 65535])
-@pytest.mark.parametrize("asdu_type", [common.AsduType.M_EP_TF])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.M_EP_TF])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io, time",
-    zip(gen_qualities(3, common.ProtectionQuality),
+    zip(gen_qualities(3, iec104.ProtectionQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215),
@@ -331,22 +330,22 @@ def test_protect_command(asdu_type, value, quality, cause, asdu,
                                     [False, True] * 8])
 @pytest.mark.parametrize(
     "quality, cause, asdu, io",
-    zip(gen_qualities(3, common.MeasurementQuality),
+    zip(gen_qualities(3, iec104.MeasurementQuality),
         gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215)))
 def test_status_value(value, quality, cause, asdu, io, change):
-    value = common.StatusValue(
+    value = iec104.StatusValue(
         value=value,
         change=change)
-    assert_encode_decode(common.AsduType.M_PS_NA, value, quality, cause, asdu,
+    assert_encode_decode(iec104.AsduType.M_PS_NA, value, quality, cause, asdu,
                          io, None)
 
 
 @pytest.mark.parametrize("asdu_type, value", [
-    *itertools.product((common.AsduType.C_SC_NA,), common.SingleValue),
-    *itertools.product((common.AsduType.C_DC_NA,), common.DoubleValue),
-    *itertools.product((common.AsduType.C_RC_NA,), common.RegulatingValue),
+    *itertools.product((iec104.AsduType.C_SC_NA,), iec104.SingleValue),
+    *itertools.product((iec104.AsduType.C_DC_NA,), iec104.DoubleValue),
+    *itertools.product((iec104.AsduType.C_RC_NA,), iec104.RegulatingValue),
     ])
 @pytest.mark.parametrize("select, qualifier", [(True, 0),
                                                (False, 31)])
@@ -364,9 +363,9 @@ def test_cmd_ind(asdu_type, value, cause, asdu, io,
 
 
 @pytest.mark.parametrize("asdu_type, value", [
-    *itertools.product((common.AsduType.C_SC_TA,), common.SingleValue),
-    *itertools.product((common.AsduType.C_DC_TA,), common.DoubleValue),
-    *itertools.product((common.AsduType.C_RC_TA,), common.RegulatingValue),
+    *itertools.product((iec104.AsduType.C_SC_TA,), iec104.SingleValue),
+    *itertools.product((iec104.AsduType.C_DC_TA,), iec104.DoubleValue),
+    *itertools.product((iec104.AsduType.C_RC_TA,), iec104.RegulatingValue),
     ])
 @pytest.mark.parametrize("select, qualifier", [(True, 0),
                                                (False, 31)])
@@ -385,16 +384,16 @@ def test_cmd_ind_with_time(asdu_type, value, cause, asdu, io,
 
 
 @pytest.mark.parametrize("asdu_type, value, time", [
-    *((common.AsduType.C_SE_NA, common.NormalizedValue(value=v), None)
+    *((iec104.AsduType.C_SE_NA, iec104.NormalizedValue(value=v), None)
       for v in (-1.0, 0.9999, -0.123, 0.456, 0)),
 
-    *((common.AsduType.C_SE_TA, common.NormalizedValue(value=v), t)
+    *((iec104.AsduType.C_SE_TA, iec104.NormalizedValue(value=v), t)
       for v, t in zip((-1.0, 0.9999, -0.123, 0.456, 0), gen_times(5))),
 
-    *((common.AsduType.C_SE_NC, common.NormalizedValue(value=v), None)
+    *((iec104.AsduType.C_SE_NC, iec104.NormalizedValue(value=v), None)
       for v in (-16777216.1234, 0, 16777216.1234)),
 
-    *((common.AsduType.C_SE_TC, common.NormalizedValue(value=v), t)
+    *((iec104.AsduType.C_SE_TC, iec104.NormalizedValue(value=v), t)
       for v, t in zip((-16777216.1234, 0, 16777216.1234), gen_times(3))),
     ])
 @pytest.mark.parametrize("select", [True, False])
@@ -411,10 +410,10 @@ def test_cmd_float(asdu_type, value, cause, asdu, io, select, time):
 
 
 @pytest.mark.parametrize("asdu_type, value, time", [
-    *((common.AsduType.C_SE_NB, common.NormalizedValue(value=v), None)
+    *((iec104.AsduType.C_SE_NB, iec104.NormalizedValue(value=v), None)
       for v in (-2**15, -123, 0, 456, 2**15-1)),
 
-    *((common.AsduType.C_SE_TB, common.NormalizedValue(value=v), t)
+    *((iec104.AsduType.C_SE_TB, iec104.NormalizedValue(value=v), t)
       for v, t in zip((-2**15, -123, 0, 456, 2**15-1), gen_times(5))),
     ])
 @pytest.mark.parametrize("select", [True, False])
@@ -430,10 +429,10 @@ def test_cmd_scale(asdu_type, value, time, cause, asdu, io, select):
 
 
 @pytest.mark.parametrize("asdu_type, value, time", [
-    *((common.AsduType.C_BO_NA, common.BitstringValue(value=v), None)
+    *((iec104.AsduType.C_BO_NA, iec104.BitstringValue(value=v), None)
       for v in (b'\xff' * 4, b'\x00' * 4, b'\x12\xab\xff\x00')),
 
-    *((common.AsduType.C_BO_TA, common.BitstringValue(value=v), t)
+    *((iec104.AsduType.C_BO_TA, iec104.BitstringValue(value=v), t)
       for v, t in zip((b'\xff' * 4, b'\x00' * 4, b'\x12\xab\xff\x00'),
                       gen_times(3))),
     ])
@@ -454,7 +453,7 @@ def test_cmd_bitstring(asdu_type, value, time, cause, asdu, io):
         (255, 65535, 16777215),
         gen_times(3)))
 def test_c_ts_ta(cause, asdu, io, time, counter):
-    assert_encode_decode(common.AsduType.C_TS_TA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.C_TS_TA, None, None, cause, asdu,
                          io, time,
                          ioe_kwargs={'counter': counter})
 
@@ -467,15 +466,15 @@ def test_c_ts_ta(cause, asdu, io, time, counter):
         (0, 255, 65535),
         (255, 65535, 16777215)))
 def test_m_ei_na(cause, asdu, io, param_change, cause_ioe):
-    assert_encode_decode(common.AsduType.M_EI_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.M_EI_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'param_change': param_change,
                                      'cause': cause_ioe})
 
 
-@pytest.mark.parametrize("asdu_type", [common.AsduType.C_IC_NA,
-                                       common.AsduType.C_RP_NA,
-                                       common.AsduType.P_AC_NA])
+@pytest.mark.parametrize("asdu_type", [iec104.AsduType.C_IC_NA,
+                                       iec104.AsduType.C_RP_NA,
+                                       iec104.AsduType.P_AC_NA])
 @pytest.mark.parametrize("qualifier", [0, 123, 255])
 @pytest.mark.parametrize(
     "cause, asdu, io",
@@ -490,14 +489,14 @@ def test_c_ic_rp_ac(asdu_type, cause, asdu, io,
 
 
 @pytest.mark.parametrize("request_ioe", [0, 63, 13])
-@pytest.mark.parametrize("freeze", common.FreezeCode)
+@pytest.mark.parametrize("freeze", iec104.FreezeCode)
 @pytest.mark.parametrize(
     "cause, asdu, io",
     zip(gen_causes(3),
         (0, 255, 65535),
         (255, 65535, 16777215)))
 def test_c_ci_na(cause, asdu, io, request_ioe, freeze):
-    assert_encode_decode(common.AsduType.C_CI_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.C_CI_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'request': request_ioe,
                                      'freeze': freeze})
@@ -510,17 +509,17 @@ def test_c_ci_na(cause, asdu, io, request_ioe, freeze):
         (0, 255, 65535),
         (255, 65535, 16777215)))
 def test_c_cs_na(cause, asdu, io, time_ioe):
-    assert_encode_decode(common.AsduType.C_CS_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.C_CS_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'time': time_ioe})
 
 
 @pytest.mark.parametrize("asdu_type, value", [
-    *itertools.product((common.AsduType.P_ME_NA,),
-                       [common.NormalizedValue(value=1)
+    *itertools.product((iec104.AsduType.P_ME_NA,),
+                       [iec104.NormalizedValue(value=1)
                         for i in (-1.0, 0.9999, -0.123, 0.456, 0)]),
-    *itertools.product((common.AsduType.P_ME_NC,),
-                       [common.FloatingValue(value=1)
+    *itertools.product((iec104.AsduType.P_ME_NC,),
+                       [iec104.FloatingValue(value=1)
                         for i in (-16777216.1234, 0, 16777216.1234)]),
     ])
 @pytest.mark.parametrize("qualifier", [0, 123, 255])
@@ -544,8 +543,8 @@ def test_p_me_na_nc(asdu_type, value, cause, asdu, io,
         (0, 255, 65535),
         (255, 65535, 16777215)))
 def test_p_me_nb(value, cause, asdu, io, qualifier):
-    value = common.ScaledValue(value=value)
-    assert_encode_decode(common.AsduType.P_ME_NB, value, None, cause, asdu,
+    value = iec104.ScaledValue(value=value)
+    assert_encode_decode(iec104.AsduType.P_ME_NB, value, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'qualifier': qualifier})
 
@@ -560,7 +559,7 @@ def test_p_me_nb(value, cause, asdu, io, qualifier):
         (255, 65535, 16777215)))
 def test_f_fr_na(cause, asdu, io,
                  file_name, file_length, ready):
-    assert_encode_decode(common.AsduType.F_FR_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.F_FR_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'file_name': file_name,
                                      'file_length': file_length,
@@ -578,7 +577,7 @@ def test_f_fr_na(cause, asdu, io,
         (255, 65535, 16777215)))
 def test_f_sr_na(cause, asdu, io,
                  file_name, section_name, section_length, ready):
-    assert_encode_decode(common.AsduType.F_SR_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.F_SR_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'file_name': file_name,
                                      'section_name': section_name,
@@ -586,8 +585,8 @@ def test_f_sr_na(cause, asdu, io,
                                      'ready': ready})
 
 
-@pytest.mark.parametrize("asdu_type", (common.AsduType.F_SC_NA,
-                                       common.AsduType.F_AF_NA))
+@pytest.mark.parametrize("asdu_type", (iec104.AsduType.F_SC_NA,
+                                       iec104.AsduType.F_AF_NA))
 @pytest.mark.parametrize("file_name", (0, 65535))
 @pytest.mark.parametrize("section_name", (0, 255))
 @pytest.mark.parametrize("qualifier", (0, 255))
@@ -616,7 +615,7 @@ def test_f_sc_af_na(asdu_type, cause, asdu, io,
         (255, 65535, 16777215)))
 def test_f_ls_na(cause, asdu, io,
                  file_name, section_name, last_qualifier, checksum):
-    assert_encode_decode(common.AsduType.F_LS_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.F_LS_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'file_name': file_name,
                                      'section_name': section_name,
@@ -634,7 +633,7 @@ def test_f_ls_na(cause, asdu, io,
         (255, 65535, 16777215)))
 def test_f_sg_na(cause, asdu, io,
                  file_name, section_name, segment):
-    assert_encode_decode(common.AsduType.F_SG_NA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.F_SG_NA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'file_name': file_name,
                                      'section_name': section_name,
@@ -655,7 +654,7 @@ def test_f_sg_na(cause, asdu, io,
 def test_f_dr_ta(cause, asdu, io,
                  file_name, file_length, more_follows, is_directory,
                  transfer_active, creation_time):
-    assert_encode_decode(common.AsduType.F_DR_TA, None, None, cause, asdu,
+    assert_encode_decode(iec104.AsduType.F_DR_TA, None, None, cause, asdu,
                          io, None,
                          ioe_kwargs={'file_name': file_name,
                                      'file_length': file_length,

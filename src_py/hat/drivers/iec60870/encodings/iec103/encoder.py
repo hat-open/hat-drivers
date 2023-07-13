@@ -6,8 +6,8 @@ import struct
 
 from hat import util
 
-from hat.drivers.iec60870.msgs import encoder
-from hat.drivers.iec60870.msgs.iec103 import common
+from hat.drivers.iec60870.encodings import encoder
+from hat.drivers.iec60870.encodings.iec103 import common
 
 
 class Encoder:

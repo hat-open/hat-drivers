@@ -5,6 +5,7 @@ import pytest
 
 from hat import aio
 from hat import util
+
 from hat.drivers import iec104
 from hat.drivers import tcp
 

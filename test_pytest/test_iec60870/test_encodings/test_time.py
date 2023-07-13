@@ -2,8 +2,8 @@ import datetime
 
 import pytest
 
-from hat.drivers.iec60870.msgs import common
-from hat.drivers.iec60870.msgs import encoder
+from hat.drivers.iec60870.encodings import common
+from hat.drivers.iec60870.encodings import encoder
 
 
 def create_time(size, milliseconds, invalid, minutes, summer_time, hours,

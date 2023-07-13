@@ -10,11 +10,10 @@ from hat import aio
 
 from hat.drivers.iec103 import common
 from hat.drivers.iec60870 import link
-from hat.drivers.iec60870.msgs import iec103
+from hat.drivers.iec60870.encodings import iec103
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
-
 
 DataCb: typing.TypeAlias = aio.AsyncCallable[[common.Data], None]
 
@@ -31,7 +30,7 @@ class MasterConnection(aio.Resource):
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
 
-        self._encoder = iec103.encoder.Encoder()
+        self._encoder = iec103.Encoder()
 
         self._interrogate_lock = asyncio.Lock()
         self._interrogate_req_id = None
@@ -48,24 +47,24 @@ class MasterConnection(aio.Resource):
         self._next_req_ids = (i % 0x100 for i in itertools.count(0))
 
         self._process_single_element_fns = {
-            iec103.common.AsduType.TIME_TAGGED_MESSAGE: self._process_TIME_TAGGED_MESSAGE,  # NOQA
-            iec103.common.AsduType.TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME: self._process_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME,  # NOQA
-            iec103.common.AsduType.TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME: self._process_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME,  # NOQA
-            iec103.common.AsduType.IDENTIFICATION: self._process_IDENTIFICATION,  # NOQA
-            iec103.common.AsduType.TIME_SYNCHRONIZATION: self._process_TIME_SYNCHRONIZATION,  # NOQA
-            iec103.common.AsduType.GENERAL_INTERROGATION_TERMINATION: self._process_GENERAL_INTERROGATION_TERMINATION,  # NOQA
-            iec103.common.AsduType.GENERIC_DATA: self._process_GENERIC_DATA,  # NOQA
-            iec103.common.AsduType.GENERIC_IDENTIFICATION: self._process_GENERIC_IDENTIFICATION,  # NOQA
-            iec103.common.AsduType.READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA: self._process_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA,  # NOQA
-            iec103.common.AsduType.READY_FOR_TRANSMISSION_OF_A_CHANNEL: self._process_READY_FOR_TRANSMISSION_OF_A_CHANNEL,  # NOQA
-            iec103.common.AsduType.READY_FOR_TRANSMISSION_OF_TAGS: self._process_READY_FOR_TRANSMISSION_OF_TAGS,  # NOQA
-            iec103.common.AsduType.TRANSMISSION_OF_TAGS: self._process_TRANSMISSION_OF_TAGS,  # NOQA
-            iec103.common.AsduType.TRANSMISSION_OF_DISTURBANCE_VALUES: self._process_TRANSMISSION_OF_DISTURBANCE_VALUES,  # NOQA
-            iec103.common.AsduType.END_OF_TRANSMISSION: self._process_END_OF_TRANSMISSION}  # NOQA
+            iec103.AsduType.TIME_TAGGED_MESSAGE: self._process_TIME_TAGGED_MESSAGE,  # NOQA
+            iec103.AsduType.TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME: self._process_TIME_TAGGED_MESSAGE_WITH_RELATIVE_TIME,  # NOQA
+            iec103.AsduType.TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME: self._process_TIME_TAGGED_MEASURANDS_WITH_RELATIVE_TIME,  # NOQA
+            iec103.AsduType.IDENTIFICATION: self._process_IDENTIFICATION,
+            iec103.AsduType.TIME_SYNCHRONIZATION: self._process_TIME_SYNCHRONIZATION,  # NOQA
+            iec103.AsduType.GENERAL_INTERROGATION_TERMINATION: self._process_GENERAL_INTERROGATION_TERMINATION,  # NOQA
+            iec103.AsduType.GENERIC_DATA: self._process_GENERIC_DATA,
+            iec103.AsduType.GENERIC_IDENTIFICATION: self._process_GENERIC_IDENTIFICATION,  # NOQA
+            iec103.AsduType.READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA: self._process_READY_FOR_TRANSMISSION_OF_DISTURBANCE_DATA,  # NOQA
+            iec103.AsduType.READY_FOR_TRANSMISSION_OF_A_CHANNEL: self._process_READY_FOR_TRANSMISSION_OF_A_CHANNEL,  # NOQA
+            iec103.AsduType.READY_FOR_TRANSMISSION_OF_TAGS: self._process_READY_FOR_TRANSMISSION_OF_TAGS,  # NOQA
+            iec103.AsduType.TRANSMISSION_OF_TAGS: self._process_TRANSMISSION_OF_TAGS,  # NOQA
+            iec103.AsduType.TRANSMISSION_OF_DISTURBANCE_VALUES: self._process_TRANSMISSION_OF_DISTURBANCE_VALUES,  # NOQA
+            iec103.AsduType.END_OF_TRANSMISSION: self._process_END_OF_TRANSMISSION}  # NOQA
         self._process_multiple_elements_fns = {
-            iec103.common.AsduType.MEASURANDS_1: self._process_MEASURANDS_1,  # NOQA
-            iec103.common.AsduType.MEASURANDS_2: self._process_MEASURANDS_2,  # NOQA
-            iec103.common.AsduType.LIST_OF_RECORDED_DISTURBANCES: self._process_LIST_OF_RECORDED_DISTURBANCES}  # NOQA
+            iec103.AsduType.MEASURANDS_1: self._process_MEASURANDS_1,
+            iec103.AsduType.MEASURANDS_2: self._process_MEASURANDS_2,
+            iec103.AsduType.LIST_OF_RECORDED_DISTURBANCES: self._process_LIST_OF_RECORDED_DISTURBANCES}  # NOQA
 
         self.async_group.spawn(self._receive_loop)
 
@@ -83,13 +82,13 @@ class MasterConnection(aio.Resource):
         io_address = common.IoAddress(
             _FunctionType.GLOBAL_FUNCTION_TYPE.value,
             _InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION.value)  # NOQA
-        asdu = iec103.common.ASDU(
-            type=iec103.common.AsduType.TIME_SYNCHRONIZATION,
-            cause=iec103.common.Cause.TIME_SYNCHRONIZATION,
+        asdu = iec103.ASDU(
+            type=iec103.AsduType.TIME_SYNCHRONIZATION,
+            cause=iec103.Cause.TIME_SYNCHRONIZATION,
             address=asdu_address,
-            ios=[iec103.common.IO(
+            ios=[iec103.IO(
                 address=io_address,
-                elements=[iec103.common.IoElement_TIME_SYNCHRONIZATION(
+                elements=[iec103.IoElement_TIME_SYNCHRONIZATION(
                     time=time)])])
         data = self._encoder.encode_asdu(asdu)
 
@@ -101,15 +100,15 @@ class MasterConnection(aio.Resource):
                 raise ConnectionError()
 
             scan_number = next(self._next_req_ids)
-            asdu = iec103.common.ASDU(
-                type=iec103.common.AsduType.GENERAL_INTERROGATION,
-                cause=iec103.common.Cause.GENERAL_INTERROGATION,
+            asdu = iec103.ASDU(
+                type=iec103.AsduType.GENERAL_INTERROGATION,
+                cause=iec103.Cause.GENERAL_INTERROGATION,
                 address=asdu_address,
-                ios=[iec103.common.IO(
-                    address=iec103.common.IoAddress(
+                ios=[iec103.IO(
+                    address=iec103.IoAddress(
                         function_type=_FunctionType.GLOBAL_FUNCTION_TYPE.value,  # NOQA
                         information_number=_InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION.value),  # NOQA
-                    elements=[iec103.common.IoElement_GENERAL_INTERROGATION(  # NOQA
+                    elements=[iec103.IoElement_GENERAL_INTERROGATION(  # NOQA
                         scan_number=scan_number)])])
             data = self._encoder.encode_asdu(asdu)
 
@@ -133,13 +132,13 @@ class MasterConnection(aio.Resource):
                 raise ConnectionError()
 
             return_identifier = next(self._next_req_ids)
-            asdu = iec103.common.ASDU(
-                type=iec103.common.AsduType.GENERAL_COMMAND,
-                cause=iec103.common.Cause.GENERAL_COMMAND,
+            asdu = iec103.ASDU(
+                type=iec103.AsduType.GENERAL_COMMAND,
+                cause=iec103.Cause.GENERAL_COMMAND,
                 address=asdu_address,
-                ios=[iec103.common.IO(
+                ios=[iec103.IO(
                     address=io_address,
-                    elements=[iec103.common.IoElement_GENERAL_COMMAND(
+                    elements=[iec103.IoElement_GENERAL_COMMAND(
                         value=value,
                         return_identifier=return_identifier)])])
             data = self._encoder.encode_asdu(asdu)
@@ -160,15 +159,15 @@ class MasterConnection(aio.Resource):
                 raise ConnectionError()
 
             return_identifier = next(self._next_req_ids)
-            asdu = iec103.common.ASDU(
-                type=iec103.common.AsduType.GENERIC_COMMAND,
-                cause=iec103.common.Cause.GENERAL_INTERROGATION,
+            asdu = iec103.ASDU(
+                type=iec103.AsduType.GENERIC_COMMAND,
+                cause=iec103.Cause.GENERAL_INTERROGATION,
                 address=asdu_address,
-                ios=[iec103.common.IO(
-                    address=iec103.common.IoAddress(
+                ios=[iec103.IO(
+                    address=iec103.IoAddress(
                         function_type=_FunctionType.GENERIC_FUNCTION_TYPE.value,  # NOQA
                         information_number=_InformationNumber.GENERAL_INTERROGATION_OF_GENERIC_DATA.value),  # NOQA
-                    elements=[iec103.common.IoElement_GENERIC_COMMAND(
+                    elements=[iec103.IoElement_GENERIC_COMMAND(
                         return_identifier=return_identifier,
                         data=[])])])
             data = self._encoder.encode_asdu(asdu)
@@ -215,11 +214,11 @@ class MasterConnection(aio.Resource):
                                ConnectionError())
 
     async def _process_TIME_TAGGED_MESSAGE(self, cause, asdu_address, io_address, element):  # NOQA
-        if cause == iec103.common.Cause.GENERAL_COMMAND:
+        if cause == iec103.Cause.GENERAL_COMMAND:
             if element.value.supplementary == self._send_command_req_id:
                 _try_set_result(self._send_command_future, True)
 
-        elif cause == iec103.common.Cause.GENERAL_COMMAND_NACK:
+        elif cause == iec103.Cause.GENERAL_COMMAND_NACK:
             if element.value.supplementary == self._send_command_req_id:
                 _try_set_result(self._send_command_future, False)
 
@@ -241,7 +240,7 @@ class MasterConnection(aio.Resource):
         value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
-                iec103.common.AsduType.MEASURANDS_1.value, i))
+                iec103.AsduType.MEASURANDS_1.value, i))
             value.values[measurand_type] = element.value
 
         await _try_aio_call(self._data_cb, common.Data(
@@ -276,7 +275,7 @@ class MasterConnection(aio.Resource):
         value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
-                iec103.common.AsduType.MEASURANDS_2.value, i))
+                iec103.AsduType.MEASURANDS_2.value, i))
             value.values[measurand_type] = element.value
 
         await _try_aio_call(self._data_cb, common.Data(
@@ -286,7 +285,7 @@ class MasterConnection(aio.Resource):
             value=value))
 
     async def _process_GENERIC_DATA(self, cause, asdu_address, io_address, element):  # NOQA
-        if cause == iec103.common.Cause.TERMINATION_OF_GENERAL_INTERROGATION:  # NOQA
+        if cause == iec103.Cause.TERMINATION_OF_GENERAL_INTERROGATION:  # NOQA
             if element.return_identifier == self._interrogate_generic_req_id:
                 _try_set_result(self._interrogate_generic_future, None)
 

@@ -3,7 +3,7 @@ import typing
 
 from hat import util
 
-from hat.drivers.iec60870.msgs import common
+from hat.drivers.iec60870.encodings import common
 
 
 AsduType: typing.TypeAlias = int
