@@ -122,7 +122,7 @@ class Slave(aio.Resource):
         self._conns[addr] = conn
 
         if self._connection_cb:
-            await aio.call(self._connection_cb, conn)
+            self.async_group.spawn(aio.call, self._connection_cb, conn)
 
         return conn
 
