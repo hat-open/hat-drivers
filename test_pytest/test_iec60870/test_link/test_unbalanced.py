@@ -4,6 +4,7 @@ import collections
 import pytest
 
 from hat import aio
+
 from hat.drivers import serial
 from hat.drivers.iec60870.link import unbalanced
 
@@ -90,7 +91,7 @@ async def test_send_receive(mock_serial):
     received = await slave_conn.receive()
     assert received == b'hello'
 
-    await slave_conn.send(b'hi')
+    slave_conn.send(b'hi')
     received = await master_conn.receive()
     assert received == b'hi'
 
@@ -98,7 +99,7 @@ async def test_send_receive(mock_serial):
     received = await slave_conn.receive()
     assert received == b'sup'
 
-    await slave_conn.send(b'nth')
+    slave_conn.send(b'nth')
     received = await master_conn.receive()
     assert received == b'nth'
 
@@ -121,7 +122,7 @@ async def test_slave_range(mock_serial):
     received = await slave_conn_1.receive()
     assert received == b'hello'
 
-    await slave_conn_1.send(b'hi')
+    slave_conn_1.send(b'hi')
     received = await master_conn_1.receive()
     assert received == b'hi'
 
@@ -129,7 +130,7 @@ async def test_slave_range(mock_serial):
     received = await slave_conn_2.receive()
     assert received == b'sup'
 
-    await slave_conn_2.send(b'nth')
+    slave_conn_2.send(b'nth')
     received = await master_conn_2.receive()
     assert received == b'nth'
 
@@ -164,7 +165,7 @@ async def test_multiple_slaves(mock_serial, slave_count, poll_delay):
         received = await slave_conns[i].receive()
         assert received == f'mtos {i}'.encode('utf-8')
 
-        await slave_conns[i].send(f'stom {i}'.encode('utf-8'))
+        slave_conns[i].send(f'stom {i}'.encode('utf-8'))
         received = await master_conns[i].receive()
         assert received == f'stom {i}'.encode('utf-8')
     for i in range(slave_count):
@@ -204,7 +205,7 @@ async def test_disconnect_master(mock_serial):
     await master.async_close()
     await slave_conn.wait_closed()
     with pytest.raises(ConnectionError):
-        await slave_conn.send(b'hi')
+        slave_conn.send(b'hi')
     with pytest.raises(ConnectionError):
         await slave_conn.receive()
     await slave.async_close()
@@ -250,7 +251,7 @@ async def test_channel_noise(mock_serial, noise):
     # TODO should not use private
     await master._endpoint._endpoint.extend_data(noise)
 
-    await slave_conn.send(b'hi')
+    slave_conn.send(b'hi')
     received = await master_conn.receive()
     assert received == b'hi'
 

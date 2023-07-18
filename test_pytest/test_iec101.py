@@ -6,11 +6,10 @@ import pytest
 from hat import aio
 
 from hat.drivers import iec101
-from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec101 as encoding
 
 
-class MockLinkConnection(link.Connection):
+class MockMasterConnection(aio.Resource):
 
     def __init__(self):
         self._data_queue = aio.Queue()
@@ -121,11 +120,12 @@ def assert_msg_param_float(msg1, msg2):
 
 async def assert_send_receive(msgs, cause_size, asdu_size, io_size,
                               assert_msg=assert_msg_default):
-    conn_link = MockLinkConnection()
-    conn = iec101.Connection(conn=conn_link,
-                             cause_size=cause_size,
-                             asdu_address_size=asdu_size,
-                             io_address_size=io_size)
+    conn_link = MockMasterConnection()
+    conn = iec101.MasterConnection(
+        conn=conn_link,
+        cause_size=cause_size,
+        asdu_address_size=asdu_size,
+        io_address_size=io_size)
 
     res = await conn.send(msgs)
     assert res is None
@@ -135,11 +135,12 @@ async def assert_send_receive(msgs, cause_size, asdu_size, io_size,
 
 
 async def test_connection():
-    conn_link = MockLinkConnection()
-    conn = iec101.Connection(conn=conn_link,
-                             cause_size=iec101.CauseSize.TWO,
-                             asdu_address_size=iec101.AsduAddressSize.TWO,
-                             io_address_size=iec101.IoAddressSize.THREE)
+    conn_link = MockMasterConnection()
+    conn = iec101.MasterConnection(
+        conn=conn_link,
+        cause_size=iec101.CauseSize.TWO,
+        asdu_address_size=iec101.AsduAddressSize.TWO,
+        io_address_size=iec101.IoAddressSize.THREE)
     assert conn.is_open
 
     conn_link.close()
@@ -147,11 +148,12 @@ async def test_connection():
     await conn.wait_closed()
     assert conn.is_closed
 
-    conn_link = MockLinkConnection()
-    conn = iec101.Connection(conn=conn_link,
-                             cause_size=iec101.CauseSize.TWO,
-                             asdu_address_size=iec101.AsduAddressSize.TWO,
-                             io_address_size=iec101.IoAddressSize.THREE)
+    conn_link = MockMasterConnection()
+    conn = iec101.MasterConnection(
+        conn=conn_link,
+        cause_size=iec101.CauseSize.TWO,
+        asdu_address_size=iec101.AsduAddressSize.TWO,
+        io_address_size=iec101.IoAddressSize.THREE)
 
     conn.close()
 
@@ -760,11 +762,12 @@ def asdu_other_cause():
 
 @pytest.mark.parametrize("asdu", asdu_other_cause())
 async def test_other_cause(asdu):
-    conn_link = MockLinkConnection()
-    conn = iec101.Connection(conn=conn_link,
-                             cause_size=iec101.CauseSize.TWO,
-                             asdu_address_size=iec101.AsduAddressSize.TWO,
-                             io_address_size=iec101.IoAddressSize.TWO)
+    conn_link = MockMasterConnection()
+    conn = iec101.MasterConnection(
+        conn=conn_link,
+        cause_size=iec101.CauseSize.TWO,
+        asdu_address_size=iec101.AsduAddressSize.TWO,
+        io_address_size=iec101.IoAddressSize.TWO)
 
     # asdu is encoded with app.iec101.encoder.Encoder to bytes
     asdu_bytes = conn._encoder._encoder.encode_asdu(asdu)
@@ -780,11 +783,12 @@ async def test_other_cause(asdu):
 
 
 async def test_sequence_of_ioes():
-    conn_link = MockLinkConnection()
-    conn = iec101.Connection(conn=conn_link,
-                             cause_size=iec101.CauseSize.TWO,
-                             asdu_address_size=iec101.AsduAddressSize.TWO,
-                             io_address_size=iec101.IoAddressSize.TWO)
+    conn_link = MockMasterConnection()
+    conn = iec101.MasterConnection(
+        conn=conn_link,
+        cause_size=iec101.CauseSize.TWO,
+        asdu_address_size=iec101.AsduAddressSize.TWO,
+        io_address_size=iec101.IoAddressSize.TWO)
 
     ioes_number = 3
 

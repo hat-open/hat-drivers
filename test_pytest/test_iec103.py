@@ -40,7 +40,7 @@ def create_connection_slave_pair():
     receive_queue = aio.Queue()
     enc = encoding.Encoder()
 
-    class MockLinkConnection(link.Connection):
+    class MockLinkConnection(aio.Resource):
 
         def __init__(self):
             self._async_group = aio.Group()

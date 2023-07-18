@@ -1,8 +1,8 @@
 import pytest
 
 from hat.drivers.iec60870.link import AddressSize
+from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link.encoder import Encoder
-import hat.drivers.iec60870.link.common as common
 
 
 @pytest.mark.parametrize("address_size", [AddressSize.ZERO,

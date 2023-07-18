@@ -9,8 +9,8 @@ import typing
 from hat import aio
 
 from hat.drivers.iec103 import common
-from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec103
+from hat.drivers.iec60870.link import unbalanced
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ GenericDataCb: typing.TypeAlias = aio.AsyncCallable[[common.GenericData], None]
 class MasterConnection(aio.Resource):
 
     def __init__(self,
-                 conn: link.Connection,
+                 conn: unbalanced.MasterConnection,
+                 *,
                  data_cb: DataCb | None = None,
                  generic_data_cb: GenericDataCb | None = None):
         self._conn = conn

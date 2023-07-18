@@ -8,7 +8,6 @@ import time
 from hat import aio
 from hat import util
 
-from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
@@ -17,43 +16,42 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_master(port: str,
-                        baudrate: int = 9600,
-                        bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
-                        parity: serial.Parity = serial.Parity.NONE,
-                        stopbits: serial.StopBits = serial.StopBits.ONE,
-                        xonxoff: bool = False,
-                        rtscts: bool = False,
-                        dsrdtr: bool = False,
+                        *,
+                        address_size: common.AddressSize = common.AddressSize.ONE,  # NOQA
                         silent_interval: float = 0.005,
-                        address_size: common.AddressSize = common.AddressSize.ONE  # NOQA
+                        **kwargs
                         ) -> 'Master':
+    """Create unbalanced master
+
+    Additional arguments are passed directly to
+    `hat.drivers.iec60870.link.endpoint.create`.
+
+    """
     if address_size == common.AddressSize.ZERO:
         raise ValueError('unsupported address size')
 
-    master = Master()
-    master._silent_interval = silent_interval
-    master._send_queue = aio.Queue()
-    master._receive_queue = aio.Queue()
-    master._broadcast_address = common.get_broadcast_address(address_size)
+    ep = await endpoint.create(port=port,
+                               address_size=address_size,
+                               direction_valid=False,
+                               **kwargs)
 
-    master._endpoint = await endpoint.create(address_size=address_size,
-                                             direction_valid=False,
-                                             port=port,
-                                             baudrate=baudrate,
-                                             bytesize=bytesize,
-                                             parity=parity,
-                                             stopbits=stopbits,
-                                             xonxoff=xonxoff,
-                                             rtscts=rtscts,
-                                             dsrdtr=dsrdtr)
-
-    master.async_group.spawn(master._receive_loop)
-    master.async_group.spawn(master._send_loop)
-
-    return master
+    return Master(ep, address_size, silent_interval)
 
 
 class Master(aio.Resource):
+
+    def __init__(self,
+                 endpoint: endpoint.Endpoint,
+                 address_size: common.AddressSize,
+                 silent_interval: float):
+        self._endpoint = endpoint
+        self._silent_interval = silent_interval
+        self._send_queue = aio.Queue()
+        self._receive_queue = aio.Queue()
+        self._broadcast_address = common.get_broadcast_address(address_size)
+
+        self.async_group.spawn(self._receive_loop)
+        self.async_group.spawn(self._send_loop)
 
     @property
     def async_group(self):
@@ -65,11 +63,11 @@ class Master(aio.Resource):
                       send_retry_count: int = 3,
                       poll_class1_delay: float | None = 1,
                       poll_class2_delay: float | None = None
-                      ) -> common.Connection:
+                      ) -> 'MasterConnection':
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
 
-        conn = _Connection()
+        conn = MasterConnection()
         conn._addr = addr
         conn._send_retry_count = send_retry_count
         conn._send_queue = aio.Queue()
@@ -203,7 +201,7 @@ class Master(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class _Connection(common.Connection):
+class MasterConnection(aio.Resource):
 
     @property
     def async_group(self):

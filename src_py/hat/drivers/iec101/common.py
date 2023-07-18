@@ -1,8 +1,11 @@
 import enum
 import typing
 
+from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec101
 
+Address: typing.TypeAlias = link.Address
+AddressSize: typing.TypeAlias = link.AddressSize
 
 CauseSize: typing.TypeAlias = iec101.CauseSize
 AsduAddressSize: typing.TypeAlias = iec101.AsduAddressSize

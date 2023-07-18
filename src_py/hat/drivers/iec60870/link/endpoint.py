@@ -10,40 +10,39 @@ from hat.drivers.iec60870.link import encoder
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-async def create(address_size: common.AddressSize,
+async def create(port: str,
+                 address_size: common.AddressSize,
                  direction_valid: bool,
-                 port: str,
-                 baudrate: int = 9600,
-                 bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
-                 parity: serial.Parity = serial.Parity.NONE,
-                 stopbits: serial.StopBits = serial.StopBits.ONE,
-                 xonxoff: bool = False,
-                 rtscts: bool = False,
-                 dsrdtr: bool = False
+                 **kwargs
                  ) -> 'Endpoint':
-    endpoint = Endpoint()
-    endpoint._encoder = encoder.Encoder(address_size=address_size,
-                                        direction_valid=direction_valid)
+    """Create serial endpoint
 
-    endpoint._endpoint = await serial.create(port=port,
-                                             baudrate=baudrate,
-                                             bytesize=bytesize,
-                                             parity=parity,
-                                             stopbits=stopbits,
-                                             xonxoff=xonxoff,
-                                             rtscts=rtscts,
-                                             dsrdtr=dsrdtr)
+    Additional arguments are passed directly to `hat.drivers.serial.create`.
 
-    return endpoint
+    """
+    endpoint = await serial.create(port, **kwargs)
+
+    return Endpoint(endpoint, address_size, direction_valid)
 
 
 class Endpoint(aio.Resource):
+    """Serial endpoint"""
+
+    def __init__(self,
+                 endpoint: serial.Endpoint,
+                 address_size: common.AddressSize,
+                 direction_valid: bool):
+        self._endpoint = endpoint
+        self._encoder = encoder.Encoder(address_size=address_size,
+                                        direction_valid=direction_valid)
 
     @property
     def async_group(self):
+        """Async group"""
         return self._endpoint.async_group
 
     async def receive(self) -> common.Frame:
+        """Receive"""
         while True:
             msg_bytes = bytearray()
 
@@ -68,5 +67,6 @@ class Endpoint(aio.Resource):
                 mlog.error("error decoding message: %s", e, exc_info=e)
 
     async def send(self, msg: common.Frame):
+        """Send"""
         data = self._encoder.encode(msg)
         await self._endpoint.write(data)

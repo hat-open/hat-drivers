@@ -1,3 +1,4 @@
+from hat import aio
 from hat import util
 
 from hat.drivers import serial
@@ -18,11 +19,11 @@ async def connect(is_master: bool,
                   addr: int = 0,
                   response_timeout: float = 15,
                   send_retry_count: int = 3
-                  ) -> common.Connection:
+                  ) -> 'Connection':
     pass
 
 
-class _Connection(common.Connection):
+class Connection(aio.Resource):
 
     @property
     def async_group(self):

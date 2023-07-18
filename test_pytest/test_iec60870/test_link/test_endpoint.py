@@ -6,7 +6,9 @@ import logging
 import pytest
 
 from hat import aio
-from hat.drivers.iec60870.link import endpoint, common
+
+from hat.drivers.iec60870.link import common
+from hat.drivers.iec60870.link import endpoint
 import hat.drivers.serial
 
 
@@ -76,7 +78,6 @@ def replace_byte_at_idx(data, index, byte):
 
 async def test_endpoint(serial_mock_queue):
     serial_kwargs_in = dict(
-        port='port',
         baudrate=1,
         bytesize=hat.drivers.serial.ByteSize.EIGHTBITS,
         parity=hat.drivers.serial.Parity.NONE,
@@ -85,6 +86,7 @@ async def test_endpoint(serial_mock_queue):
         rtscts=False,
         dsrdtr=False)
     my_endpoint = await endpoint.create(
+        port='port',
         address_size=common.AddressSize.TWO,
         direction_valid=True,
         **serial_kwargs_in)
@@ -171,9 +173,9 @@ def data_bytes_frames_received_log():
 async def test_endpoint_receive_noise(
         serial_mock_queue, data_bytes, frames_received, logs):
     my_endpoint = await endpoint.create(
+        port='abc',
         address_size=common.AddressSize.ONE,
-        direction_valid=None,
-        port='abc')
+        direction_valid=None)
 
     serial_conn, _ = await serial_mock_queue.get()
 

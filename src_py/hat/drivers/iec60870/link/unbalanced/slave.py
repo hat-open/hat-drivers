@@ -6,63 +6,73 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
 
+ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['SlaveConnection'], None]
+
+PollClass2Cb: typing.TypeAlias = aio.AsyncCallable[['SlaveConnection'],
+                                                   util.Bytes | None]
+
 
 async def create_slave(port: str,
                        addrs: typing.Iterable[common.Address],
-                       connection_cb: common.ConnectionCb | None = None,
-                       baudrate: int = 9600,
-                       bytesize: serial.ByteSize = serial.ByteSize.EIGHTBITS,
-                       parity: serial.Parity = serial.Parity.NONE,
-                       stopbits: serial.StopBits = serial.StopBits.ONE,
-                       xonxoff: bool = False,
-                       rtscts: bool = False,
-                       dsrdtr: bool = False,
-                       silent_interval: float = 0.005,
+                       *,
+                       connection_cb: ConnectionCb | None = None,
+                       poll_class2_cb: PollClass2Cb | None = None,
+                       keep_alive_timeout: float = 30,
                        address_size: common.AddressSize = common.AddressSize.ONE,  # NOQA
-                       keep_alive_timeout: float = 30
+                       silent_interval: float = 0.005,
+                       **kwargs
                        ) -> 'Slave':
+    """Create unbalanced slave
+
+    Execution of `connection_cb` blocks slave's read/write loop.
+
+    Additional arguments are passed directly to
+    `hat.drivers.iec60870.link.endpoint.create`.
+
+    """
     if address_size == common.AddressSize.ZERO:
         raise ValueError('unsupported address size')
 
-    slave = Slave()
-    slave._connection_cb = connection_cb
-    slave._silent_interval = silent_interval
-    slave._keep_alive_timeout = keep_alive_timeout
-    slave._broadcast_address = common.get_broadcast_address(address_size)
-    slave._conns = {addr: None for addr in addrs}
+    ep = await endpoint.create(port=port,
+                               address_size=address_size,
+                               direction_valid=False,
+                               **kwargs)
 
-    slave._endpoint = await endpoint.create(address_size=address_size,
-                                            direction_valid=False,
-                                            port=port,
-                                            baudrate=baudrate,
-                                            bytesize=bytesize,
-                                            parity=parity,
-                                            stopbits=stopbits,
-                                            xonxoff=xonxoff,
-                                            rtscts=rtscts,
-                                            dsrdtr=dsrdtr)
-
-    slave.async_group.spawn(slave._read_write_loop)
-
-    return slave
+    return Slave(ep, addrs, connection_cb, poll_class2_cb, keep_alive_timeout,
+                 address_size, silent_interval)
 
 
 class Slave(aio.Resource):
+
+    def __init__(self,
+                 endpoint: endpoint.Endpoint,
+                 addrs: typing.Iterable[common.Address],
+                 connection_cb: ConnectionCb,
+                 poll_class2_cb: PollClass2Cb,
+                 keep_alive_timeout: float,
+                 address_size: common.AddressSize,
+                 silent_interval: float):
+        self._endpoint = endpoint
+        self._connection_cb = connection_cb
+        self._poll_class2_cb = poll_class2_cb
+        self._keep_alive_timeout = keep_alive_timeout
+        self._silent_interval = silent_interval
+        self._broadcast_address = common.get_broadcast_address(address_size)
+        self._conns = {addr: None for addr in addrs}
+
+        self.async_group.spawn(self._read_write_loop)
 
     @property
     def async_group(self):
         return self._endpoint.async_group
 
     async def _read_write_loop(self):
-        future = None
-
         try:
             while True:
                 req = await self._endpoint.receive()
@@ -80,7 +90,7 @@ class Slave(aio.Resource):
                     if not conn or not conn.is_open:
                         continue
 
-                    future, res = conn._process(req)
+                    res, sent_cb = await conn._process(req)
 
                     if (req.address == self._broadcast_address or
                             req.function == common.ReqFunction.DATA_NO_RES):
@@ -94,8 +104,8 @@ class Slave(aio.Resource):
                     await self._endpoint.send(res)
                     last_rw_time = time.monotonic()
 
-                    if future and not future.done():
-                        future.set_result(None)
+                    if sent_cb:
+                        await aio.call(sent_cb)
 
         except ConnectionError:
             pass
@@ -106,9 +116,6 @@ class Slave(aio.Resource):
         finally:
             self.close()
 
-            if future and not future.done():
-                future.set_exception(ConnectionError())
-
     async def _get_connection(self, addr):
         if addr not in self._conns:
             return
@@ -117,29 +124,33 @@ class Slave(aio.Resource):
         if conn and conn.is_open:
             return conn
 
-        conn = _Connection(self.async_group.create_subgroup(), addr,
-                           self._keep_alive_timeout)
+        conn = SlaveConnection(self, addr)
         self._conns[addr] = conn
 
         if self._connection_cb:
-            self.async_group.spawn(aio.call, self._connection_cb, conn)
+            await aio.call(self._connection_cb, conn)
 
         return conn
 
 
-class _Connection(common.Connection):
+class SlaveConnection(aio.Resource):
 
-    def __init__(self, async_group, addr, keep_alive_timeout):
-        self._async_group = async_group
+    def __init__(self,
+                 slave: Slave,
+                 addr: common.Address):
         self._addr = addr
+        self._loop = asyncio.get_running_loop()
         self._frame_count_bit = None
         self._res = None
         self._keep_alive_event = asyncio.Event()
         self._send_queue = aio.Queue()
         self._receive_queue = aio.Queue()
+        self._poll_class2_cb = slave._poll_class2_cb
+        self._async_group = slave.async_group.create_subgroup()
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
-        self.async_group.spawn(self._keep_alive_loop, keep_alive_timeout)
+        self.async_group.spawn(self._keep_alive_loop,
+                               slave._keep_alive_timeout)
 
     @property
     def async_group(self):
@@ -149,14 +160,14 @@ class _Connection(common.Connection):
     def address(self):
         return self._addr
 
-    async def send(self, data: util.Bytes):
+    def send(self,
+             data: util.Bytes,
+             sent_cb: aio.AsyncCallable[[], None] | None = None):
         if not data:
             return
 
-        future = asyncio.Future()
         try:
-            self._send_queue.put_nowait((future,  data))
-            await future
+            self._send_queue.put_nowait((data, sent_cb))
 
         except aio.QueueClosedError:
             raise ConnectionError()
@@ -172,12 +183,6 @@ class _Connection(common.Connection):
         self._send_queue.close()
         self._receive_queue.close()
 
-        while not self._send_queue.empty():
-            future, _ = self._send_queue.get_nowait()
-            if future.done():
-                continue
-            future.set_exception(ConnectionError())
-
     async def _keep_alive_loop(self, timeout):
         try:
             while True:
@@ -190,14 +195,14 @@ class _Connection(common.Connection):
         finally:
             self.close()
 
-    def _process(self, req):
+    async def _process(self, req):
         self._keep_alive_event.set()
-        future = None
+        sent_cb = None
 
         if req.frame_count_valid:
             # TODO compare rest of request in case of same fcb
             if req.frame_count_bit == self._frame_count_bit:
-                return future, self._res
+                return self._res, sent_cb
             self._frame_count_bit = req.frame_count_bit
 
         if req.function in [common.ReqFunction.RESET_LINK,
@@ -223,14 +228,24 @@ class _Connection(common.Connection):
             function = common.ResFunction.RES_STATUS
             data = b''
 
-        elif req.function in [common.ReqFunction.REQ_DATA_1,
-                              common.ReqFunction.REQ_DATA_2]:
+        elif req.function == common.ReqFunction.REQ_DATA_1:
             if self._send_queue.empty():
                 function = common.ResFunction.ACK
                 data = b''
             else:
                 function = common.ResFunction.RES_DATA
-                future, data = self._send_queue.get_nowait()
+                data, sent_cb = self._send_queue.get_nowait()
+
+        elif req.function == common.ReqFunction.REQ_DATA_2:
+            if self._poll_class2_cb:
+                data = await aio.call(self._poll_class2_cb, self)
+            else:
+                data = None
+            if data is None:
+                function = common.ResFunction.ACK
+                data = b''
+            else:
+                function = common.ResFunction.RES_DATA
 
         else:
             function = common.ResFunction.NOT_IMPLEMENTED
@@ -245,4 +260,4 @@ class _Connection(common.Connection):
             address=self._addr,
             data=data)
 
-        return future, self._res
+        return self._res, sent_cb

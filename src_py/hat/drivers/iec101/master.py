@@ -2,13 +2,13 @@ from hat import aio
 
 from hat.drivers.iec101 import common
 from hat.drivers.iec101 import encoder
-from hat.drivers.iec60870 import link
+from hat.drivers.iec60870.link import unbalanced
 
 
-class Connection(aio.Resource):
+class MasterConnection(aio.Resource):
 
     def __init__(self,
-                 conn: link.Connection,
+                 conn: unbalanced.MasterConnection,
                  cause_size: common.CauseSize,
                  asdu_address_size: common.AsduAddressSize,
                  io_address_size: common.IoAddressSize):
@@ -22,7 +22,7 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def address(self) -> link.Address:
+    def address(self) -> common.Address:
         return self._conn.address
 
     async def send(self, msgs: list[common.Msg]):
