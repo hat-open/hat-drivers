@@ -33,7 +33,7 @@ class SlaveConnection(aio.Resource):
         data = collections.deque(self._encoder.encode(msgs))
         while data:
             i = data.popleft()
-            self._conn.send(i, sent_cb=sent_cb if data.empty() else None)
+            self._conn.send(i, sent_cb=None if data else sent_cb)
 
     async def receive(self) -> list[common.Msg]:
         data = await self._conn.receive()
