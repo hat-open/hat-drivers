@@ -49,10 +49,12 @@ async def test_read_write(nullmodem, impl):
 
     data = b'test1\x00'
     await endpoint1.write(data)
+    await endpoint1.drain()
     assert data == await endpoint2.read(len(data))
 
     data = b'test2\x00'
     await endpoint2.write(data)
+    await endpoint2.drain()
     assert data == await endpoint1.read(len(data))
 
     await endpoint1.async_close()

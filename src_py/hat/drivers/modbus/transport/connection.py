@@ -52,6 +52,11 @@ class Connection(aio.Resource):
         self._log(logging.DEBUG, "received adu: %s", adu)
         return adu
 
+    async def drain(self):
+        self._log(logging.DEBUG, "draining output buffer")
+        await self._drain()
+        self._log(logging.DEBUG, "output buffer empty")
+
     async def reset_input_buffer(self) -> int:
         counter = 0
 
@@ -143,6 +148,9 @@ class _SerialConnection(Connection):
     async def _read(self, size):
         return await self._endpoint.read(size)
 
+    async def _drain(self):
+        await self._endpoint.drain()
+
     async def _reset_input_buffer(self):
         return await self._endpoint.reset_input_buffer()
 
@@ -167,10 +175,12 @@ class _TcpConnection(Connection):
 
     async def _write(self, data):
         await self._conn.write(data)
-        await self._conn.drain()
 
     async def _read(self, size):
         return await self._conn.readexactly(size)
+
+    async def _drain(self):
+        await self._conn.drain()
 
     async def _reset_input_buffer(self):
         return self._conn.reset_input_buffer()

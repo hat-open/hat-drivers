@@ -67,6 +67,9 @@ class SerialMock(aio.Resource):
     async def write(self, data):
         self._write_queue.put_nowait(data)
 
+    async def drain(self):
+        pass
+
     def _set_bytes_for_read(self, data):
         for i in data:
             self._read_queue.put_nowait(i)

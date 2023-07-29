@@ -6,7 +6,6 @@ import pytest
 from hat import aio
 
 from hat.drivers import iec103
-from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec103 as encoding
 
 

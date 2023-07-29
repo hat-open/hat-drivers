@@ -1,13 +1,16 @@
 """Implementation based on native serial communication"""
 
 import asyncio
+import contextlib
+import functools
 import logging
 import sys
-import functools
 
 from hat import aio
+from hat import util
 
 from hat.drivers.serial import common
+
 from hat.drivers.serial import _native_serial
 
 
@@ -28,20 +31,19 @@ async def create(port, *,
                  rtscts=False,
                  dsrdtr=False,
                  silent_interval=0):
-    loop = asyncio.get_running_loop()
-
     endpoint = Endpoint()
     endpoint._port = port
     endpoint._silent_interval = silent_interval
-    endpoint._input_buffer = bytearray()
+    endpoint._loop = asyncio.get_running_loop()
+    endpoint._input_buffer = util.BytesBuffer()
     endpoint._input_cv = asyncio.Condition()
     endpoint._write_queue = aio.Queue()
 
     endpoint._serial = _native_serial.Serial(in_buff_size=0xFFFF,
                                              out_buff_size=0xFFFF)
 
-    endpoint._close_cb_future = loop.create_future()
-    close_cb = _create_serial_cb(loop, endpoint._close_cb_future)
+    endpoint._close_cb_future = endpoint._loop.create_future()
+    close_cb = endpoint._create_serial_cb(endpoint._close_cb_future)
     endpoint._serial.set_close_cb(close_cb)
 
     endpoint._serial.open(
@@ -81,19 +83,13 @@ class Endpoint(common.Endpoint):
             while len(self._input_buffer) < size:
                 if not self.is_open:
                     raise ConnectionError()
+
                 await self._input_cv.wait()
 
-            if size < 1:
-                return b''
-
-            buffer = memoryview(self._input_buffer)
-            data, self._input_buffer = buffer[:size], bytearray(buffer[size:])
-            return data
+            return self._input_buffer.read(size)
 
     async def write(self, data):
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
-
+        future = self._loop.create_future()
         try:
             self._write_queue.put_nowait((data, future))
             await future
@@ -101,11 +97,18 @@ class Endpoint(common.Endpoint):
         except aio.QueueClosedError:
             raise ConnectionError()
 
+    async def drain(self):
+        future = self._loop.create_future()
+        try:
+            self._write_queue.put_nowait((None, future))
+            await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
     async def reset_input_buffer(self):
         async with self._input_cv:
-            count = len(self._input_buffer)
-            self._input_buffer = bytearray()
-            return count
+            return self._input_buffer.clear()
 
     async def _on_close(self):
         self._serial.close()
@@ -119,23 +122,17 @@ class Endpoint(common.Endpoint):
 
     async def _read_loop(self):
         try:
-            loop = asyncio.get_running_loop()
-
             while True:
-                in_change_cb_future = loop.create_future()
-                in_change_cb = _create_serial_cb(loop, in_change_cb_future)
-                self._serial.set_in_change_cb(in_change_cb)
+                with self._create_in_change_future() as change_future:
 
-                data = self._serial.read()
+                    data = self._serial.read()
 
-                if not data:
-                    await in_change_cb_future
-                    continue
-
-                self._serial.set_in_change_cb(None)
+                    if not data:
+                        await change_future
+                        continue
 
                 async with self._input_cv:
-                    self._input_buffer.extend(data)
+                    self._input_buffer.add(data)
                     self._input_cv.notify_all()
 
         except Exception as e:
@@ -143,31 +140,31 @@ class Endpoint(common.Endpoint):
 
         finally:
             self.close()
-            self._serial.set_in_change_cb(None)
 
     async def _write_loop(self):
         future = None
         try:
-            loop = asyncio.get_running_loop()
-
             while True:
                 data, future = await self._write_queue.get()
 
-                data = memoryview(data)
-                while data:
-                    out_empty_cb_future = loop.create_future()
-                    out_empty_cb = _create_serial_cb(loop, out_empty_cb_future)
-                    self._serial.set_out_empty_cb(out_empty_cb)
+                if data is None:
+                    with self._create_drain_future() as drain_future:
+                        self._serial.drain()
 
-                    result = self._serial.write(bytes(data))
-                    if result < 0:
-                        raise Exception('write error')
+                        await drain_future
 
-                    data = data[result:]
+                else:
+                    data = memoryview(data)
+                    while data:
+                        with self._create_out_change_future() as change_future:
+                            result = self._serial.write(bytes(data))
+                            if result < 0:
+                                raise Exception('write error')
 
-                    await out_empty_cb_future
+                            data = data[result:]
 
-                self._serial.set_out_empty_cb(None)
+                            if data:
+                                await change_future
 
                 if not future.done():
                     future.set_result(None)
@@ -180,7 +177,6 @@ class Endpoint(common.Endpoint):
         finally:
             self.close()
             self._write_queue.close()
-            self._serial.set_out_empty_cb(None)
 
             while True:
                 if future and not future.done():
@@ -189,10 +185,36 @@ class Endpoint(common.Endpoint):
                     break
                 _, future = self._write_queue.get_nowait()
 
+    @contextlib.contextmanager
+    def _create_in_change_future(self):
+        with self._create_serial_future(self._serial.set_in_change_cb) as f:
+            yield f
 
-def _create_serial_cb(loop, future):
-    return functools.partial(loop.call_soon_threadsafe, _try_set_result,
-                             future, None)
+    @contextlib.contextmanager
+    def _create_out_change_future(self):
+        with self._create_serial_future(self._serial.set_out_change_cb) as f:
+            yield f
+
+    @contextlib.contextmanager
+    def _create_drain_future(self):
+        with self._create_serial_future(self._serial.set_drain_cb) as f:
+            yield f
+
+    @contextlib.contextmanager
+    def _create_serial_future(self, serial_set_cb):
+        future = self._loop.create_future()
+        cb = self._create_serial_cb(future)
+        serial_set_cb(cb)
+
+        try:
+            yield future
+
+        finally:
+            serial_set_cb(None)
+
+    def _create_serial_cb(self, future):
+        return functools.partial(self._loop.call_soon_threadsafe,
+                                 _try_set_result, future, None)
 
 
 def _try_set_result(future, result):

@@ -70,3 +70,7 @@ class Endpoint(aio.Resource):
         """Send"""
         data = self._encoder.encode(msg)
         await self._endpoint.write(data)
+
+    async def drain(self):
+        """Drain"""
+        await self._endpoint.drain()

@@ -56,6 +56,15 @@ class Endpoint(aio.Resource):
         """
 
     @abc.abstractmethod
+    async def drain(self):
+        """Drain output buffer
+
+        Raises:
+            ConnectionError
+
+        """
+
+    @abc.abstractmethod
     async def reset_input_buffer(self) -> int:
         """Reset input buffer
 

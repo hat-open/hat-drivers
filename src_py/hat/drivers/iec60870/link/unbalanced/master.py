@@ -160,6 +160,7 @@ class Master(aio.Resource):
 
                 mlog.debug("writing request %s", req.function.name)
                 await self._endpoint.send(req)
+                await self._endpoint.drain()
 
                 if (req.address == self._broadcast_address or
                         req.function == common.ReqFunction.DATA_NO_RES):

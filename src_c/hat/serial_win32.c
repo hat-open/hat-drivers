@@ -6,7 +6,8 @@ hat_serial_t *hat_serial_create(hat_allocator_t *a, size_t in_buff_size,
                                 hat_serial_cb_t in_change_cb,
                                 hat_serial_cb_t in_full_cb,
                                 hat_serial_cb_t out_change_cb,
-                                hat_serial_cb_t out_empty_cb, void *ctx) {
+                                hat_serial_cb_t out_empty_cb,
+                                hat_serial_cb_t drain_cb, void *ctx) {
     return NULL;
 }
 
@@ -39,3 +40,6 @@ size_t hat_serial_read(hat_serial_t *s, uint8_t *data, size_t data_len) {
 size_t hat_serial_write(hat_serial_t *s, uint8_t *data, size_t data_len) {
     return 0;
 }
+
+
+void hat_serial_drain(hat_serial_t *s) {}

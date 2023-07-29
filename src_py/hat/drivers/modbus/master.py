@@ -315,6 +315,7 @@ class Master(aio.Resource):
                 self._log(logging.DEBUG, "stopped discarding incomming data")
 
                 await self._conn.send(req_adu)
+                await self._conn.drain()
 
                 async with self.async_group.create_subgroup(
                         log_exceptions=False) as subgroup:

@@ -95,6 +95,15 @@ class Endpoint(common.Endpoint):
         except aio.QueueClosedError:
             raise ConnectionError()
 
+    async def drain(self):
+        future = asyncio.Future()
+        try:
+            self._write_queue.put_nowait((None, future))
+            await future
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
+
     async def reset_input_buffer(self):
         async with self._input_cv:
             count = len(self._input_buffer)
@@ -137,7 +146,11 @@ class Endpoint(common.Endpoint):
             while True:
                 data, future = await self._write_queue.get()
 
-                await self._executor.spawn(self._ext_write, data)
+                if data is not None:
+                    await self._executor.spawn(self._ext_write, data)
+
+                else:
+                    await self._executor.spawn(self._ext_flush)
 
                 if not future.done():
                     future.set_result(None)
@@ -172,4 +185,6 @@ class Endpoint(common.Endpoint):
 
     def _ext_write(self, data):
         self._serial.write(data)
+
+    def _ext_flush(self):
         self._serial.flush()

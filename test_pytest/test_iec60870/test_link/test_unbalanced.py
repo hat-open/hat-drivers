@@ -53,6 +53,9 @@ class _MockSerialConnection(aio.Resource):
             if self.is_open:
                 await m_conn.extend_data(data)
 
+    async def drain(self):
+        pass
+
 
 async def test_create(mock_serial):
     master = await unbalanced.master.create_master(port='1')
