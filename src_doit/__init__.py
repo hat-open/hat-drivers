@@ -9,8 +9,9 @@ from hat.doit import common
 from hat.doit.c import get_task_clang_format
 from hat.doit.docs import (build_sphinx,
                            build_pdoc)
-from hat.doit.py import (build_wheel,
-                         run_pytest,
+from hat.doit.py import (get_task_build_wheel,
+                         get_task_run_pytest,
+                         get_task_run_pip_compile,
                          run_flake8,
                          get_py_versions)
 
@@ -25,6 +26,7 @@ __all__ = ['task_clean_all',
            'task_asn1',
            'task_peru',
            'task_format',
+           'task_pip_compile',
            *pymodules.__all__]
 
 
@@ -50,23 +52,15 @@ def task_clean_all():
 
 def task_build():
     """Build"""
-
-    def build():
-        build_wheel(
-            src_dir=src_py_dir,
-            dst_dir=build_py_dir,
-            name='hat-drivers',
-            description='Hat communication drivers',
-            url='https://github.com/hat-open/hat-drivers',
-            license=common.License.APACHE2,
-            py_versions=get_py_versions(pymodules.py_limited_api),
-            py_limited_api=pymodules.py_limited_api,
-            platform=common.target_platform,
-            has_ext_modules=True)
-
-    return {'actions': [build],
-            'task_dep': ['asn1',
-                         'pymodules']}
+    return get_task_build_wheel(
+        src_dir=src_py_dir,
+        build_dir=build_py_dir,
+        py_versions=get_py_versions(pymodules.py_limited_api),
+        py_limited_api=pymodules.py_limited_api,
+        platform=common.target_platform,
+        has_ext_modules=True,
+        task_dep=['asn1',
+                  'pymodules'])
 
 
 def task_check():
@@ -77,10 +71,8 @@ def task_check():
 
 def task_test():
     """Test"""
-    return {'actions': [lambda args: run_pytest(pytest_dir, *(args or []))],
-            'pos_arg': 'args',
-            'task_dep': ['asn1',
-                         'pymodules']}
+    return get_task_run_pytest(task_dep=['asn1',
+                                         'pymodules'])
 
 
 def task_docs():
@@ -126,6 +118,11 @@ def task_format():
     """Format"""
     yield from get_task_clang_format([*Path('src_c').rglob('*.c'),
                                       *Path('src_c').rglob('*.h')])
+
+
+def task_pip_compile():
+    """Run pip-compile"""
+    return get_task_run_pip_compile()
 
 
 def _get_subtask_asn1(src_paths, dst_path):

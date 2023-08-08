@@ -1,4 +1,0 @@
--r requirements.pip.runtime.txt
-
-hat-doit ~= 0.13.0
-peru >= 1.3.1

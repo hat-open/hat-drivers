@@ -1,7 +1,0 @@
-aiohttp ~= 3.8.4
-cryptography >= 3.3.2
-hat-aio ~= 0.7.8
-hat-asn1 ~= 0.6.6
-hat-json ~= 0.5.19
-hat-util ~= 0.6.10
-pyserial ~= 3.5

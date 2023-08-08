@@ -1,0 +1,46 @@
+[project]
+name = "hat-drivers"
+version = "0.7.5"
+description = "Hat communication drivers"
+readme = "README.rst"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = [
+    "aiohttp ~= 3.8.4",
+    "cryptography >= 3.3.2",
+    "hat-aio ~= 0.7.8",
+    "hat-asn1 ~= 0.6.6",
+    "hat-json ~= 0.5.19",
+    "hat-util ~= 0.6.10",
+    "pyserial ~= 3.5",
+]
+
+[project.urls]
+Homepage = "http://hat-open.com"
+Repository = "https://github.com/hat-open/hat-drivers.git"
+Documentation = "http://hat-drivers.hat-open.com"
+
+[project.optional-dependencies]
+dev = [
+    "hat-doit ~=0.14.5",
+    "peru >= 1.3.1",
+]
+
+[build-system]
+requires = ["hat-doit ~=0.14.5"]
+build-backend = "hat.doit.pep517"
+
+[tool.hat-doit]
+pytest_profile_dir = "build/profile"
+
+[tool.pytest.ini_options]
+testpaths = ["test_pytest"]
+asyncio_mode = "auto"
+timeout = 300
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.run]
+include = ["src_py/*"]
+data_file = "build/.coverage"

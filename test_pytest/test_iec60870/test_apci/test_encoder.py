@@ -123,7 +123,7 @@ def test_encode_asdu_size(asdu_size, raises_exc):
             apdu_encoded = encoder.encode(apdu)
     else:
         apdu_encoded = encoder.encode(apdu)
-        assert type(apdu_encoded) == bytes
+        assert isinstance(apdu_encoded, bytes)
         assert len(apdu_encoded) == 6 + asdu_size
 
 
