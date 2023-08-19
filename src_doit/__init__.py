@@ -5,6 +5,7 @@ import sys
 
 from hat import asn1
 from hat import json
+from hat import sbs
 from hat.doit import common
 from hat.doit.c import get_task_clang_format
 from hat.doit.docs import (build_sphinx,
@@ -24,6 +25,7 @@ __all__ = ['task_clean_all',
            'task_test',
            'task_docs',
            'task_asn1',
+           'task_sbs',
            'task_peru',
            'task_format',
            'task_pip_compile',
@@ -35,6 +37,7 @@ src_py_dir = Path('src_py')
 pytest_dir = Path('test_pytest')
 docs_dir = Path('docs')
 schemas_asn1_dir = Path('schemas_asn1')
+schemas_sbs_dir = Path('schemas_sbs')
 
 build_py_dir = build_dir / 'py'
 build_docs_dir = build_dir / 'docs'
@@ -45,6 +48,7 @@ def task_clean_all():
     return {'actions': [(common.rm_rf, [
         build_dir,
         *src_py_dir.rglob('asn1_repo.json'),
+        *src_py_dir.rglob('sbs_repo.json'),
         *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
         *(src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
         *(src_py_dir / 'hat/drivers/modbus/transport').glob('_encoder.*')])]}
@@ -60,6 +64,7 @@ def task_build():
         platform=common.target_platform,
         has_ext_modules=True,
         task_dep=['asn1',
+                  'sbs',
                   'pymodules'])
 
 
@@ -72,6 +77,7 @@ def task_check():
 def task_test():
     """Test"""
     return get_task_run_pytest(task_dep=['asn1',
+                                         'sbs',
                                          'pymodules'])
 
 
@@ -87,6 +93,7 @@ def task_docs():
 
     return {'actions': [build],
             'task_dep': ['asn1',
+                         'sbs',
                          'pymodules']}
 
 
@@ -109,6 +116,13 @@ def task_asn1():
         dst_path=src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
 
 
+def task_sbs():
+    """Generate SBS repository"""
+    yield _get_subtask_sbs(
+        src_paths=[schemas_sbs_dir / 'chatter.sbs'],
+        dst_path=src_py_dir / 'hat/drivers/chatter/sbs_repo.json')
+
+
 def task_peru():
     """Peru"""
     return {'actions': [f'{sys.executable} -m peru sync']}
@@ -129,6 +143,19 @@ def _get_subtask_asn1(src_paths, dst_path):
 
     def generate():
         repo = asn1.Repository(*src_paths)
+        data = repo.to_json()
+        json.encode_file(data, dst_path, indent=None)
+
+    return {'name': str(dst_path),
+            'actions': [generate],
+            'file_dep': src_paths,
+            'targets': [dst_path]}
+
+
+def _get_subtask_sbs(src_paths, dst_path):
+
+    def generate():
+        repo = sbs.Repository(*src_paths)
         data = repo.to_json()
         json.encode_file(data, dst_path, indent=None)
 

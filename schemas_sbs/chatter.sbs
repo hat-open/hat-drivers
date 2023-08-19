@@ -1,0 +1,19 @@
+module HatChatter
+
+Msg = Record {
+    id:     Integer
+    first:  Integer
+    owner:  Boolean
+    token:  Boolean
+    last:   Boolean
+    data:   Data
+}
+
+Data = Record {
+    type:   String
+    data:   Bytes
+}
+
+Ping = None
+
+Pong = None

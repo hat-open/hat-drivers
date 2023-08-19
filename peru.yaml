@@ -1,11 +1,22 @@
 imports:
     hat-util: peru/hat-util
+    hat-sbs: peru/hat-sbs
 
 git module hat-util:
     url: https://github.com/hat-open/hat-util
     rev: 6dcfbd9dba687ac5d1e78f795682eab0069344e6
     pick: src_c
 
+git module hat-sbs:
+    url: https://github.com/hat-open/hat-sbs
+    rev: bdf5a359ba1c7727a4e587953bf00ffbfa9a9038
+    pick: src_c
+    recursive: false
+
 # cp module hat-util:
 #     path: ../hat-util
+#     pick: src_c
+
+# cp module hat-sbs:
+#     path: ../hat-sbs
 #     pick: src_c

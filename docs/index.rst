@@ -10,6 +10,7 @@ Content
     serial
     tcp
     udp
+    chatter
     tpkt
     cotp
     cosp
