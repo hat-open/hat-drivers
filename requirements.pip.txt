@@ -58,20 +58,26 @@ hat-aio==0.7.8
     # via hat-drivers (pyproject.toml)
 hat-asn1==0.6.6
     # via hat-drivers (pyproject.toml)
-hat-doit==0.14.5
+hat-doit==0.14.6
     # via hat-drivers (pyproject.toml)
 hat-json==0.5.19
     # via
     #   hat-asn1
     #   hat-drivers (pyproject.toml)
+    #   hat-sbs
 hat-peg==0.5.7
-    # via hat-asn1
+    # via
+    #   hat-asn1
+    #   hat-sbs
+hat-sbs==0.7.0
+    # via hat-drivers (pyproject.toml)
 hat-util==0.6.10
     # via
     #   hat-asn1
     #   hat-drivers (pyproject.toml)
     #   hat-json
     #   hat-peg
+    #   hat-sbs
 idna==3.4
     # via
     #   requests

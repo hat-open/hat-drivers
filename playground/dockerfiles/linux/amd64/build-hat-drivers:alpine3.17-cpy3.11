@@ -1,6 +1,6 @@
 FROM python:3.11-alpine3.17 as base
 RUN apk update && \
-    apk add build-base git openssl openssl-dev
+    apk add build-base git openssl openssl-dev jq
 
 FROM base
 WORKDIR /hat
