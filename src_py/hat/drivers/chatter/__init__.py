@@ -121,7 +121,7 @@ async def listen(connection_cb: ConnectionCb,
 class Connection(aio.Resource):
     """Single connection
 
-    For creating new connection see `connect` function.
+    For creating new connection see `connect` coroutine.
 
     """
 
