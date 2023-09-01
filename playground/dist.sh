@@ -15,7 +15,7 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     export TARGET_PLATFORM
     $PYTHON -m doit clean_all
     $PYTHON -m doit
-    cp $ROOT_PATH/build/py/dist/*.whl $DIST_PATH
+    cp $ROOT_PATH/build/py/*.whl $DIST_PATH
 done
 
 IMAGES="linux/amd64/build-hat-drivers:alpine3.17-cpy3.11
@@ -48,7 +48,7 @@ echo 'cryptography==3.3.2' >> requirements.pip.txt
 pip install --upgrade -r requirements.pip.txt
 doit clean_all
 doit
-cp build/py/dist/*.whl dist
+cp build/py/*.whl dist
 EOF
 done
 

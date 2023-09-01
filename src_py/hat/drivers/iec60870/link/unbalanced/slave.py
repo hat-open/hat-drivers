@@ -230,6 +230,7 @@ class SlaveConnection(aio.Resource):
 
         elif req.function == common.ReqFunction.REQ_DATA_1:
             if self._send_queue.empty():
+                # HACK
                 function = common.ResFunction.ACK
                 data = b''
             else:
@@ -242,7 +243,8 @@ class SlaveConnection(aio.Resource):
             else:
                 data = None
             if data is None:
-                function = common.ResFunction.ACK
+                # HACK
+                function = common.ResFunction.RES_NACK
                 data = b''
             else:
                 function = common.ResFunction.RES_DATA
