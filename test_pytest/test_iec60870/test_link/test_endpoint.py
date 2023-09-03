@@ -190,8 +190,9 @@ async def test_endpoint_receive_noise(
             # received expected number of frames
             for _ in range(frames_received):
                 frame = await my_endpoint.receive()
-                assert (isinstance(frame, common.ReqFrame)
-                        or isinstance(frame, common.ResFrame))
+                assert isinstance(frame, (common.ReqFrame,
+                                          common.ResFrame,
+                                          common.ShortFrame))
         else:
             # no frame is expected
             with pytest.raises(asyncio.TimeoutError):

@@ -4,9 +4,7 @@ set -e
 
 . $(dirname -- "$0")/env.sh
 
-TARGET_PLATFORMS="linux_gnu_x86_64
-                  linux_gnu_aarch64
-                  windows_amd64"
+TARGET_PLATFORMS="linux_gnu_x86_64"
 
 cd $ROOT_PATH
 rm -rf $DIST_PATH
@@ -19,8 +17,7 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     cp $ROOT_PATH/build/py/dist/*.whl $DIST_PATH
 done
 
-IMAGES="linux/amd64/build-hat-drivers:alpine3.17-cpy3.11
-        linux/arm/v7/build-hat-drivers:debian11-cpy3.11"
+IMAGES="linux/arm/v7/build-hat-drivers:debian11-cpy3.11"
 
 for IMAGE in $IMAGES; do
     $PYTHON -m doit clean_all
