@@ -59,7 +59,11 @@ class ResFrame(typing.NamedTuple):
     data: util.Bytes
 
 
-Frame: typing.TypeAlias = ReqFrame | ResFrame
+class ShortFrame(typing.NamedTuple):
+    pass
+
+
+Frame: typing.TypeAlias = ReqFrame | ResFrame | ShortFrame
 
 
 def get_broadcast_address(address_size: AddressSize):

@@ -221,7 +221,7 @@ class SlaveConnection(aio.Resource):
             data = b''
 
         elif req.function == common.ReqFunction.REQ_ACCESS_DEMAND:
-            function = common.ResFunction.ACK
+            function = common.ResFunction.RES_NACK
             data = b''
 
         elif req.function == common.ReqFunction.REQ_STATUS:
@@ -230,8 +230,7 @@ class SlaveConnection(aio.Resource):
 
         elif req.function == common.ReqFunction.REQ_DATA_1:
             if self._send_queue.empty():
-                # HACK
-                function = common.ResFunction.ACK
+                function = common.ResFunction.RES_NACK
                 data = b''
             else:
                 function = common.ResFunction.RES_DATA
@@ -243,7 +242,6 @@ class SlaveConnection(aio.Resource):
             else:
                 data = None
             if data is None:
-                # HACK
                 function = common.ResFunction.RES_NACK
                 data = b''
             else:
@@ -253,13 +251,21 @@ class SlaveConnection(aio.Resource):
             function = common.ResFunction.NOT_IMPLEMENTED
             data = b''
 
-        # TODO: remember response only if resend posible
-        self._res = common.ResFrame(
-            direction=None,
-            access_demand=not self._send_queue.empty(),
-            data_flow_control=False,
-            function=function,
-            address=self._addr,
-            data=data)
+        access_demand = not self._send_queue.empty()
 
-        return self._res, sent_cb
+        if not access_demand and function in (common.ResFunction.ACK,
+                                              common.ResFunction.RES_NACK):
+            res = common.ShortFrame()
+
+        else:
+            res = common.ResFrame(direction=None,
+                                  access_demand=access_demand,
+                                  data_flow_control=False,
+                                  function=function,
+                                  address=self._addr,
+                                  data=data)
+
+        # TODO: remember response only if resend posible
+        self._res = res
+
+        return res, sent_cb

@@ -35,6 +35,7 @@ class Endpoint(aio.Resource):
         self._endpoint = endpoint
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
+        self._data = bytearray()
 
     @property
     def async_group(self):
@@ -44,24 +45,21 @@ class Endpoint(aio.Resource):
     async def receive(self) -> common.Frame:
         """Receive"""
         while True:
-            msg_bytes = bytearray()
+            try:
+                size = self._encoder.get_next_frame_size(self._data)
 
-            while True:
-                try:
-                    size = self._encoder.get_next_frame_size(msg_bytes)
+            except Exception:
+                self._data = self._data[1:]
+                continue
 
-                except Exception:
-                    msg_bytes = msg_bytes[1:]
-                    continue
-
-                if len(msg_bytes) >= size:
-                    break
-
-                data = await self._endpoint.read(size - len(msg_bytes))
-                msg_bytes.extend(data)
+            if len(self._data) < size:
+                data = await self._endpoint.read(size - len(self._data))
+                self._data.extend(data)
+                continue
 
             try:
-                return self._encoder.decode(memoryview(msg_bytes))
+                data, self._data = self._data[:size], self._data[size:]
+                return self._encoder.decode(memoryview(data))
 
             except Exception as e:
                 mlog.error("error decoding message: %s", e, exc_info=e)

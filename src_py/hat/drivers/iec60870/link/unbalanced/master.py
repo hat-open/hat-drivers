@@ -98,7 +98,9 @@ class Master(aio.Resource):
                                   data=b'')
             res = await send_fn(req)
 
-            if res.function != common.ResFunction.ACK:
+            if not (isinstance(res, common.ShortFrame) or
+                    (isinstance(res, common.ResFrame) and
+                     res.function != common.ResFunction.ACK)):
                 raise Exception('invalid reset response')
 
         except BaseException:
@@ -313,9 +315,12 @@ class MasterConnection(aio.Resource):
 
                     retry_counter += 1
 
-                if res.access_demand:
+                if isinstance(res, common.ResFrame) and res.access_demand:
                     self._access_demand_event.set()
-                data_flow_control = res.data_flow_control
+
+                data_flow_control = (res.data_flow_control
+                                     if isinstance(res, common.ResFrame)
+                                     else False)
 
                 # TODO
                 # if data_flow_control and data:
@@ -325,18 +330,25 @@ class MasterConnection(aio.Resource):
                 if future.done():
                     continue
 
-                if res.function == common.ResFunction.RES_DATA:
-                    if res.data:
-                        self._receive_queue.put_nowait(res.data)
+                if isinstance(res, common.ShortFrame):
                     future.set_result(None)
 
-                elif res.function in (common.ResFunction.ACK,
-                                      common.ResFunction.RES_NACK):
-                    future.set_result(None)
+                elif isinstance(res, common.ResFrame):
+                    if res.function == common.ResFunction.RES_DATA:
+                        if res.data:
+                            self._receive_queue.put_nowait(res.data)
+                        future.set_result(None)
+
+                    elif res.function in (common.ResFunction.ACK,
+                                          common.ResFunction.RES_NACK):
+                        future.set_result(None)
+
+                    else:
+                        future.set_exception(
+                            Exception(f'received {res.function.name}'))
 
                 else:
-                    future.set_exception(
-                        Exception(f'received {res.function.name}'))
+                    future.set_exception(Exception('unexpected response'))
 
         except ConnectionError:
             pass

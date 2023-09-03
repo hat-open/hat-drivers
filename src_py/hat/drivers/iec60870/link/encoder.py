@@ -36,9 +36,9 @@ class Encoder:
 
     def decode(self, data: util.Bytes) -> common.Frame:
         if data[0] == 0xE5:
-            return _short_ack
+            return common.ShortFrame()
 
-        elif data[0] == 0x10:
+        if data[0] == 0x10:
             data = data[1:4 + self._address_size.value]
 
         elif data[0] == 0x68:
@@ -94,7 +94,7 @@ class Encoder:
         return frame
 
     def encode(self, frame: common.Frame) -> util.Bytes:
-        if frame._replace(direction=None) == _short_ack:
+        if isinstance(frame, common.ShortFrame):
             return b'\xE5'
 
         control_field = ((frame.direction.value << 7
@@ -127,11 +127,3 @@ class Encoder:
         footer = [crc, 0x16]
 
         return bytes(itertools.chain(header, data, footer))
-
-
-_short_ack = common.ResFrame(direction=None,
-                             access_demand=False,
-                             data_flow_control=False,
-                             function=common.ResFunction.ACK,
-                             address=None,
-                             data=b'')
