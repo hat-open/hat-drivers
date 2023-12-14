@@ -71,8 +71,7 @@ Conversations are used for short ordered exchange of messages between two
 peers. Each peer can start a new conversation and finalize an existing
 conversation. Multiple simultaneously active conversations can be bound to
 a single active connection. A basic example for conversation usage is a
-request-response message exchange between peers, implementing operation
-timeouts.
+request-response message exchange between peers.
 
 Each message contains its conversation descriptor which contains:
 
@@ -112,10 +111,6 @@ Ping
 ----
 
 In addition to exchanging user data, Chatter defines Ping message exchange.
-The Ping communication is responsible for detecting a closed connection. This service periodically sends a Ping request and waits for a corresponding Pong
-response. If the response isn't received in a defined timeout period (if the
-Conversation's timeout is exceeded), the connection is closed.
-
 This is a peer-to-peer service (there is no distinction between client and
 server).
 
@@ -134,6 +129,16 @@ A Ping - Pong Conversation between peers contains these messages:
 where 'p1' and 'p2' are two communicating peers.
 
 .. |arr| unicode:: U+003E
+
+Each peer can send `Ping` message at any time. Once `Ping` message is received,
+peer receiving this message should immediately sent paired `Pong` message
+and close the conversation.
+
+The Ping communication is usually used as basis for closed connection
+detection. It is recommended that each peer sends new `Ping` request
+only after configurable time period has passed from receiving last message.
+Usually, any kind of message should restart ping delay/timeout (not only
+`Pong` message).
 
 
 API

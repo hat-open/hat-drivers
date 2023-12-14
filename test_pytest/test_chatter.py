@@ -77,29 +77,6 @@ async def test_send_receive(addr):
         await conn2.receive()
 
 
-async def test_conversation_timeout(addr):
-    conn_queue = aio.Queue()
-    srv = await chatter.listen(conn_queue.put_nowait, addr)
-    conn1 = await chatter.connect(addr)
-    conn2 = await conn_queue.get()
-
-    data = chatter.Data('abc', b'xyz')
-
-    timeout_queue = aio.Queue()
-    conv = await conn2.send(data,
-                            last=False,
-                            timeout=0.01,
-                            timeout_cb=timeout_queue.put_nowait)
-
-    assert timeout_queue.empty()
-    timeout_conv = await aio.wait_for(timeout_queue.get(), 0.1)
-    assert timeout_conv == conv
-
-    await conn1.async_close()
-    await conn2.async_close()
-    await srv.async_close()
-
-
 async def test_ping_timeout(addr):
     conn_queue = aio.Queue()
     srv = await tcp.listen(conn_queue.put_nowait, addr)

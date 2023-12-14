@@ -1,6 +1,7 @@
 """Chatter communication protocol"""
 
 import asyncio
+import contextlib
 import importlib.resources
 import itertools
 import logging
@@ -19,9 +20,6 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
-
-TimeoutCb: typing.TypeAlias = aio.AsyncCallable[['Conversation'], None]
-"""Timeout callback"""
 
 
 class Data(typing.NamedTuple):
@@ -54,8 +52,8 @@ async def connect(addr: tcp.Address,
 
     Argument `addr` specifies remote server listening address.
 
-    If `ping_delay` is ``None`` or 0, ping service is not registered,
-    otherwise it represents cyclic ping delay in seconds.
+    If `ping_delay` is ``None`` or 0, ping requests are not sent.
+    Otherwise, it represents ping request delay in seconds.
 
     Additional arguments are passed directly to `hat.drivers.tcp.connect`.
 
@@ -88,8 +86,8 @@ async def listen(connection_cb: ConnectionCb,
 
     Argument `addr` specifies local server listening address.
 
-    If `ping_delay` is ``None`` or 0, ping service is not registered,
-    otherwise it represents cyclic ping delay in seconds.
+    If `ping_delay` is ``None`` or 0, ping requests are not sent.
+    Otherwise, it represents ping request delay in seconds.
 
     Additional arguments are passed directly to `hat.drivers.tcp.listen`.
 
@@ -136,7 +134,7 @@ class Connection(aio.Resource):
         self._send_queue = aio.Queue(receive_queue_size)
         self._loop = asyncio.get_running_loop()
         self._next_msg_ids = itertools.count(1)
-        self._conv_timeouts = {}
+        self._ping_event = asyncio.Event()
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -167,19 +165,11 @@ class Connection(aio.Resource):
                    *,
                    conv: Conversation | None = None,
                    last: bool = True,
-                   token: bool = True,
-                   timeout: float | None = None,
-                   timeout_cb: TimeoutCb | None = None
+                   token: bool = True
                    ) -> Conversation:
         """Send message
 
         If `conv` is ``None``, new conversation is created.
-
-        `timeout` represents conversation timeout in seconds. If this argument
-        is ``None``, conversation timeout will not be triggered. Conversation
-        timeout callbacks are triggered only for opened connection. Once
-        connection is closed, all active conversations are closed without
-        triggering timeout callbacks.
 
         """
         if self.is_closing:
@@ -198,17 +188,6 @@ class Connection(aio.Resource):
                'last': last,
                'data': {'type': data.type,
                         'data': data.data}}
-
-        conv_timeout = self._conv_timeouts.pop(conv, None)
-        if conv_timeout:
-            mlog.debug("canceling existing conversation timeout")
-            conv_timeout.cancel()
-
-        if not last and timeout and timeout_cb:
-            mlog.debug("registering conversation timeout")
-            self._conv_timeouts[conv] = self._loop.call_later(
-                timeout, self._on_conv_timeout, conv, timeout_cb)
-
         await self._send_queue.put((msg, None))
 
         return conv
@@ -222,17 +201,6 @@ class Connection(aio.Resource):
 
         except aio.QueueClosedError:
             raise ConnectionError()
-
-    def _on_conv_timeout(self, conv, timeout_cb):
-        if not self._conv_timeouts.pop(conv, None):
-            return
-
-        mlog.debug("conversation's timeout triggered")
-        self.async_group.spawn(aio.call, timeout_cb, conv)
-
-    def _on_ping_timeout(self, conv):
-        mlog.debug("ping response timeout - closing connection")
-        self.close()
 
     async def _read_loop(self):
         mlog.debug("connection's read loop started")
@@ -249,10 +217,7 @@ class Connection(aio.Resource):
                     last=data['last'],
                     token=data['token'])
 
-                conv_timeout = self._conv_timeouts.pop(msg.conv, None)
-                if conv_timeout:
-                    mlog.debug("canceling existing conversation timeout")
-                    conv_timeout.cancel()
+                self._ping_event.set()
 
                 if msg.data.type == 'HatChatter.Ping':
                     mlog.debug("received ping request - sending ping response")
@@ -315,22 +280,26 @@ class Connection(aio.Resource):
                     break
                 _, future = self._send_queue.get_nowait()
 
-            for conv_timeout in self._conv_timeouts.values():
-                conv_timeout.cancel()
-            self._conv_timeouts = {}
-
     async def _ping_loop(self, delay, timeout):
         mlog.debug("ping loop started")
         try:
             while True:
-                mlog.debug("ping loop - waiting for %ss", delay)
-                await asyncio.sleep(delay)
+                self._ping_event.clear()
+
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await aio.wait_for(self._ping_event.wait(), delay)
+                    continue
 
                 mlog.debug("sending ping request")
                 await self.send(Data('HatChatter.Ping', b''),
-                                last=False,
-                                timeout=timeout,
-                                timeout_cb=self._on_ping_timeout)
+                                last=False)
+
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await aio.wait_for(self._ping_event.wait(), timeout)
+                    continue
+
+                mlog.debug("ping timeout")
+                break
 
         except ConnectionError:
             pass
