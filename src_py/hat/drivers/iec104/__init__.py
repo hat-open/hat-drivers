@@ -1,6 +1,7 @@
 """IEC 60870-5-104 communication protocol"""
 
-from hat.drivers.iec104.common import (TimeSize,
+from hat.drivers.iec104.common import (AsduTypeError,
+                                       TimeSize,
                                        Time,
                                        OriginatorAddress,
                                        AsduAddress,
@@ -97,7 +98,8 @@ from hat.drivers.iec104.connection import (ConnectionCb,
                                            Server)
 
 
-__all__ = ['TimeSize',
+__all__ = ['AsduTypeError',
+           'TimeSize',
            'Time',
            'OriginatorAddress',
            'AsduAddress',

@@ -86,7 +86,11 @@ class Encoder:
                     ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
-        asdu_type = common.AsduType(asdu.type)
+        try:
+            asdu_type = common.AsduType(asdu.type)
+        except ValueError:
+            raise common.AsduTypeError(f"unsupported asdu type {asdu.type}")
+
         cause = iec101.decode_cause(asdu.cause, common.CauseSize.TWO)
         address = asdu.address
         ios = [common.IO(address=io.address,

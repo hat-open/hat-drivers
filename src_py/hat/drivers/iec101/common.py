@@ -4,6 +4,9 @@ import typing
 from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec101
 
+
+AsduTypeError: typing.TypeAlias = iec101.AsduTypeError
+
 Address: typing.TypeAlias = link.Address
 AddressSize: typing.TypeAlias = link.AddressSize
 

@@ -1,6 +1,7 @@
 """IEC 60870-5-101 messages"""
 
 from hat.drivers.iec60870.encodings.iec101.common import (
+    AsduTypeError,
     CauseSize,
     AsduAddressSize,
     IoAddressSize,
@@ -127,7 +128,8 @@ from hat.drivers.iec60870.encodings.iec101.encoder import (
     encode_status_value)
 
 
-__all__ = ['CauseSize',
+__all__ = ['AsduTypeError',
+           'CauseSize',
            'AsduAddressSize',
            'IoAddressSize',
            'TimeSize',
