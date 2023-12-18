@@ -10,6 +10,9 @@ from hat.drivers import tcp
 from hat.drivers.iec60870 import apci
 
 
+AsduTypeError: typing.TypeAlias = iec101.AsduTypeError
+
+
 TimeSize: typing.TypeAlias = iec101.TimeSize
 Time: typing.TypeAlias = iec101.Time
 

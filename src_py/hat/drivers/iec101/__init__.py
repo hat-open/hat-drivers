@@ -1,6 +1,7 @@
 """IEC 60870-5-101 communication protocol"""
 
-from hat.drivers.iec101.common import (Address,
+from hat.drivers.iec101.common import (AsduTypeError,
+                                       Address,
                                        AddressSize,
                                        CauseSize,
                                        AsduAddressSize,
@@ -99,7 +100,8 @@ from hat.drivers.iec101.master import MasterConnection
 from hat.drivers.iec101.slave import SlaveConnection
 
 
-__all__ = ['Address',
+__all__ = ['AsduTypeError',
+           'Address',
            'AddressSize',
            'CauseSize',
            'AsduAddressSize',

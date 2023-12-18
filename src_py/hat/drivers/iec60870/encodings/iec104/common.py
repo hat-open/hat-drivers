@@ -7,6 +7,9 @@ from hat.drivers.iec60870.encodings import iec101
 from hat.drivers.iec60870.encodings.common import Time
 
 
+AsduTypeError: typing.TypeAlias = iec101.AsduTypeError
+
+
 OriginatorAddress: typing.TypeAlias = int
 """Originator address in range [0, 255] - 0 if not available"""
 
