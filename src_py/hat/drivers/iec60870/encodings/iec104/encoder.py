@@ -86,10 +86,7 @@ class Encoder:
                     ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
-        try:
-            asdu_type = common.AsduType(asdu.type)
-        except ValueError:
-            raise common.AsduTypeError(f"unsupported asdu type {asdu.type}")
+        asdu_type = _decode_asdu_type(asdu.type)
 
         cause = iec101.decode_cause(asdu.cause, common.CauseSize.TWO)
         address = asdu.address
@@ -135,7 +132,7 @@ _asdu_type_time_sizes = {
 
 
 def _decode_io_element(io_bytes, asdu_type):
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if asdu_type.value in iec101_asdu_types:
         return iec101.decode_io_element(io_bytes, asdu_type.value)
@@ -217,7 +214,7 @@ def _decode_io_element(io_bytes, asdu_type):
 
 
 def _encode_io_element(element, asdu_type):
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if asdu_type.value in iec101_asdu_types:
         yield from iec101.encode_io_element(element, asdu_type.value)
@@ -257,3 +254,11 @@ def _encode_io_element(element, asdu_type):
 
     else:
         raise ValueError('unsupported IO element')
+
+
+def _decode_asdu_type(asdu_type):
+    try:
+        return common.AsduType(asdu_type)
+
+    except ValueError:
+        raise common.AsduTypeError(f"unsupported asdu type {asdu_type}")
