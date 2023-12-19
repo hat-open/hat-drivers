@@ -47,10 +47,7 @@ class Encoder:
                     ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
-        try:
-            asdu_type = common.AsduType(asdu.type)
-        except ValueError:
-            raise common.AsduTypeError(f"unsupported asdu type {asdu.type}")
+        asdu_type = _decode_asdu_type(asdu.type)
 
         cause = decode_cause(asdu.cause, self._cause_size)
         address = asdu.address
@@ -160,7 +157,7 @@ def encode_cause_type(cause_type: common.CauseType | common.OtherCauseType
 def decode_io_element(io_bytes: util.Bytes,
                       asdu_type: int
                       ) -> tuple[common.IoElement, util.Bytes]:
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if asdu_type == common.AsduType.M_SP_NA:
         value = common.SingleValue(io_bytes[0] & 1)
@@ -710,7 +707,7 @@ def decode_io_element(io_bytes: util.Bytes,
 def encode_io_element(element: common.IoElement,
                       asdu_type: int
                       ) -> typing.Iterable[int]:
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if isinstance(element, common.IoElement_M_SP_NA):
         quality = util.first(encode_quality(element.quality))
@@ -1199,3 +1196,11 @@ def encode_status_value(value: common.StatusValue
                 if i[j * 8 + k]:
                     acc = acc | (1 << k)
             yield acc
+
+
+def _decode_asdu_type(asdu_type):
+    try:
+        return common.AsduType(asdu_type)
+
+    except ValueError:
+        raise common.AsduTypeError(f"unsupported asdu type {asdu_type}")
