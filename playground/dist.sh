@@ -4,7 +4,8 @@ set -e
 
 . $(dirname -- "$0")/env.sh
 
-TARGET_PLATFORMS="linux_gnu_x86_64"
+TARGET_PLATFORMS="linux_gnu_x86_64
+                  windows_amd64"
 
 cd $ROOT_PATH
 rm -rf $DIST_PATH
