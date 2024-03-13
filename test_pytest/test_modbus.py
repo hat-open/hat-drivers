@@ -41,7 +41,7 @@ def nullmodem(request, tmp_path):
     path1 = tmp_path / '1'
     path2 = tmp_path / '2'
     p = subprocess.Popen(
-        ['socat',
+        ['socat', '-d0',
          f'pty,link={path1},raw,echo=0',
          f'pty,link={path2},raw,echo=0'])
     while not path1.exists() or not path2.exists():

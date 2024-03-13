@@ -143,8 +143,8 @@ class SlaveConnection(aio.Resource):
         self._frame_count_bit = None
         self._res = None
         self._keep_alive_event = asyncio.Event()
-        self._send_queue = aio.Queue()
-        self._receive_queue = aio.Queue()
+        self._send_queue = aio.Queue()  # TODO limit queue size
+        self._receive_queue = aio.Queue()  # TODO limit queue size
         self._poll_class2_cb = slave._poll_class2_cb
         self._async_group = slave.async_group.create_subgroup()
 
