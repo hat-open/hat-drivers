@@ -407,7 +407,7 @@ class Protocol(asyncio.Protocol):
         if not self._read_queue:
             return
 
-        if not isinstance(future, asyncio.CancelledError):
+        if not future.cancelled():
             return
 
         for _ in range(len(self._read_queue)):

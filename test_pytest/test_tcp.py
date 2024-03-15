@@ -139,6 +139,34 @@ async def test_readexactly(addr):
     await srv.async_close()
 
 
+async def test_cancel_concurent_read(addr):
+    conn_queue = aio.Queue()
+    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    conn1 = await tcp.connect(addr)
+    conn2 = await conn_queue.get()
+
+    data = b'123'
+
+    read_task_1 = asyncio.create_task(conn1.read())
+    read_task_2 = asyncio.create_task(conn1.read())
+
+    await asyncio.sleep(0.001)
+
+    assert not read_task_1.done()
+    assert not read_task_2.done()
+
+    read_task_1.cancel()
+
+    await conn2.write(data)
+
+    result = await read_task_2
+    assert result == data
+
+    await conn1.async_close()
+    await conn2.async_close()
+    await srv.async_close()
+
+
 @pytest.mark.parametrize("bind_connections", [True, False])
 @pytest.mark.parametrize("conn_count", [1, 2, 5])
 async def test_bind_connections(addr, bind_connections, conn_count):
