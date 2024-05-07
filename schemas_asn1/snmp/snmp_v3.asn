@@ -30,3 +30,17 @@ ScopedPDU ::= SEQUENCE {
 }
 
 END
+
+
+USMSecurityParametersSyntax DEFINITIONS IMPLICIT TAGS ::= BEGIN
+
+UsmSecurityParameters ::= SEQUENCE {
+    msgAuthoritativeEngineID     OCTET STRING,
+    msgAuthoritativeEngineBoots  INTEGER (0..2147483647),
+    msgAuthoritativeEngineTime   INTEGER (0..2147483647),
+    msgUserName                  OCTET STRING (SIZE(0..32)),
+    msgAuthenticationParameters  OCTET STRING,
+    msgPrivacyParameters         OCTET STRING
+}
+
+END
