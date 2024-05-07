@@ -6,7 +6,6 @@ import sys
 from hat import asn1
 from hat import json
 from hat import sbs
-from hat.doit import common
 from hat.doit.c import get_task_clang_format
 from hat.doit.docs import (build_sphinx,
                            build_pdoc)
@@ -16,6 +15,7 @@ from hat.doit.py import (get_task_build_wheel,
                          run_flake8,
                          get_py_versions)
 
+from . import common
 from . import pymodules
 
 
@@ -32,35 +32,29 @@ __all__ = ['task_clean_all',
            *pymodules.__all__]
 
 
-build_dir = Path('build')
-src_py_dir = Path('src_py')
-pytest_dir = Path('test_pytest')
-docs_dir = Path('docs')
-schemas_asn1_dir = Path('schemas_asn1')
-schemas_sbs_dir = Path('schemas_sbs')
-
-build_py_dir = build_dir / 'py'
-build_docs_dir = build_dir / 'docs'
+build_py_dir = common.build_dir / 'py'
+build_docs_dir = common.build_dir / 'docs'
 
 
 def task_clean_all():
     """Clean all"""
     return {'actions': [(common.rm_rf, [
-        build_dir,
-        *src_py_dir.rglob('asn1_repo.json'),
-        *src_py_dir.rglob('sbs_repo.json'),
-        *(src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
-        *(src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
-        *(src_py_dir / 'hat/drivers/modbus/transport').glob('_encoder.*')])]}
+        common.build_dir,
+        *common.src_py_dir.rglob('asn1_repo.json'),
+        *common.src_py_dir.rglob('sbs_repo.json'),
+        *(common.src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
+        *(common.src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
+        *(common.src_py_dir /
+          'hat/drivers/modbus/transport').glob('_encoder.*')])]}
 
 
 def task_build():
     """Build"""
     return get_task_build_wheel(
-        src_dir=src_py_dir,
+        src_dir=common.src_py_dir,
         build_dir=build_py_dir,
-        py_versions=get_py_versions(pymodules.py_limited_api),
-        py_limited_api=pymodules.py_limited_api,
+        py_versions=get_py_versions(common.py_limited_api),
+        py_limited_api=common.py_limited_api,
         platform=common.target_platform,
         is_purelib=False,
         task_dep=['asn1',
@@ -70,8 +64,8 @@ def task_build():
 
 def task_check():
     """Check with flake8"""
-    return {'actions': [(run_flake8, [src_py_dir]),
-                        (run_flake8, [pytest_dir])]}
+    return {'actions': [(run_flake8, [common.src_py_dir]),
+                        (run_flake8, [common.pytest_dir])]}
 
 
 def task_test():
@@ -85,7 +79,7 @@ def task_docs():
     """Docs"""
 
     def build():
-        build_sphinx(src_dir=docs_dir,
+        build_sphinx(src_dir=common.docs_dir,
                      dst_dir=build_docs_dir,
                      project='hat-drivers')
         build_pdoc(module='hat.drivers',
@@ -100,27 +94,27 @@ def task_docs():
 def task_asn1():
     """Generate ASN.1 repository"""
     yield _get_subtask_asn1(
-        src_paths=[schemas_asn1_dir / 'acse.asn'],
-        dst_path=src_py_dir / 'hat/drivers/acse/asn1_repo.json')
+        src_paths=[common.schemas_asn1_dir / 'acse.asn'],
+        dst_path=common.src_py_dir / 'hat/drivers/acse/asn1_repo.json')
 
     yield _get_subtask_asn1(
-        src_paths=[schemas_asn1_dir / 'copp.asn'],
-        dst_path=src_py_dir / 'hat/drivers/copp/asn1_repo.json')
+        src_paths=[common.schemas_asn1_dir / 'copp.asn'],
+        dst_path=common.src_py_dir / 'hat/drivers/copp/asn1_repo.json')
 
     yield _get_subtask_asn1(
-        src_paths=[schemas_asn1_dir / 'mms.asn'],
-        dst_path=src_py_dir / 'hat/drivers/mms/asn1_repo.json')
+        src_paths=[common.schemas_asn1_dir / 'mms.asn'],
+        dst_path=common.src_py_dir / 'hat/drivers/mms/asn1_repo.json')
 
     yield _get_subtask_asn1(
-        src_paths=list((schemas_asn1_dir / 'snmp').rglob('*.asn')),
-        dst_path=src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
+        src_paths=list((common.schemas_asn1_dir / 'snmp').rglob('*.asn')),
+        dst_path=common.src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
 
 
 def task_sbs():
     """Generate SBS repository"""
     yield _get_subtask_sbs(
-        src_paths=[schemas_sbs_dir / 'chatter.sbs'],
-        dst_path=src_py_dir / 'hat/drivers/chatter/sbs_repo.json')
+        src_paths=[common.schemas_sbs_dir / 'chatter.sbs'],
+        dst_path=common.src_py_dir / 'hat/drivers/chatter/sbs_repo.json')
 
 
 def task_peru():

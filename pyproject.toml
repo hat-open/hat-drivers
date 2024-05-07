@@ -11,7 +11,7 @@ dependencies = [
     "hat-asn1 ~=0.6.7",
     "hat-json ~=0.5.27",
     "hat-sbs ~=0.7.1",
-    "hat-util ~=0.6.13",
+    "hat-util ~=0.6.16",
     "pyserial ~=3.5",
 ]
 classifiers = [
