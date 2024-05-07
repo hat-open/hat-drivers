@@ -253,9 +253,8 @@ async def test_type_description_serialization(addr, type_description):
 @pytest.mark.parametrize("data", [
     mms.BcdData(10),
     mms.ArrayData([mms.BcdData(11), mms.BcdData(12)]),
-    mms.BinaryTimeData(datetime.datetime.utcnow().replace(
-        microsecond=0,
-        tzinfo=datetime.timezone.utc)),
+    mms.BinaryTimeData(
+        datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)),
     mms.BitStringData([True, False, True]),
     mms.BooleanData(True),
     mms.BooleanArrayData([True, False]),

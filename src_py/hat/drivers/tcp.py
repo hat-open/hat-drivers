@@ -4,6 +4,7 @@ import asyncio
 import collections
 import functools
 import logging
+import sys
 import typing
 
 from hat import aio
@@ -119,7 +120,9 @@ class Server(aio.Resource):
 
     async def _on_close(self):
         self._srv.close()
-        await self._srv.wait_closed()
+
+        if self._bind_connections or sys.version_info[:2] < (3, 12):
+            await self._srv.wait_closed()
 
     async def _on_connection(self, protocol):
         conn = Connection(protocol)
