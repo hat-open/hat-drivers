@@ -29,7 +29,10 @@ with importlib.resources.as_file(importlib.resources.files(__package__) /
 Msg: typing.TypeAlias = v1.Msg | v2c.Msg | v3.Msg
 
 
-def encode(msg: Msg) -> util.Bytes:
+def encode(msg: Msg,
+           auth_key: common.Key | None = None,
+           priv_key: common.Key | None = None
+           ) -> util.Bytes:
     if isinstance(msg, v1.Msg):
         data = v1.encode_msg(msg)
         return _encoder.encode('RFC1157-SNMP', 'Message', data)
@@ -39,13 +42,16 @@ def encode(msg: Msg) -> util.Bytes:
         return _encoder.encode('COMMUNITY-BASED-SNMPv2', 'Message', data)
 
     elif isinstance(msg, v3.Msg):
-        data = v3.encode_msg(msg)
+        data = v3.encode_msg(msg, auth_key, priv_key)
         return _encoder.encode('SNMPv3MessageSyntax', 'SNMPv3Message', data)
 
     raise ValueError('unsupported message')
 
 
-def decode(msg_bytes: util.Bytes) -> Msg:
+def decode(msg_bytes: util.Bytes,
+           auth_key_cb: common.KeyCb | None = None,
+           priv_key_cb: common.KeyCb | None = None
+           ) -> Msg:
     entity, _ = _encoder.decode_entity(msg_bytes)
     version = _get_version(entity)
 
@@ -61,7 +67,7 @@ def decode(msg_bytes: util.Bytes) -> Msg:
     if version == common.Version.V3:
         msg = _encoder.decode_value('SNMPv3MessageSyntax', 'SNMPv3Message',
                                     entity)
-        return v3.decode_msg(msg)
+        return v3.decode_msg(msg, auth_key_cb, priv_key_cb)
 
     raise ValueError('unsupported version')
 

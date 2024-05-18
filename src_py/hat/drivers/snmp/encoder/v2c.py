@@ -1,10 +1,10 @@
+from collections.abc import Collection
 import enum
 import typing
 
 from hat import asn1
 
 from hat.drivers.snmp import common
-from hat.drivers.snmp.encoder import v1
 
 
 class MsgType(enum.Enum):
@@ -18,14 +18,17 @@ class MsgType(enum.Enum):
     REPORT = 'report'
 
 
-BasicPdu = v1.BasicPdu
+class BasicPdu(typing.NamedTuple):
+    request_id: int
+    error: common.Error
+    data: Collection[common.Data]
 
 
 class BulkPdu(typing.NamedTuple):
     request_id: int
     non_repeaters: int
     max_repetitions: int
-    data: list[common.Data]
+    data: Collection[common.Data]
 
 
 Pdu: typing.TypeAlias = BasicPdu | BulkPdu
@@ -45,7 +48,7 @@ def encode_msg(msg: Msg) -> asn1.Value:
     data = msg.type.value, encode_pdu(msg.pdu)
 
     return {'version': common.Version.V2C.value,
-            'community': msg.community.encode('utf-8'),
+            'community': msg.community.encode(),
             'data':  data}
 
 
@@ -104,55 +107,55 @@ def decode_pdu(msg_type: MsgType, pdu: asn1.Value) -> Pdu:
 
 
 def _encode_data(data):
-    if data.type == common.DataType.INTEGER:
+    if isinstance(data, common.IntegerData):
         data_type = 'value'
         value = ('simple', ('integer-value', data.value))
 
-    elif data.type == common.DataType.STRING:
+    elif isinstance(data, common.StringData):
         data_type = 'value'
-        value = ('simple', ('string-value', data.value.encode('utf-8')))
+        value = ('simple', ('string-value', data.value.encode()))
 
-    elif data.type == common.DataType.OBJECT_ID:
+    elif isinstance(data, common.ObjectIdData):
         data_type = 'value'
         value = ('simple', ('objectID-value', data.value))
 
-    elif data.type == common.DataType.IP_ADDRESS:
+    elif isinstance(data, common.IpAddressData):
         data_type = 'value'
         value = ('application-wide', ('ipAddress-value', bytes(data.value)))
 
-    elif data.type == common.DataType.COUNTER:
+    elif isinstance(data, common.CounterData):
         data_type = 'value'
         value = ('application-wide', ('counter-value', data.value))
 
-    elif data.type == common.DataType.TIME_TICKS:
+    elif isinstance(data, common.TimeTicksData):
         data_type = 'value'
         value = ('application-wide', ('timeticks-value', data.value))
 
-    elif data.type == common.DataType.ARBITRARY:
+    elif isinstance(data, common.ArbitraryData):
         data_type = 'value'
         value = ('application-wide', ('arbitrary-value', data.value))
 
-    elif data.type == common.DataType.BIG_COUNTER:
+    elif isinstance(data, common.BigCounterData):
         data_type = 'value'
         value = ('application-wide', ('big-counter-value', data.value))
 
-    elif data.type == common.DataType.UNSIGNED:
+    elif isinstance(data, common.UnsignedData):
         data_type = 'value'
         value = ('application-wide', ('unsigned-integer-value', data.value))
 
-    elif data.type == common.DataType.UNSPECIFIED:
+    elif isinstance(data, common.UnspecifiedData):
         data_type = 'unSpecified'
         value = None
 
-    elif data.type == common.DataType.NO_SUCH_OBJECT:
+    elif isinstance(data, common.NoSuchObjectData):
         data_type = 'noSuchObject'
         value = None
 
-    elif data.type == common.DataType.NO_SUCH_INSTANCE:
+    elif isinstance(data, common.NoSuchInstanceData):
         data_type = 'noSuchInstance'
         value = None
 
-    elif data.type == common.DataType.END_OF_MIB_VIEW:
+    elif isinstance(data, common.EndOfMibViewData):
         data_type = 'endOfMibView'
         value = None
 
@@ -172,70 +175,53 @@ def _decode_data(data):
 
         if t2 == 'simple':
             if t3 == 'integer-value':
-                return common.Data(type=common.DataType.INTEGER,
-                                   name=name,
-                                   value=v2)
+                return common.IntegerData(name=name,
+                                          value=v2)
 
             elif t3 == 'string-value':
-                return common.Data(type=common.DataType.STRING,
-                                   name=name,
-                                   value=_decode_str(v2))
+                return common.StringData(name=name,
+                                         value=_decode_str(v2))
 
             elif t3 == 'objectID-value':
-                return common.Data(type=common.DataType.OBJECT_ID,
-                                   name=name,
-                                   value=v2)
+                return common.ObjectIdData(name=name,
+                                           value=v2)
 
         elif t2 == 'application-wide':
             if t3 == 'ipAddress-value':
-                return common.Data(type=common.DataType.IP_ADDRESS,
-                                   name=name,
-                                   value=tuple(v2))
+                return common.IpAddressData(name=name,
+                                            value=tuple(v2))
 
             elif t3 == 'counter-value':
-                return common.Data(type=common.DataType.COUNTER,
-                                   name=name,
-                                   value=v2)
+                return common.CounterData(name=name,
+                                          value=v2)
 
             elif t3 == 'timeticks-value':
-                return common.Data(type=common.DataType.TIME_TICKS,
-                                   name=name,
-                                   value=v2)
+                return common.TimeTicksData(name=name,
+                                            value=v2)
 
             elif t3 == 'arbitrary-value':
-                return common.Data(type=common.DataType.ARBITRARY,
-                                   name=name,
-                                   value=v2)
+                return common.ArbitraryData(name=name,
+                                            value=v2)
 
             elif t3 == 'big-counter-value':
-                return common.Data(type=common.DataType.BIG_COUNTER,
-                                   name=name,
-                                   value=v2)
+                return common.BigCounterData(name=name,
+                                             value=v2)
 
             elif t3 == 'unsigned-integer-value':
-                return common.Data(type=common.DataType.UNSIGNED,
-                                   name=name,
-                                   value=v2)
+                return common.UnsignedData(name=name,
+                                           value=v2)
 
     elif t1 == 'unSpecified':
-        return common.Data(type=common.DataType.UNSPECIFIED,
-                           name=name,
-                           value=None)
+        return common.UnspecifiedData(name=name)
 
     elif t1 == 'noSuchObject':
-        return common.Data(type=common.DataType.NO_SUCH_OBJECT,
-                           name=name,
-                           value=None)
+        return common.NoSuchObjectData(name=name)
 
     elif t1 == 'noSuchInstance':
-        return common.Data(type=common.DataType.NO_SUCH_INSTANCE,
-                           name=name,
-                           value=None)
+        return common.NoSuchInstanceData(name=name)
 
     elif t1 == 'endOfMibView':
-        return common.Data(type=common.DataType.END_OF_MIB_VIEW,
-                           name=name,
-                           value=None)
+        return common.EndOfMibViewData(name=name)
 
     raise ValueError('unsupported type')
 

@@ -1,3 +1,4 @@
+from collections.abc import Collection
 import enum
 import typing
 
@@ -17,7 +18,7 @@ class MsgType(enum.Enum):
 class BasicPdu(typing.NamedTuple):
     request_id: int
     error: common.Error
-    data: list[common.Data]
+    data: Collection[common.Data]
 
 
 class TrapPdu(typing.NamedTuple):
@@ -25,7 +26,7 @@ class TrapPdu(typing.NamedTuple):
     addr: tuple[int, int, int, int]
     cause: common.Cause
     timestamp: int
-    data: list[common.Data]
+    data: Collection[common.Data]
 
 
 Pdu: typing.TypeAlias = BasicPdu | TrapPdu
@@ -45,7 +46,7 @@ def encode_msg(msg: Msg) -> asn1.Value:
     data = msg.type.value, _encode_pdu(msg.pdu)
 
     return {'version': common.Version.V1.value,
-            'community': msg.community.encode('utf-8'),
+            'community': msg.community.encode(),
             'data':  data}
 
 
@@ -106,32 +107,32 @@ def _decode_pdu(msg_type, pdu):
 
 
 def _encode_data(data):
-    if data.type == common.DataType.INTEGER:
+    if isinstance(data, common.IntegerData):
         value = ('simple', ('number', data.value))
 
-    elif data.type == common.DataType.STRING:
-        value = ('simple', ('string', data.value.encode('utf-8')))
+    elif isinstance(data, common.StringData):
+        value = ('simple', ('string', data.value.encode()))
 
-    elif data.type == common.DataType.OBJECT_ID:
+    elif isinstance(data, common.ObjectIdData):
         value = ('simple', ('object', data.value))
 
-    elif data.type == common.DataType.EMPTY:
+    elif isinstance(data, common.EmptyData):
         value = ('simple', ('empty', None))
 
-    elif data.type == common.DataType.IP_ADDRESS:
+    elif isinstance(data, common.IpAddressData):
         value = ('application-wide',
                  ('address', ('internet', bytes(data.value))))
 
-    elif data.type == common.DataType.COUNTER:
+    elif isinstance(data, common.CounterData):
         value = ('application-wide', ('counter', data.value))
 
-    elif data.type == common.DataType.UNSIGNED:
+    elif isinstance(data, common.UnsignedData):
         value = ('application-wide', ('gauge', data.value))
 
-    elif data.type == common.DataType.TIME_TICKS:
+    elif isinstance(data, common.TimeTicksData):
         value = ('application-wide', ('ticks', data.value))
 
-    elif data.type == common.DataType.ARBITRARY:
+    elif isinstance(data, common.ArbitraryData):
         value = ('application-wide', ('arbitrary', data.value))
 
     else:
@@ -147,50 +148,40 @@ def _decode_data(data):
 
     if t1 == 'simple':
         if t2 == 'number':
-            return common.Data(type=common.DataType.INTEGER,
-                               name=name,
-                               value=value)
+            return common.IntegerData(name=name,
+                                      value=value)
 
         elif t2 == 'string':
-            return common.Data(type=common.DataType.STRING,
-                               name=name,
-                               value=_decode_str(value))
+            return common.StringData(name=name,
+                                     value=_decode_str(value))
 
         elif t2 == 'object':
-            return common.Data(type=common.DataType.OBJECT_ID,
-                               name=name,
-                               value=value)
+            return common.ObjectIdData(name=name,
+                                       value=value)
 
         elif t2 == 'empty':
-            return common.Data(type=common.DataType.EMPTY,
-                               name=name,
-                               value=None)
+            return common.EmptyData(name=name)
 
     elif t1 == 'application-wide':
         if t2 == 'address':
-            return common.Data(type=common.DataType.IP_ADDRESS,
-                               name=name,
-                               value=tuple(value[1]))
+            return common.IpAddressData(name=name,
+                                        value=tuple(value[1]))
 
         elif t2 == 'counter':
-            return common.Data(type=common.DataType.COUNTER,
-                               name=name,
-                               value=value)
+            return common.CounterData(name=name,
+                                      value=value)
 
         elif t2 == 'gauge':
-            return common.Data(type=common.DataType.UNSIGNED,
-                               name=name,
-                               value=value)
+            return common.UnsignedData(name=name,
+                                       value=value)
 
         elif t2 == 'ticks':
-            return common.Data(type=common.DataType.TIME_TICKS,
-                               name=name,
-                               value=value)
+            return common.TimeTicksData(name=name,
+                                        value=value)
 
         elif t2 == 'arbitrary':
-            return common.Data(type=common.DataType.ARBITRARY,
-                               name=name,
-                               value=value)
+            return common.ArbitraryData(name=name,
+                                        value=value)
 
     raise ValueError('unsupported type')
 

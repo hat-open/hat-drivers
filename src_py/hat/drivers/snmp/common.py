@@ -1,7 +1,9 @@
+from collections.abc import Callable, Collection
 import enum
 import typing
 
 from hat import asn1
+from hat import util
 
 
 class Version(enum.Enum):
@@ -69,84 +71,130 @@ class Cause(typing.NamedTuple):
     value: int
 
 
-class Data(typing.NamedTuple):
-    """Data
-
-    Type of value is determined by value of data type:
-
-        +------------------+---------------------------+
-        | type             | value                     |
-        +==================+===========================+
-        | INTEGER          | int                       |
-        +------------------+---------------------------+
-        | UNSIGNED         | int                       |
-        +------------------+---------------------------+
-        | COUNTER          | int                       |
-        +------------------+---------------------------+
-        | BIG_COUNTER      | int                       |
-        +------------------+---------------------------+
-        | STRING           | str                       |
-        +------------------+---------------------------+
-        | OBJECT_ID        | ObjectIdentifier          |
-        +------------------+---------------------------+
-        | IP_ADDRESS       | Tuple[int, int, int, int] |
-        +------------------+---------------------------+
-        | TIME_TICKS       | int                       |
-        +------------------+---------------------------+
-        | ARBITRARY        | Bytes                     |
-        +------------------+---------------------------+
-        | EMPTY            | NoneType                  |
-        +------------------+---------------------------+
-        | UNSPECIFIED      | NoneType                  |
-        +------------------+---------------------------+
-        | NO_SUCH_OBJECT   | NoneType                  |
-        +------------------+---------------------------+
-        | NO_SUCH_INSTANCE | NoneType                  |
-        +------------------+---------------------------+
-        | END_OF_MIB_VIEW  | NoneType                  |
-        +------------------+---------------------------+
-
-    """
-    type: DataType
+class IntegerData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
-    value: typing.Any
+    value: int
+
+
+class UnsignedData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: int
+
+
+class CounterData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: int
+
+
+class BigCounterData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: int
+
+
+class StringData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: str
+
+
+class ObjectIdData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: asn1.ObjectIdentifier
+
+
+class IpAddressData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: tuple[int, int, int, int]
+
+
+class TimeTicksData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: int
+
+
+class ArbitraryData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+    value: util.Bytes
+
+
+class EmptyData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+
+
+class UnspecifiedData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+
+
+class NoSuchObjectData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+
+
+class NoSuchInstanceData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+
+
+class EndOfMibViewData(typing.NamedTuple):
+    name: asn1.ObjectIdentifier
+
+
+Data: typing.TypeAlias = (IntegerData |
+                          UnsignedData |
+                          CounterData |
+                          BigCounterData |
+                          StringData |
+                          ObjectIdData |
+                          IpAddressData |
+                          TimeTicksData |
+                          ArbitraryData |
+                          EmptyData |
+                          UnspecifiedData |
+                          NoSuchObjectData |
+                          NoSuchInstanceData |
+                          EndOfMibViewData)
+
+
+ComunityName: typing.TypeAlias = str
+
+UserName: typing.TypeAlias = str
+
+EngineId: typing.TypeAlias = str
+
+Key: typing.TypeAlias = str
 
 
 class Context(typing.NamedTuple):
-    engine_id: str | None
-    """engine id is not available in case of v1 and v2c"""
+    engine_id: EngineId
     name: str
-    """name is used as community name in case of v1 and v2c"""
+
+
+KeyCb: typing.TypeAlias = Callable[[EngineId, UserName], Key | None]
 
 
 class Trap(typing.NamedTuple):
-    context: Context
     cause: Cause | None
     """cause is available in case of v1"""
     oid: asn1.ObjectIdentifier
     timestamp: int
-    data: Data | None
+    data: Collection[Data]
 
 
 class Inform(typing.NamedTuple):
-    context: Context
-    data: Data | None
+    data: Collection[Data]
 
 
 class GetDataReq(typing.NamedTuple):
-    names: list[asn1.ObjectIdentifier]
+    names: Collection[asn1.ObjectIdentifier]
 
 
 class GetNextDataReq(typing.NamedTuple):
-    names: list[asn1.ObjectIdentifier]
+    names: Collection[asn1.ObjectIdentifier]
 
 
 class GetBulkDataReq(typing.NamedTuple):
-    names: list[asn1.ObjectIdentifier]
+    names: Collection[asn1.ObjectIdentifier]
 
 
 class SetDataReq(typing.NamedTuple):
-    data: Data | None
+    data: Collection[Data]
 
 
 Request: typing.TypeAlias = (GetDataReq |
@@ -154,4 +202,4 @@ Request: typing.TypeAlias = (GetDataReq |
                              GetBulkDataReq |
                              SetDataReq)
 
-Response: typing.TypeAlias = Error | Data | None
+Response: typing.TypeAlias = Error | Collection[Data]
