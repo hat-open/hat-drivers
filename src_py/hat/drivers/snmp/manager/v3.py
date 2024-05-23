@@ -15,7 +15,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v3_manager(remote_addr: udp.Address,
-                            context: common.Contex,
+                            context: common.Context,
                             user: common.UserName,
                             auth_key: common.Key | None = None,
                             priv_key: common.Key | None = None
@@ -49,7 +49,7 @@ class V3Manager(common.Manager):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 context: common.Contex,
+                 context: common.Context,
                  user: common.UserName,
                  auth_key: common.Key | None,
                  priv_key: common.Key | None):

@@ -7,22 +7,22 @@ from hat import aio
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
-from hat.drivers.snmp.agent import common
+from hat.drivers.snmp import common
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-V1RequestCb: typing.TypeAlias = aio.Callable[
+V1RequestCb: typing.TypeAlias = aio.AsyncCallable[
     [udp.Address, common.ComunityName, common.Request],
     common.Response]
 
-V2CRequestCb: typing.TypeAlias = aio.Callable[
+V2CRequestCb: typing.TypeAlias = aio.AsyncCallable[
     [udp.Address, common.ComunityName, common.Request],
     common.Response]
 
-V3RequestCb: typing.TypeAlias = aio.Callable[
+V3RequestCb: typing.TypeAlias = aio.AsyncCallable[
     [udp.Address, common.UserName, common.Context, common.Request],
     common.Response]
 
@@ -34,7 +34,7 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                        engine_ids: Collection[common.EngineId] = [],
                        auth_key_cb: common.KeyCb | None = None,
                        priv_key_cb: common.KeyCb | None = None
-                       ) -> common.Agent:
+                       ) -> 'Agent':
     """Create agent"""
     endpoint = await udp.create(local_addr=local_addr,
                                 remote_addr=None)
