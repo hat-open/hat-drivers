@@ -5,38 +5,27 @@ from hat.drivers.snmp import common
 
 
 def _cover_data_types(version):
-    yield common.Data(type=common.DataType.INTEGER,
-                      name=(1, 0),
-                      value=-10)
-    yield common.Data(type=common.DataType.UNSIGNED,
-                      name=(1, 1),
-                      value=10)
-    yield common.Data(type=common.DataType.COUNTER,
-                      name=(1, 2),
-                      value=10)
-    yield common.Data(type=common.DataType.STRING,
-                      name=(1, 3),
-                      value='xyz')
-    yield common.Data(type=common.DataType.OBJECT_ID,
-                      name=(1, 4),
-                      value=(1, 6, 3, 4, 5))
-    yield common.Data(type=common.DataType.OBJECT_ID,
-                      name=(1, 5),
-                      value=(1, 6, 3, 4, 5))
-    yield common.Data(type=common.DataType.TIME_TICKS,
-                      name=(1, 6),
-                      value=10)
-    yield common.Data(type=common.DataType.ARBITRARY,
-                      name=(1, 7),
-                      value=b'xyz')
+    yield common.IntegerData(name=(1, 0),
+                             value=-10)
+    yield common.UnsignedData(name=(1, 1),
+                              value=10)
+    yield common.CounterData(name=(1, 2),
+                             value=10)
+    yield common.StringData(name=(1, 3),
+                            value='xyz')
+    yield common.ObjectIdData(name=(1, 4),
+                              value=(1, 6, 3, 4, 5))
+    yield common.ObjectIdData(name=(1, 5),
+                              value=(1, 6, 3, 4, 5))
+    yield common.TimeTicksData(name=(1, 6),
+                               value=10)
+    yield common.ArbitraryData(name=(1, 7),
+                               value=b'xyz')
     if version == 'v1':
-        yield common.Data(type=common.DataType.EMPTY,
-                          name=(1, 8),
-                          value=None)
+        yield common.EmptyData(name=(1, 8))
     elif version in ('v2c', 'v3'):
-        yield common.Data(type=common.DataType.BIG_COUNTER,
-                          name=(1, 8),
-                          value=129041231)
+        yield common.BigCounterData(name=(1, 8),
+                                    value=129041231)
 
 
 @pytest.mark.parametrize("msg_type", [encoder.v1.MsgType.GET_REQUEST,
@@ -134,6 +123,13 @@ def test_encode_decode_v3_basic(msg_type, error_type, data):
     msg = encoder.v3.Msg(type=msg_type,
                          id=100,
                          reportable=True,
+                         auth=False,
+                         priv=False,
+                         authorative_engine=encoder.v3.AuthorativeEngine(
+                            id='engine_xyz',
+                            boots=123,
+                            time=456),
+                         user='user_xyz',
                          context=common.Context('engine_id', 'engine_name'),
                          pdu=encoder.v3.BasicPdu(
                              request_id=123,
@@ -151,6 +147,13 @@ def test_encode_decode_v3_bulk(data):
     msg = encoder.v3.Msg(type=encoder.v3.MsgType.GET_BULK_REQUEST,
                          id=100,
                          reportable=True,
+                         auth=False,
+                         priv=False,
+                         authorative_engine=encoder.v3.AuthorativeEngine(
+                            id='engine_xyz',
+                            boots=123,
+                            time=456),
+                         user='user_xyz',
                          context=common.Context('engine_id', 'engine_name'),
                          pdu=encoder.v3.BulkPdu(
                              request_id=123,
@@ -172,30 +175,6 @@ def test_decode_invalid():
         encoder.v3.decode(invalid_bytes)
 
 
-def _data_msg(data_type, value):
-    if data_type == common.DataType.EMPTY:
-        return encoder.v1.Msg(
-            type=encoder.v1.MsgType.GET_REQUEST,
-            community='abc',
-            pdu=encoder.v1.BasicPdu(
-                request_id=1,
-                error=common.Error(common.ErrorType.NO_ERROR, 1),
-                data=[common.Data(
-                    type=data_type,
-                    name=(1, 2, 3),
-                    value=value)]))
-    return encoder.v2c.Msg(
-        type=encoder.v2c.MsgType.GET_REQUEST,
-        community='abc',
-        pdu=encoder.v2c.BasicPdu(
-            request_id=1,
-            error=common.Error(common.ErrorType.NO_ERROR, 1),
-            data=[common.Data(
-                type=data_type,
-                name=(1, 2, 3),
-                value=value)]))
-
-
 @pytest.mark.parametrize("msg", [
     # trap type, basic pdu
     encoder.v1.Msg(
@@ -215,6 +194,7 @@ def _data_msg(data_type, value):
             cause=common.Cause(common.CauseType.COLD_START, 1),
             timestamp=10,
             data=[])),
+    # TODO error type check on encode is expected?
     # # error type not in v1
     # encoder.v1.Msg(
     #     type=encoder.v1.MsgType.GET_REQUEST,
@@ -230,8 +210,7 @@ def _data_msg(data_type, value):
         pdu=encoder.v1.BasicPdu(
             request_id=1,
             error=common.Error(common.ErrorType.NO_ERROR, 1),
-            data=[common.Data(
-                type=common.DataType.BIG_COUNTER,
+            data=[common.BigCounterData(
                 name=(1, 2, 3),
                 value=1290341043)])),
     # bulk type, basic pdu
@@ -259,27 +238,44 @@ def _data_msg(data_type, value):
             request_id=1,
             error=common.Error(common.ErrorType.NO_ERROR, 1),
             data=[])),
-    # # invalid data
-    # _data_msg(common.DataType.INTEGER, 'not integer'),
-    # _data_msg(common.DataType.UNSIGNED, 'not integer'),
-    # _data_msg(common.DataType.UNSIGNED, -100),
-    # _data_msg(common.DataType.COUNTER, 2**33),
-    # _data_msg(common.DataType.STRING, 11),
-    # _data_msg(common.DataType.OBJECT_ID, (100, 1, 2)),
-    # _data_msg(common.DataType.OBJECT_ID, 'abc'),
-    # _data_msg(common.DataType.IP_ADDRESS, (1, 2, 3)),
-    # _data_msg(common.DataType.IP_ADDRESS, (1, 2, 3, 4, 5)),
-    # _data_msg(common.DataType.IP_ADDRESS, (1, '2', '3', 4)),
-    # _data_msg(common.DataType.TIME_TICKS, 2 ** 65),
-    # _data_msg(common.DataType.TIME_TICKS, 'tick tock'),
-    # _data_msg(common.DataType.ARBITRARY, 1234),
-    # _data_msg(common.DataType.EMPTY, 'not empty'),
-    # _data_msg(common.DataType.UNSPECIFIED, 'specified'),
-    # _data_msg(common.DataType.NO_SUCH_OBJECT, 'such object'),
-    # _data_msg(common.DataType.NO_SUCH_INSTANCE, 'such instance'),
-    # _data_msg(common.DataType.END_OF_MIB_VIEW, 23592)
-])
-def test_encode_invalid(msg):
+    ])
+def test_encode_invalid_msg(msg):
+    if isinstance(msg, encoder.v1.Msg):
+        fn = encoder.v1.encode_msg
+    elif isinstance(msg, encoder.v2c.Msg):
+        fn = encoder.v2c.encode_msg
+    elif isinstance(msg, encoder.v3.Msg):
+        fn = encoder.v3.encode_msg
+    else:
+        raise Exception('could not select encode function')
+    with pytest.raises(ValueError):
+        fn(msg)
+
+
+@pytest.mark.skip("todo")
+@pytest.mark.parametrize("msg", [
+    (common.IntegerData, 'not integer'),
+    (common.UnsignedData, 'not integer'),
+    (common.UnsignedData, -100),
+    (common.CounterData, 2**33),
+    (common.StringData, 11),
+    (common.ObjectIdData, (100, 1, 2)),
+    (common.ObjectIdData, 'abc'),
+    (common.IpAddressData, (1, 2, 3)),
+    (common.IpAddressData, (1, 2, 3, 4, 5)),
+    (common.IpAddressData, (1, '2', '3', 4)),
+    (common.TimeTicksData, 2 ** 65),
+    (common.TimeTicksData, 'tick tock'),
+    (common.ArbitraryData, 1234)])
+def test_encode_invalid_data_value(data_class, value):
+    msg = encoder.v2c.Msg(
+        type=encoder.v2c.MsgType.GET_REQUEST,
+        community='abc',
+        pdu=encoder.v2c.BasicPdu(
+            request_id=1,
+            error=common.Error(common.ErrorType.NO_ERROR, 1),
+            data=[data_class(name=(1, 2, 3),
+                             value=value)]))
     if isinstance(msg, encoder.v1.Msg):
         fn = encoder.v1.encode_msg
     elif isinstance(msg, encoder.v2c.Msg):
