@@ -45,7 +45,8 @@ def encode_msg(msg: Msg,
     # return {'msgVersion': common.Version.V3.value,
     #         'msgGlobalData': {'msgID': msg.id,
     #                           'msgMaxSize': 2147483647,
-    #                           'msgFlags': bytes([4 if msg.reportable else 0]),
+    #                           'msgFlags': bytes([4
+    #                                              if msg.reportable else 0]),
     #                           'msgSecurityModel': 3},
     #         'msgSecurityParameters': b'',
     #         'msgData': ('plaintext', {

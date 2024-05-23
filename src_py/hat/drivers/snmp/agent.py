@@ -4,6 +4,7 @@ import time
 import typing
 
 from hat import aio
+from hat import util
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
@@ -279,9 +280,31 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
         raise Exception('invalid request message type')
 
     if req_msg.authorative_engine.id not in engine_ids:
-        if req_msg.reportable:
-            # TODO generate report
-            return
+        if req_msg.reportable and engine_ids:
+
+            # TODO report data and conditions for sending reports
+
+            authorative_engine = encoder.v3.AuthorativeEngine(
+                id=util.first(engine_ids),
+                boots=0,
+                time=round(time.monotonic()))
+
+            res_pdu = encoder.v3.BasicPdu(
+                request_id=req_msg.pdu.request_id,
+                error=common.Error(common.ErrorType.NO_ERROR, 0),
+                data=[])
+
+            res_msg = encoder.v3.Msg(
+                type=encoder.v3.MsgType.REPORT,
+                id=req_msg.pdu.request_id,
+                reportable=False,
+                auth=False,
+                priv=False,
+                authorative_engine=authorative_engine,
+                context=req_msg.context,
+                pdu=res_pdu)
+
+            return res_msg
 
         raise Exception('invalid authorative engine id')
 
