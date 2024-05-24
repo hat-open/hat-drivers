@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v1_manager(remote_addr: udp.Address,
-                            comunity: common.ComunityName
+                            community: common.CommunityName
                             ) -> common.Manager:
     """Create v1 manager"""
     endpoint = await udp.create(local_addr=None,
@@ -22,7 +22,7 @@ async def create_v1_manager(remote_addr: udp.Address,
 
     try:
         return V1Manager(endpoint=endpoint,
-                         comunity=comunity)
+                         community=community)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -33,9 +33,9 @@ class V1Manager(common.Manager):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 comunity: common.ComunityName):
+                 community: common.CommunityName):
         self._endpoint = endpoint
-        self._comunity = comunity
+        self._community = community
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
@@ -76,7 +76,7 @@ class V1Manager(common.Manager):
             data=data)
 
         msg = encoder.v1.Msg(type=msg_type,
-                             community=self._comunity,
+                             community=self._community,
                              pdu=pdu)
         msg_bytes = encoder.encode(msg)
 
@@ -93,9 +93,7 @@ class V1Manager(common.Manager):
         try:
             while True:
                 msg_bytes, addr = await self._endpoint.receive()
-
                 # TODO check address
-
                 try:
                     msg = encoder.decode(msg_bytes)
 
@@ -105,14 +103,14 @@ class V1Manager(common.Manager):
                     if msg.type != encoder.v1.MsgType.GET_RESPONSE:
                         raise Exception('invalid response message type')
 
-                    if msg.comunity != self._comunity:
-                        raise Exception('invalid comunity')
+                    if msg.community != self._community:
+                        raise Exception('invalid community')
 
                     res = (msg.pdu.data
                            if msg.pdu.error.type == common.ErrorType.NO_ERROR
                            else msg.pdu.error)
 
-                    future = self._receive_futures[msg.request_id]
+                    future = self._receive_futures[msg.pdu.request_id]
                     if not future.done():
                         future.set_result(res)
 

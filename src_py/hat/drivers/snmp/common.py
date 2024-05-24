@@ -152,7 +152,7 @@ Data: typing.TypeAlias = (IntegerData |
                           EndOfMibViewData)
 
 
-ComunityName: typing.TypeAlias = str
+CommunityName: typing.TypeAlias = str
 
 UserName: typing.TypeAlias = str
 

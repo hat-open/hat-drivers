@@ -13,17 +13,17 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 V1TrapCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.ComunityName, common.Trap],
+    [udp.Address, common.CommunityName, common.Trap],
     None]
 """V1 trap callback"""
 
 V2CTrapCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.ComunityName, common.Trap],
+    [udp.Address, common.CommunityName, common.Trap],
     None]
 """V2c trap callback"""
 
 V2CInformCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.ComunityName, common.Inform],
+    [udp.Address, common.CommunityName, common.Inform],
     common.Error | None]
 """V2c inform callback"""
 
@@ -214,7 +214,7 @@ async def _process_v1_trap(req_msg, addr, trap_cb):
                       timestamp=req_msg.pdu.timestamp,
                       data=req_msg.pdu.data)
 
-    await aio.call(trap_cb, addr, req_msg.comunity, req)
+    await aio.call(trap_cb, addr, req_msg.community, req)
 
 
 async def _process_v2c_trap(req_msg, addr, trap_cb):
@@ -233,7 +233,7 @@ async def _process_v2c_trap(req_msg, addr, trap_cb):
                       timestamp=req_msg.pdu.data[0].value,
                       data=req_msg.pdu.data[2:])
 
-    await aio.call(trap_cb, addr, req_msg.comunity, req)
+    await aio.call(trap_cb, addr, req_msg.community, req)
 
 
 async def _process_v2c_inform(req_msg, addr, inform_cb):
@@ -242,7 +242,7 @@ async def _process_v2c_inform(req_msg, addr, inform_cb):
 
     req = common.Inform(data=req_msg.pdu.data)
 
-    error = await aio.call(inform_cb, addr, req_msg.comunity, req)
+    error = await aio.call(inform_cb, addr, req_msg.community, req)
 
     if not error:
         error = common.Error(common.ErrorType.NO_ERROR, 0)
@@ -252,7 +252,7 @@ async def _process_v2c_inform(req_msg, addr, inform_cb):
                                    data=req.data)
 
     res_msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.RESPONSE,
-                              community=req_msg.comunity,
+                              community=req_msg.community,
                               pdu=res_pdu)
 
     return res_msg

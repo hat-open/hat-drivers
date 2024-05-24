@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v2c_trap_sender(remote_addr: udp.Address,
-                                 comunity: common.ComunityName
+                                 community: common.CommunityName
                                  ) -> common.TrapSender:
     """Create v2c trap sender"""
     endpoint = await udp.create(local_addr=None,
@@ -22,7 +22,7 @@ async def create_v2c_trap_sender(remote_addr: udp.Address,
 
     try:
         return V2CTrapSender(endpoint=endpoint,
-                             comunity=comunity)
+                             community=community)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -33,9 +33,9 @@ class V2CTrapSender(common.TrapSender):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 comunity: common.ComunityName):
+                 community: common.CommunityName):
         self._endpoint = endpoint
-        self._comunity = comunity
+        self._community = community
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
@@ -68,7 +68,7 @@ class V2CTrapSender(common.TrapSender):
                                    data=data)
 
         msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.SNMPV2_TRAP,
-                              community=self._comunity,
+                              community=self._community,
                               pdu=pdu)
         msg_bytes = encoder.encode(msg)
 
@@ -119,8 +119,8 @@ class V2CTrapSender(common.TrapSender):
                     if msg.type != encoder.v2c.MsgType.RESPONSE:
                         raise Exception('invalid response message type')
 
-                    if msg.comunity != self._comunity:
-                        raise Exception('invalid comunity')
+                    if msg.community != self._community:
+                        raise Exception('invalid community')
 
                     res = (None
                            if msg.pdu.error.type == common.ErrorType.NO_ERROR

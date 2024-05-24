@@ -17,11 +17,11 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 V1RequestCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.ComunityName, common.Request],
+    [udp.Address, common.CommunityName, common.Request],
     common.Response]
 
 V2CRequestCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.ComunityName, common.Request],
+    [udp.Address, common.CommunityName, common.Request],
     common.Response]
 
 V3RequestCb: typing.TypeAlias = aio.AsyncCallable[
@@ -179,7 +179,7 @@ async def _process_v1_req_msg(req_msg, addr, request_cb):
         raise Exception('invalid request message type')
 
     try:
-        res = await aio.call(request_cb, addr, req_msg.comunity, req)
+        res = await aio.call(request_cb, addr, req_msg.community, req)
 
         if isinstance(res, common.Error):
             if res.type.value > common.ErrorType.GEN_ERR.value:
@@ -205,7 +205,7 @@ async def _process_v1_req_msg(req_msg, addr, request_cb):
 
     res_msg = encoder.v1.Msg(
         type=encoder.v1.MsgType.GET_RESPONSE,
-        community=req_msg.comunity,
+        community=req_msg.community,
         pdu=res_pdu)
 
     return res_msg
@@ -231,7 +231,7 @@ async def _process_v2c_req_msg(req_msg, addr, request_cb):
         raise Exception('invalid request message type')
 
     try:
-        res = await aio.call(request_cb, addr, req_msg.comunity, req)
+        res = await aio.call(request_cb, addr, req_msg.community, req)
 
         if isinstance(res, common.Error):
             res_error = res
@@ -254,7 +254,7 @@ async def _process_v2c_req_msg(req_msg, addr, request_cb):
 
     res_msg = encoder.v2c.Msg(
         type=encoder.v2c.MsgType.RESPONSE,
-        community=req_msg.comunity,
+        community=req_msg.community,
         pdu=res_pdu)
 
     return res_msg

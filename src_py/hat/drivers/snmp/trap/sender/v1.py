@@ -12,7 +12,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v1_trap_sender(remote_addr: udp.Address,
-                                comunity: common.ComunityName
+                                community: common.CommunityName
                                 ) -> common.TrapSender:
     """Create v1 trap sender"""
     endpoint = await udp.create(local_addr=None,
@@ -20,7 +20,7 @@ async def create_v1_trap_sender(remote_addr: udp.Address,
 
     try:
         return V1TrapSender(endpoint=endpoint,
-                            comunity=comunity)
+                            community=community)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -31,9 +31,9 @@ class V1TrapSender(common.TrapSender):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 comunity: common.ComunityName):
+                 community: common.CommunityName):
         self._endpoint = endpoint
-        self._comunity = comunity
+        self._community = community
         self._addr = tuple(int(i)
                            for i in endpoint.info.local_addr.host.split('.'))
 
@@ -54,7 +54,7 @@ class V1TrapSender(common.TrapSender):
                                  data=trap.data)
 
         msg = encoder.v1.Msg(type=encoder.v1.MsgType.TRAP,
-                             community=self._comunity,
+                             community=self._community,
                              pdu=pdu)
         msg_bytes = encoder.encode(msg)
 
