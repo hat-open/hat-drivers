@@ -115,23 +115,98 @@ def decode_msg(msg: asn1.Value,
                auth_key_cb: key.KeyCb | None = None,
                priv_key_cb: key.KeyCb | None = None
                ) -> Msg:
-    raise NotImplementedError()
+    if msg['msgVersion'] != common.Version.V3.value:
+        raise Exception('invalid msg version')
 
-    # msg_type = MsgType(msg['msgData'][1]['data'][0])
-    # msg_id = msg['msgGlobalData']['msgID']
-    # reportable = bool(msg['msgGlobalData']['msgFlags'][0] & 4)
-    # context_engine_id = _decode_str(msg['msgData'][1]['contextEngineID'])
-    # context_name = _decode_str(msg['msgData'][1]['contextName'])
-    # context = common.Context(engine_id=context_engine_id,
-    #                          name=context_name)
+    if msg['msgGlobalData']['msgSecurityModel'] != 3:
+        raise Exception('unsupported security model')
 
-    # pdu = v2c.decode_pdu(msg_type, msg['msgData'][1]['data'][1])
+    msg_id = msg['msgGlobalData']['msgID']
+    msg_flags = msg['msgGlobalData']['msgFlags'][0]
 
-    # return Msg(type=msg_type,
-    #            id=msg_id,
-    #            reportable=reportable,
-    #            context=context,
-    #            pdu=pdu)
+    reportable = bool(msg_flags & 4)
+    auth = bool(msg_flags & 1)
+    priv = bool(msg_flags & 2)
+
+    security_params, _ = common.encoder.decode(
+        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        msg['msgSecurityParameters'])
+
+    authorative_engine = AuthorativeEngine(
+        id=_decode_str(security_params['msgAuthoritativeEngineID']),
+        boots=security_params['msgAuthoritativeEngineBoots'],
+        time=security_params['msgAuthoritativeEngineTime'])
+
+    user = _decode_str(security_params['msgUserName'])
+
+    if auth:
+        if auth_key_cb is None:
+            raise Exception('auth not enabled')
+
+        auth_key = auth_key_cb(authorative_engine.id, user)
+        if auth_key is None:
+            raise Exception('auth key not available')
+
+        auth_params_bytes = security_params['msgAuthenticationParameters']
+
+        security_params = {**security_params,
+                           'msgAuthenticationParameters': b'\x00' * 8}
+        security_params_bytes = common.encoder.encode(
+            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            security_params)
+
+        msg = {**msg,
+               'msgSecurityParameters': security_params_bytes}
+        msg_bytes = common.encoder.encode(
+            'SNMPv3MessageSyntax', 'SNMPv3Message', msg)
+
+        generated_auth_params_bytes = _gen_auth_params_bytes(auth_key,
+                                                             msg_bytes)
+
+        if auth_params_bytes != generated_auth_params_bytes:
+            raise Exception('authentication failed')
+
+    if priv:
+        if priv_key_cb is None:
+            raise Exception('priv not enabled')
+
+        priv_key = priv_key_cb(authorative_engine.id, user)
+        if priv_key is None:
+            raise Exception('priv key not available')
+
+        if msg['msgData'][0] != 'encryptedPDU':
+            raise Exception('invalid pdu encoding')
+
+        priv_params_bytes = security_params['msgPrivacyParameters']
+
+        pdu_bytes = _decrypt_pdu(priv_key, priv_params_bytes,
+                                 msg['msgData'][1])
+
+        pdu, _ = common.encoder.decode(
+            'SNMPv3MessageSyntax', 'ScopedPDU', pdu_bytes)
+
+    else:
+        if msg['msgData'][0] != 'plaintext':
+            raise Exception('invalid pdu encoding')
+
+        pdu = msg['msgData'][1]
+
+    msg_type = MsgType(pdu['data'][0])
+
+    context = common.Context(engine_id=pdu['contextEngineID'],
+                             name=pdu['contextName'])
+
+    msg_pdu = v2c.decode_pdu(msg_type, pdu['data'][1])
+
+    return Msg(type=msg_type,
+               id=msg_id,
+               reportable=reportable,
+               auth=auth,
+               priv=priv,
+               authorative_engine=authorative_engine,
+               user=user,
+               context=context,
+               pdu=msg_pdu)
 
 
 def _encrypt_pdu(priv_key, pdu_bytes):
@@ -154,6 +229,28 @@ def _encrypt_pdu(priv_key, pdu_bytes):
                                         iv=iv)
 
     return encrypted_pdu, salt
+
+
+def _decrypt_pdu(priv_key, salt, pdu_bytes):
+    if priv_key.key_type != key.KeyType.DES:
+        raise Exception('invalid priv key type')
+
+    if len(priv_key.data) != 16:
+        raise Exception('invalid key length')
+
+    if len(salt) != 8:
+        raise Exception('invalid salt length')
+
+    des_key = priv_key.data[:8]
+    pre_iv = priv_key.data[8:]
+
+    iv = bytes(x ^ y for x, y in zip(pre_iv, salt))
+
+    decrypted_pdu = openssl.des_decrypt(des_key=des_key,
+                                        data=pdu_bytes,
+                                        iv=iv)
+
+    return decrypted_pdu
 
 
 def _gen_auth_params_bytes(auth_key, msg_bytes):

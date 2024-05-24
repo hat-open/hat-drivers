@@ -1,5 +1,7 @@
 from collections.abc import Callable
 import enum
+import hashlib
+import itertools
 import typing
 
 from hat import util
@@ -26,4 +28,36 @@ def create_key(key_type: KeyType,
                password: str,
                engine_id: common.EngineId
                ) -> Key:
-    raise NotImplementedError()
+    if not password:
+        raise Exception('invalid password')
+
+    if key_type == KeyType.MD5:
+        key_data = _create_key_data('md5', password, engine_id)
+
+    elif key_type == KeyType.SHA:
+        key_data = _create_key_data('sha1', password, engine_id)
+
+    elif key_type == KeyType.DES:
+        key_data = _create_key_data('md5', password, engine_id)
+
+    else:
+        raise ValueError('unsupported key type')
+
+    return Key(key_type=key_type,
+               data=key_data)
+
+
+def _create_key_data(hash_name, password, engine_id):
+    password_cycle = itertools.cycle(password.encode())
+    extended_password = bytes(itertools.islice(password_cycle, 1024 * 1024))
+
+    h = hashlib.new(hash_name)
+    h.update(extended_password)
+    extended_password_hash = h.digest()
+
+    h = hashlib.new(hash_name)
+    h.update(extended_password_hash)
+    h.update(engine_id.encode())
+    h.update(extended_password_hash)
+
+    return h.digest()

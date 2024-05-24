@@ -1,5 +1,4 @@
 from hat.drivers.snmp.trap.listener import (V1TrapCb,
-                                            V1InformCb,
                                             V2CTrapCb,
                                             V2CInformCb,
                                             V3TrapCb,
@@ -13,7 +12,6 @@ from hat.drivers.snmp.trap.sender import (TrapSender,
 
 
 __all__ = ['V1TrapCb',
-           'V1InformCb',
            'V2CTrapCb',
            'V2CInformCb',
            'V3TrapCb',
