@@ -4,7 +4,7 @@ import typing
 
 from hat import asn1
 
-from hat.drivers.snmp import common
+from hat.drivers.snmp.encoder import common
 
 
 class MsgType(enum.Enum):

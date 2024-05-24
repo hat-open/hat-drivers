@@ -6,8 +6,9 @@ import time
 from hat import aio
 
 from hat.drivers import udp
-from hat.drivers.snmp.trap.sender import common
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import key
+from hat.drivers.snmp.trap.sender import common
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -17,8 +18,8 @@ mlog: logging.Logger = logging.getLogger(__name__)
 async def create_v3_trap_sender(remote_addr: udp.Address,
                                 context: common.Context,
                                 user: common.UserName,
-                                auth_key: common.Key | None = None,
-                                priv_key: common.Key | None = None
+                                auth_key: key.Key | None = None,
+                                priv_key: key.Key | None = None
                                 ) -> common.TrapSender:
     """Create v3 trap sender"""
     endpoint = await udp.create(local_addr=None,
@@ -42,8 +43,8 @@ class V3TrapSender(common.TrapSender):
                  endpoint: udp.Endpoint,
                  context: common.Context,
                  user: common.UserName,
-                 auth_key: common.Key | None,
-                 priv_key: common.Key | None):
+                 auth_key: key.Key | None,
+                 priv_key: key.Key | None):
         self._endpoint = endpoint
         self._context = context
         self._user = user

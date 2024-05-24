@@ -1,4 +1,4 @@
-from collections.abc import Callable, Collection
+from collections.abc import Collection
 import enum
 import typing
 
@@ -158,15 +158,10 @@ UserName: typing.TypeAlias = str
 
 EngineId: typing.TypeAlias = str
 
-Key: typing.TypeAlias = str
-
 
 class Context(typing.NamedTuple):
     engine_id: EngineId
     name: str
-
-
-KeyCb: typing.TypeAlias = Callable[[EngineId, UserName], Key | None]
 
 
 class Trap(typing.NamedTuple):

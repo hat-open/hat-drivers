@@ -7,6 +7,7 @@ from hat import aio
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import key
 from hat.drivers.snmp.manager import common
 
 
@@ -17,8 +18,8 @@ mlog: logging.Logger = logging.getLogger(__name__)
 async def create_v3_manager(remote_addr: udp.Address,
                             context: common.Context,
                             user: common.UserName,
-                            auth_key: common.Key | None = None,
-                            priv_key: common.Key | None = None
+                            auth_key: key.Key | None = None,
+                            priv_key: key.Key | None = None
                             ) -> common.Manager:
     """Create v3 manager"""
     endpoint = await udp.create(local_addr=None,
@@ -51,8 +52,8 @@ class V3Manager(common.Manager):
                  endpoint: udp.Endpoint,
                  context: common.Context,
                  user: common.UserName,
-                 auth_key: common.Key | None,
-                 priv_key: common.Key | None):
+                 auth_key: key.Key | None,
+                 priv_key: key.Key | None):
         self._endpoint = endpoint
         self._context = context
         self._user = user

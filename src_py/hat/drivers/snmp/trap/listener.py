@@ -6,6 +6,7 @@ from hat import aio
 from hat.drivers import udp
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import key
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -43,8 +44,8 @@ async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 
                                v2c_inform_cb: V2CInformCb | None = None,
                                v3_trap_cb: V3TrapCb | None = None,
                                v3_inform_cb: V3InformCb | None = None,
-                               auth_key_cb: common.KeyCb | None = None,
-                               priv_key_cb: common.KeyCb | None = None
+                               auth_key_cb: key.KeyCb | None = None,
+                               priv_key_cb: key.KeyCb | None = None
                                ) -> 'TrapListener':
     """Create trap listener"""
     endpoint = await udp.create(local_addr=local_addr,
@@ -74,8 +75,8 @@ class TrapListener(aio.Resource):
                  v2c_inform_cb: V2CInformCb | None,
                  v3_trap_cb: V3TrapCb | None,
                  v3_inform_cb: V3InformCb | None,
-                 auth_key_cb: common.KeyCb | None,
-                 priv_key_cb: common.KeyCb | None):
+                 auth_key_cb: key.KeyCb | None,
+                 priv_key_cb: key.KeyCb | None):
         self._endpoint = endpoint
         self._v1_trap_cb = v1_trap_cb
         self._v2c_trap_cb = v2c_trap_cb

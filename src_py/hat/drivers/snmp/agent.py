@@ -7,8 +7,9 @@ from hat import aio
 from hat import util
 
 from hat.drivers import udp
-from hat.drivers.snmp import encoder
 from hat.drivers.snmp import common
+from hat.drivers.snmp import encoder
+from hat.drivers.snmp import key
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -33,8 +34,8 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                        v2c_request_cb: V2CRequestCb | None = None,
                        v3_request_cb: V3RequestCb | None = None,
                        engine_ids: Collection[common.EngineId] = [],
-                       auth_key_cb: common.KeyCb | None = None,
-                       priv_key_cb: common.KeyCb | None = None
+                       auth_key_cb: key.KeyCb | None = None,
+                       priv_key_cb: key.KeyCb | None = None
                        ) -> 'Agent':
     """Create agent"""
     endpoint = await udp.create(local_addr=local_addr,
@@ -62,8 +63,8 @@ class Agent(aio.Resource):
                  v2c_request_cb: V2CRequestCb | None,
                  v3_request_cb: V3RequestCb | None,
                  engine_ids: Collection[common.EngineId],
-                 auth_key_cb: common.KeyCb | None,
-                 priv_key_cb: common.KeyCb | None):
+                 auth_key_cb: key.KeyCb | None,
+                 priv_key_cb: key.KeyCb | None):
         self._endpoint = endpoint
         self._v1_request_cb = v1_request_cb
         self._v2c_request_cb = v2c_request_cb

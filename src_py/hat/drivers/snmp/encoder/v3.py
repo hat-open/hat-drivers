@@ -1,8 +1,12 @@
+import hmac
+import secrets
 import typing
 
 from hat import asn1
 
-from hat.drivers.snmp import common
+from hat.drivers.snmp import key
+from hat.drivers.snmp.encoder import common
+from hat.drivers.snmp.encoder import openssl
 from hat.drivers.snmp.encoder import v2c
 
 
@@ -31,33 +35,85 @@ class Msg(typing.NamedTuple):
 
 
 def encode_msg(msg: Msg,
-               auth_key: common.Key | None = None,
-               priv_key: common.Key | None = None
+               auth_key: key.Key | None = None,
+               priv_key: key.Key | None = None
                ) -> asn1.Value:
     if ((msg.type == MsgType.GET_BULK_REQUEST and not isinstance(msg.pdu, BulkPdu)) or  # NOQA
             (msg.type != MsgType.GET_BULK_REQUEST and isinstance(msg.pdu, BulkPdu))):  # NOQA
         raise ValueError('unsupported message type / pdu')
 
-    raise NotImplementedError()
+    if msg.auth and auth_key is None:
+        raise Exception('authentication key not provided')
 
-    # data = msg.type.value, v2c.encode_pdu(msg.pdu)
+    if msg.priv and priv_key is None:
+        raise Exception('privacy key not provided')
 
-    # return {'msgVersion': common.Version.V3.value,
-    #         'msgGlobalData': {'msgID': msg.id,
-    #                           'msgMaxSize': 2147483647,
-    #                           'msgFlags': bytes([4
-    #                                              if msg.reportable else 0]),
-    #                           'msgSecurityModel': 3},
-    #         'msgSecurityParameters': b'',
-    #         'msgData': ('plaintext', {
-    #             'contextEngineID': msg.context.engine_id.encode(),
-    #             'contextName': msg.context.name.encode(),
-    #             'data': data})}
+    if msg.priv and not msg.auth:
+        raise Exception('invalid auth/priv combination')
+
+    msg_flags = bytes([(4 if msg.reportable else 0) |
+                       (2 if msg.priv else 0) |
+                       (1 if msg.auth else 0)])
+
+    data = msg.type.value, v2c.encode_pdu(msg.pdu)
+
+    pdu = {'contextEngineID': msg.context.engine_id.encode(),
+           'contextName': msg.context.name.encode(),
+           'data': data}
+
+    if msg.priv:
+        pdu_bytes = common.encoder.encode(
+            'SNMPv3MessageSyntax', 'ScopedPDU', pdu)
+
+        encrypted_pdu, priv_params_bytes = _encrypt_pdu(priv_key, pdu_bytes)
+        msg_data = 'encryptedPDU', encrypted_pdu
+
+    else:
+        priv_params_bytes = b''
+        msg_data = 'plaintext', pdu
+
+    auth_params_bytes = b'\x00' * 12 if msg.auth else b''
+
+    security_params = {
+        'msgAuthoritativeEngineID': msg.authorative_engine.id.encode(),
+        'msgAuthoritativeEngineBoots': msg.authorative_engine.boots,
+        'msgAuthoritativeEngineTime': msg.authorative_engine.time,
+        'msgUserName': msg.user.encode(),
+        'msgAuthenticationParameters': auth_params_bytes,
+        'msgPrivacyParameters': priv_params_bytes}
+
+    security_params_bytes = common.encoder.encode(
+        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        security_params)
+
+    msg_value = {'msgVersion': common.Version.V3.value,
+                 'msgGlobalData': {'msgID': msg.id,
+                                   'msgMaxSize': 2147483647,
+                                   'msgFlags': bytes([msg_flags]),
+                                   'msgSecurityModel': 3},
+                 'msgSecurityParameters': security_params_bytes,
+                 'msgData': msg_data}
+
+    if msg.auth:
+        msg_bytes = common.encoder.encode(
+            'SNMPv3MessageSyntax', 'SNMPv3Message', msg_value)
+
+        auth_params_bytes = _gen_auth_params_bytes(auth_key, msg_bytes)
+
+        security_params['msgAuthenticationParameters'] = auth_params_bytes
+
+        security_params_bytes = common.encoder.encode(
+            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            security_params)
+
+        msg_value['msgSecurityParameters'] = security_params_bytes
+
+    return msg_value
 
 
 def decode_msg(msg: asn1.Value,
-               auth_key_cb: common.KeyCb | None = None,
-               priv_key_cb: common.KeyCb | None = None
+               auth_key_cb: key.KeyCb | None = None,
+               priv_key_cb: key.KeyCb | None = None
                ) -> Msg:
     raise NotImplementedError()
 
@@ -76,6 +132,54 @@ def decode_msg(msg: asn1.Value,
     #            reportable=reportable,
     #            context=context,
     #            pdu=pdu)
+
+
+def _encrypt_pdu(priv_key, pdu_bytes):
+    if priv_key.key_type != key.KeyType.DES:
+        raise Exception('invalid priv key type')
+
+    if len(priv_key.data) != 16:
+        raise Exception('invalid key length')
+
+    des_key = priv_key.data[:8]
+    pre_iv = priv_key.data[8:]
+
+    # TODO use boot counter as first 4 bytes of salt
+    salt = secrets.token_bytes(8)
+
+    iv = bytes(x ^ y for x, y in zip(pre_iv, salt))
+
+    encrypted_pdu = openssl.des_encrypt(des_key=des_key,
+                                        data=pdu_bytes,
+                                        iv=iv)
+
+    return encrypted_pdu, salt
+
+
+def _gen_auth_params_bytes(auth_key, msg_bytes):
+    if auth_key.key_type == key.KeyType.MD5:
+        return _gen_md5_auth_params_bytes(auth_key, msg_bytes)
+
+    if auth_key.key_type == key.KeyType.SHA:
+        return _gen_sha_auth_params_bytes(auth_key, msg_bytes)
+
+    raise Exception('invalid auth key type')
+
+
+def _gen_md5_auth_params_bytes(auth_key, msg_bytes):
+    if len(auth_key.data) != 16:
+        raise Exception('invalid key length')
+
+    digest = hmac.digest(auth_key.data, msg_bytes, 'md5')
+    return digest[:12]
+
+
+def _gen_sha_auth_params_bytes(auth_key, msg_bytes):
+    if len(auth_key.data) != 20:
+        raise Exception('invalid key length')
+
+    digest = hmac.digest(auth_key.data, msg_bytes, 'sha1')
+    return digest[:12]
 
 
 def _decode_str(x):
