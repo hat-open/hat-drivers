@@ -298,12 +298,12 @@ async def test_invalid_response(agent_addr, version_module, msg_type,
             auth=False,
             priv=False,
             authorative_engine=v3.AuthorativeEngine(
-                id='abc',
+                id=b'abc',
                 boots=1234,
                 time=456),
             user='user_xyz',
             context=snmp.Context(
-                engine_id='engine_abc',
+                engine_id=b'engine_abc',
                 name='comm_xyz'),
             pdu=pdu)
     else:

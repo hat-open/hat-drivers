@@ -78,7 +78,7 @@ class V3Manager(common.Manager):
         authorative_engine = encoder.v3.AuthorativeEngine(id='',
                                                           boots=0,
                                                           time=0)
-        context = common.Context(engine_id='',
+        context = common.Context(engine_id=b'',
                                  name='')
 
         await self._send(req=req,

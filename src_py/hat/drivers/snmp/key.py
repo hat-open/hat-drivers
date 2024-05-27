@@ -57,7 +57,7 @@ def _create_key_data(hash_name, password, engine_id):
 
     h = hashlib.new(hash_name)
     h.update(extended_password_hash)
-    h.update(engine_id.encode())
+    h.update(bytes(engine_id))
     h.update(extended_password_hash)
 
     return h.digest()

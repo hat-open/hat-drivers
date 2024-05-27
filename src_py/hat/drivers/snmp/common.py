@@ -156,7 +156,7 @@ CommunityName: typing.TypeAlias = str
 
 UserName: typing.TypeAlias = str
 
-EngineId: typing.TypeAlias = str
+EngineId: typing.TypeAlias = util.Bytes
 
 
 class Context(typing.NamedTuple):

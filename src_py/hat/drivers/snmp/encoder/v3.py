@@ -17,7 +17,7 @@ Pdu = v2c.Pdu
 
 
 class AuthorativeEngine(typing.NamedTuple):
-    id: str
+    id: common.EngineId
     boots: int
     time: int
 
@@ -57,7 +57,7 @@ def encode_msg(msg: Msg,
 
     data = msg.type.value, v2c.encode_pdu(msg.pdu)
 
-    pdu = {'contextEngineID': msg.context.engine_id.encode(),
+    pdu = {'contextEngineID': msg.context.engine_id,
            'contextName': msg.context.name.encode(),
            'data': data}
 
@@ -75,7 +75,7 @@ def encode_msg(msg: Msg,
     auth_params_bytes = b'\x00' * 12 if msg.auth else b''
 
     security_params = {
-        'msgAuthoritativeEngineID': msg.authorative_engine.id.encode(),
+        'msgAuthoritativeEngineID': msg.authorative_engine.id,
         'msgAuthoritativeEngineBoots': msg.authorative_engine.boots,
         'msgAuthoritativeEngineTime': msg.authorative_engine.time,
         'msgUserName': msg.user.encode(),
@@ -89,7 +89,7 @@ def encode_msg(msg: Msg,
     msg_value = {'msgVersion': common.Version.V3.value,
                  'msgGlobalData': {'msgID': msg.id,
                                    'msgMaxSize': 2147483647,
-                                   'msgFlags': bytes([msg_flags]),
+                                   'msgFlags': msg_flags,
                                    'msgSecurityModel': 3},
                  'msgSecurityParameters': security_params_bytes,
                  'msgData': msg_data}
@@ -122,18 +122,18 @@ def decode_msg(msg: asn1.Value,
         raise Exception('unsupported security model')
 
     msg_id = msg['msgGlobalData']['msgID']
-    msg_flags = msg['msgGlobalData']['msgFlags'][0]
+    msg_flags = msg['msgGlobalData']['msgFlags']
 
-    reportable = bool(msg_flags & 4)
-    auth = bool(msg_flags & 1)
-    priv = bool(msg_flags & 2)
+    reportable = bool(msg_flags[0] & 4)
+    auth = bool(msg_flags[0] & 1)
+    priv = bool(msg_flags[0] & 2)
 
     security_params, _ = common.encoder.decode(
         'USMSecurityParametersSyntax', 'UsmSecurityParameters',
         msg['msgSecurityParameters'])
 
     authorative_engine = AuthorativeEngine(
-        id=_decode_str(security_params['msgAuthoritativeEngineID']),
+        id=security_params['msgAuthoritativeEngineID'],
         boots=security_params['msgAuthoritativeEngineBoots'],
         time=security_params['msgAuthoritativeEngineTime'])
 
@@ -194,7 +194,7 @@ def decode_msg(msg: asn1.Value,
     msg_type = MsgType(pdu['data'][0])
 
     context = common.Context(engine_id=pdu['contextEngineID'],
-                             name=pdu['contextName'])
+                             name=_decode_str(pdu['contextName']))
 
     msg_pdu = v2c.decode_pdu(msg_type, pdu['data'][1])
 
