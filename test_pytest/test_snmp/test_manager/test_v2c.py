@@ -152,7 +152,7 @@ async def test_send(agent_addr, req, response_exp, community):
                                             community=community)
 
     # sends request
-    req_f = manager.async_group.spawn(manager.send, req)
+    req_f = asyncio.create_task(manager.send(req))
     req_bytes, manager_addr = await agent.receive_queue.get()
     req_msg = encoder.decode(req_bytes)
     assert req_msg.type == req_to_msg_type(req)
@@ -218,13 +218,12 @@ async def test_close_on_send(agent_addr):
         remote_addr=agent_addr,
         community='comm_xyz')
 
-    send_future = manager.async_group.spawn(
-        manager.send, snmp.GetDataReq(names=[]))
+    send_future = asyncio.create_task(manager.send(snmp.GetDataReq(names=[])))
     await asyncio.sleep(0.01)
 
     manager.close()
 
-    with pytest.raises(Exception):
+    with pytest.raises(ConnectionError):
         await send_future
 
     await manager.async_close()
@@ -238,8 +237,8 @@ async def test_request_id(agent_addr, caplog):
         remote_addr=agent_addr,
         community=community)
 
-    send_future = manager.async_group.spawn(
-        manager.send, snmp.GetDataReq(names=[(1, 2, 3)]))
+    send_future = asyncio.create_task(
+        manager.send(snmp.GetDataReq(names=[(1, 2, 3)])))
     req_bytes, manager_addr = await agent.receive_queue.get()
     req_msg = encoder.decode(req_bytes)
     assert req_msg.pdu.request_id
@@ -294,7 +293,7 @@ async def test_invalid_response(agent_addr, version_module, msg_type,
         remote_addr=agent_addr,
         community='comm_xyz')
 
-    req_f = manager.async_group.spawn(manager.send, snmp.GetDataReq(names=[]))
+    req_f = asyncio.create_task(manager.send(snmp.GetDataReq(names=[])))
 
     req_bytes, manager_addr = await agent.receive_queue.get()
     req_msg = encoder.decode(req_bytes)
