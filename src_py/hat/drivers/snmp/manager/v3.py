@@ -16,8 +16,8 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v3_manager(remote_addr: udp.Address,
-                            context: common.Context,
-                            user: common.UserName,
+                            context: common.Context | None = None,
+                            user: common.UserName = 'public',
                             auth_key: key.Key | None = None,
                             priv_key: key.Key | None = None
                             ) -> common.Manager:
@@ -50,7 +50,7 @@ class V3Manager(common.Manager):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 context: common.Context,
+                 context: common.Context | None,
                  user: common.UserName,
                  auth_key: key.Key | None,
                  priv_key: key.Key | None):
@@ -62,9 +62,7 @@ class V3Manager(common.Manager):
         self._loop = asyncio.get_running_loop()
         self._req_msg_futures = {}
         self._next_request_ids = itertools.count(1)
-        self._authorative_engine = encoder.v3.AuthorativeEngine(id='',
-                                                                boots=0,
-                                                                time=0)
+        self._authorative_engine = None
         self._authorative_engine_set_time = time.monotonic()
 
         self.async_group.spawn(self._receive_loop)
@@ -89,13 +87,20 @@ class V3Manager(common.Manager):
                          priv_key=None)
 
     async def send(self, req: common.Request) -> common.Response:
+        if self._authorative_engine is None:
+            raise Exception('manager not synchronized')
+
         dt = time.monotonic() - self._authorative_engine_set_time
         authorative_engine = self._authorative_engine._replace(
             time=round(self._authorative_engine.time + dt))
 
+        context = (self._context if self._context is not None
+                   else common.Context(engine_id=authorative_engine.id,
+                                       name=''))
+
         return await self._send(req=req,
                                 authorative_engine=authorative_engine,
-                                context=self._context,
+                                context=context,
                                 user=self._user,
                                 auth_key=self._auth_key,
                                 priv_key=self._priv_key)

@@ -31,7 +31,7 @@ class V1TrapSender(common.TrapSender):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 community: common.CommunityName):
+                 community: common.CommunityName = 'public'):
         self._endpoint = endpoint
         self._community = community
         self._addr = tuple(int(i)

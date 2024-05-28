@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v2c_manager(remote_addr: udp.Address,
-                             community: common.CommunityName
+                             community: common.CommunityName = 'public'
                              ) -> common.Manager:
     """Create v2c manager"""
     endpoint = await udp.create(local_addr=None,

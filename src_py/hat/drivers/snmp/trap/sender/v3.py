@@ -17,7 +17,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_v3_trap_sender(remote_addr: udp.Address,
                                 context: common.Context,
-                                user: common.UserName,
+                                user: common.UserName = 'public',
                                 auth_key: key.Key | None = None,
                                 priv_key: key.Key | None = None
                                 ) -> common.TrapSender:
