@@ -150,7 +150,7 @@ def decode_msg(msg: asn1.Value,
         auth_params_bytes = security_params['msgAuthenticationParameters']
 
         security_params = {**security_params,
-                           'msgAuthenticationParameters': b'\x00' * 8}
+                           'msgAuthenticationParameters': b'\x00' * 12}
         security_params_bytes = common.encoder.encode(
             'USMSecurityParametersSyntax', 'UsmSecurityParameters',
             security_params)

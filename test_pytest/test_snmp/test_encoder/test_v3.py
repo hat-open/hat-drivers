@@ -199,7 +199,17 @@ def test_auth_keys_dont_match(encode_auth_key, decode_auth_key):
                              data=[]))
 
     msg_bytes = encoder.encode(msg, auth_key=encode_auth_key)
-    with pytest.raises(Exception, match='authentication failed'):
+
+    if decode_auth_key is None:
+        error = 'auth key not available'
+
+    elif decode_auth_key.type not in (key.KeyType.MD5, key.KeyType.SHA):
+        error = 'invalid auth key type'
+
+    else:
+        error = 'authentication failed'
+
+    with pytest.raises(Exception, match=error):
         encoder.decode(msg_bytes, auth_key_cb=on_auth_key)
 
 
