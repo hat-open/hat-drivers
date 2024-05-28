@@ -210,7 +210,7 @@ def decode_msg(msg: asn1.Value,
 
 
 def _encrypt_pdu(priv_key, pdu_bytes):
-    if priv_key.key_type != key.KeyType.DES:
+    if priv_key.type != key.KeyType.DES:
         raise Exception('invalid priv key type')
 
     if len(priv_key.data) != 16:
@@ -232,7 +232,7 @@ def _encrypt_pdu(priv_key, pdu_bytes):
 
 
 def _decrypt_pdu(priv_key, salt, pdu_bytes):
-    if priv_key.key_type != key.KeyType.DES:
+    if priv_key.type != key.KeyType.DES:
         raise Exception('invalid priv key type')
 
     if len(priv_key.data) != 16:
@@ -254,10 +254,10 @@ def _decrypt_pdu(priv_key, salt, pdu_bytes):
 
 
 def _gen_auth_params_bytes(auth_key, msg_bytes):
-    if auth_key.key_type == key.KeyType.MD5:
+    if auth_key.type == key.KeyType.MD5:
         return _gen_md5_auth_params_bytes(auth_key, msg_bytes)
 
-    if auth_key.key_type == key.KeyType.SHA:
+    if auth_key.type == key.KeyType.SHA:
         return _gen_sha_auth_params_bytes(auth_key, msg_bytes)
 
     raise Exception('invalid auth key type')
