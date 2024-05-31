@@ -152,37 +152,38 @@ async def test_send(agent_addr, req, response_exp, community):
                                             community=community)
 
     # sends request
-    req_f = asyncio.create_task(manager.send(req))
-    req_bytes, manager_addr = await agent.receive_queue.get()
-    req_msg = encoder.decode(req_bytes)
-    assert req_msg.type == req_to_msg_type(req)
-    assert req_msg.community == community
-    request_id = req_msg.pdu.request_id
-    assert isinstance(request_id, int)
+    async with aio.Group() as group:
+        send_fut = group.spawn(manager.send, req)
+        req_bytes, manager_addr = await agent.receive_queue.get()
+        req_msg = encoder.decode(req_bytes)
+        assert req_msg.type == req_to_msg_type(req)
+        assert req_msg.community == community
+        request_id = req_msg.pdu.request_id
+        assert isinstance(request_id, int)
 
-    expected_data = req_to_data(req)
-    if isinstance(req, snmp.GetBulkDataReq):
-        expected_pdu = v2c.BulkPdu(
-            request_id=request_id,
-            non_repeaters=0,
-            max_repetitions=0,
-            data=expected_data)
-    else:
-        expected_pdu = v2c.BasicPdu(
-            request_id=request_id,
-            error=snmp.Error(type=snmp.ErrorType.NO_ERROR,
-                             index=0),
-            data=expected_data)
-    assert req_msg.pdu == expected_pdu
-    assert not req_f.done()
+        expected_data = req_to_data(req)
+        if isinstance(req, snmp.GetBulkDataReq):
+            expected_pdu = v2c.BulkPdu(
+                request_id=request_id,
+                non_repeaters=0,
+                max_repetitions=0,
+                data=expected_data)
+        else:
+            expected_pdu = v2c.BasicPdu(
+                request_id=request_id,
+                error=snmp.Error(type=snmp.ErrorType.NO_ERROR,
+                                 index=0),
+                data=expected_data)
+        assert req_msg.pdu == expected_pdu
+        assert not send_fut.done()
 
-    # receives response
-    resp_msg = resp_msg_from_resp(
-        response_exp, community, req_msg.pdu.request_id)
-    agent.send(resp_msg, manager_addr)
-    response = await req_f
-    assert response == response_exp
-    assert agent.receive_queue.empty()
+        # receives response
+        resp_msg = resp_msg_from_resp(
+            response_exp, community, req_msg.pdu.request_id)
+        agent.send(resp_msg, manager_addr)
+        response = await send_fut
+        assert response == response_exp
+        assert agent.receive_queue.empty()
 
     await manager.async_close()
     await agent.async_close()
@@ -218,13 +219,14 @@ async def test_close_on_send(agent_addr):
         remote_addr=agent_addr,
         community='comm_xyz')
 
-    send_future = asyncio.create_task(manager.send(snmp.GetDataReq(names=[])))
-    await asyncio.sleep(0.01)
+    async with aio.Group(log_exceptions=False) as group:
+        send_future = group.spawn(manager.send, snmp.GetDataReq(names=[]))
+        await asyncio.sleep(0.01)
 
-    manager.close()
+        manager.close()
 
-    with pytest.raises(ConnectionError):
-        await send_future
+        with pytest.raises(ConnectionError):
+            await send_future
 
     await manager.async_close()
 
@@ -237,25 +239,35 @@ async def test_request_id(agent_addr, caplog):
         remote_addr=agent_addr,
         community=community)
 
-    send_future = asyncio.create_task(
-        manager.send(snmp.GetDataReq(names=[(1, 2, 3)])))
-    req_bytes, manager_addr = await agent.receive_queue.get()
-    req_msg = encoder.decode(req_bytes)
-    assert req_msg.pdu.request_id
+    async with aio.Group() as group:
+        send_future = group.spawn(
+            manager.send, snmp.GetDataReq(names=[(1, 2, 3)]))
+        req_bytes, manager_addr = await agent.receive_queue.get()
+        req_msg = encoder.decode(req_bytes)
+        assert isinstance(req_msg.pdu.request_id, int)
 
-    # no response on wrong request_id
-    resp_msg = resp_msg_from_resp([], community, req_msg.pdu.request_id + 1)
-    agent.send(resp_msg, manager_addr)
-    with pytest.raises(asyncio.TimeoutError):
-        await aio.wait_for(asyncio.shield(send_future), 0.05)
-    assert manager.is_open
-    invalid_response_log = caplog.records[0]
-    assert invalid_response_log.levelname == 'WARNING'
+        # no response on wrong request_id
+        resp_msg = resp_msg_from_resp(
+            [], community, req_msg.pdu.request_id + 123)
+        agent.send(resp_msg, manager_addr)
+        with pytest.raises(asyncio.TimeoutError):
+            await aio.wait_for(asyncio.shield(send_future), 0.05)
+        assert manager.is_open
+        invalid_response_log = caplog.records[0]
+        assert invalid_response_log.levelname == 'WARNING'
 
-    # response on correct request_id
-    resp_msg = resp_msg_from_resp([], community, req_msg.pdu.request_id)
-    agent.send(resp_msg, manager_addr)
-    await send_future
+        # response on correct request_id
+        resp_msg = resp_msg_from_resp([], community, req_msg.pdu.request_id)
+        agent.send(resp_msg, manager_addr)
+        await send_future
+
+        assert manager.is_open
+
+        group.spawn(manager.send, snmp.GetDataReq(names=[]))
+        req_bytes, manager_addr = await agent.receive_queue.get()
+        req_msg_2 = encoder.decode(req_bytes)
+        assert req_msg_2.pdu.request_id > req_msg.pdu.request_id
+        assert manager.is_open
 
     await manager.async_close()
     await agent.async_close()
@@ -279,58 +291,65 @@ async def test_invalid_request(agent_addr, invalid_request):
 
 
 @pytest.mark.parametrize(
-    "version_module, msg_type, community", [
-        (v2c, v2c.MsgType.RESPONSE, 'abc'),  # community
-        (v2c, v2c.MsgType.GET_NEXT_REQUEST, 'comm_xyz'),  # msg_type
-        (v2c, v2c.MsgType.GET_REQUEST, 'comm_xyz'),  # msg_type
-        (v1, v1.MsgType.GET_RESPONSE, 'comm_xyz'),  # version
-        (v3, v3.MsgType.RESPONSE, 'comm_xyz'),  # version
+    "version, msg_type, community", [
+        (snmp.Version.V2C, v2c.MsgType.RESPONSE, 'abc'),  # community
+        (snmp.Version.V2C, v2c.MsgType.GET_NEXT_REQUEST, 'comm_xyz'
+         ),  # msg_type
+        (snmp.Version.V2C, v2c.MsgType.GET_REQUEST, 'comm_xyz'),  # msg_type
+        (snmp.Version.V1, v1.MsgType.GET_RESPONSE, 'comm_xyz'),  # version
+        (snmp.Version.V3, v3.MsgType.RESPONSE, 'comm_xyz'),  # version
     ])
-async def test_invalid_response(agent_addr, version_module, msg_type,
-                                community, caplog):
+async def test_invalid_response(agent_addr, version, msg_type, community,
+                                caplog):
+    version_module = {
+        snmp.Version.V1: v1,
+        snmp.Version.V2C: v2c,
+        snmp.Version.V3: v3}[version]
+
     agent = await create_mock_agent(agent_addr)
     manager = await snmp.create_v2c_manager(
         remote_addr=agent_addr,
         community='comm_xyz')
 
-    req_f = asyncio.create_task(manager.send(snmp.GetDataReq(names=[])))
+    async with aio.Group() as group:
+        req_f = group.spawn(manager.send, snmp.GetDataReq(names=[]))
 
-    req_bytes, manager_addr = await agent.receive_queue.get()
-    req_msg = encoder.decode(req_bytes)
+        req_bytes, manager_addr = await agent.receive_queue.get()
+        req_msg = encoder.decode(req_bytes)
 
-    pdu = version_module.BasicPdu(
-        request_id=req_msg.pdu.request_id,
-        error=snmp.Error(type=snmp.ErrorType.NO_ERROR, index=0),
-        data=[])
+        pdu = version_module.BasicPdu(
+            request_id=req_msg.pdu.request_id,
+            error=snmp.Error(type=snmp.ErrorType.NO_ERROR, index=0),
+            data=[])
 
-    if version_module.__name__.endswith('v3'):
-        resp_msg = v3.Msg(
-            type=msg_type,
-            id=123,
-            reportable=False,
-            auth=False,
-            priv=False,
-            authorative_engine=v3.AuthorativeEngine(
-                id=b'abc',
-                boots=1234,
-                time=456),
-            user='user_xyz',
-            context=snmp.Context(
-                engine_id=b'engine_abc',
-                name='comm_xyz'),
-            pdu=pdu)
-    else:
-        resp_msg = version_module.Msg(
-            type=msg_type,
-            community=community,
-            pdu=pdu)
+        if version == snmp.Version.V3:
+            resp_msg = v3.Msg(
+                type=msg_type,
+                id=123,
+                reportable=False,
+                auth=False,
+                priv=False,
+                authorative_engine=v3.AuthorativeEngine(
+                    id=b'abc',
+                    boots=1234,
+                    time=456),
+                user='user_xyz',
+                context=snmp.Context(
+                    engine_id=b'engine_abc',
+                    name='comm_xyz'),
+                pdu=pdu)
+        else:
+            resp_msg = version_module.Msg(
+                type=msg_type,
+                community=community,
+                pdu=pdu)
 
-    agent.send(resp_msg, manager_addr)
-    await asyncio.sleep(0.01)
+        agent.send(resp_msg, manager_addr)
+        await asyncio.sleep(0.01)
 
-    assert not req_f.done()
-    invalid_response_log = caplog.records[0]
-    assert invalid_response_log.levelname == 'WARNING'
+        assert not req_f.done()
+        invalid_response_log = caplog.records[0]
+        assert invalid_response_log.levelname == 'WARNING'
 
     await manager.async_close()
     await agent.async_close()

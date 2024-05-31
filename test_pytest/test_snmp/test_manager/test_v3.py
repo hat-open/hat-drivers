@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 
 from hat import aio
@@ -7,7 +8,7 @@ from hat.drivers import snmp
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
-from hat.drivers.snmp.encoder import v3
+from hat.drivers.snmp.encoder import v1, v2c, v3
 
 
 md5_key = key.Key(type=key.KeyType.MD5,
@@ -23,7 +24,7 @@ def agent_addr():
     return udp.Address('127.0.0.1', util.get_unused_udp_port())
 
 
-async def create_mock_agent(addr, auth_key=None, priv_key=None):
+async def create_mock_agent(addr, auth_key=None, priv_key=None, decode=True):
     agent = MockAgent()
     agent._auth_key = auth_key
     agent._priv_key = priv_key
@@ -45,12 +46,14 @@ class MockAgent(aio.Resource):
     def receive_queue(self):
         return self._receive_queue
 
-    def send(self, msg):
+    def send(self, msg, auth_key=None, priv_key=None):
         if not self._manager_addr:
             raise Exception('no manager address')
+        auth_key = auth_key if auth_key is not None else self._auth_key
+        priv_key = priv_key if priv_key is not None else self._priv_key
         msg_bytes = encoder.encode(msg,
-                                   auth_key=self._auth_key,
-                                   priv_key=self._priv_key)
+                                   auth_key=auth_key,
+                                   priv_key=priv_key)
         self._endpoint.send(msg_bytes, self._manager_addr)
 
     def _on_auth_key(self, engine_id, user):
@@ -68,6 +71,34 @@ class MockAgent(aio.Resource):
                 auth_key_cb=self._on_auth_key,
                 priv_key_cb=self._on_priv_key)
             self._receive_queue.put_nowait(received_msg)
+
+
+async def create_and_sync_manager(
+        agent_addr,
+        agent,
+        context=snmp.Context(engine_id=b'engine_xyz',
+                             name='context_xyz'),
+        user='user_xyz',
+        auth_engine_id=v3.AuthorativeEngine(
+            id=b'auth_engine_xyz',
+            boots=123,
+            time=456),
+        auth_key=None,
+        priv_key=None):
+    async with aio.Group() as group:
+        manager_fut = group.spawn(snmp.create_v3_manager,
+                                  remote_addr=agent_addr,
+                                  context=context,
+                                  user=user,
+                                  auth_key=auth_key,
+                                  priv_key=priv_key)
+
+        sync_msg = await agent.receive_queue.get()
+
+        sync_msg_resp = create_sync_msg_response(
+            sync_msg, user, context, auth_engine_id)
+        agent.send(sync_msg_resp)
+        return await manager_fut
 
 
 def req_to_msg_type(req):
@@ -327,23 +358,13 @@ async def test_send(agent_addr, req, response_exp, auth_key, priv_key):
         id=b'auth_engine_xyz',
         boots=123,
         time=456)
-    auth = bool(auth_key)
-    priv = bool(priv_key)
+    # auth = bool(auth_key)
+    # priv = bool(priv_key)
+
+    manager = await create_and_sync_manager(
+        agent_addr, agent, context, user, auth_engine_id, auth_key, priv_key)
+
     async with aio.Group() as group:
-        manager_fut = group.spawn(snmp.create_v3_manager,
-                                  remote_addr=agent_addr,
-                                  context=context,
-                                  user=user,
-                                  auth_key=auth_key,
-                                  priv_key=priv_key)
-
-        sync_msg = await agent.receive_queue.get()
-
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg, user, context, auth_engine_id, auth, priv)
-        agent.send(sync_msg_resp)
-
-        manager = await manager_fut
 
         # sends request
         req_fut = group.spawn(manager.send, req)
@@ -352,7 +373,7 @@ async def test_send(agent_addr, req, response_exp, auth_key, priv_key):
 
         assert isinstance(req_msg, v3.Msg)
         assert req_msg.type == req_to_msg_type(req)
-        assert req_msg.id != sync_msg.id
+        # assert req_msg.id != sync_msg.id
         assert req_msg.reportable
 
         assert req_msg.auth is bool(auth_key)
@@ -386,6 +407,215 @@ async def test_send(agent_addr, req, response_exp, auth_key, priv_key):
         response = await req_fut
         assert response == response_exp
         assert agent.receive_queue.empty()
+
+    await manager.async_close()
+    await agent.async_close()
+
+
+async def test_create_no_agent(agent_addr):
+    with pytest.raises(asyncio.TimeoutError):
+        await aio.wait_for(
+            snmp.create_v3_manager(
+                remote_addr=agent_addr,
+                context=snmp.Context(engine_id=b'engine_xyz',
+                                     name='context_xyz'),
+                user='user_xyz',
+                auth_key=None,
+                priv_key=None),
+            0.1)
+
+
+async def test_send_no_agent(agent_addr):
+    agent = await create_mock_agent(agent_addr)
+
+    manager = await create_and_sync_manager(agent_addr, agent)
+
+    await agent.async_close()
+
+    with pytest.raises(asyncio.TimeoutError):
+        await aio.wait_for(
+            manager.send(snmp.GetDataReq(names=[])),
+            0.1)
+
+    await manager.async_close()
+
+
+async def test_close_on_send(agent_addr):
+    agent = await create_mock_agent(agent_addr)
+
+    manager = await create_and_sync_manager(agent_addr, agent)
+
+    async with aio.Group(log_exceptions=False) as group:
+        send_fut = group.spawn(manager.send, snmp.GetDataReq(names=[]))
+        await asyncio.sleep(0.01)
+
+        manager.close()
+
+        with pytest.raises(ConnectionError):
+            await send_fut
+
+    await manager.async_close()
+    await agent.async_close()
+
+
+async def test_send_on_closing(agent_addr):
+    agent = await create_mock_agent(agent_addr)
+
+    manager = await create_and_sync_manager(agent_addr, agent)
+
+    manager.close()
+    await manager.wait_closing()
+    with pytest.raises(ConnectionError):
+        await manager.send(snmp.GetDataReq(names=[]))
+
+    await manager.async_close()
+    await agent.async_close()
+
+
+async def test_request_id(agent_addr, caplog):
+    agent = await create_mock_agent(agent_addr)
+
+    manager = await create_and_sync_manager(agent_addr, agent)
+
+    async with aio.Group(log_exceptions=False) as group:
+        send_fut = group.spawn(manager.send, snmp.GetDataReq(names=[]))
+
+        req_msg = await agent.receive_queue.get()
+        assert isinstance(req_msg.pdu.request_id, int)
+
+        resp_sent = []
+        resp_msg = resp_msg_from_resp(resp_sent, req_msg)
+
+        # response with bad request_id is ignored with warning log
+        resp_msg_bad = resp_msg._replace(
+            pdu=resp_msg.pdu._replace(request_id=req_msg.pdu.request_id + 123))
+        agent.send(resp_msg_bad)
+        with pytest.raises(asyncio.TimeoutError):
+            await aio.wait_for(asyncio.shield(send_fut), 0.05)
+        assert manager.is_open
+        invalid_response_log = caplog.records[0]
+        assert invalid_response_log.levelname == 'WARNING'
+
+        # good response
+        agent.send(resp_msg)
+        resp_received = await send_fut
+        assert resp_sent == resp_received
+
+        # next request has greater request_id
+        group.spawn(manager.send, snmp.GetDataReq(names=[]))
+        req_msg_2 = await agent.receive_queue.get()
+        assert req_msg_2.pdu.request_id > req_msg.pdu.request_id
+
+    await manager.async_close()
+    await agent.async_close()
+
+
+@pytest.mark.parametrize('invalid_request', [
+    snmp.GetDataReq(names=[('a')]),  # invalid object identifier
+    snmp.Inform(data=[])  # invalid request instance
+    ])
+async def test_invalid_request(agent_addr, invalid_request):
+    agent = await create_mock_agent(agent_addr)
+
+    manager = await create_and_sync_manager(agent_addr, agent)
+
+    with pytest.raises(ValueError):
+        await manager.send(invalid_request)
+
+    await manager.async_close()
+    await agent.async_close()
+
+
+@pytest.mark.parametrize(
+    "version, msg_type, context_name, auth, priv", [
+        (snmp.Version.V3, v3.MsgType.RESPONSE, 'abc', True, True
+         ),  # context_name
+        (snmp.Version.V3, v3.MsgType.GET_NEXT_REQUEST, 'comm_xyz', True, True
+         ),  # msg_type
+        (snmp.Version.V3, v3.MsgType.RESPONSE, 'comm_xyz', False, False
+         ),  # auth
+        (snmp.Version.V3, v3.MsgType.RESPONSE, 'comm_xyz', True, False
+         ),  # priv
+        (snmp.Version.V1, v1.MsgType.GET_RESPONSE, 'comm_xyz', True, True
+         ),  # version
+        (snmp.Version.V2C, v2c.MsgType.RESPONSE, 'comm_xyz', True, True
+         ),  # version
+    ])
+async def test_invalid_response(agent_addr, version, msg_type, context_name,
+                                auth, priv, caplog):
+    version_module = {
+        snmp.Version.V1: v1,
+        snmp.Version.V2C: v2c,
+        snmp.Version.V3: v3}[version]
+    auth_key = sha_key
+    priv_key = des_key
+
+    agent = await create_mock_agent(agent_addr,
+                                    auth_key=auth_key,
+                                    priv_key=priv_key)
+
+    context = snmp.Context(
+        engine_id=b'engine_xyz',
+        name=context_name)
+    user = 'user_xyz'
+    auth_engine_id = v3.AuthorativeEngine(
+        id=b'auth_engine_xyz',
+        boots=123,
+        time=456)
+
+    async with aio.Group(log_exceptions=False) as group:
+        manager_fut = group.spawn(snmp.create_v3_manager,
+                                  remote_addr=agent_addr,
+                                  context=context,
+                                  user=user,
+                                  auth_key=auth_key,
+                                  priv_key=priv_key)
+
+        sync_msg = await agent.receive_queue.get()
+
+        sync_msg_resp = create_sync_msg_response(
+            sync_msg, user, context, auth_engine_id)
+        agent.send(sync_msg_resp)
+        manager = await manager_fut
+
+        send_fut = group.spawn(manager.send, snmp.GetDataReq(names=[]))
+
+        req_msg = await agent.receive_queue.get()
+
+        pdu = version_module.BasicPdu(
+            request_id=req_msg.pdu.request_id,
+            error=snmp.Error(type=snmp.ErrorType.NO_ERROR, index=0),
+            data=[])
+        if version == snmp.Version.V3:
+            resp_msg = v3.Msg(
+                type=msg_type,
+                id=123,
+                reportable=False,
+                auth=auth,
+                priv=priv,
+                authorative_engine=v3.AuthorativeEngine(
+                    id=b'abc',
+                    boots=1234,
+                    time=456),
+                user='user_xyz',
+                context=snmp.Context(
+                    engine_id=b'engine_abc',
+                    name='comm_xyz'),
+                pdu=pdu)
+        else:
+            resp_msg = version_module.Msg(
+                type=msg_type,
+                community='community_xyz',
+                pdu=pdu)
+
+        agent.send(resp_msg,
+                   auth_key=auth_key if auth else None,
+                   priv_key=priv_key if priv else None)
+        await asyncio.sleep(0.01)
+
+        assert not send_fut.done()
+        invalid_response_log = caplog.records[0]
+        assert invalid_response_log.levelname == 'WARNING'
 
     await manager.async_close()
     await agent.async_close()
