@@ -198,7 +198,8 @@ class V3Manager(common.Manager):
                                             encoder.v3.MsgType.REPORT):
                         raise Exception('invalid response message type')
 
-                    req_msg, future = self._req_msg_futures[res_msg.request_id]
+                    req_msg, future = self._req_msg_futures[
+                        res_msg.pdu.request_id]
 
                     if res_msg.auth != req_msg.auth:
                         raise Exception('invalid auth flag')
@@ -221,7 +222,7 @@ class V3Manager(common.Manager):
                         if res_msg.pdu.error.type == common.ErrorType.NO_ERROR
                         else res_msg.pdu.error)
 
-                    if future.done():
+                    if not future.done():
                         future.set_result(res)
 
                 except Exception as e:
