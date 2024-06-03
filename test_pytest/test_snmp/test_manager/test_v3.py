@@ -95,8 +95,7 @@ async def create_and_sync_manager(
 
         sync_msg = await agent.receive_queue.get()
 
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg, user, context, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
         agent.send(sync_msg_resp)
         return await manager_fut
 
@@ -134,17 +133,17 @@ def resp_msg_from_resp(resp, request):
                    data=data))
 
 
-def create_sync_msg_response(req, user, context, auth_engine_id,
-                             auth=False, priv=False):
+def create_sync_msg_response(req, auth_engine_id):
     return v3.Msg(
         type=v3.MsgType.RESPONSE,
         id=req.id,
         reportable=False,
-        auth=auth,
-        priv=priv,
+        auth=False,
+        priv=False,
         authorative_engine=auth_engine_id,
-        user=user,
-        context=context,
+        user='',
+        context=snmp.Context(engine_id=b'',
+                             name=''),
         pdu=v3.BasicPdu(
             request_id=req.pdu.request_id,
             error=snmp.Error(snmp.ErrorType.NO_ERROR, 0),
@@ -179,8 +178,7 @@ async def test_create(agent_addr, auth_key, priv_key):
         sync_msg = await agent.receive_queue.get()
 
         # response on sync
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg, user, context, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
         agent.send(sync_msg_resp)
 
         manager = await manager_fut
@@ -200,9 +198,8 @@ async def test_create(agent_addr, auth_key, priv_key):
 @pytest.mark.parametrize("context", [
     snmp.Context(engine_id=b'context_engine_xyz1',
                  name='context_xyz'),
-    snmp.Context(engine_id=b'context_engine_xyz2',
-                 name='')])
-@pytest.mark.parametrize("user", ['user_abc', 'user_xyz'])
+    None])
+@pytest.mark.parametrize("user", ['user_abc', None])
 @pytest.mark.parametrize("auth_engine_id", [
     v3.AuthorativeEngine(id=b'auth_engine_xyz',
                          boots=123,
@@ -221,14 +218,16 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
                     auth_key, priv_key):
     agent = await create_mock_agent(agent_addr, auth_key, priv_key)
 
-    user = 'user_xyz'
     async with aio.Group() as group:
+        kwargs = {
+            'context': context,
+            'auth_key': auth_key,
+            'priv_key': priv_key}
+        if user is not None:
+            kwargs['user'] = user
         manager_fut = group.spawn(snmp.create_v3_manager,
                                   remote_addr=agent_addr,
-                                  context=context,
-                                  user=user,
-                                  auth_key=auth_key,
-                                  priv_key=priv_key)
+                                  **kwargs)
 
         sync_msg = await agent.receive_queue.get()
 
@@ -251,8 +250,7 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
             data=[])
 
         # response on auto sync
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg, user, context, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
         agent.send(sync_msg_resp)
         manager = await manager_fut
 
@@ -267,8 +265,7 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
             pdu=sync_msg.pdu._replace(request_id=sync_msg2.pdu.request_id))
 
         # response on manual sync
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg2, user, context, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg2, auth_engine_id)
         agent.send(sync_msg_resp)
         sync_res = await sync_fut
         assert sync_res is None
@@ -280,8 +277,13 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
         group.spawn(manager.send, req)
 
         req_msg = await agent.receive_queue.get()
-        assert req_msg.context == sync_msg_resp.context
-        assert req_msg.user == sync_msg_resp.user
+        if context is None:
+            assert (req_msg.context.engine_id ==
+                    sync_msg_resp.authorative_engine.id)
+            assert req_msg.context.name == ''
+        else:
+            assert req_msg.context == context
+        assert req_msg.user == user if user is not None else 'public'
         assert req_msg.authorative_engine == sync_msg_resp.authorative_engine
 
     await manager.async_close()
@@ -573,8 +575,7 @@ async def test_invalid_response(agent_addr, version, msg_type, context_name,
 
         sync_msg = await agent.receive_queue.get()
 
-        sync_msg_resp = create_sync_msg_response(
-            sync_msg, user, context, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
         agent.send(sync_msg_resp)
         manager = await manager_fut
 
