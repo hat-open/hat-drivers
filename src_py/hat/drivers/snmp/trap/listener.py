@@ -222,8 +222,8 @@ async def _process_v2c_trap(req_msg, addr, trap_cb):
         raise Exception('not accepting V2C trap')
 
     if (len(req_msg.pdu.data) < 2 or
-            req_msg.pdu.data[0].type != common.DataType.TIME_TICKS or
-            req_msg.pdu.data[1].type != common.DataType.OBJECT_ID):
+            not isinstance(req_msg.pdu.data[0], common.TimeTicksData) or
+            not isinstance(req_msg.pdu.data[1], common.ObjectIdData)):
         raise Exception('invalid trap data')
 
     # TODO: check data names
@@ -263,8 +263,8 @@ async def _process_v3_trap(req_msg, addr, trap_cb):
         raise Exception('not accepting V3 trap')
 
     if (len(req_msg.pdu.data) < 2 or
-            req_msg.pdu.data[0].type != common.DataType.TIME_TICKS or
-            req_msg.pdu.data[1].type != common.DataType.OBJECT_ID):
+            not isinstance(req_msg.pdu.data[0], common.TimeTicksData) or
+            not isinstance(req_msg.pdu.data[1], common.ObjectIdData)):
         raise Exception('invalid trap data')
 
     # TODO: check data names

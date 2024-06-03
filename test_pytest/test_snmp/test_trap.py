@@ -125,7 +125,7 @@ async def test_sender_send_trap_v3(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
-        udp_addr, common.Context(engine_id='engine_id', name='name'),
+        udp_addr, common.Context(engine_id=b'engine_id', name='name'),
         'user')
 
     sender.send_trap(common.Trap(cause=None,
@@ -142,11 +142,11 @@ async def test_sender_send_trap_v3(udp_addr, data):
     assert msg.reportable is False
     assert msg.auth is False
     assert msg.priv is False
-    assert msg.authorative_engine.id == 'engine_id'
+    assert msg.authorative_engine.id == b'engine_id'
     assert msg.authorative_engine.boots == 0
     assert msg.authorative_engine.time is not None
     assert msg.user == 'user'
-    assert msg.context.engine_id == 'engine_id'
+    assert msg.context.engine_id == b'engine_id'
     assert msg.context.name == 'name'
     assert msg.pdu.error.type == common.ErrorType.NO_ERROR
 
@@ -249,12 +249,12 @@ async def test_listener_receive_trap_v3(udp_addr, data):
                          auth=False,
                          priv=False,
                          authorative_engine=encoder.v3.AuthorativeEngine(
-                             id='engine_id',
+                             id=b'engine_id',
                              boots=0,
                              time=0),
                          user='user',
                          context=common.Context(
-                             engine_id='engine_id',
+                             engine_id=b'engine_id',
                              name='name'),
                          pdu=encoder.v2c.BasicPdu(
                              request_id=12345,
@@ -274,7 +274,7 @@ async def test_listener_receive_trap_v3(udp_addr, data):
 
     user, context, tr = await trap_queue.get()
     assert user == 'user'
-    assert context.engine_id == 'engine_id'
+    assert context.engine_id == b'engine_id'
     assert context.name == 'name'
     assert tr.cause is None
     assert tr.oid == (1, 2, 3, 4)
@@ -328,7 +328,7 @@ async def test_sender_send_inform_v3(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
-        udp_addr, common.Context(engine_id='engine_id', name='name'),
+        udp_addr, common.Context(engine_id=b'engine_id', name='name'),
         'user')
 
     inform_req = common.Inform(data=data)
@@ -343,11 +343,11 @@ async def test_sender_send_inform_v3(udp_addr, data):
     assert msg.reportable is False
     assert msg.auth is False
     assert msg.priv is False
-    assert msg.authorative_engine.id == 'engine_id'
+    assert msg.authorative_engine.id == b'engine_id'
     assert msg.authorative_engine.boots == 0
     assert msg.authorative_engine.time is not None
     assert msg.user == 'user'
-    assert msg.context.engine_id == 'engine_id'
+    assert msg.context.engine_id == b'engine_id'
     assert msg.context.name == 'name'
     assert msg.pdu.error.type == common.ErrorType.NO_ERROR
     assert msg.pdu.data == data
@@ -360,12 +360,12 @@ async def test_sender_send_inform_v3(udp_addr, data):
         auth=False,
         priv=False,
         authorative_engine=encoder.v3.AuthorativeEngine(
-            id='engine_id',
+            id=b'engine_id',
             boots=0,
             time=0),
         user='user',
         context=common.Context(
-            engine_id='engine_id',
+            engine_id=b'engine_id',
             name='name'),
         pdu=encoder.v3.BasicPdu(
             request_id=req_id,
@@ -438,7 +438,7 @@ async def test_listener_receive_inform_v3(udp_addr, data):
     def inform_cb(addr, user, context, inform_req):
         assert addr == sender.info.local_addr
         assert user == 'user'
-        assert context.engine_id == 'engine_id'
+        assert context.engine_id == b'engine_id'
         assert context.name == 'name'
         assert inform_req.data == data
 
@@ -453,12 +453,12 @@ async def test_listener_receive_inform_v3(udp_addr, data):
                          auth=False,
                          priv=False,
                          authorative_engine=encoder.v3.AuthorativeEngine(
-                             id='engine_id',
+                             id=b'engine_id',
                              boots=0,
                              time=0),
                          user='user',
                          context=common.Context(
-                             engine_id='engine_id',
+                             engine_id=b'engine_id',
                              name='name'),
                          pdu=encoder.v2c.BasicPdu(
                              request_id=4531,
@@ -475,7 +475,7 @@ async def test_listener_receive_inform_v3(udp_addr, data):
 
     assert isinstance(msg, encoder.v3.Msg)
     assert msg.type == encoder.v3.MsgType.RESPONSE
-    assert msg.context.engine_id == 'engine_id'
+    assert msg.context.engine_id == b'engine_id'
     assert msg.context.name == 'name'
     assert isinstance(msg.pdu, encoder.v3.BasicPdu)
     assert msg.pdu.request_id == 4531

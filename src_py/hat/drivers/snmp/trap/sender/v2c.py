@@ -55,12 +55,10 @@ class V2CTrapSender(common.TrapSender):
         request_id = next(self._next_request_ids)
 
         error = common.Error(common.ErrorType.NO_ERROR, 0)
-        data = [common.Data(type=common.DataType.TIME_TICKS,
-                            name=(1, 3, 6, 1, 2, 1, 1, 3, 0),
-                            value=trap.timestamp),
-                common.Data(type=common.DataType.OBJECT_ID,
-                            name=(1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0),
-                            value=trap.oid),
+        data = [common.TimeTicksData(name=(1, 3, 6, 1, 2, 1, 1, 3, 0),
+                                     value=trap.timestamp),
+                common.ObjectIdData(name=(1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0),
+                                    value=trap.oid),
                 *trap.data]
 
         pdu = encoder.v2c.BasicPdu(request_id=request_id,
@@ -90,7 +88,7 @@ class V2CTrapSender(common.TrapSender):
                                    data=inform.data)
 
         msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.INFORM_REQUEST,
-                              community=inform.context.name,
+                              community=self._community,
                               pdu=pdu)
         msg_bytes = encoder.encode(msg)
 

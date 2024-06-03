@@ -74,12 +74,10 @@ class V3TrapSender(common.TrapSender):
             time=round(time.monotonic()))
 
         error = common.Error(common.ErrorType.NO_ERROR, 0)
-        data = [common.Data(type=common.DataType.TIME_TICKS,
-                            name=(1, 3, 6, 1, 2, 1, 1, 3, 0),
-                            value=trap.timestamp),
-                common.Data(type=common.DataType.OBJECT_ID,
-                            name=(1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0),
-                            value=trap.oid),
+        data = [common.TimeTicksData(name=(1, 3, 6, 1, 2, 1, 1, 3, 0),
+                                     value=trap.timestamp),
+                common.ObjectIdData(name=(1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0),
+                                    value=trap.oid),
                 *trap.data]
 
         pdu = encoder.v3.BasicPdu(request_id=request_id,
@@ -121,7 +119,7 @@ class V3TrapSender(common.TrapSender):
                                   error=error,
                                   data=inform.data)
 
-        req_msg = encoder.v3.Msg(type=encoder.v3.MsgType.SNMPV2_TRAP,
+        req_msg = encoder.v3.Msg(type=encoder.v3.MsgType.INFORM_REQUEST,
                                  id=request_id,
                                  reportable=False,
                                  auth=self._auth_key is not None,
@@ -170,10 +168,11 @@ class V3TrapSender(common.TrapSender):
                     if not isinstance(res_msg, encoder.v3.Msg):
                         raise Exception('invalid version')
 
-                    if res_msg.type != encoder.v2c.MsgType.RESPONSE:
+                    if res_msg.type != encoder.v3.MsgType.RESPONSE:
                         raise Exception('invalid response message type')
 
-                    req_msg, future = self._req_msg_futures[res_msg.request_id]
+                    req_msg, future = self._req_msg_futures[
+                        res_msg.pdu.request_id]
 
                     if res_msg.auth != req_msg.auth:
                         raise Exception('invalid auth flag')
@@ -191,7 +190,7 @@ class V3TrapSender(common.TrapSender):
                         if res_msg.pdu.error.type == common.ErrorType.NO_ERROR
                         else res_msg.pdu.error)
 
-                    if future.done():
+                    if not future.done():
                         future.set_result(res)
 
                 except Exception as e:
