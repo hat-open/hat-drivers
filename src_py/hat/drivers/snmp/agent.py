@@ -302,6 +302,7 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
                 auth=False,
                 priv=False,
                 authorative_engine=authorative_engine,
+                user='',
                 context=req_msg.context,
                 pdu=res_pdu)
 
@@ -358,6 +359,7 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
         auth=req_msg.auth,
         priv=req_msg.priv,
         authorative_engine=authorative_engine,
+        user=req_msg.user,
         context=req_msg.context,
         pdu=res_pdu)
 

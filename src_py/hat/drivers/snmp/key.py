@@ -43,7 +43,7 @@ def create_key(key_type: KeyType,
     else:
         raise ValueError('unsupported key type')
 
-    return Key(key_type=key_type,
+    return Key(type=key_type,
                data=key_data)
 
 
