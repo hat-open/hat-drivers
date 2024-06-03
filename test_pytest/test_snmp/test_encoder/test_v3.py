@@ -1,8 +1,8 @@
 import pytest
 
 from hat.drivers.snmp import encoder
-from hat.drivers.snmp import common
 from hat.drivers.snmp import key
+from hat.drivers.snmp.encoder import common
 
 
 data = [common.IntegerData(name=(1, 0),
@@ -36,7 +36,7 @@ des_key = key.Key(type=key.KeyType.DES,
 
 def change_bytes(orig_bytes):
     bytes_array = [i for i in orig_bytes]
-    bytes_array[-1] += 1
+    bytes_array[-1] = (bytes_array[-1] + 1) % 0x100
     return bytes(bytes_array)
 
 
@@ -278,12 +278,23 @@ def test_auth_change_in_the_middle(auth_key):
                                  index=456),
                              data=[]))
 
-    msg_json = encoder.v3.encode_msg(msg, auth_key=auth_key)
-    msg_json['msgSecurityParameters'] = change_bytes(
-        msg_json['msgSecurityParameters'])
+    msg_value = encoder.v3.encode_msg(msg, auth_key=auth_key)
+
+    security_params, _ = common.encoder.decode(
+        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        msg_value['msgSecurityParameters'])
+    auth_params = change_bytes(security_params['msgAuthenticationParameters'])
+
+    security_params = {**security_params,
+                       'msgAuthenticationParameters': auth_params}
+    msg_value = {
+        **msg_value,
+        'msgSecurityParameters': common.encoder.encode(
+            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            security_params)}
 
     with pytest.raises(Exception, match='authentication failed'):
-        encoder.v3.decode_msg(msg_json, auth_key_cb=on_auth_key)
+        encoder.v3.decode_msg(msg_value, auth_key_cb=on_auth_key)
 
 
 def test_priv_change_in_the_middle():
