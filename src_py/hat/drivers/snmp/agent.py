@@ -297,7 +297,7 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
 
             res_msg = encoder.v3.Msg(
                 type=encoder.v3.MsgType.REPORT,
-                id=req_msg.pdu.request_id,
+                id=req_msg.id,
                 reportable=False,
                 auth=False,
                 priv=False,
@@ -354,7 +354,7 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
 
     res_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.RESPONSE,
-        id=req_msg.pdu.request_id,
+        id=req_msg.id,
         reportable=False,
         auth=req_msg.auth,
         priv=req_msg.priv,
