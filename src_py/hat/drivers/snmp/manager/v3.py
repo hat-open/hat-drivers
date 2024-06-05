@@ -14,12 +14,16 @@ from hat.drivers.snmp.manager import common
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
+_default_user = common.User(name='public',
+                            auth_type=None,
+                            auth_password=None,
+                            priv_type=None,
+                            priv_password=None)
+
 
 async def create_v3_manager(remote_addr: udp.Address,
                             context: common.Context | None = None,
-                            user: common.UserName = 'public',
-                            auth_key: key.Key | None = None,
-                            priv_key: key.Key | None = None
+                            user: common.User = _default_user
                             ) -> common.Manager:
     """Create v3 manager"""
     endpoint = await udp.create(local_addr=None,
@@ -28,9 +32,7 @@ async def create_v3_manager(remote_addr: udp.Address,
     try:
         manager = V3Manager(endpoint=endpoint,
                             context=context,
-                            user=user,
-                            auth_key=auth_key,
-                            priv_key=priv_key)
+                            user=user)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -51,19 +53,19 @@ class V3Manager(common.Manager):
     def __init__(self,
                  endpoint: udp.Endpoint,
                  context: common.Context | None,
-                 user: common.UserName,
-                 auth_key: key.Key | None,
-                 priv_key: key.Key | None):
+                 user: common.User):
         self._endpoint = endpoint
         self._context = context
         self._user = user
-        self._auth_key = auth_key
-        self._priv_key = priv_key
         self._loop = asyncio.get_running_loop()
         self._req_msg_futures = {}
         self._next_request_ids = itertools.count(1)
         self._authorative_engine = None
         self._authorative_engine_set_time = time.monotonic()
+        self._auth_key = None
+        self._priv_key = None
+
+        common.validate_user(user)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -82,7 +84,7 @@ class V3Manager(common.Manager):
         await self._send(req=req,
                          authorative_engine=authorative_engine,
                          context=context,
-                         user='',
+                         username='',
                          auth_key=None,
                          priv_key=None)
 
@@ -101,11 +103,11 @@ class V3Manager(common.Manager):
         return await self._send(req=req,
                                 authorative_engine=authorative_engine,
                                 context=context,
-                                user=self._user,
+                                username=self._user.name,
                                 auth_key=self._auth_key,
                                 priv_key=self._priv_key)
 
-    async def _send(self, req, authorative_engine, context, user, auth_key,
+    async def _send(self, req, authorative_engine, context, username, auth_key,
                     priv_key):
         if not self.is_open:
             raise ConnectionError()
@@ -151,7 +153,7 @@ class V3Manager(common.Manager):
                                  auth=auth_key is not None,
                                  priv=priv_key is not None,
                                  authorative_engine=authorative_engine,
-                                 user=user,
+                                 user=username,
                                  context=context,
                                  pdu=pdu)
         req_msg_bytes = encoder.encode(msg=req_msg,
@@ -167,15 +169,15 @@ class V3Manager(common.Manager):
         finally:
             del self._req_msg_futures[request_id]
 
-    def _on_auth_key(self, engine_id, user):
+    def _on_auth_key(self, engine_id, username):
 
-        # TODO check engine_id and user
+        # TODO check engine_id and username
 
         return self._auth_key
 
-    def _on_priv_key(self, engine_id, user):
+    def _on_priv_key(self, engine_id, username):
 
-        # TODO check engine_id and user
+        # TODO check engine_id and username
 
         return self._priv_key
 
@@ -198,8 +200,7 @@ class V3Manager(common.Manager):
                                             encoder.v3.MsgType.REPORT):
                         raise Exception('invalid response message type')
 
-                    req_msg, future = self._req_msg_futures[
-                        res_msg.pdu.request_id]
+                    req_msg, future = self._req_msg_futures[res_msg.id]
 
                     if res_msg.auth != req_msg.auth:
                         raise Exception('invalid auth flag')
@@ -210,7 +211,27 @@ class V3Manager(common.Manager):
                     if res_msg.context != req_msg.context:
                         raise Exception('invalid context')
 
-                    # TODO check authorative engine id
+                    if (self._authorative_engine and
+                            self._authorative_engine.id !=
+                            res_msg.authorative_engine.id):
+                        raise Exception('authorative engine id changed')
+
+                    if self._authorative_engine is None:
+                        if self._auth_type:
+                            key_type = key.auth_type_to_key_type(
+                                self._user.auth_type)
+                            self._auth_key = key.create_key(
+                                key_type=key_type,
+                                password=self._user.auth_password,
+                                engine_id=res_msg.authorative_engine.id)
+
+                        if self._priv_type:
+                            key_type = key.priv_type_to_key_type(
+                                self._user.priv_type)
+                            self._priv_key = key.create_key(
+                                key_type=key_type,
+                                password=self._user.priv_password,
+                                engine_id=res_msg.authorative_engine.id)
 
                     self._authorative_engine = res_msg.authorative_engine
                     self._authorative_engine_set_time = time.monotonic()

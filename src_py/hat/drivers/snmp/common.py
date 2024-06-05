@@ -44,21 +44,13 @@ class CauseType(enum.Enum):
     ENTERPRISE_SPECIFIC = 6
 
 
-class DataType(enum.Enum):
-    INTEGER = 0               # v1, v2c, v3
-    UNSIGNED = 1              # v1, v2c, v3
-    COUNTER = 2               # v1, v2c, v3
-    BIG_COUNTER = 3           # v2c, v3
-    STRING = 4                # v1, v2c, v3
-    OBJECT_ID = 5             # v1, v2c, v3
-    IP_ADDRESS = 6            # v1, v2c, v3
-    TIME_TICKS = 7            # v1, v2c, v3
-    ARBITRARY = 8             # v1, v2c, v3
-    EMPTY = 9                 # v1
-    UNSPECIFIED = 10          # v2c, v3
-    NO_SUCH_OBJECT = 11       # v2c, v3
-    NO_SUCH_INSTANCE = 12     # v2c, v3
-    END_OF_MIB_VIEW = 13      # v2c, v3
+class AuthType:
+    MD5 = 1
+    SHA = 2
+
+
+class PrivType:
+    DES = 1
 
 
 class Error(typing.NamedTuple):
@@ -71,67 +63,81 @@ class Cause(typing.NamedTuple):
     value: int
 
 
+# v1, v2c, v3
 class IntegerData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: int
 
 
+# v1, v2c, v3
 class UnsignedData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: int
 
 
+# v1, v2c, v3
 class CounterData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: int
 
 
+# v2c, v3
 class BigCounterData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: int
 
 
+# v1, v2c, v3
 class StringData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: str
 
 
+# v1, v2c, v3
 class ObjectIdData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: asn1.ObjectIdentifier
 
 
+# v1, v2c, v3
 class IpAddressData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: tuple[int, int, int, int]
 
 
+# v1, v2c, v3
 class TimeTicksData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: int
 
 
+# v1, v2c, v3
 class ArbitraryData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
     value: util.Bytes
 
 
+# v1
 class EmptyData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
 
 
+# v2c, v3
 class UnspecifiedData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
 
 
+# v2c, v3
 class NoSuchObjectData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
 
 
+# v2c, v3
 class NoSuchInstanceData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
 
 
+# v2c, v3
 class EndOfMibViewData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
 
@@ -156,7 +162,17 @@ CommunityName: typing.TypeAlias = str
 
 UserName: typing.TypeAlias = str
 
+Password: typing.TypeAlias = str
+
 EngineId: typing.TypeAlias = util.Bytes
+
+
+class User(typing.NamedTuple):
+    name: UserName
+    auth_type: AuthType | None
+    auth_password: Password | None
+    priv_type: PrivType | None
+    priv_password: Password | None
 
 
 class Context(typing.NamedTuple):
@@ -198,3 +214,14 @@ Request: typing.TypeAlias = (GetDataReq |
                              SetDataReq)
 
 Response: typing.TypeAlias = Error | Collection[Data]
+
+
+def validate_user(user: User):
+    if user.auth_type and not user.auth_password:
+        raise Exception('invalid auth password')
+
+    if user.priv_type and not user.priv_password:
+        raise Exception('invalid priv password')
+
+    if user.priv_type and not user.auth_type:
+        raise Exception('invalid auth/priv pair')

@@ -4,7 +4,6 @@ import time
 import typing
 
 from hat import aio
-from hat import util
 
 from hat.drivers import udp
 from hat.drivers.snmp import common
@@ -33,9 +32,8 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                        v1_request_cb: V1RequestCb | None = None,
                        v2c_request_cb: V2CRequestCb | None = None,
                        v3_request_cb: V3RequestCb | None = None,
-                       engine_ids: Collection[common.EngineId] = [],
-                       auth_key_cb: key.KeyCb | None = None,
-                       priv_key_cb: key.KeyCb | None = None
+                       authorative_engine_id: common.EngineId | None = None,
+                       users: Collection[common.User] = []
                        ) -> 'Agent':
     """Create agent"""
     endpoint = await udp.create(local_addr=local_addr,
@@ -46,9 +44,8 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                      v1_request_cb=v1_request_cb,
                      v2c_request_cb=v2c_request_cb,
                      v3_request_cb=v3_request_cb,
-                     engine_ids=engine_ids,
-                     auth_key_cb=auth_key_cb,
-                     priv_key_cb=priv_key_cb)
+                     authorative_engine_id=authorative_engine_id,
+                     users=users)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -62,22 +59,56 @@ class Agent(aio.Resource):
                  v1_request_cb: V1RequestCb | None,
                  v2c_request_cb: V2CRequestCb | None,
                  v3_request_cb: V3RequestCb | None,
-                 engine_ids: Collection[common.EngineId],
-                 auth_key_cb: key.KeyCb | None,
-                 priv_key_cb: key.KeyCb | None):
+                 authorative_engine_id: common.EngineId | None,
+                 users: Collection[common.User] = []):
         self._endpoint = endpoint
         self._v1_request_cb = v1_request_cb
         self._v2c_request_cb = v2c_request_cb
         self._v3_request_cb = v3_request_cb
-        self._engine_ids = engine_ids
-        self._auth_key_cb = auth_key_cb
-        self._priv_key_cb = priv_key_cb
+        self._authorative_engine_id = authorative_engine_id
+        self._auth_keys = {}
+        self._priv_keys = {}
+
+        for user in users:
+            common.validate_user(user)
+
+            if user.auth_type:
+                key_type = key.auth_type_to_key_type(user.auth_type)
+                self._auth_keys[user.name] = key.create_key(
+                    key_type=key_type,
+                    password=user.auth_password,
+                    engine_id=authorative_engine_id)
+
+            else:
+                self._auth_keys[user.name] = None
+
+            if user.priv_type:
+                key_type = key.priv_type_to_key_type(user.priv_type)
+                self._priv_keys[user.name] = key.create_key(
+                    key_type=key_type,
+                    password=user.priv_password,
+                    engine_id=authorative_engine_id)
+
+            else:
+                self._priv_keys[user.name] = None
 
         self.async_group.spawn(self._receive_loop)
 
     @property
     def async_group(self) -> aio.Group:
         return self._endpoint.async_group
+
+    def _on_auth_key(self, engine_id, username):
+        if engine_id != self._authorative_engine_id:
+            return
+
+        return self._auth_keys.get(username)
+
+    def _on_priv_key(self, engine_id, username):
+        if engine_id != self._authorative_engine_id:
+            return
+
+        return self._priv_keys.get(username)
 
     async def _receive_loop(self):
         try:
@@ -86,8 +117,8 @@ class Agent(aio.Resource):
 
                 try:
                     req_msg = encoder.decode(msg_bytes=req_msg_bytes,
-                                             auth_key_cb=self._auth_key_cb,
-                                             priv_key_cb=self._priv_key_cb)
+                                             auth_key_cb=self._on_auth_key,
+                                             priv_key_cb=self._on_priv_key)
 
                 except Exception as e:
                     mlog.warning("error decoding message from %s: %s",
@@ -112,9 +143,9 @@ class Agent(aio.Resource):
                             req_msg=req_msg,
                             addr=addr,
                             request_cb=self._v3_request_cb,
-                            engine_ids=self._engine_ids,
-                            auth_key_cb=self._auth_key_cb,
-                            priv_key_cb=self._priv_key_cb)
+                            authorative_engine_id=self._authorative_engine_id,
+                            auth_keys=self._auth_keys,
+                            priv_keys=self._priv_keys)
 
                     else:
                         raise ValueError('unsupported message type')
@@ -260,9 +291,9 @@ async def _process_v2c_req_msg(req_msg, addr, request_cb):
     return res_msg
 
 
-async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
-                              auth_key_cb, priv_key_cb):
-    if not request_cb:
+async def _process_v3_req_msg(req_msg, addr, request_cb, authorative_engine_id,
+                              auth_keys, priv_keys):
+    if not request_cb or authorative_engine_id is None:
         raise Exception('not accepting V3')
 
     if req_msg.type == encoder.v3.MsgType.GET_REQUEST:
@@ -280,13 +311,13 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
     else:
         raise Exception('invalid request message type')
 
-    if req_msg.authorative_engine.id not in engine_ids:
-        if req_msg.reportable and engine_ids:
+    if req_msg.authorative_engine.id != authorative_engine_id:
+        if req_msg.reportable:
 
             # TODO report data and conditions for sending reports
 
             authorative_engine = encoder.v3.AuthorativeEngine(
-                id=util.first(engine_ids),
+                id=authorative_engine_id,
                 boots=0,
                 time=round(time.monotonic()))
 
@@ -312,14 +343,13 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, engine_ids,
 
     # TODO check authoritative engine boot and time
 
-    auth_key = (auth_key_cb(req_msg.authorative_engine.id, req_msg.user)
-                if auth_key_cb else None)
-    if auth_key is not None and not req_msg.auth:
+    if req_msg.user not in auth_keys or req_msg.user not in priv_keys:
+        raise Exception('invalid user')
+
+    if auth_keys[req_msg.user] is not None and not req_msg.auth:
         raise Exception('invalid auth flag')
 
-    priv_key = (priv_key_cb(req_msg.authorative_engine.id, req_msg.user)
-                if priv_key_cb else None)
-    if priv_key is not None and not req_msg.priv:
+    if priv_keys[req_msg.user] is not None and not req_msg.priv:
         raise Exception('invalid priv flag')
 
     try:

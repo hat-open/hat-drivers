@@ -14,12 +14,16 @@ from hat.drivers.snmp.trap.sender import common
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
+_default_user = common.User(name='public',
+                            auth_type=None,
+                            auth_password=None,
+                            priv_type=None,
+                            priv_password=None)
+
 
 async def create_v3_trap_sender(remote_addr: udp.Address,
                                 context: common.Context,
-                                user: common.UserName = 'public',
-                                auth_key: key.Key | None = None,
-                                priv_key: key.Key | None = None
+                                user: common.User = _default_user
                                 ) -> common.TrapSender:
     """Create v3 trap sender"""
     endpoint = await udp.create(local_addr=None,
@@ -28,9 +32,7 @@ async def create_v3_trap_sender(remote_addr: udp.Address,
     try:
         return V3TrapSender(endpoint=endpoint,
                             context=context,
-                            user=user,
-                            auth_key=auth_key,
-                            priv_key=priv_key)
+                            user=user)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -42,17 +44,29 @@ class V3TrapSender(common.TrapSender):
     def __init__(self,
                  endpoint: udp.Endpoint,
                  context: common.Context,
-                 user: common.UserName,
-                 auth_key: key.Key | None,
-                 priv_key: key.Key | None):
+                 user: common.User):
         self._endpoint = endpoint
         self._context = context
         self._user = user
-        self._auth_key = auth_key
-        self._priv_key = priv_key
         self._loop = asyncio.get_running_loop()
         self._req_msg_futures = {}
         self._next_request_ids = itertools.count(1)
+        self._auth_key = None
+        self._priv_key = None
+
+        common.validate_user(user)
+
+        if user.auth_type:
+            key_type = key.auth_type_to_key_type(user.auth_type)
+            self._auth_key = key.create_key(key_type=key_type,
+                                            password=user.auth_password,
+                                            engine_id=context.engine_id)
+
+        if user.priv_type:
+            key_type = key.priv_type_to_key_type(user.priv_type)
+            self._priv_key = key.create_key(key_type=key_type,
+                                            password=user.priv_password,
+                                            engine_id=context.engine_id)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -90,7 +104,7 @@ class V3TrapSender(common.TrapSender):
                              auth=self._auth_key is not None,
                              priv=self._priv_key is not None,
                              authorative_engine=authorative_engine,
-                             user=self._user,
+                             user=self._user.name,
                              context=self._context,
                              pdu=pdu)
         msg_bytes = encoder.encode(msg=msg,
@@ -125,7 +139,7 @@ class V3TrapSender(common.TrapSender):
                                  auth=self._auth_key is not None,
                                  priv=self._priv_key is not None,
                                  authorative_engine=authorative_engine,
-                                 user=self._user,
+                                 user=self._user.name,
                                  context=self._context,
                                  pdu=pdu)
         req_msg_bytes = encoder.encode(msg=req_msg,
@@ -141,15 +155,15 @@ class V3TrapSender(common.TrapSender):
         finally:
             del self._req_msg_futures[request_id]
 
-    def _on_auth_key(self, engine_id, user):
-
-        # TODO check engine_id and user
+    def _on_auth_key(self, engine_id, username):
+        if engine_id != self._context.engine_id or username != self._user.name:
+            return
 
         return self._auth_key
 
-    def _on_priv_key(self, engine_id, user):
-
-        # TODO check engine_id and user
+    def _on_priv_key(self, engine_id, username):
+        if engine_id != self._context.engine_id or username != self._user.name:
+            return
 
         return self._priv_key
 
@@ -171,8 +185,7 @@ class V3TrapSender(common.TrapSender):
                     if res_msg.type != encoder.v3.MsgType.RESPONSE:
                         raise Exception('invalid response message type')
 
-                    req_msg, future = self._req_msg_futures[
-                        res_msg.pdu.request_id]
+                    req_msg, future = self._req_msg_futures[res_msg.id]
 
                     if res_msg.auth != req_msg.auth:
                         raise Exception('invalid auth flag')

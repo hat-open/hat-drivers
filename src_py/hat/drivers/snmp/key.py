@@ -47,6 +47,23 @@ def create_key(key_type: KeyType,
                data=key_data)
 
 
+def auth_type_to_key_type(auth_type: common.AuthType) -> KeyType:
+    if auth_type == common.AuthType.MD5:
+        return KeyType.MD5
+
+    if auth_type == common.AuthType.SHA:
+        return KeyType.SHA
+
+    raise ValueError('unsupported auth type')
+
+
+def priv_type_to_key_type(priv_type: common.PrivType) -> KeyType:
+    if priv_type == common.PrivType.DES:
+        return KeyType.DES
+
+    raise ValueError('unsupported priv type')
+
+
 def _create_key_data(hash_name, password, engine_id):
     password_cycle = itertools.cycle(password.encode())
     extended_password = bytes(itertools.islice(password_cycle, 1024 * 1024))

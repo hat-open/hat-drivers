@@ -1,3 +1,4 @@
+from collections.abc import Collection
 import logging
 import typing
 
@@ -44,8 +45,7 @@ async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 
                                v2c_inform_cb: V2CInformCb | None = None,
                                v3_trap_cb: V3TrapCb | None = None,
                                v3_inform_cb: V3InformCb | None = None,
-                               auth_key_cb: key.KeyCb | None = None,
-                               priv_key_cb: key.KeyCb | None = None
+                               users: Collection[common.User] = []
                                ) -> 'TrapListener':
     """Create trap listener"""
     endpoint = await udp.create(local_addr=local_addr,
@@ -58,8 +58,7 @@ async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 
                             v2c_inform_cb=v2c_inform_cb,
                             v3_trap_cb=v3_trap_cb,
                             v3_inform_cb=v3_inform_cb,
-                            auth_key_cb=auth_key_cb,
-                            priv_key_cb=priv_key_cb)
+                            users=users)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
@@ -75,16 +74,20 @@ class TrapListener(aio.Resource):
                  v2c_inform_cb: V2CInformCb | None,
                  v3_trap_cb: V3TrapCb | None,
                  v3_inform_cb: V3InformCb | None,
-                 auth_key_cb: key.KeyCb | None,
-                 priv_key_cb: key.KeyCb | None):
+                 users: Collection[common.User]):
         self._endpoint = endpoint
         self._v1_trap_cb = v1_trap_cb
         self._v2c_trap_cb = v2c_trap_cb
         self._v2c_inform_cb = v2c_inform_cb
         self._v3_trap_cb = v3_trap_cb
         self._v3_inform_cb = v3_inform_cb
-        self._auth_key_cb = auth_key_cb
-        self._priv_key_cb = priv_key_cb
+        self._users = {}
+        self._auth_keys = {}
+        self._priv_keys = {}
+
+        for user in users:
+            common.validate_user(user)
+            self._users[user.name] = user
 
         self.async_group.spawn(self._receive_loop)
 
@@ -93,6 +96,40 @@ class TrapListener(aio.Resource):
         """Async group"""
         return self._endpoint.async_group
 
+    def _on_auth_key(self, engine_id, username):
+        user = self._users.get(username)
+        if not user or not user.auth_type:
+            return
+
+        auth_key = self._auth_keys.get((engine_id, username))
+        if auth_key:
+            return auth_key
+
+        key_type = key.auth_type_to_key_type(user.auth_type)
+        auth_key = key.create_key(key_type=key_type,
+                                  password=user.auth_password,
+                                  engine_id=engine_id)
+
+        self._auth_keys[(engine_id, username)] = auth_key
+        return auth_key
+
+    def _on_priv_key(self, engine_id, username):
+        user = self._users.get(username)
+        if not user or not user.priv_type:
+            return
+
+        priv_key = self._priv_keys.get((engine_id, username))
+        if priv_key:
+            return priv_key
+
+        key_type = key.priv_type_to_key_type(user.priv_type)
+        priv_key = key.create_key(key_type=key_type,
+                                  password=user.priv_password,
+                                  engine_id=engine_id)
+
+        self._priv_keys[(engine_id, username)] = priv_key
+        return priv_key
+
     async def _receive_loop(self):
         try:
             while True:
@@ -100,8 +137,8 @@ class TrapListener(aio.Resource):
 
                 try:
                     req_msg = encoder.decode(msg_bytes=req_msg_bytes,
-                                             auth_key_cb=self._auth_key_cb,
-                                             priv_key_cb=self._priv_key_cb)
+                                             auth_key_cb=self._on_auth_key,
+                                             priv_key_cb=self._on_priv_key)
 
                 except Exception as e:
                     mlog.warning("error decoding message from %s: %s",
@@ -127,9 +164,7 @@ class TrapListener(aio.Resource):
                             req_msg=req_msg,
                             addr=addr,
                             trap_cb=self._v3_trap_cb,
-                            inform_cb=self._v3_inform_cb,
-                            auth_key_cb=self._auth_key_cb,
-                            priv_key_cb=self._priv_key_cb)
+                            inform_cb=self._v3_inform_cb)
 
                     else:
                         raise ValueError('unsupported message type')
@@ -145,13 +180,13 @@ class TrapListener(aio.Resource):
                 try:
                     if isinstance(res_msg, encoder.v3.Msg):
                         auth_key = (
-                            self._auth_key_cb(res_msg.authorative_engine.id,
+                            self._on_auth_key(res_msg.authorative_engine.id,
                                               res_msg.user)
-                            if self._auth_key_cb and res_msg.auth else None)
+                            if res_msg.auth else None)
                         priv_key = (
-                            self._priv_key_cb(res_msg.authorative_engine.id,
+                            self._on_priv_key(res_msg.authorative_engine.id,
                                               res_msg.user)
-                            if self._priv_key_cb and res_msg.priv else None)
+                            if res_msg.priv else None)
 
                     else:
                         auth_key = None
@@ -194,8 +229,7 @@ async def _process_v2c_req_msg(req_msg, addr, trap_cb, inform_cb):
     raise Exception('invalid request message type')
 
 
-async def _process_v3_req_msg(req_msg, addr, trap_cb, inform_cb, auth_key_cb,
-                              priv_key_cb):
+async def _process_v3_req_msg(req_msg, addr, trap_cb, inform_cb):
     if req_msg.type == encoder.v3.MsgType.SNMPV2_TRAP:
         return await _process_v3_trap(req_msg, addr, trap_cb)
 
