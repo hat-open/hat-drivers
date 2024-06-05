@@ -44,12 +44,12 @@ class CauseType(enum.Enum):
     ENTERPRISE_SPECIFIC = 6
 
 
-class AuthType:
+class AuthType(enum.Enum):
     MD5 = 1
     SHA = 2
 
 
-class PrivType:
+class PrivType(enum.Enum):
     DES = 1
 
 
