@@ -47,12 +47,7 @@ def create_argument_parser():
         default='',
         help=('context engineID used for SNMPv3, defaults to empty string'))
     group_v3.add_argument(
-        '-l', choices=['noAuthNoPriv', 'authNoPriv', 'authPriv'],
-        metavar='LEVEL', dest='level',
-        default=None,
-        help=('authentication protocol'))
-    group_v3.add_argument(
-        '-a', choices=['md5', 'sha'], metavar='PROTOCOL', dest='auth_protocol',
+        '-a', choices=['MD5', 'SHA'], metavar='PROTOCOL', dest='auth_protocol',
         default=None,
         help=('authentication protocol'))
     group_v3.add_argument(
@@ -60,7 +55,7 @@ def create_argument_parser():
         default=None,
         help=('authentication protocol pass phrase'))
     group_v3.add_argument(
-        '-x', choices=['des', 'aes'], metavar='PROTOCOL', dest='priv_protocol',
+        '-x', choices=['DES'], metavar='PROTOCOL', dest='priv_protocol',
         default=None,
         help=('privacy protocol'))
     group_v3.add_argument(
@@ -83,25 +78,44 @@ def main():
 
 async def async_main(args):
     version = args.version
-    if version == '3':
-        context = snmp.Context(
-            engine_id=args.context_engine_id,
-            name=args.context_name)
-    else:
-        context = snmp.Context(
-            engine_id=None,
-            name=args.community)
+    if version == '1':
+        manager = await snmp.create_v1_manager(
+            remote_addr=udp.Address(
+                host=args.host,
+                port=args.port),
+            community=args.community)
 
-    manager = await snmp.create_manager(
-                        context=context,
-                        remote_addr=udp.Address(
-                            host=args.host,
-                            port=args.port),
-                        version=snmp.Version[f"V{args.version.upper()}"])
+    elif version == '2c':
+        manager = await snmp.create_v2c_manager(
+            remote_addr=udp.Address(
+                host=args.host,
+                port=args.port),
+            community=args.community)
+    elif version == '3':
+        manager = await snmp.create_v3_manager(
+            remote_addr=udp.Address(
+                host=args.host,
+                port=args.port),
+            context=snmp.Context(
+                engine_id=args.context_engine_id,
+                name=args.context_name) if args.context_engine_id else None,
+            user=snmp.User(
+                name=args.user_name,
+                auth_type=(snmp.AuthType[args.auth_protocol]
+                           if args.auth_protocol else None),
+                auth_password=(args.auth_passphrase
+                               if args.auth_protocol else None),
+                priv_type=(snmp.PrivType[args.priv_protocol]
+                           if args.priv_protocol else None),
+                priv_password=(args.priv_passphrase
+                               if args.priv_protocol else None)))
+    else:
+        raise Exception('unsupported version')
+
     try:
         request = snmp.GetDataReq(names=[_oid_from_str(args.oid)])
-        result = await manager.send(request)
-        print(json.encode([_response_to_json(resp) for resp in result]))
+        response = await manager.send(request)
+        print(json.encode(_response_to_json(response)))
 
     finally:
         await aio.uncancellable(manager.async_close())
@@ -114,13 +128,62 @@ def _response_to_json(response):
     if isinstance(response, snmp.Error):
         return f'ERROR {response.index}, {response.type.name}'
 
-    if isinstance(response, snmp.Data):
+    if not response:
+        return 'ERROR empty response'
+
+    resp_data = response[0]
+    data_type = _data_type_from_response(response)
+
+    if isinstance(resp_data,
+                  (snmp.EmptyData,
+                   snmp.UnspecifiedData,
+                   snmp.NoSuchObjectData,
+                   snmp.NoSuchInstanceData,
+                   snmp.EndOfMibViewData)):
+        return f'ERROR {data_type}'
+
+    if isinstance(resp_data, snmp.Data):
         return {
-            'name': _oid_to_str(response.name),
-            'type': response.type.name,
-            'value': response.value}
+            'name': _oid_to_str(resp_data.name),
+            'type': data_type,
+            'value': resp_data.value}
 
     raise Exception('unexpected response')
+
+
+def _data_type_from_response(response):
+    resp_data = response[0]
+    if isinstance(resp_data, snmp.IntegerData):
+        return 'INTEGER'
+    if isinstance(resp_data, snmp.UnsignedData):
+        return 'UNSIGNED'
+    if isinstance(resp_data, snmp.CounterData):
+        return 'COUNTER'
+    if isinstance(resp_data, snmp.BigCounterData):
+        return 'BIG_COUNTER'
+    if isinstance(resp_data, snmp.TimeTicksData):
+        return 'TIME_TICKS'
+    if isinstance(resp_data, snmp.StringData):
+        return 'STRING'
+    if isinstance(resp_data, snmp.ObjectIdData):
+        return 'OBJECT_ID'
+    if isinstance(resp_data, snmp.IpAddressData):
+        return 'IP_ADDRESS'
+    if isinstance(resp_data, snmp.ArbitraryData):
+        return 'ARBITRARY'
+
+    if isinstance(resp_data, snmp.EmptyData):
+        return 'EMPTY'
+    if isinstance(resp_data, snmp.UnspecifiedData):
+        return 'UNSPECIFIED'
+    if isinstance(resp_data, snmp.NoSuchObjectData):
+        return 'NO_SUCH_OBJECT'
+    if isinstance(resp_data, snmp.NoSuchInstanceData):
+        return 'NO_SUCH_INSTANCE'
+    if isinstance(resp_data, snmp.EndOfMibViewData):
+        return 'END_OF_MIB_VIEW'
+
+    raise Exception('unexpected data type')
 
 
 def _oid_from_str(oid_str):
