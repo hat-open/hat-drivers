@@ -7,6 +7,7 @@ from hat import aio
 from hat.drivers import snmp
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import key
 
 
 @pytest.fixture
@@ -529,42 +530,44 @@ async def test_v2c_invalid_version(addr, caplog, req_msg, log_msg):
 ])
 async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
     request_id = 42
-    user = 'user name'
+    username = 'user name'
     engine_id = b'engine id'
 
     context = snmp.Context(engine_id=engine_id,
                            name='ctx name')
-
-    auth_key = (snmp.create_key(key_type=snmp.KeyType.MD5,
-                                password='pass',
-                                engine_id=engine_id)
+    auth_pass = 'pass'
+    priv_pass = 'pass'
+    auth_key = (key.create_key(key_type=key.KeyType.MD5,
+                               password=auth_pass,
+                               engine_id=engine_id)
                 if auth else None)
-    priv_key = (snmp.create_key(key_type=snmp.KeyType.DES,
-                                password='pass',
-                                engine_id=engine_id)
+    priv_key = (key.create_key(key_type=key.KeyType.DES,
+                               password=priv_pass,
+                               engine_id=engine_id)
                 if priv else None)
 
     def on_request_cb(addr, usr, ctx, req):
-        assert usr == user
+        assert usr == username
         assert ctx == context
         assert list(req.names) == [i.name for i in data]
         return error or data
 
     def on_auth_key(eid, usr):
-        assert eid == engine_id
-        assert usr == user
         return auth_key
 
     def on_priv_key(eid, usr):
-        assert eid == engine_id
-        assert usr == user
         return priv_key
 
-    agent = await snmp.create_agent(local_addr=addr,
-                                    v3_request_cb=on_request_cb,
-                                    engine_ids=[engine_id],
-                                    auth_key_cb=on_auth_key,
-                                    priv_key_cb=on_priv_key)
+    agent = await snmp.create_agent(
+        local_addr=addr,
+        v3_request_cb=on_request_cb,
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_password=auth_pass if auth else None,
+            priv_type=snmp.PrivType.DES if priv else None,
+            priv_password=priv_pass if priv else None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -611,7 +614,7 @@ async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
                              auth=auth,
                              priv=priv,
                              authorative_engine=authorative_engine,
-                             user=user,
+                             user=username,
                              context=context,
                              pdu=req_pdu)
     endpoint.send(encoder.encode(req_msg,
@@ -647,29 +650,12 @@ async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
 async def test_v3_sync_report(addr, auth, priv):
     engine_id = b'engine id'
 
-    auth_key = (snmp.create_key(key_type=snmp.KeyType.MD5,
-                                password='pass',
-                                engine_id=engine_id)
-                if auth else None)
-    priv_key = (snmp.create_key(key_type=snmp.KeyType.DES,
-                                password='pass',
-                                engine_id=engine_id)
-                if priv else None)
-
     def on_request_cb(addr, usr, ctx, req):
         return []
 
-    def on_auth_key(eid, usr):
-        return auth_key
-
-    def on_priv_key(eid, usr):
-        return priv_key
-
     agent = await snmp.create_agent(local_addr=addr,
                                     v3_request_cb=on_request_cb,
-                                    engine_ids=[engine_id],
-                                    auth_key_cb=on_auth_key,
-                                    priv_key_cb=on_priv_key)
+                                    authoritative_engine_id=engine_id)
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -729,42 +715,45 @@ async def test_v3_sync_report(addr, auth, priv):
     (True, True)
 ])
 async def test_v3_set_req_res(addr, data, error, auth, priv):
-    user = 'user name'
+    username = 'user name'
     engine_id = b'engine id'
+    auth_pass = 'pass'
+    priv_pass = 'pass'
 
     context = snmp.Context(engine_id=engine_id,
                            name='ctx name')
 
-    auth_key = (snmp.create_key(key_type=snmp.KeyType.MD5,
-                                password='pass',
-                                engine_id=engine_id)
+    auth_key = (key.create_key(key_type=key.KeyType.MD5,
+                               password='pass',
+                               engine_id=engine_id)
                 if auth else None)
-    priv_key = (snmp.create_key(key_type=snmp.KeyType.DES,
-                                password='pass',
-                                engine_id=engine_id)
+    priv_key = (key.create_key(key_type=key.KeyType.DES,
+                               password='pass',
+                               engine_id=engine_id)
                 if priv else None)
 
     def on_request_cb(addr, usr, ctx, req):
-        assert usr == user
+        assert usr == username
         assert ctx == context
         assert list(req.data) == data
         return error or data
 
     def on_auth_key(eid, usr):
-        assert eid == engine_id
-        assert usr == user
         return auth_key
 
     def on_priv_key(eid, usr):
-        assert eid == engine_id
-        assert usr == user
         return priv_key
 
-    agent = await snmp.create_agent(local_addr=addr,
-                                    v3_request_cb=on_request_cb,
-                                    engine_ids=[engine_id],
-                                    auth_key_cb=on_auth_key,
-                                    priv_key_cb=on_priv_key)
+    agent = await snmp.create_agent(
+        local_addr=addr,
+        v3_request_cb=on_request_cb,
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_password=auth_pass if auth else None,
+            priv_type=snmp.PrivType.DES if priv else None,
+            priv_password=priv_pass if priv else None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -778,7 +767,7 @@ async def test_v3_set_req_res(addr, data, error, auth, priv):
             id=engine_id,
             boots=0,
             time=123),
-        user=user,
+        user=username,
         context=context,
         pdu=encoder.v3.BasicPdu(
             request_id=23456,
@@ -815,13 +804,20 @@ async def test_v3_request_cb_exception(addr, caplog):
     context = snmp.Context(engine_id=b'engine_cntx', name='xyz')
     exception_msg = 'test request cb exception'
     engine_id = b'engine id'
+    username = 'user_xyz'
 
     def on_request_cb(addr, usr, ctx, req):
         raise Exception(exception_msg)
 
-    agent = await snmp.create_agent(local_addr=addr,
-                                    engine_ids=[engine_id],
-                                    v3_request_cb=on_request_cb)
+    agent = await snmp.create_agent(
+        local_addr=addr,
+        authoritative_engine_id=engine_id,
+        v3_request_cb=on_request_cb,
+        users=[snmp.User(name=username,
+                         auth_type=None,
+                         auth_password=None,
+                         priv_type=None,
+                         priv_password=None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -830,7 +826,7 @@ async def test_v3_request_cb_exception(addr, caplog):
         id=1,
         reportable=False,
         context=context,
-        user='user_xyz',
+        user=username,
         auth=False,
         priv=False,
         authorative_engine=encoder.v3.AuthorativeEngine(
@@ -867,17 +863,19 @@ async def test_v3_request_cb_exception(addr, caplog):
     (True, True)
 ])
 async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
-
+    username = 'user_xyz'
     engine_id = b'engine'
     invalid_engine_id = b'invalid engine'
+    auth_pass = 'pass'
+    priv_pass = 'pass'
 
-    auth_key = (snmp.create_key(key_type=snmp.KeyType.MD5,
-                                password='pass',
-                                engine_id=engine_id)
+    auth_key = (key.create_key(key_type=key.KeyType.MD5,
+                               password=auth_pass,
+                               engine_id=engine_id)
                 if auth else None)
-    priv_key = (snmp.create_key(key_type=snmp.KeyType.DES,
-                                password='pass',
-                                engine_id=engine_id)
+    priv_key = (key.create_key(key_type=key.KeyType.DES,
+                               password=priv_pass,
+                               engine_id=engine_id)
                 if priv else None)
 
     req_queue = aio.Queue()
@@ -886,18 +884,16 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
         req_queue.put_nowait(request)
         return []
 
-    def on_auth_key(engine_id, user):
-        return auth_key
-
-    def on_priv_key(engine_id, user):
-        return priv_key
-
     agent = await snmp.create_agent(
         local_addr=addr,
         v3_request_cb=request_cb,
-        engine_ids=[engine_id],
-        auth_key_cb=on_auth_key,
-        priv_key_cb=on_priv_key)
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_password=auth_pass if auth else None,
+            priv_type=snmp.PrivType.DES if priv else None,
+            priv_password=priv_pass if priv else None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -906,9 +902,9 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
         id=1,
         reportable=False,
         context=snmp.Context(engine_id=b'engine_cntx', name='xyz'),
-        user='user_xyz',
-        auth=bool(auth_key),
-        priv=bool(priv_key),
+        user=username,
+        auth=auth,
+        priv=priv,
         authorative_engine=encoder.v3.AuthorativeEngine(
             id=invalid_engine_id,
             boots=1234,
@@ -919,7 +915,8 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
             data=[]))
 
     endpoint.send(encoder.encode(req_msg,
-                                 auth_key=auth_key, priv_key=priv_key))
+                                 auth_key=auth_key,
+                                 priv_key=priv_key))
     await asyncio.sleep(0.01)
     assert req_queue.empty()
 
@@ -929,23 +926,23 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
     assert caplog.records
     log_msg = caplog.records[0]
     assert log_msg.levelname == 'WARNING'
-    assert "invalid authorative engine id" in log_msg.message
+    assert "invalid authoritative engine id" in log_msg.message
 
     await endpoint.async_close()
     await agent.async_close()
 
 
 @pytest.mark.parametrize('key_type', [
-    snmp.KeyType.MD5,
-    snmp.KeyType.SHA
+    key.KeyType.MD5,
+    key.KeyType.SHA
 ])
 async def test_invalid_auth_flag(addr, caplog, key_type):
-
+    username = 'user_xyz'
     engine_id = b'engine'
-
-    auth_key = snmp.create_key(key_type=key_type,
-                               password='pass',
-                               engine_id=engine_id)
+    auth_pass = 'pass'
+    auth_key = key.create_key(key_type=key_type,
+                              password='pass',
+                              engine_id=engine_id)
 
     req_queue = aio.Queue()
 
@@ -959,8 +956,13 @@ async def test_invalid_auth_flag(addr, caplog, key_type):
     agent = await snmp.create_agent(
         local_addr=addr,
         v3_request_cb=request_cb,
-        engine_ids=[engine_id],
-        auth_key_cb=on_auth_key)
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5,
+            auth_password=auth_pass,
+            priv_type=None,
+            priv_password=None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -969,7 +971,7 @@ async def test_invalid_auth_flag(addr, caplog, key_type):
         id=1,
         reportable=False,
         context=snmp.Context(engine_id=b'engine_cntx', name='xyz'),
-        user='user_xyz',
+        user=username,
         auth=False,
         priv=False,
         authorative_engine=encoder.v3.AuthorativeEngine(
@@ -999,16 +1001,17 @@ async def test_invalid_auth_flag(addr, caplog, key_type):
 
 
 async def test_invalid_priv_flag(addr, caplog):
-
+    username = 'user_xyz'
     engine_id = b'engine'
+    auth_pass = 'pass'
+    priv_pass = 'pass'
+    auth_key = key.create_key(key_type=key.KeyType.MD5,
+                              password=auth_pass,
+                              engine_id=engine_id)
 
-    auth_key = snmp.create_key(key_type=snmp.KeyType.MD5,
-                               password='pass',
-                               engine_id=engine_id)
-
-    priv_key = snmp.create_key(key_type=snmp.KeyType.DES,
-                               password='pass',
-                               engine_id=engine_id)
+    priv_key = key.create_key(key_type=key.KeyType.DES,
+                              password=priv_pass,
+                              engine_id=engine_id)
 
     req_queue = aio.Queue()
 
@@ -1025,9 +1028,13 @@ async def test_invalid_priv_flag(addr, caplog):
     agent = await snmp.create_agent(
         local_addr=addr,
         v3_request_cb=request_cb,
-        engine_ids=[engine_id],
-        auth_key_cb=on_auth_key,
-        priv_key_cb=on_priv_key)
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5,
+            auth_password=auth_pass,
+            priv_type=snmp.PrivType.DES,
+            priv_password=priv_pass)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -1036,7 +1043,7 @@ async def test_invalid_priv_flag(addr, caplog):
         id=1,
         reportable=False,
         context=snmp.Context(engine_id=b'engine_cntx', name='xyz'),
-        user='user_xyz',
+        user=username,
         auth=True,
         priv=False,
         authorative_engine=encoder.v3.AuthorativeEngine(
@@ -1070,15 +1077,23 @@ async def test_invalid_priv_flag(addr, caplog):
     ])
 async def test_v3_invalid_response(addr, caplog, response):
     request_id = 42
+    username = 'user_xyz'
     context = snmp.Context(engine_id=b'engine_cntx', name='xyz')
     engine_id = b'engine id'
 
     def on_request_cb(addr, usr, ctx, req):
         return response
 
-    agent = await snmp.create_agent(local_addr=addr,
-                                    engine_ids=[engine_id],
-                                    v3_request_cb=on_request_cb)
+    agent = await snmp.create_agent(
+        local_addr=addr,
+        authoritative_engine_id=engine_id,
+        v3_request_cb=on_request_cb,
+        users=[snmp.User(
+            name=username,
+            auth_type=None,
+            auth_password=None,
+            priv_type=None,
+            priv_password=None)])
 
     endpoint = await udp.create(remote_addr=addr)
 
@@ -1087,7 +1102,7 @@ async def test_v3_invalid_response(addr, caplog, response):
         id=1,
         reportable=False,
         context=context,
-        user='user_xyz',
+        user=username,
         auth=False,
         priv=False,
         authorative_engine=encoder.v3.AuthorativeEngine(

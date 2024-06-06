@@ -11,23 +11,23 @@ from hat.drivers.snmp import key
 from hat.drivers.snmp.encoder import v1, v2c, v3
 
 
-md5_key = key.Key(type=key.KeyType.MD5,
-                  data=b'1234567890abcdef')
-sha_key = key.Key(type=key.KeyType.SHA,
-                  data=b'1234567890abcdefghij')
-des_key = key.Key(type=key.KeyType.DES,
-                  data=b'1234567890abcdef')
-
-
 @pytest.fixture
 def agent_addr():
     return udp.Address('127.0.0.1', util.get_unused_udp_port())
 
 
-async def create_mock_agent(addr, auth_key=None, priv_key=None, decode=True):
+async def create_mock_agent(addr, user=None, authorative_engine=None):
     agent = MockAgent()
-    agent._auth_key = auth_key
-    agent._priv_key = priv_key
+    agent._auth_key = (key.create_key(
+        key_type=key.auth_type_to_key_type(user.auth_type),
+        password=user.auth_password,
+        engine_id=authorative_engine.id)
+        if user and authorative_engine and user.auth_type else None)
+    agent._priv_key = (key.create_key(
+        key_type=key.priv_type_to_key_type(user.priv_type),
+        password=user.priv_password,
+        engine_id=authorative_engine.id)
+        if user and authorative_engine and user.priv_type else None)
     agent._manager_addr = None
     agent._receive_queue = aio.Queue()
     agent._endpoint = await udp.create(local_addr=addr,
@@ -46,11 +46,11 @@ class MockAgent(aio.Resource):
     def receive_queue(self):
         return self._receive_queue
 
-    def send(self, msg, auth_key=None, priv_key=None):
+    def send(self, msg, auth=None, priv=None):
         if not self._manager_addr:
             raise Exception('no manager address')
-        auth_key = auth_key if auth_key is not None else self._auth_key
-        priv_key = priv_key if priv_key is not None else self._priv_key
+        auth_key = self._auth_key if auth is None or auth else None
+        priv_key = self._priv_key if priv is None or priv else None
         msg_bytes = encoder.encode(msg,
                                    auth_key=auth_key,
                                    priv_key=priv_key)
@@ -78,24 +78,25 @@ async def create_and_sync_manager(
         agent,
         context=snmp.Context(engine_id=b'engine_xyz',
                              name='context_xyz'),
-        user='user_xyz',
-        auth_engine_id=v3.AuthorativeEngine(
+        user=snmp.User(
+            name='user_xyz',
+            auth_type=None,
+            auth_password=None,
+            priv_type=None,
+            priv_password=None),
+        auth_engine=v3.AuthorativeEngine(
             id=b'auth_engine_xyz',
             boots=123,
-            time=456),
-        auth_key=None,
-        priv_key=None):
+            time=456)):
     async with aio.Group() as group:
         manager_fut = group.spawn(snmp.create_v3_manager,
                                   remote_addr=agent_addr,
                                   context=context,
-                                  user=user,
-                                  auth_key=auth_key,
-                                  priv_key=priv_key)
+                                  user=user)
 
         sync_msg = await agent.receive_queue.get()
 
-        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine)
         agent.send(sync_msg_resp)
         return await manager_fut
 
@@ -150,20 +151,20 @@ def create_sync_msg_response(req, auth_engine_id):
             data=[]))
 
 
-@pytest.mark.parametrize("auth_key, priv_key", [
+@pytest.mark.parametrize("auth_type, priv_type", [
     (None, None),
-    (md5_key, None),
-    (sha_key, None),
-    (md5_key, des_key),
-    (sha_key, des_key)])
-async def test_create(agent_addr, auth_key, priv_key):
+    (snmp.AuthType.MD5, None),
+    (snmp.AuthType.SHA, None),
+    (snmp.AuthType.MD5, snmp.PrivType.DES),
+    (snmp.AuthType.SHA, snmp.PrivType.DES)])
+async def test_create(agent_addr, auth_type, priv_type):
     agent = await create_mock_agent(agent_addr)
 
     context = snmp.Context(
         engine_id=b'context_engine_xyz',
         name='context_xyz')
-    user = 'user_xyz'
-    auth_engine_id = v3.AuthorativeEngine(
+    username = 'user_xyz'
+    auth_engine = v3.AuthorativeEngine(
         id=b'auth_engine_xyz',
         boots=123,
         time=456789)
@@ -171,14 +172,17 @@ async def test_create(agent_addr, auth_key, priv_key):
         manager_fut = group.spawn(snmp.create_v3_manager,
                                   remote_addr=agent_addr,
                                   context=context,
-                                  user=user,
-                                  auth_key=auth_key,
-                                  priv_key=priv_key)
+                                  user=snmp.User(
+                                      name=username,
+                                      auth_type=auth_type,
+                                      auth_password='any auth pass',
+                                      priv_type=priv_type,
+                                      priv_password='any priv pass'))
 
         sync_msg = await agent.receive_queue.get()
 
         # response on sync
-        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine)
         agent.send(sync_msg_resp)
 
         manager = await manager_fut
@@ -199,34 +203,37 @@ async def test_create(agent_addr, auth_key, priv_key):
     snmp.Context(engine_id=b'context_engine_xyz1',
                  name='context_xyz'),
     None])
-@pytest.mark.parametrize("user", ['user_abc', None])
-@pytest.mark.parametrize("auth_engine_id", [
+@pytest.mark.parametrize("username", ['user_abc', None])
+@pytest.mark.parametrize("auth_engine", [
     v3.AuthorativeEngine(id=b'auth_engine_xyz',
-                         boots=123,
-                         time=456789),
-    v3.AuthorativeEngine(id=b'abc',
-                         boots=0,
-                         time=12345),
-    ])
-@pytest.mark.parametrize("auth_key, priv_key", [
+                         boots=1234,
+                         time=34567),
+    v3.AuthorativeEngine(id=b'auth_engine_abc',
+                         boots=76543,
+                         time=654321)])
+@pytest.mark.parametrize("auth_type, priv_type", [
     (None, None),
-    (md5_key, None),
-    (sha_key, None),
-    (md5_key, des_key),
-    (sha_key, des_key)])
-async def test_sync(agent_addr, context, user, auth_engine_id,
-                    auth_key, priv_key):
-    agent = await create_mock_agent(agent_addr, auth_key, priv_key)
+    (snmp.AuthType.MD5, None),
+    (snmp.AuthType.SHA, None),
+    (snmp.AuthType.MD5, snmp.PrivType.DES),
+    (snmp.AuthType.SHA, snmp.PrivType.DES)])
+async def test_sync(agent_addr, context, username, auth_engine,
+                    auth_type, priv_type):
+    user = snmp.User(name=username,
+                     auth_type=auth_type,
+                     auth_password='any auth pass',
+                     priv_type=priv_type,
+                     priv_password='any priv pass') if username else None
+    agent = await create_mock_agent(agent_addr, user, auth_engine)
 
     async with aio.Group() as group:
         kwargs = {
-            'context': context,
-            'auth_key': auth_key,
-            'priv_key': priv_key}
-        if user is not None:
+            'remote_addr': agent_addr,
+            'context': context}
+        if username:
             kwargs['user'] = user
+
         manager_fut = group.spawn(snmp.create_v3_manager,
-                                  remote_addr=agent_addr,
                                   **kwargs)
 
         sync_msg = await agent.receive_queue.get()
@@ -250,7 +257,7 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
             data=[])
 
         # response on auto sync
-        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine)
         agent.send(sync_msg_resp)
         manager = await manager_fut
 
@@ -265,7 +272,7 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
             pdu=sync_msg.pdu._replace(request_id=sync_msg2.pdu.request_id))
 
         # response on manual sync
-        sync_msg_resp = create_sync_msg_response(sync_msg2, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg2, auth_engine)
         agent.send(sync_msg_resp)
         sync_res = await sync_fut
         assert sync_res is None
@@ -283,7 +290,7 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
             assert req_msg.context.name == ''
         else:
             assert req_msg.context == context
-        assert req_msg.user == user if user is not None else 'public'
+        assert req_msg.user == username if username is not None else 'public'
         assert req_msg.authorative_engine == sync_msg_resp.authorative_engine
 
     await manager.async_close()
@@ -342,46 +349,46 @@ async def test_sync(agent_addr, context, user, auth_engine_id,
     snmp.Error(type=snmp.ErrorType.READ_ONLY, index=4),
     snmp.Error(type=snmp.ErrorType.GEN_ERR, index=5),
     ])
-@pytest.mark.parametrize("auth_key, priv_key", [
+@pytest.mark.parametrize("auth_type, priv_type", [
     (None, None),
-    (md5_key, None),
-    (sha_key, None),
-    (md5_key, des_key),
-    (sha_key, des_key)])
-async def test_send(agent_addr, req, response_exp, auth_key, priv_key):
-    agent = await create_mock_agent(
-        agent_addr, auth_key=auth_key, priv_key=priv_key)
-
+    (snmp.AuthType.MD5, None),
+    (snmp.AuthType.SHA, None),
+    (snmp.AuthType.MD5, snmp.PrivType.DES),
+    (snmp.AuthType.SHA, snmp.PrivType.DES)])
+async def test_send(agent_addr, req, response_exp, auth_type, priv_type):
     context = snmp.Context(
         engine_id=b'engine_xyz',
         name='context_xyz')
-    user = 'user_xyz'
-    auth_engine_id = v3.AuthorativeEngine(
+    user = snmp.User(name='user_xyz',
+                     auth_type=auth_type,
+                     auth_password='any auth pass',
+                     priv_type=priv_type,
+                     priv_password='any priv pass')
+    auth_engine = v3.AuthorativeEngine(
         id=b'auth_engine_xyz',
         boots=123,
         time=456)
-    # auth = bool(auth_key)
-    # priv = bool(priv_key)
+
+    agent = await create_mock_agent(agent_addr, user, auth_engine)
 
     manager = await create_and_sync_manager(
-        agent_addr, agent, context, user, auth_engine_id, auth_key, priv_key)
+        agent_addr, agent, context, user, auth_engine)
 
     async with aio.Group() as group:
-
         # sends request
         req_fut = group.spawn(manager.send, req)
 
         req_msg = await agent.receive_queue.get()
 
         assert isinstance(req_msg, v3.Msg)
+        assert isinstance(req_msg.id, int)
         assert req_msg.type == req_to_msg_type(req)
-        # assert req_msg.id != sync_msg.id
         assert req_msg.reportable
 
-        assert req_msg.auth is bool(auth_key)
-        assert req_msg.priv is bool(priv_key)
-        assert req_msg.authorative_engine == auth_engine_id
-        assert req_msg.user == user
+        assert req_msg.auth is bool(auth_type)
+        assert req_msg.priv is bool(priv_type)
+        assert req_msg.authorative_engine == auth_engine
+        assert req_msg.user == user.name
         assert req_msg.context == context
 
         expected_data = (req.data if isinstance(req, snmp.SetDataReq)
@@ -421,9 +428,12 @@ async def test_create_no_agent(agent_addr):
                 remote_addr=agent_addr,
                 context=snmp.Context(engine_id=b'engine_xyz',
                                      name='context_xyz'),
-                user='user_xyz',
-                auth_key=None,
-                priv_key=None),
+                user=snmp.User(
+                    name='user_xyz',
+                    auth_type=None,
+                    auth_password=None,
+                    priv_type=None,
+                    priv_password=None)),
             0.1)
 
 
@@ -474,7 +484,7 @@ async def test_send_on_closing(agent_addr):
     await agent.async_close()
 
 
-async def test_request_id(agent_addr, caplog):
+async def test_msg_id(agent_addr, caplog):
     agent = await create_mock_agent(agent_addr)
 
     manager = await create_and_sync_manager(agent_addr, agent)
@@ -483,14 +493,13 @@ async def test_request_id(agent_addr, caplog):
         send_fut = group.spawn(manager.send, snmp.GetDataReq(names=[]))
 
         req_msg = await agent.receive_queue.get()
-        assert isinstance(req_msg.pdu.request_id, int)
+        assert isinstance(req_msg.id, int)
 
         resp_sent = []
         resp_msg = resp_msg_from_resp(resp_sent, req_msg)
 
-        # response with bad request_id is ignored with warning log
-        resp_msg_bad = resp_msg._replace(
-            pdu=resp_msg.pdu._replace(request_id=req_msg.pdu.request_id + 123))
+        # response with bad msg id is ignored with warning log
+        resp_msg_bad = resp_msg._replace(id=req_msg.id + 123)
         agent.send(resp_msg_bad)
         with pytest.raises(asyncio.TimeoutError):
             await aio.wait_for(asyncio.shield(send_fut), 0.05)
@@ -503,10 +512,10 @@ async def test_request_id(agent_addr, caplog):
         resp_received = await send_fut
         assert resp_sent == resp_received
 
-        # next request has greater request_id
+        # next request has greater msg id
         group.spawn(manager.send, snmp.GetDataReq(names=[]))
         req_msg_2 = await agent.receive_queue.get()
-        assert req_msg_2.pdu.request_id > req_msg.pdu.request_id
+        assert req_msg_2.id > req_msg.id
 
     await manager.async_close()
     await agent.async_close()
@@ -549,33 +558,32 @@ async def test_invalid_response(agent_addr, version, msg_type, context_name,
         snmp.Version.V1: v1,
         snmp.Version.V2C: v2c,
         snmp.Version.V3: v3}[version]
-    auth_key = sha_key
-    priv_key = des_key
-
-    agent = await create_mock_agent(agent_addr,
-                                    auth_key=auth_key,
-                                    priv_key=priv_key)
 
     context = snmp.Context(
         engine_id=b'engine_xyz',
         name=context_name)
-    user = 'user_xyz'
-    auth_engine_id = v3.AuthorativeEngine(
+    user = snmp.User(
+        name='user_xyz',
+        auth_type=snmp.AuthType.SHA,
+        auth_password='any auth pass',
+        priv_type=snmp.PrivType.DES,
+        priv_password='any priv pass')
+    auth_engine = v3.AuthorativeEngine(
         id=b'auth_engine_xyz',
         boots=123,
         time=456)
+
+    agent = await create_mock_agent(agent_addr, user, auth_engine)
 
     async with aio.Group(log_exceptions=False) as group:
         manager_fut = group.spawn(snmp.create_v3_manager,
                                   remote_addr=agent_addr,
                                   context=context,
-                                  user=user,
-                                  auth_key=auth_key,
-                                  priv_key=priv_key)
+                                  user=user)
 
         sync_msg = await agent.receive_queue.get()
 
-        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine_id)
+        sync_msg_resp = create_sync_msg_response(sync_msg, auth_engine)
         agent.send(sync_msg_resp)
         manager = await manager_fut
 
@@ -590,7 +598,7 @@ async def test_invalid_response(agent_addr, version, msg_type, context_name,
         if version == snmp.Version.V3:
             resp_msg = v3.Msg(
                 type=msg_type,
-                id=123,
+                id=req_msg.id,
                 reportable=False,
                 auth=auth,
                 priv=priv,
@@ -609,9 +617,7 @@ async def test_invalid_response(agent_addr, version, msg_type, context_name,
                 community='community_xyz',
                 pdu=pdu)
 
-        agent.send(resp_msg,
-                   auth_key=auth_key if auth else None,
-                   priv_key=priv_key if priv else None)
+        agent.send(resp_msg, auth, priv)
         await asyncio.sleep(0.01)
 
         assert not send_fut.done()
