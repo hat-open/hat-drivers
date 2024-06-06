@@ -50,7 +50,7 @@ async def test_sender_create(version, udp_addr):
         sender = await trap.create_v2c_trap_sender(udp_addr, 'community')
     elif version == 'v3':
         sender = await trap.create_v3_trap_sender(
-            udp_addr, common.Context(engine_id=None, name='community'), 'user')
+            udp_addr, common.Context(engine_id=b'', name=''))
     assert isinstance(sender, trap.TrapSender)
     assert sender.is_open
 
@@ -125,8 +125,7 @@ async def test_sender_send_trap_v3(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
-        udp_addr, common.Context(engine_id=b'engine_id', name='name'),
-        'user')
+        udp_addr, common.Context(engine_id=b'engine_id', name='name'))
 
     sender.send_trap(common.Trap(cause=None,
                                  oid=(1, 2, 3, 4),
@@ -145,7 +144,7 @@ async def test_sender_send_trap_v3(udp_addr, data):
     assert msg.authorative_engine.id == b'engine_id'
     assert msg.authorative_engine.boots == 0
     assert msg.authorative_engine.time is not None
-    assert msg.user == 'user'
+    assert msg.user == 'public'
     assert msg.context.engine_id == b'engine_id'
     assert msg.context.name == 'name'
     assert msg.pdu.error.type == common.ErrorType.NO_ERROR
@@ -239,7 +238,8 @@ async def test_listener_receive_trap_v3(udp_addr, data):
     listener = await trap.create_trap_listener(
         local_addr=udp_addr,
         v3_trap_cb=lambda _, user, context, tr: trap_queue.put_nowait(
-            (user, context, tr)))
+            (user, context, tr)),
+        users=[common.User('user', None, None, None, None)])
 
     sender = await udp.create(remote_addr=udp_addr)
 
@@ -328,8 +328,7 @@ async def test_sender_send_inform_v3(udp_addr, data):
     listener = await udp.create(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
-        udp_addr, common.Context(engine_id=b'engine_id', name='name'),
-        'user')
+        udp_addr, common.Context(engine_id=b'engine_id', name='name'))
 
     inform_req = common.Inform(data=data)
     res_f = sender.async_group.spawn(sender.send_inform, inform_req)
@@ -346,7 +345,7 @@ async def test_sender_send_inform_v3(udp_addr, data):
     assert msg.authorative_engine.id == b'engine_id'
     assert msg.authorative_engine.boots == 0
     assert msg.authorative_engine.time is not None
-    assert msg.user == 'user'
+    assert msg.user == 'public'
     assert msg.context.engine_id == b'engine_id'
     assert msg.context.name == 'name'
     assert msg.pdu.error.type == common.ErrorType.NO_ERROR
@@ -355,7 +354,7 @@ async def test_sender_send_inform_v3(udp_addr, data):
 
     msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.RESPONSE,
-        id=12345,
+        id=msg.id,
         reportable=False,
         auth=False,
         priv=False,
@@ -363,7 +362,7 @@ async def test_sender_send_inform_v3(udp_addr, data):
             id=b'engine_id',
             boots=0,
             time=0),
-        user='user',
+        user='public',
         context=common.Context(
             engine_id=b'engine_id',
             name='name'),
@@ -443,7 +442,10 @@ async def test_listener_receive_inform_v3(udp_addr, data):
         assert inform_req.data == data
 
     listener = await trap.create_trap_listener(local_addr=udp_addr,
-                                               v3_inform_cb=inform_cb)
+                                               v3_inform_cb=inform_cb,
+                                               users=[common.User('user', None,
+                                                                  None, None,
+                                                                  None)])
 
     sender = await udp.create(remote_addr=udp_addr)
 
