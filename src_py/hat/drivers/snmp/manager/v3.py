@@ -208,7 +208,8 @@ class V3Manager(common.Manager):
                     if res_msg.priv != req_msg.priv:
                         raise Exception('invalid priv flag')
 
-                    if res_msg.context != req_msg.context:
+                    if (res_msg.type == encoder.v3.MsgType.RESPONSE and
+                            res_msg.context != req_msg.context):
                         raise Exception('invalid context')
 
                     if (self._authorative_engine and
@@ -217,7 +218,7 @@ class V3Manager(common.Manager):
                         raise Exception('authorative engine id changed')
 
                     if self._authorative_engine is None:
-                        if self._auth_type:
+                        if self._user.auth_type:
                             key_type = key.auth_type_to_key_type(
                                 self._user.auth_type)
                             self._auth_key = key.create_key(
@@ -225,7 +226,7 @@ class V3Manager(common.Manager):
                                 password=self._user.auth_password,
                                 engine_id=res_msg.authorative_engine.id)
 
-                        if self._priv_type:
+                        if self._user.priv_type:
                             key_type = key.priv_type_to_key_type(
                                 self._user.priv_type)
                             self._priv_key = key.create_key(

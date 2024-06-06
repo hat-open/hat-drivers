@@ -32,7 +32,7 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                        v1_request_cb: V1RequestCb | None = None,
                        v2c_request_cb: V2CRequestCb | None = None,
                        v3_request_cb: V3RequestCb | None = None,
-                       authorative_engine_id: common.EngineId | None = None,
+                       authoritative_engine_id: common.EngineId | None = None,
                        users: Collection[common.User] = []
                        ) -> 'Agent':
     """Create agent"""
@@ -44,7 +44,7 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                      v1_request_cb=v1_request_cb,
                      v2c_request_cb=v2c_request_cb,
                      v3_request_cb=v3_request_cb,
-                     authorative_engine_id=authorative_engine_id,
+                     authoritative_engine_id=authoritative_engine_id,
                      users=users)
 
     except BaseException:
@@ -59,13 +59,13 @@ class Agent(aio.Resource):
                  v1_request_cb: V1RequestCb | None,
                  v2c_request_cb: V2CRequestCb | None,
                  v3_request_cb: V3RequestCb | None,
-                 authorative_engine_id: common.EngineId | None,
+                 authoritative_engine_id: common.EngineId | None,
                  users: Collection[common.User] = []):
         self._endpoint = endpoint
         self._v1_request_cb = v1_request_cb
         self._v2c_request_cb = v2c_request_cb
         self._v3_request_cb = v3_request_cb
-        self._authorative_engine_id = authorative_engine_id
+        self._auth_engine_id = authoritative_engine_id
         self._auth_keys = {}
         self._priv_keys = {}
 
@@ -77,7 +77,7 @@ class Agent(aio.Resource):
                 self._auth_keys[user.name] = key.create_key(
                     key_type=key_type,
                     password=user.auth_password,
-                    engine_id=authorative_engine_id)
+                    engine_id=authoritative_engine_id)
 
             else:
                 self._auth_keys[user.name] = None
@@ -87,7 +87,7 @@ class Agent(aio.Resource):
                 self._priv_keys[user.name] = key.create_key(
                     key_type=key_type,
                     password=user.priv_password,
-                    engine_id=authorative_engine_id)
+                    engine_id=authoritative_engine_id)
 
             else:
                 self._priv_keys[user.name] = None
@@ -99,14 +99,14 @@ class Agent(aio.Resource):
         return self._endpoint.async_group
 
     def _on_auth_key(self, engine_id, username):
-        if engine_id != self._authorative_engine_id:
-            return
+        if engine_id != self._auth_engine_id:
+            raise Exception('invalid authoritative engine id')
 
         return self._auth_keys.get(username)
 
     def _on_priv_key(self, engine_id, username):
-        if engine_id != self._authorative_engine_id:
-            return
+        if engine_id != self._auth_engine_id:
+            raise Exception('invalid authoritative engine id')
 
         return self._priv_keys.get(username)
 
@@ -143,7 +143,7 @@ class Agent(aio.Resource):
                             req_msg=req_msg,
                             addr=addr,
                             request_cb=self._v3_request_cb,
-                            authorative_engine_id=self._authorative_engine_id,
+                            authoritative_engine_id=self._auth_engine_id,
                             auth_keys=self._auth_keys,
                             priv_keys=self._priv_keys)
 
@@ -161,13 +161,13 @@ class Agent(aio.Resource):
                 try:
                     if isinstance(res_msg, encoder.v3.Msg):
                         auth_key = (
-                            self._auth_key_cb(res_msg.authorative_engine.id,
+                            self._on_auth_key(res_msg.authorative_engine.id,
                                               res_msg.user)
-                            if self._auth_key_cb and res_msg.auth else None)
+                            if res_msg.auth else None)
                         priv_key = (
-                            self._priv_key_cb(res_msg.authorative_engine.id,
+                            self._on_priv_key(res_msg.authorative_engine.id,
                                               res_msg.user)
-                            if self._priv_key_cb and res_msg.priv else None)
+                            if res_msg.priv else None)
 
                     else:
                         auth_key = None
@@ -291,9 +291,9 @@ async def _process_v2c_req_msg(req_msg, addr, request_cb):
     return res_msg
 
 
-async def _process_v3_req_msg(req_msg, addr, request_cb, authorative_engine_id,
-                              auth_keys, priv_keys):
-    if not request_cb or authorative_engine_id is None:
+async def _process_v3_req_msg(req_msg, addr, request_cb,
+                              authoritative_engine_id, auth_keys, priv_keys):
+    if not request_cb or authoritative_engine_id is None:
         raise Exception('not accepting V3')
 
     if req_msg.type == encoder.v3.MsgType.GET_REQUEST:
@@ -311,13 +311,13 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, authorative_engine_id,
     else:
         raise Exception('invalid request message type')
 
-    if req_msg.authorative_engine.id != authorative_engine_id:
+    if req_msg.authorative_engine.id != authoritative_engine_id:
         if req_msg.reportable:
 
             # TODO report data and conditions for sending reports
 
             authorative_engine = encoder.v3.AuthorativeEngine(
-                id=authorative_engine_id,
+                id=authoritative_engine_id,
                 boots=0,
                 time=round(time.monotonic()))
 
@@ -339,7 +339,7 @@ async def _process_v3_req_msg(req_msg, addr, request_cb, authorative_engine_id,
 
             return res_msg
 
-        raise Exception('invalid authorative engine id')
+        raise Exception('invalid authoritative engine id')
 
     # TODO check authoritative engine boot and time
 
