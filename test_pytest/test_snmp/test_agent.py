@@ -523,21 +523,21 @@ async def test_v2c_invalid_version(addr, caplog, req_msg, log_msg):
     None,
     snmp.Error(type=snmp.ErrorType.AUTHORIZATION_ERROR, index=3)
 ])
-@pytest.mark.parametrize('auth, priv', [
-    (False, False),
-    (True, False),
-    (True, True)
-])
-async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
+@pytest.mark.parametrize('auth, priv', [(False, False),
+                                        (True, False),
+                                        (True, True)])
+@pytest.mark.parametrize('auth_type', snmp.AuthType)
+async def test_v3_get_req_res(addr, msg_type, data, error, auth, auth_type,
+                              priv):
     request_id = 42
     username = 'user name'
     engine_id = b'engine id'
 
     context = snmp.Context(engine_id=engine_id,
                            name='ctx name')
-    auth_pass = 'pass'
-    priv_pass = 'pass'
-    auth_key = (key.create_key(key_type=key.KeyType.MD5,
+    auth_pass = 'authpass'
+    priv_pass = 'privpass'
+    auth_key = (key.create_key(key_type=key.KeyType[auth_type.name],
                                password=auth_pass,
                                engine_id=engine_id)
                 if auth else None)
@@ -564,7 +564,7 @@ async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
         authoritative_engine_id=engine_id,
         users=[snmp.User(
             name=username,
-            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_type=auth_type if auth else None,
             auth_password=auth_pass if auth else None,
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
@@ -642,11 +642,9 @@ async def test_v3_get_req_res(addr, msg_type, data, error, auth, priv):
     await agent.async_close()
 
 
-@pytest.mark.parametrize('auth, priv', [
-    (False, False),
-    (True, False),
-    (True, True)
-])
+@pytest.mark.parametrize('auth, priv', [(False, False),
+                                        (True, False),
+                                        (True, True)])
 async def test_v3_sync_report(addr, auth, priv):
     engine_id = b'engine id'
 
@@ -709,26 +707,25 @@ async def test_v3_sync_report(addr, auth, priv):
     None,
     snmp.Error(type=snmp.ErrorType.AUTHORIZATION_ERROR, index=3)
 ])
-@pytest.mark.parametrize('auth, priv', [
-    (False, False),
-    (True, False),
-    (True, True)
-])
-async def test_v3_set_req_res(addr, data, error, auth, priv):
+@pytest.mark.parametrize('auth, priv', [(False, False),
+                                        (True, False),
+                                        (True, True)])
+@pytest.mark.parametrize('auth_type', snmp.AuthType)
+async def test_v3_set_req_res(addr, data, error, auth, priv, auth_type):
     username = 'user name'
     engine_id = b'engine id'
-    auth_pass = 'pass'
-    priv_pass = 'pass'
+    auth_pass = 'authpass'
+    priv_pass = 'privpass'
 
     context = snmp.Context(engine_id=engine_id,
                            name='ctx name')
 
-    auth_key = (key.create_key(key_type=key.KeyType.MD5,
-                               password='pass',
+    auth_key = (key.create_key(key_type=key.KeyType[auth_type.name],
+                               password=auth_pass,
                                engine_id=engine_id)
                 if auth else None)
     priv_key = (key.create_key(key_type=key.KeyType.DES,
-                               password='pass',
+                               password=priv_pass,
                                engine_id=engine_id)
                 if priv else None)
 
@@ -750,7 +747,7 @@ async def test_v3_set_req_res(addr, data, error, auth, priv):
         authoritative_engine_id=engine_id,
         users=[snmp.User(
             name=username,
-            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_type=auth_type if auth else None,
             auth_password=auth_pass if auth else None,
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
@@ -857,17 +854,15 @@ async def test_v3_request_cb_exception(addr, caplog):
     await agent.async_close()
 
 
-@pytest.mark.parametrize('auth, priv', [
-    (False, False),
-    (True, False),
-    (True, True)
-])
+@pytest.mark.parametrize('auth, priv', [(False, False),
+                                        (True, False),
+                                        (True, True)])
 async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
     username = 'user_xyz'
     engine_id = b'engine'
     invalid_engine_id = b'invalid engine'
-    auth_pass = 'pass'
-    priv_pass = 'pass'
+    auth_pass = 'authpass'
+    priv_pass = 'privpass'
 
     auth_key = (key.create_key(key_type=key.KeyType.MD5,
                                password=auth_pass,
@@ -932,6 +927,79 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
     await agent.async_close()
 
 
+@pytest.mark.parametrize('auth, priv', [(False, False),
+                                        (True, False),
+                                        (True, True)])
+async def test_invalid_user(addr, caplog, auth, priv):
+    username = 'user_xyz'
+    engine_id = b'engine'
+    invalid_username = 'user_invalid'
+    auth_pass = 'authpass'
+    priv_pass = 'privpass'
+
+    auth_key = (key.create_key(key_type=key.KeyType.MD5,
+                               password=auth_pass,
+                               engine_id=engine_id)
+                if auth else None)
+    priv_key = (key.create_key(key_type=key.KeyType.DES,
+                               password=priv_pass,
+                               engine_id=engine_id)
+                if priv else None)
+
+    req_queue = aio.Queue()
+
+    async def request_cb(address, user, context, request):
+        req_queue.put_nowait(request)
+        return []
+
+    agent = await snmp.create_agent(
+        local_addr=addr,
+        v3_request_cb=request_cb,
+        authoritative_engine_id=engine_id,
+        users=[snmp.User(
+            name=username,
+            auth_type=snmp.AuthType.MD5 if auth else None,
+            auth_password=auth_pass if auth else None,
+            priv_type=snmp.PrivType.DES if priv else None,
+            priv_password=priv_pass if priv else None)])
+
+    endpoint = await udp.create(remote_addr=addr)
+
+    req_msg = encoder.v3.Msg(
+        type=encoder.v3.MsgType.GET_REQUEST,
+        id=1,
+        reportable=False,
+        context=snmp.Context(engine_id=b'engine_cntx', name='xyz'),
+        user=invalid_username,
+        auth=auth,
+        priv=priv,
+        authorative_engine=encoder.v3.AuthorativeEngine(
+            id=engine_id,
+            boots=1234,
+            time=456),
+        pdu=encoder.v3.BasicPdu(
+            request_id=1,
+            error=snmp.Error(snmp.ErrorType.NO_ERROR, 0),
+            data=[]))
+
+    endpoint.send(encoder.encode(req_msg,
+                                 auth_key=auth_key,
+                                 priv_key=priv_key))
+    await asyncio.sleep(0.01)
+    assert req_queue.empty()
+
+    with pytest.raises(asyncio.TimeoutError):
+        await aio.wait_for(endpoint.receive(), timeout=0.01)
+
+    assert caplog.records
+    log_msg = caplog.records[0]
+    assert log_msg.levelname == 'WARNING'
+    assert "invalid user" in log_msg.message
+
+    await endpoint.async_close()
+    await agent.async_close()
+
+
 @pytest.mark.parametrize('key_type', [
     key.KeyType.MD5,
     key.KeyType.SHA
@@ -939,9 +1007,9 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
 async def test_invalid_auth_flag(addr, caplog, key_type):
     username = 'user_xyz'
     engine_id = b'engine'
-    auth_pass = 'pass'
+    auth_pass = 'authpass'
     auth_key = key.create_key(key_type=key_type,
-                              password='pass',
+                              password=auth_pass,
                               engine_id=engine_id)
 
     req_queue = aio.Queue()
@@ -1003,8 +1071,8 @@ async def test_invalid_auth_flag(addr, caplog, key_type):
 async def test_invalid_priv_flag(addr, caplog):
     username = 'user_xyz'
     engine_id = b'engine'
-    auth_pass = 'pass'
-    priv_pass = 'pass'
+    auth_pass = 'authpass'
+    priv_pass = 'privpass'
     auth_key = key.create_key(key_type=key.KeyType.MD5,
                               password=auth_pass,
                               engine_id=engine_id)
