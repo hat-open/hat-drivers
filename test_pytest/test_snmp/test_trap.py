@@ -50,8 +50,7 @@ async def test_sender_create(version, udp_addr):
     elif version == 'v2c':
         sender = await trap.create_v2c_trap_sender(udp_addr, 'community')
     elif version == 'v3':
-        sender = await trap.create_v3_trap_sender(
-            udp_addr, common.Context(engine_id=b'', name=''))
+        sender = await trap.create_v3_trap_sender(udp_addr, b'')
     assert isinstance(sender, trap.TrapSender)
     assert sender.is_open
 
@@ -129,7 +128,8 @@ async def test_sender_send_trap_v2c(udp_addr, data):
 @pytest.mark.parametrize('auth_type', common.AuthType)
 async def test_sender_send_trap_v3(udp_addr, data, auth, auth_type, priv):
     username = 'user_xyz'
-    context = common.Context(engine_id=b'ctx_engine_id', name='name')
+    engine_id = b'ctx_engine_id'
+    context = common.Context(engine_id=engine_id, name='name')
     auth_pass = 'authpass'
     priv_pass = 'privpass'
     auth_key = (key.create_key(key_type=key.KeyType[auth_type.name],
@@ -151,6 +151,7 @@ async def test_sender_send_trap_v3(udp_addr, data, auth, auth_type, priv):
 
     sender = await trap.create_v3_trap_sender(
         remote_addr=udp_addr,
+        authoritative_engine_id=engine_id,
         context=context,
         user=common.User(
             name=username,
@@ -388,7 +389,8 @@ async def test_sender_send_inform_v2c(udp_addr, data):
 @pytest.mark.parametrize('auth_type', common.AuthType)
 async def test_sender_send_inform_v3(udp_addr, data, auth, auth_type, priv):
     username = 'user_xyz'
-    context = common.Context(engine_id=b'ctx_engine_id',
+    engine_id = b'ctx_engine_id'
+    context = common.Context(engine_id=engine_id,
                              name='name')
     auth_pass = 'authpass'
     priv_pass = 'privpass'
@@ -411,6 +413,7 @@ async def test_sender_send_inform_v3(udp_addr, data, auth, auth_type, priv):
 
     sender = await trap.create_v3_trap_sender(
         remote_addr=udp_addr,
+        authoritative_engine_id=engine_id,
         context=context,
         user=common.User(
             name=username,
