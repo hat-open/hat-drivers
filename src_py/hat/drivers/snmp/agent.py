@@ -102,13 +102,17 @@ class Agent(aio.Resource):
         if engine_id != self._auth_engine_id:
             raise Exception('invalid authoritative engine id')
 
-        return self._auth_keys.get(username)
+        if username not in self._auth_keys:
+            raise Exception('invalid user')
+        return self._auth_keys[username]
 
     def _on_priv_key(self, engine_id, username):
         if engine_id != self._auth_engine_id:
             raise Exception('invalid authoritative engine id')
 
-        return self._priv_keys.get(username)
+        if username not in self._priv_keys:
+            raise Exception('invalid user')
+        return self._priv_keys[username]
 
     async def _receive_loop(self):
         try:
