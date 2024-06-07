@@ -22,7 +22,8 @@ _default_user = common.User(name='public',
 
 
 async def create_v3_trap_sender(remote_addr: udp.Address,
-                                context: common.Context,
+                                authoritative_engine_id: common.EngineId,
+                                context: common.Context | None = None,
                                 user: common.User = _default_user
                                 ) -> common.TrapSender:
     """Create v3 trap sender"""
@@ -31,6 +32,7 @@ async def create_v3_trap_sender(remote_addr: udp.Address,
 
     try:
         return V3TrapSender(endpoint=endpoint,
+                            authoritative_engine_id=authoritative_engine_id,
                             context=context,
                             user=user)
 
@@ -43,9 +45,11 @@ class V3TrapSender(common.TrapSender):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 context: common.Context,
+                 authoritative_engine_id: common.EngineId,
+                 context: common.Context | None,
                  user: common.User):
         self._endpoint = endpoint
+        self._authoritative_engine_id = authoritative_engine_id
         self._context = context
         self._user = user
         self._loop = asyncio.get_running_loop()
@@ -60,13 +64,13 @@ class V3TrapSender(common.TrapSender):
             key_type = key.auth_type_to_key_type(user.auth_type)
             self._auth_key = key.create_key(key_type=key_type,
                                             password=user.auth_password,
-                                            engine_id=context.engine_id)
+                                            engine_id=authoritative_engine_id)
 
         if user.priv_type:
             key_type = key.priv_type_to_key_type(user.priv_type)
             self._priv_key = key.create_key(key_type=key_type,
                                             password=user.priv_password,
-                                            engine_id=context.engine_id)
+                                            engine_id=authoritative_engine_id)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -83,9 +87,13 @@ class V3TrapSender(common.TrapSender):
         request_id = next(self._next_request_ids)
 
         authorative_engine = encoder.v3.AuthorativeEngine(
-            id=self._context.engine_id,
+            id=self._authoritative_engine_id,
             boots=0,
             time=round(time.monotonic()))
+
+        context = (self._context or
+                   common.Context(id=self.authoritative_engine_id,
+                                  name=''))
 
         error = common.Error(common.ErrorType.NO_ERROR, 0)
         data = [common.TimeTicksData(name=(1, 3, 6, 1, 2, 1, 1, 3, 0),
@@ -105,7 +113,7 @@ class V3TrapSender(common.TrapSender):
                              priv=self._priv_key is not None,
                              authorative_engine=authorative_engine,
                              user=self._user.name,
-                             context=self._context,
+                             context=context,
                              pdu=pdu)
         msg_bytes = encoder.encode(msg=msg,
                                    auth_key=self._auth_key,
@@ -123,9 +131,13 @@ class V3TrapSender(common.TrapSender):
         request_id = next(self._next_request_ids)
 
         authorative_engine = encoder.v3.AuthorativeEngine(
-            id=self._context.engine_id,
+            id=self._authoritative_engine_id,
             boots=0,
             time=round(time.monotonic()))
+
+        context = (self._context or
+                   common.Context(id=self.authoritative_engine_id,
+                                  name=''))
 
         error = common.Error(common.ErrorType.NO_ERROR, 0)
 
@@ -140,7 +152,7 @@ class V3TrapSender(common.TrapSender):
                                  priv=self._priv_key is not None,
                                  authorative_engine=authorative_engine,
                                  user=self._user.name,
-                                 context=self._context,
+                                 context=context,
                                  pdu=pdu)
         req_msg_bytes = encoder.encode(msg=req_msg,
                                        auth_key=self._auth_key,
@@ -156,13 +168,15 @@ class V3TrapSender(common.TrapSender):
             del self._req_msg_futures[request_id]
 
     def _on_auth_key(self, engine_id, username):
-        if engine_id != self._context.engine_id or username != self._user.name:
+        if (engine_id != self._authoritative_engine_id or
+                username != self._user.name):
             return
 
         return self._auth_key
 
     def _on_priv_key(self, engine_id, username):
-        if engine_id != self._context.engine_id or username != self._user.name:
+        if (engine_id != self._authoritative_engine_id or
+                username != self._user.name):
             return
 
         return self._priv_key

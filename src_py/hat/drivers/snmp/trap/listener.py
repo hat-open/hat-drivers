@@ -296,6 +296,8 @@ async def _process_v3_trap(req_msg, addr, trap_cb):
     if not trap_cb:
         raise Exception('not accepting V3 trap')
 
+    # TODO check user
+
     if (len(req_msg.pdu.data) < 2 or
             not isinstance(req_msg.pdu.data[0], common.TimeTicksData) or
             not isinstance(req_msg.pdu.data[1], common.ObjectIdData)):
@@ -314,6 +316,8 @@ async def _process_v3_trap(req_msg, addr, trap_cb):
 async def _process_v3_inform(req_msg, addr, inform_cb):
     if not inform_cb:
         raise Exception('not accepting V3 inform')
+
+    # TODO check user
 
     req = common.Inform(data=req_msg.pdu.data)
 
