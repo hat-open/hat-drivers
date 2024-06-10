@@ -19,6 +19,9 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License"
 ]
 
+[project.scripts]
+hat-snmp-manager = "hat.drivers.snmp.manager.cli:main"
+
 [project.urls]
 Homepage = "http://hat-open.com"
 Repository = "https://github.com/hat-open/hat-drivers.git"
