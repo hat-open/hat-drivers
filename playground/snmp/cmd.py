@@ -11,12 +11,34 @@ from hat.drivers import udp
 def create_argument_parser():
     parser = argparse.ArgumentParser()
 
+    subparsers = parser.add_subparsers(dest='action', required=True,
+                                       help='available snmp commands')
+
+    subparser_get = subparsers.add_parser(
+        'get', help='snmp get on specific oid')
+    add_generic_arguments(subparser_get)
+    subparser_get.add_argument(
+        'oid', type=str, metavar='OID',
+        help='oid')
+
+    subparser_getnext = subparsers.add_parser(
+        'getnext', help='snmp get next on specific oid')
+    add_generic_arguments(subparser_getnext)
+    subparser_getnext.add_argument(
+        'oid', type=str, metavar='OID',
+        help='oid')
+
+    subparser_walk = subparsers.add_parser(
+        'walk', help='retrieve entire snmp device tree')
+    add_generic_arguments(subparser_walk)
+
+    return parser
+
+
+def add_generic_arguments(parser):
     parser.add_argument(
         'host', type=str, metavar='HOST',
         help='agent host')
-    parser.add_argument(
-        'oid', type=str, metavar='OID',
-        help='oid')
 
     parser.add_argument(
         '-p', '--port', type=int,
@@ -63,8 +85,6 @@ def create_argument_parser():
         default=None,
         help=('privacy protocol pass phrase'))
 
-    return parser
-
 
 def main():
     parser = create_argument_parser()
@@ -77,22 +97,46 @@ def main():
 
 
 async def async_main(args):
+    manager = await _create_manager(args)
+
+    try:
+        if args.action == 'get':
+            results = _get(manager, args.oid)
+
+        elif args.action == 'getnext':
+            results = _get_next(manager, args.oid)
+
+        elif args.action == 'walk':
+            results = _walk(manager)
+
+        else:
+            raise Exception('unknown action')
+
+        async for res in results:
+            print(json.encode(res))
+
+    finally:
+        await aio.uncancellable(manager.async_close())
+
+
+async def _create_manager(args):
     version = args.version
     if version == '1':
-        manager = await snmp.create_v1_manager(
+        return await snmp.create_v1_manager(
             remote_addr=udp.Address(
                 host=args.host,
                 port=args.port),
             community=args.community)
 
-    elif version == '2c':
-        manager = await snmp.create_v2c_manager(
+    if version == '2c':
+        return await snmp.create_v2c_manager(
             remote_addr=udp.Address(
                 host=args.host,
                 port=args.port),
             community=args.community)
-    elif version == '3':
-        manager = await snmp.create_v3_manager(
+
+    if version == '3':
+        return await snmp.create_v3_manager(
             remote_addr=udp.Address(
                 host=args.host,
                 port=args.port),
@@ -109,50 +153,85 @@ async def async_main(args):
                            if args.priv_protocol else None),
                 priv_password=(args.priv_passphrase
                                if args.priv_protocol else None)))
-    else:
-        raise Exception('unsupported version')
 
-    try:
-        request = snmp.GetDataReq(names=[_oid_from_str(args.oid)])
-        response = await manager.send(request)
-        print(json.encode(_response_to_json(response)))
+    raise Exception('unsupported version')
 
-    finally:
-        await aio.uncancellable(manager.async_close())
+
+class _EndOfMib(Exception):
+    """End of Mib exception"""
+
+
+async def _get(manager, oid):
+    request = snmp.GetDataReq(names=[_oid_from_str(oid)])
+    response = await manager.send(request)
+    for i in _response_to_json(response):
+        yield i
+
+
+async def _get_next(manager, oid):
+    request = snmp.GetNextDataReq(names=[_oid_from_str(oid)])
+    response = await manager.send(request)
+    for i in _response_to_json(response):
+        yield i
+
+
+async def _walk(manager):
+    next_name = (0, 0)
+    with contextlib.suppress(_EndOfMib):
+        while True:
+            request = snmp.GetNextDataReq(names=[next_name])
+            response = await manager.send(request)
+            for i in _response_to_json(response):
+                yield i
+
+            next_name = response[-1].name
 
 
 def _response_to_json(response):
-    if response is None:
-        return
+    if not response:
+        raise Exception('ERROR: no data')
 
     if isinstance(response, snmp.Error):
-        return f'ERROR {response.index}, {response.type.name}'
+        raise Exception(f'ERROR {response.index}, {response.type.name}')
 
-    if not response:
-        return 'ERROR empty response'
+    for resp_data in response:
+        if isinstance(resp_data,
+                      snmp.EndOfMibViewData):
+            raise _EndOfMib()
 
-    resp_data = response[0]
-    data_type = _data_type_from_response(response)
+        if isinstance(resp_data,
+                      (snmp.EmptyData,
+                       snmp.UnspecifiedData,
+                       snmp.NoSuchObjectData,
+                       snmp.NoSuchInstanceData)):
+            data_type = _data_type_from_data(resp_data)
+            raise Exception(f'ERROR on {resp_data.name} {data_type}')
 
-    if isinstance(resp_data,
-                  (snmp.EmptyData,
-                   snmp.UnspecifiedData,
-                   snmp.NoSuchObjectData,
-                   snmp.NoSuchInstanceData,
-                   snmp.EndOfMibViewData)):
-        return f'ERROR {data_type}'
+        if isinstance(resp_data, snmp.Data):
+            yield _data_to_json(resp_data)
 
-    if isinstance(resp_data, snmp.Data):
-        return {
-            'name': _oid_to_str(resp_data.name),
-            'type': data_type,
-            'value': resp_data.value}
-
-    raise Exception('unexpected response')
+        else:
+            raise Exception('unexpected response data')
 
 
-def _data_type_from_response(response):
-    resp_data = response[0]
+def _data_to_json(data):
+    return {
+        'name': _oid_to_str(data.name),
+        'type': _data_type_from_data(data),
+        'value': data.value}
+
+
+def _value_to_json(data):
+    if isinstance(data, (snmp.ObjectIdData, snmp.IpAddressData)):
+        return _oid_to_str(data.value)
+
+    elif isinstance(data, snmp.ArbitraryData):
+        return data.value.hex()
+
+    return data.value
+
+
+def _data_type_from_data(resp_data):
     if isinstance(resp_data, snmp.IntegerData):
         return 'INTEGER'
     if isinstance(resp_data, snmp.UnsignedData):
