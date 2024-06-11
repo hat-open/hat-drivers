@@ -1,9 +1,11 @@
 import argparse
 import asyncio
 import contextlib
+import sys
 
 from hat import aio
 from hat import json
+
 from hat.drivers import snmp
 from hat.drivers import udp
 
@@ -11,79 +13,78 @@ from hat.drivers import udp
 def create_argument_parser():
     parser = argparse.ArgumentParser()
 
-    subparsers = parser.add_subparsers(dest='action', required=True,
-                                       help='available snmp commands')
-
-    subparser_get = subparsers.add_parser(
-        'get', help='snmp get on specific oid')
-    add_generic_arguments(subparser_get)
-    subparser_get.add_argument(
-        'oid', type=str, metavar='OID',
-        help='oid')
-
-    subparser_getnext = subparsers.add_parser(
-        'getnext', help='snmp get next on specific oid')
-    add_generic_arguments(subparser_getnext)
-    subparser_getnext.add_argument(
-        'oid', type=str, metavar='OID',
-        help='oid')
-
-    subparser_walk = subparsers.add_parser(
-        'walk', help='retrieve entire snmp device tree')
-    add_generic_arguments(subparser_walk)
-
-    return parser
-
-
-def add_generic_arguments(parser):
     parser.add_argument(
-        'host', type=str, metavar='HOST',
-        help='agent host')
-
-    parser.add_argument(
-        '-p', '--port', type=int,
+        '-p', type=int, metavar='PORT', dest='port',
         default=161,
-        help='agent port, defaults to 161')
+        help='agent UDP port, defaults to 161')
     parser.add_argument(
-        '-v', '--version', choices=['1', '2c', '3'],
+        '-v', choices=['1', '2c', '3'], metavar='VERSION', dest='version',
         default='2c',
-        help=('SNMP version: 1, 2c or 3, defaults to 2c'))
+        help='SNMP version, defaults to 2c (versions: 1, 2c, 3)')
 
-    group_v1_2c = parser.add_argument_group('Version 1 or 2c specific')
+    group_v1_2c = parser.add_argument_group('version 1 or 2c specific')
     group_v1_2c.add_argument(
         '-c', type=str, metavar='COMMUNITY', dest='community',
         default='public',
-        help=("community, defaults to 'public'"))
+        help="community, defaults to 'public'")
 
-    group_v3 = parser.add_argument_group('Version 3 specific')
+    group_v3 = parser.add_argument_group('version 3 specific')
     group_v3.add_argument(
         '-n', type=str, metavar='CONTEXT', dest='context_name',
         default='',
-        help=('context name, defaults to empty string'))
+        help='context name, defaults to empty string')
     group_v3.add_argument(
         '-u', type=str, metavar='USER-NAME', dest='user_name',
-        default='',
-        help=('user security name, defaults to empty string'))
+        default='public',
+        help="user security name, defaults to 'public'")
     group_v3.add_argument(
         '-E', metavar='ENGINE-ID', type=str, dest='context_engine_id',
         default='',
-        help=('context engineID used for SNMPv3, defaults to empty string'))
+        help='context engineID, defaults to empty string')
     group_v3.add_argument(
         '-a', choices=['MD5', 'SHA'], metavar='PROTOCOL', dest='auth_protocol',
         default=None,
-        help=('authentication protocol'))
+        help='use authentication (protocols: MD5, SHA)')
     group_v3.add_argument(
         '-A', type=str, metavar='PASSPHRASE', dest='auth_passphrase',
         default=None,
-        help=('authentication protocol pass phrase'))
+        help='authentication pass phrase')
     group_v3.add_argument(
         '-x', choices=['DES'], metavar='PROTOCOL', dest='priv_protocol',
         default=None,
-        help=('privacy protocol'))
+        help='use privacy (protocols: DES)')
     group_v3.add_argument(
         '-X', type=str, metavar='PASSPHRASE', dest='priv_passphrase',
         default=None,
-        help=('privacy protocol pass phrase'))
+        help='privacy protocol pass phrase')
+
+    parser.add_argument(
+        'host', type=str, metavar='HOST',
+        help='agent hostname')
+
+    subparsers = parser.add_subparsers(
+        dest='action', required=True,
+        help='available snmp commands')
+
+    subparser_get = subparsers.add_parser(
+        'get',
+        help='snmp get on specific oid')
+    subparser_get.add_argument(
+        'oid', type=str, metavar='OID',
+        help='object id')
+
+    subparser_getnext = subparsers.add_parser(
+        'getnext',
+        help='snmp get next on specific oid')
+    subparser_getnext.add_argument(
+        'oid', type=str, metavar='OID',
+        help='object id')
+
+    subparsers.add_parser(
+        'walk',
+        help='retrieve entire snmp device tree')
+
+    return parser
 
 
 def main():
@@ -274,4 +275,5 @@ def _oid_to_str(oid):
 
 
 if __name__ == '__main__':
+    sys.argv[0] = 'hat-snmp-manager'
     main()
