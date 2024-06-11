@@ -75,7 +75,7 @@ async def connect(addr: tcp.Address,
     client._loop = asyncio.get_running_loop()
     client._async_group = aio.Group()
     client._conn = conn
-    client._sent_event = aio.Event()
+    client._sent_event = asyncio.Event()
     client._ping_future = None
     client._disconnect_reason = common.Reason.SUCCESS
     client._disconnect_reason_string = None

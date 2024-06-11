@@ -85,7 +85,7 @@ def encode_packet(packet: common.Packet) -> util.Bytes:
         retain = False
         packet_data = collections.deque(_encode_connect_packet(packet))
 
-    if isinstance(packet, common.ConnAckPacket):
+    elif isinstance(packet, common.ConnAckPacket):
         packet_type = _PacketType.CONNACK
         duplicate = False
         qos = common.QoS.AT_MOST_ONCE
