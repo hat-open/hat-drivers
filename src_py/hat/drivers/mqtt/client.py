@@ -307,7 +307,7 @@ class Client(aio.Resource):
             while True:
                 packet = await self._conn.receive()
 
-                if isinstance(packet, transport.PublishPackage):
+                if isinstance(packet, transport.PublishPacket):
                     await self._process_publish_packet(packet)
 
                 elif isinstance(packet, transport.PubRelPacket):
@@ -462,7 +462,7 @@ class _IdentifierRegistry(aio.Resource):
                  queue_size: int = 1024):
         self._async_group = async_group
         self._loop = asyncio.get_running_loop()
-        self._next_identifier = 0
+        self._next_identifier = 1
         self._identifier_futures = {}
         self._create_futures = aio.Queue(queue_size)
 
@@ -476,7 +476,7 @@ class _IdentifierRegistry(aio.Resource):
         if not self.is_open:
             raise ConnectionError()
 
-        if len(self._identifier_futures) >= 0xffff:
+        if len(self._identifier_futures) >= 0xffff - 1:
             future = self._loop.create_future()
 
             try:
@@ -553,7 +553,7 @@ class _IdentifierRegistry(aio.Resource):
 
     def _get_free_identifier(self):
         for i in itertools.chain(range(self._next_identifier, 0x10000),
-                                 range(0, self._next_identifier)):
+                                 range(1, self._next_identifier)):
             if i not in self._identifier_futures:
                 self._next_identifier = i
                 return i

@@ -388,7 +388,7 @@ def _encode_connect_packet(packet):
         yield from _encode_string(packet.user_name)
 
     if packet.password is not None:
-        yield from _encode_string(packet.password)
+        yield from _encode_binary(packet.password)
 
 
 def _decode_connect_packet(data):
@@ -1336,8 +1336,8 @@ def _encode_props(props):
         elif prop_type == _PropertyType.USER_PROPERTY:
             for k, v in prop:
                 props_bytes.extend(_encode_uintvar(prop_type.value))
-                props_bytes.extend(_encode_string(prop[0]))
-                props_bytes.extend(_encode_string(prop[1]))
+                props_bytes.extend(_encode_string(k))
+                props_bytes.extend(_encode_string(v))
 
         elif prop_type == _PropertyType.MAXIMUM_PACKET_SIZE:
             if prop == 0:
