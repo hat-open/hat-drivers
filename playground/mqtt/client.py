@@ -1,8 +1,10 @@
 import argparse
 import asyncio
 import contextlib
+import sys
 
 from hat import aio
+from hat import json
 
 from hat.drivers import mqtt
 from hat.drivers import tcp
@@ -33,7 +35,7 @@ def create_argument_parser():
     subparser_subscribe = subparsers.add_parser(
         'subscribe',
         help='subscribe to message notifications')
-    parser.add_argument(
+    subparser_subscribe.add_argument(
         '--retain', action='store_true',
         help='receive retained messages')
     subparser_subscribe.add_argument(
@@ -92,13 +94,43 @@ async def _act_subscribe(addr, qos, args):
     try:
         reasons = await client.subscribe(subscriptions)
 
+        if any(mqtt.is_error_reason(reason) for reason in reasons):
+            print('subscription error:', reasons, file=sys.stderr)
+            return
+
         while True:
             msg = await msg_queue.get()
 
-            print('>>', msg)
+            msg_json = _msg_to_json(msg)
+            msg_json_str = json.encode(msg_json)
+
+            print(msg_json_str)
 
     finally:
         await aio.uncancellable(client.async_close())
+
+
+def _msg_to_json(msg):
+
+    if isinstance(msg.payload, str):
+        payload = msg.payload
+
+    else:
+        try:
+            payload = str(msg.payload, encoding='utf-8')
+
+        except UnicodeError:
+            payload = bytes(msg.payload).hex()
+
+    return {'topic': msg.topic,
+            'payload': payload,
+            'qos': msg.qos.name,
+            'retain': msg.retain,
+            'message_expiry_interval': msg.message_expiry_interval,
+            'response_topic': msg.response_topic,
+            'correlation_data': msg.correlation_data,
+            'user_properties': [list(i) for i in msg.user_properties],
+            'content_type': msg.content_type}
 
 
 if __name__ == '__main__':
