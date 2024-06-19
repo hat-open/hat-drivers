@@ -1,6 +1,6 @@
-from hat.drivers.icmp.ping import (create_ping_endpoint,
-                                   PingEndpoint)
+from hat.drivers.icmp.endpoint import (create_endpoint,
+                                       Endpoint)
 
 
-__all__ = ['create_ping_endpoint',
-           'PingEndpoint']
+__all__ = ['create_endpoint',
+           'Endpoint']
