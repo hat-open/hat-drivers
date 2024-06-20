@@ -113,7 +113,7 @@ def _encode_data(data):
 
     elif isinstance(data, common.StringData):
         data_type = 'value'
-        value = ('simple', ('string-value', data.value.encode()))
+        value = ('simple', ('string-value', data.value))
 
     elif isinstance(data, common.ObjectIdData):
         data_type = 'value'
@@ -180,7 +180,7 @@ def _decode_data(data):
 
             elif t3 == 'string-value':
                 return common.StringData(name=name,
-                                         value=_decode_str(v2))
+                                         value=v2)
 
             elif t3 == 'objectID-value':
                 return common.ObjectIdData(name=name,

@@ -90,7 +90,7 @@ class BigCounterData(typing.NamedTuple):
 # v1, v2c, v3
 class StringData(typing.NamedTuple):
     name: asn1.ObjectIdentifier
-    value: str
+    value: util.Bytes
 
 
 # v1, v2c, v3
