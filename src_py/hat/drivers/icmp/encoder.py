@@ -78,9 +78,7 @@ def _encode_echo_header_data(msg):
 def _calculate_checksum(msg_bytes):
     acc = (msg_bytes[0] << 8) & msg_bytes[1]
 
-    for i in range(4, len(msg_bytes), 2):
-        acc += (msg_bytes[i] << 8)
-        if i + 1 < len(msg_bytes):
-            acc += (msg_bytes[i + 1] & 0xff)
+    for i in range(4, len(msg_bytes)):
+        acc += (msg_bytes[i] if i % 2 else (msg_bytes[i] << 8))
 
     return (~((acc >> 16) + (acc & 0xffff))) & 0xffff

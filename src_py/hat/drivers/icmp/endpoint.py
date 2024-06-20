@@ -15,7 +15,7 @@ from hat.drivers.icmp import encoder
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-async def create_endpoint(local_host: str = '0.0.0.0'):
+async def create_endpoint(local_host: str = '0.0.0.0') -> 'Endpoint':
     loop = asyncio.get_running_loop()
     local_addr = await _get_host_addr(loop, local_host)
 
