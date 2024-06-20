@@ -223,11 +223,11 @@ def _data_to_json(data):
 
 
 def _value_to_json(data):
+    if isinstance(data, (snmp.StringData, snmp.ArbitraryData)):
+        return data.value.hex()
+
     if isinstance(data, (snmp.ObjectIdData, snmp.IpAddressData)):
         return _oid_to_str(data.value)
-
-    elif isinstance(data, snmp.ArbitraryData):
-        return data.value.hex()
 
     return data.value
 

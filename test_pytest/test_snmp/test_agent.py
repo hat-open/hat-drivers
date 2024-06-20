@@ -33,7 +33,7 @@ async def test_create(addr):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [
@@ -85,7 +85,7 @@ async def test_v1_get_req_res(addr, msg_type, data, error):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [
@@ -270,7 +270,7 @@ async def test_v1_invalid_version(addr, caplog, req_msg, log_msg):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [
@@ -331,7 +331,7 @@ async def test_v2c_get_req_res(addr, msg_type, data, error):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [
@@ -516,7 +516,7 @@ async def test_v2c_invalid_version(addr, caplog, req_msg, log_msg):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [
@@ -700,7 +700,7 @@ async def test_v3_sync_report(addr, auth, priv):
 @pytest.mark.parametrize('data', [
     [],
     [snmp.IntegerData(name=(1, 2, 3), value=100)],
-    [snmp.StringData(name=(1, 2, 3), value='xyz'),
+    [snmp.StringData(name=(1, 2, 3), value=b'xyz'),
      snmp.ArbitraryData(name=(1, 3, 2), value=b'zyx')]
 ])
 @pytest.mark.parametrize('error', [

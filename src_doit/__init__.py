@@ -59,7 +59,8 @@ def task_build():
             description='Hat communication drivers',
             url='https://github.com/hat-open/hat-drivers',
             license=common.License.APACHE2,
-            py_versions=get_py_versions(pymodules.py_limited_api),
+            # py_versions=get_py_versions(pymodules.py_limited_api),
+            py_versions=[common.PyVersion.CP310],
             py_limited_api=pymodules.py_limited_api,
             platform=common.target_platform,
             has_ext_modules=True)

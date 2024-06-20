@@ -19,7 +19,7 @@ def _data(version):
     yield common.IntegerData(name=(1, 0), value=-10)
     yield common.UnsignedData(name=(1, 1), value=10)
     yield common.CounterData(name=(1, 2), value=10)
-    yield common.StringData(name=(1, 3), value='bunny')
+    yield common.StringData(name=(1, 3), value=b'bunny')
     yield common.ObjectIdData(name=(1, 4), value=(1, 6, 3, 4, 5))
     yield common.IpAddressData(name=(1, 5), value=(127, 0, 0, 1))
     yield common.TimeTicksData(name=(1, 6), value=10)
