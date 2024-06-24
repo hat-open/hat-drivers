@@ -10,6 +10,9 @@ from hat.drivers import snmp
 from hat.drivers import udp
 
 
+string_decode = 'utf-8'
+
+
 def create_argument_parser():
     parser = argparse.ArgumentParser()
 
@@ -21,6 +24,10 @@ def create_argument_parser():
         '-v', choices=['1', '2c', '3'], metavar='VERSION', dest='version',
         default='2c',
         help='SNMP version, defaults to 2c (versions: 1, 2c, 3)')
+    parser.add_argument(
+        '--string-decode', choices=['utf-8', 'hex'],
+        default='utf-8',
+        help='way of representing string')
 
     group_v1_2c = parser.add_argument_group('version 1 or 2c specific')
     group_v1_2c.add_argument(
@@ -90,6 +97,9 @@ def create_argument_parser():
 def main():
     parser = create_argument_parser()
     args = parser.parse_args()
+
+    global string_decode
+    string_decode = args.string_decode
 
     aio.init_asyncio()
 
@@ -219,11 +229,17 @@ def _data_to_json(data):
     return {
         'name': _oid_to_str(data.name),
         'type': _data_type_from_data(data),
-        'value': data.value}
+        'value': _value_to_json(data)}
 
 
 def _value_to_json(data):
-    if isinstance(data, (snmp.StringData, snmp.ArbitraryData)):
+    if isinstance(data, snmp.StringData):
+        if string_decode == 'utf-8':
+            return str(data.value, encoding='utf-8', errors='replace')
+
+        return data.value.hex()
+
+    if isinstance(data, snmp.ArbitraryData):
         return data.value.hex()
 
     if isinstance(data, (snmp.ObjectIdData, snmp.IpAddressData)):
