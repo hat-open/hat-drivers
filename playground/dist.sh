@@ -18,17 +18,18 @@ for TARGET_PLATFORM in $TARGET_PLATFORMS; do
     cp $ROOT_PATH/build/py/*.whl $DIST_PATH
 done
 
-IMAGES="linux/amd64/build-hat-drivers:debian11-cpy3.11
-        linux/amd64/build-hat-drivers:alpine3.17-cpy3.11
-        linux/arm64/v8/build-hat-drivers:debian11-cpy3.11
-        linux/arm/v7/build-hat-drivers:debian11-cpy3.11"
+IMAGES="linux/amd64/build-hat-drivers:debian11-cpy3.12
+        linux/amd64/build-hat-drivers:alpine3.20-cpy3.12
+        linux/arm64/v8/build-hat-drivers:debian11-cpy3.12
+        linux/arm/v7/build-hat-drivers:debian11-cpy3.12"
 
 for IMAGE in $IMAGES; do
     $PYTHON -m doit clean_all
+    DOCKERFILE=$PLAYGROUND_PATH/dockerfiles/$(echo $IMAGE | cut -d ':' -f 2)
     PLATFORM=$(dirname $IMAGE)
     IMAGE_ID=$(podman images -q $IMAGE)
     podman build --platform $PLATFORM \
-                 -f $PLAYGROUND_PATH/dockerfiles/$IMAGE \
+                 -f $DOCKERFILE \
                  -t $IMAGE \
                  .
     if [ -n "$IMAGE_ID" -a "$IMAGE_ID" != "$(podman images -q $IMAGE)" ]; then
