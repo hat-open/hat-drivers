@@ -17,7 +17,7 @@ from hat.drivers.mms import encoder
 
 mlog = logging.getLogger(__name__)
 
-_parameter_cbb = [False] * 10  # 18
+_parameter_cbb = [False] * 18
 _parameter_cbb[0] = True  # str1
 _parameter_cbb[1] = True  # str2
 _parameter_cbb[2] = True  # vnam
