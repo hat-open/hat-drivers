@@ -12,33 +12,30 @@ from hat.drivers import tcp
 
 def create_argument_parser():
     parser = argparse.ArgumentParser()
-
     parser.add_argument(
         '--port', type=int, metavar='PORT', dest='port', default=1883,
-        help='server TCP port, defaults to 1883')
+        help='server TCP port (default 1883)')
     parser.add_argument(
         '--qos', type=int, metavar='QoS', dest='qos', default=0,
-        help='quality of service, defaults to 0 (values: 0, 1, 2)')
-
+        help='quality of service (values 0, 1, 2) (default 0)')
     parser.add_argument(
         'host', metavar='HOST',
         help='server hostname')
-
     subparsers = parser.add_subparsers(
-        dest='action',
+        title='actions', dest='action', required=True,
         help='available commands')
 
-    subparser_publish = subparsers.add_parser(
+    publish_parser = subparsers.add_parser(  # NOQA
         'publish',
-        help='publish message')
+        description='publish message')
 
-    subparser_subscribe = subparsers.add_parser(
+    subscrive_parser = subparsers.add_parser(
         'subscribe',
-        help='subscribe to message notifications')
-    subparser_subscribe.add_argument(
+        description='subscribe to message notifications')
+    subscrive_parser.add_argument(
         '--retain', action='store_true',
         help='receive retained messages')
-    subparser_subscribe.add_argument(
+    subscrive_parser.add_argument(
         'topics', metavar='TOPIC', nargs='+',
         help='subscription topic')
 
@@ -50,7 +47,6 @@ def main():
     args = parser.parse_args()
 
     aio.init_asyncio()
-
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main(args))
 
@@ -60,17 +56,16 @@ async def async_main(args):
     qos = mqtt.QoS(args.qos)
 
     if args.action == 'publish':
-        await _act_publish(addr, qos, args)
+        return await _act_publish(addr, qos, args)
 
-    elif args.action == 'subscribe':
-        await _act_subscribe(addr, qos, args)
+    if args.action == 'subscribe':
+        return await _act_subscribe(addr, qos, args)
 
-    else:
-        raise ValueError('unsupported action')
+    raise ValueError('unsupported action')
 
 
 async def _act_publish(addr, qos, args):
-    pass
+    raise NotImplementedError()
 
 
 async def _act_subscribe(addr, qos, args):
@@ -96,7 +91,7 @@ async def _act_subscribe(addr, qos, args):
 
         if any(mqtt.is_error_reason(reason) for reason in reasons):
             print('subscription error:', reasons, file=sys.stderr)
-            return
+            return 1
 
         while True:
             msg = await msg_queue.get()
@@ -134,4 +129,5 @@ def _msg_to_json(msg):
 
 
 if __name__ == '__main__':
-    main()
+    sys.argv[0] = 'hat-mqtt-manager'
+    sys.exit(main())
