@@ -3,6 +3,7 @@ from ssl import *  # NOQA
 import enum
 import pathlib
 import ssl
+import typing
 
 try:
     from hat.drivers.ssl import _ssl
@@ -73,3 +74,62 @@ def renegotiate(ssl_object: ssl.SSLObject):
     result = _ssl.renegotiate(ssl_object._sslobj)
     if result != 1:
         raise Exception('renegotiate error')
+
+
+def get_peer_cert(ssl_object: ssl.SSLObject) -> typing.Optional['Cert']:
+    if not _ssl:
+        raise Exception('not supported')
+
+    if not isinstance(ssl_object, ssl.SSLObject):
+        raise TypeError('invalid ssl object')
+
+    handle = _ssl.get_peer_cert(ssl_object._sslobj)
+    if not handle:
+        return
+
+    return Cert(handle)
+
+
+def load_crl(path: pathlib.PurePath) -> 'Crl':
+    if not _ssl:
+        raise Exception('not supported')
+
+    handle = _ssl.load_crl(str(path))
+    return Crl(handle)
+
+
+class Cert:
+
+    def __init__(self, handle):
+        self._handle = handle
+
+    def get_pub_key(self) -> 'PubKey':
+        handle = ssl.get_cert_pub_key(self._handle)
+        return PubKey(handle)
+
+    def get_bytes(self) -> bytes:
+        return ssl.get_cert_bytes(self._handle)
+
+
+class PubKey:
+
+    def __init__(self, handle):
+        self._handle = handle
+
+    def is_type(self, key_type: str) -> bool:
+        return ssl.is_pub_key_type(self._handle, key_type)
+
+    def get_size(self) -> int:
+        return ssl.get_pub_key_size(self._handle)
+
+
+class Crl:
+
+    def __init__(self, handle):
+        self._handle = handle
+
+    def contains_cert(self, cert: Cert) -> bool:
+        if not isinstance(cert, Cert):
+            raise TypeError('invalid cert')
+
+        return ssl.crl_contains_cert(self._handle, cert._handle)
