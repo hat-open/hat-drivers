@@ -158,17 +158,16 @@ static PyObject *get_cert_bytes(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject *is_pub_key_type(PyObject *self, PyObject *args) {
+static PyObject *is_pub_key_rsa(PyObject *self, PyObject *args) {
     PyObject *key_obj;
-    char *key_type;
-    if (!PyArg_ParseTuple(args, "Os", &key_obj, &key_type))
+    if (!PyArg_ParseTuple(args, "O", &key_obj))
         return NULL;
 
     EVP_PKEY *key = PyCapsule_GetPointer(key_obj, NULL);
     if (!key)
         return NULL;
 
-    int result = EVP_PKEY_is_a(key, key_type);
+    int result = EVP_PKEY_base_id(key) == EVP_PKEY_RSA;
     return PyBool_FromLong(result);
 }
 
@@ -182,7 +181,7 @@ static PyObject *get_pub_key_size(PyObject *self, PyObject *args) {
     if (!key)
         return NULL;
 
-    int result = EVP_PKEY_get_bits(key);
+    int result = EVP_PKEY_bits(key);
     return PyLong_FromLong(result);
 }
 
@@ -225,8 +224,8 @@ PyMethodDef methods[] = {{.ml_name = "key_update",
                          {.ml_name = "get_cert_bytes",
                           .ml_meth = (PyCFunction)get_cert_bytes,
                           .ml_flags = METH_VARARGS},
-                         {.ml_name = "is_pub_key_type",
-                          .ml_meth = (PyCFunction)is_pub_key_type,
+                         {.ml_name = "is_pub_key_rsa",
+                          .ml_meth = (PyCFunction)is_pub_key_rsa,
                           .ml_flags = METH_VARARGS},
                          {.ml_name = "get_pub_key_size",
                           .ml_meth = (PyCFunction)get_pub_key_size,

@@ -116,8 +116,8 @@ class PubKey:
     def __init__(self, handle):
         self._handle = handle
 
-    def is_type(self, key_type: str) -> bool:
-        return ssl.is_pub_key_type(self._handle, key_type)
+    def is_rsa(self) -> bool:
+        return ssl.is_pub_key_rsa(self._handle)
 
     def get_size(self) -> int:
         return ssl.get_pub_key_size(self._handle)

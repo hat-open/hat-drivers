@@ -22,7 +22,8 @@ ssl_c_flags = [*get_py_c_flags(py_limited_api=common.py_limited_api),
                '-O2']
 ssl_ld_flags = [*get_py_ld_flags(py_limited_api=common.py_limited_api)]
 ssl_ld_libs = [*get_py_ld_libs(py_limited_api=common.py_limited_api),
-               '-lssl']
+               '-lssl',
+               '-lcrypto']
 
 ssl_build = CBuild(src_paths=ssl_src_paths,
                    build_dir=ssl_build_dir,
