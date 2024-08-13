@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v2c_trap_sender(remote_addr: udp.Address,
-                                 community: common.CommunityName
+                                 community: common.CommunityName = 'public'
                                  ) -> common.TrapSender:
     """Create v2c trap sender"""
     endpoint = await udp.create(local_addr=None,
@@ -33,7 +33,7 @@ class V2CTrapSender(common.TrapSender):
 
     def __init__(self,
                  endpoint: udp.Endpoint,
-                 community: common.CommunityName = 'public'):
+                 community: common.CommunityName):
         self._endpoint = endpoint
         self._community = community
         self._loop = asyncio.get_running_loop()
