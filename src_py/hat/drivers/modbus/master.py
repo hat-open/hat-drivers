@@ -282,19 +282,35 @@ class Master(aio.Resource):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-        if isinstance(res_adu, transport.TcpAdu):
-            if res_adu.transaction_id != req_adu.transaction_id:
-                raise Exception("invalid response transaction id")
-
-        if res_adu.device_id != req_adu.device_id:
-            raise Exception("invalid response device id")
-
-        req_fc = transport.get_pdu_function_code(req_adu.pdu)
-        res_fc = transport.get_pdu_function_code(res_adu.pdu)
-        if req_fc != res_fc:
-            raise Exception("invalid response function code")
-
         return res_adu.pdu
+
+    async def _receive(self, req_adu):
+        while True:
+            res_adu = await self._conn.receive(self._modbus_type,
+                                               transport.Direction.RESPONSE)
+
+            if isinstance(res_adu, transport.TcpAdu):
+                if res_adu.transaction_id != req_adu.transaction_id:
+                    self._log(logging.WARNING,
+                              "discarding response adu: "
+                              "invalid response transaction id")
+                    continue
+
+            if res_adu.device_id != req_adu.device_id:
+                self._log(logging.WARNING,
+                          "discarding response adu: "
+                          "invalid response device id")
+                continue
+
+            req_fc = transport.get_pdu_function_code(req_adu.pdu)
+            res_fc = transport.get_pdu_function_code(res_adu.pdu)
+            if req_fc != res_fc:
+                self._log(logging.WARNING,
+                          "discarding response adu: "
+                          "invalid response function code")
+                continue
+
+            return res_adu
 
     async def _send_loop(self):
         self._log(logging.DEBUG, "starting master send loop")
@@ -319,9 +335,7 @@ class Master(aio.Resource):
 
                 async with self.async_group.create_subgroup(
                         log_exceptions=False) as subgroup:
-                    receive_task = subgroup.spawn(self._conn.receive,
-                                                  self._modbus_type,
-                                                  transport.Direction.RESPONSE)
+                    receive_task = subgroup.spawn(self._receive, req_adu)
 
                     await asyncio.wait([receive_task, future],
                                        timeout=self._response_timeout,
