@@ -1,6 +1,3 @@
-import subprocess
-import time
-import atexit
 import sys
 
 import pytest
