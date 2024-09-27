@@ -18,25 +18,6 @@ def addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
-@pytest.fixture
-def nullmodem(request, tmp_path):
-    path1 = tmp_path / '1'
-    path2 = tmp_path / '2'
-    p = subprocess.Popen(
-        ['socat',
-         f'pty,link={path1},raw,echo=0',
-         f'pty,link={path2},raw,echo=0'])
-    while not path1.exists() or not path2.exists():
-        time.sleep(0.001)
-
-    def finalizer():
-        p.terminate()
-
-    atexit.register(finalizer)
-    request.addfinalizer(finalizer)
-    return str(path1), str(path2), p
-
-
 @pytest.mark.skipif(sys.platform == 'win32', reason="can't simulate serial")
 @pytest.mark.parametrize("quantity", [1, 5, 10])
 @pytest.mark.parametrize("count", [1, 100, 1000])
@@ -46,13 +27,13 @@ async def test_serial(profile, nullmodem, quantity, count):
         return list(range(quantity))
 
     slave = await modbus.create_serial_slave(modbus_type=modbus.ModbusType.RTU,
-                                             port=nullmodem[0],
+                                             port=str(nullmodem[0]),
                                              read_cb=on_read,
                                              silent_interval=0)
 
     master = await modbus.create_serial_master(
         modbus_type=modbus.ModbusType.RTU,
-        port=nullmodem[1],
+        port=str(nullmodem[1]),
         silent_interval=0)
 
     with profile(f'quantity_{quantity}_count_{count}'):

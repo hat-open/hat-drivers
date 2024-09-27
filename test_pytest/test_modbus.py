@@ -1,7 +1,4 @@
 import asyncio
-import subprocess
-import time
-import atexit
 import contextlib
 import enum
 import sys
@@ -37,26 +34,6 @@ async def patch_serial_read_timeout(monkeypatch):
 
 
 @pytest.fixture
-def nullmodem(request, tmp_path):
-    path1 = tmp_path / '1'
-    path2 = tmp_path / '2'
-    p = subprocess.Popen(
-        ['socat',
-         f'pty,link={path1},raw,echo=0',
-         f'pty,link={path2},raw,echo=0'],
-        stderr=subprocess.DEVNULL)
-    while not path1.exists() or not path2.exists():
-        time.sleep(0.001)
-
-    def finalizer():
-        p.terminate()
-
-    atexit.register(finalizer)
-    request.addfinalizer(finalizer)
-    return str(path1), str(path2), p
-
-
-@pytest.fixture
 async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
 
     @contextlib.asynccontextmanager
@@ -75,9 +52,10 @@ async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
 
         elif comm_type == CommType.SERIAL:
             master = await modbus.create_serial_master(
-                modbus_type, nullmodem[0])
+                modbus_type, str(nullmodem[0]))
             slave = await modbus.create_serial_slave(
-                modbus_type, nullmodem[1], read_cb, write_cb, write_mask_cb)
+                modbus_type, str(nullmodem[1]), read_cb, write_cb,
+                write_mask_cb)
 
         else:
             raise ValueError()
@@ -148,8 +126,8 @@ async def test_create_tcp(tcp_addr, modbus_type):
 @pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
 async def test_create_serial(nullmodem, modbus_type,
                              patch_serial_read_timeout):
-    master = await modbus.create_serial_master(modbus_type, nullmodem[0])
-    slave = await modbus.create_serial_slave(modbus_type, nullmodem[1])
+    master = await modbus.create_serial_master(modbus_type, str(nullmodem[0]))
+    slave = await modbus.create_serial_slave(modbus_type, str(nullmodem[1]))
     assert not master.is_closed
     assert not slave.is_closed
     await master.async_close()
