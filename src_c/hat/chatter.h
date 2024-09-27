@@ -12,7 +12,7 @@
 #define HAT_CHATTER_PING_TIMEOUT (10 * 1000)
 
 #define HAT_CHATTER_SUCCESS 0
-#define HAT_CHATTER_ERROR 1
+#define HAT_CHATTER_ERROR (-1)
 
 #ifdef __cplusplus
 extern "C" {
