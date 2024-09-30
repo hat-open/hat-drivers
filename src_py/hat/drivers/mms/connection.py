@@ -68,6 +68,7 @@ UnconfirmedCb: typing.TypeAlias = aio.AsyncCallable[['Connection',
 
 
 async def connect(addr: tcp.Address,
+                  local_detail_calling: int | None = None,
                   request_cb: RequestCb | None = None,
                   unconfirmed_cb: UnconfirmedCb | None = None,
                   **kwargs
@@ -86,6 +87,10 @@ async def connect(addr: tcp.Address,
             'proposedVersionNumber': 1,
             'proposedParameterCBB': _parameter_cbb,
             'servicesSupportedCalling': _service_support}}
+
+    if local_detail_calling is not None:
+        initiate_req[1]['localDetailCalling'] = local_detail_calling
+
     req_user_data = _encode(initiate_req)
     conn = await acse.connect(addr, [_mms_syntax_name], _mms_app_context_name,
                               (_mms_syntax_name, req_user_data), **kwargs)
