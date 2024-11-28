@@ -200,18 +200,6 @@ class V3Manager(common.Manager):
                                             encoder.v3.MsgType.REPORT):
                         raise Exception('invalid response message type')
 
-                    req_msg, future = self._req_msg_futures[res_msg.id]
-
-                    if res_msg.auth != req_msg.auth:
-                        raise Exception('invalid auth flag')
-
-                    if res_msg.priv != req_msg.priv:
-                        raise Exception('invalid priv flag')
-
-                    if (res_msg.type == encoder.v3.MsgType.RESPONSE and
-                            res_msg.context != req_msg.context):
-                        raise Exception('invalid context')
-
                     if (self._authorative_engine and
                             self._authorative_engine.id !=
                             res_msg.authorative_engine.id):
@@ -236,6 +224,18 @@ class V3Manager(common.Manager):
 
                     self._authorative_engine = res_msg.authorative_engine
                     self._authorative_engine_set_time = time.monotonic()
+
+                    req_msg, future = self._req_msg_futures[res_msg.id]
+
+                    if res_msg.auth != req_msg.auth:
+                        raise Exception('invalid auth flag')
+
+                    if res_msg.priv != req_msg.priv:
+                        raise Exception('invalid priv flag')
+
+                    if (res_msg.type == encoder.v3.MsgType.RESPONSE and
+                            res_msg.context != req_msg.context):
+                        raise Exception('invalid context')
 
                     # TODO check user
 
