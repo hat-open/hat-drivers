@@ -140,7 +140,16 @@ def _check_crc(data):
 
 
 def _calculate_crc(data):
-    pass
+    crc = 0
+    for i in data:
+        for _ in range(8):
+            tmp = (crc ^ i) & 1
+            crc >>= 1
+            i >>= 1
+            if tmp:
+                crc ^= 0xa6bc
+    crc = ~crc
+    return crc & 0xffff
 
 
 _frame_count_valid_function_codes = {
