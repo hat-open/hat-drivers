@@ -36,37 +36,55 @@ class Connection(aio.Resource):
 
     async def create_dataset(self,
                              ref: common.DatasetRef,
-                             data: Collection[common.DataRef]):
+                             data: Collection[common.DataRef]
+                             ) -> common.ServiceError | None:
         pass
 
-    async def delete_dataset(self, ref: common.DatasetRef):
+    async def delete_dataset(self,
+                             ref: common.DatasetRef
+                             ) -> common.ServiceError | None:
         pass
 
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef
-                                    ) -> Collection[common.DataRef]:
+                                    ) -> Collection[common.DataRef] | common.ServiceError:  # NOQA
         pass
 
-    async def get_rcb(self, ref: common.RcbRef) -> common.Rcb:
+    async def get_rcb(self,
+                      ref: common.RcbRef
+                      ) -> common.Rcb | common.ServiceError:
         pass
 
-    async def set_rcb(self, ref: common.RcbRef, rcb: common.Rcb):
+    async def set_rcb(self,
+                      ref: common.RcbRef,
+                      rcb: common.Rcb
+                      ) -> common.ServiceError | None:
+        pass
+
+    async def write_data(self,
+                         ref: common.DataRef,
+                         type: common.ValueType,
+                         value: common.Value
+                         ) -> common.ServiceError | None:
         pass
 
     async def select(self,
                      ref: common.CommandRef,
+                     model: common.ControlModel,
                      cmd: common.Command | None
                      ) -> common.AdditionalCause | None:
         pass
 
     async def cancel(self,
                      ref: common.CommandRef,
+                     model: common.ControlModel,
                      cmd: common.Command
                      ) -> common.AdditionalCause | None:
         pass
 
     async def operate(self,
                       ref: common.CommandRef,
+                      model: common.ControlModel,
                       cmd: common.Command
                       ) -> common.AdditionalCause | None:
         pass
