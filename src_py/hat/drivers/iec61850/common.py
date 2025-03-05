@@ -34,7 +34,6 @@ class DataRef(typing.NamedTuple):
 class CommandRef(typing.NamedTuple):
     logical_device: str
     logical_node: str
-    fc: str
     names: Collection[str]
 
 
@@ -63,7 +62,7 @@ class BasicValueType(enum.Enum):
     MMS_STRING = 'MMS_STRING'  # str
 
 
-class AsciValueType(enum.Enum):
+class AcsiValueType(enum.Enum):
     QUALITY = 'QUALITY'
     TIMESTAMP = 'TIMESTAMP'
 
@@ -77,7 +76,7 @@ class StructValueType(typing.NamedTuple):
 
 
 ValueType: typing.TypeAlias = (BasicValueType |
-                               AsciValueType |
+                               AcsiValueType |
                                ArrayValueType |
                                StructValueType)
 
@@ -127,13 +126,13 @@ class Quality(typing.NamedTuple):
 BasicValue: typing.NamedTuple = (bool | int | float | str | util.Bytes |
                                  list[bool])
 
-AsciValue = Quality | Timestamp
+AcsiValue = Quality | Timestamp
 
 ArrayValue: typing.NamedTuple = Collection['Value']
 
 StructValue: typing.NamedTuple = Collection['Value']
 
-Value: typing.NamedTuple = BasicValue | AsciValue | ArrayValue | StructValue
+Value: typing.NamedTuple = BasicValue | AcsiValue | ArrayValue | StructValue
 
 
 # errors ######################################################################

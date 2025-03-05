@@ -45,6 +45,9 @@ class Connection(aio.Resource):
                              ) -> common.ServiceError | None:
         pass
 
+    async def get_dataset_refs(self) -> Collection[common.DatasetRef] | common.ServiceError:  # NOQA
+        pass
+
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef
                                     ) -> Collection[common.DataRef] | common.ServiceError:  # NOQA
