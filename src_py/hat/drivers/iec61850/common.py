@@ -241,9 +241,14 @@ Rcb: typing.TypeAlias = Brcb | Urcb
 
 # report ######################################################################
 
+class DataDef(typing.NamedTuple):
+    ref: DataRef
+    value: ValueType
+
+
 class ReportDef(typing.NamedTuple):
     report_id: str
-    data: Collection[ValueType]
+    data: Collection[DataDef]
 
 
 class ReasonCode(enum.Enum):
@@ -256,15 +261,9 @@ class ReasonCode(enum.Enum):
 
 
 class ReportData(typing.NamedTuple):
-    ref: DataRef | None
+    ref: DataRef
     value: Value
     reasons: set[ReasonCode] | None
-
-
-class ReportEntry(typing.NamedTuple):
-    time: EntryTime
-    id: str
-    data: Collection[ReportData]
 
 
 class Report(typing.NamedTuple):
@@ -275,7 +274,9 @@ class Report(typing.NamedTuple):
     dataset: DatasetRef | None
     buffer_overflow: bool | None
     conf_revision: int | None
-    entries: Collection[ReportEntry]
+    entry_time: EntryTime | None
+    entry_id: str | None
+    data: Collection[ReportData]
 
 
 # command #####################################################################
