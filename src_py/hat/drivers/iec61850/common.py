@@ -65,6 +65,13 @@ class BasicValueType(enum.Enum):
 class AcsiValueType(enum.Enum):
     QUALITY = 'QUALITY'
     TIMESTAMP = 'TIMESTAMP'
+    DOUBLE_POINT = 'DOUBLE_POINT'
+    DIRECTION = 'DIRECTION'
+    SEVERITY = 'SEVERITY'
+    ANALOGUE = 'ANALOGUE'
+    VECTOR = 'VECTOR'
+    STEP_POSITION = 'STEP_POSITION'
+    BINARY_CONTROL = 'BINARY_CONTROL'
 
 
 class ArrayValueType(typing.NamedTuple):
@@ -88,7 +95,7 @@ class Timestamp(typing.NamedTuple):
     leap_seconds_known: bool
     clock_failure: bool
     clock_not_synchronized: bool
-    time_accuracy: typing.Optional[int]
+    time_accuracy: int | None
     """number of bits of accuracy in regard to fraction of seconds [0, 24]"""
 
 
@@ -123,10 +130,56 @@ class Quality(typing.NamedTuple):
     operator_blocked: bool
 
 
+class DoublePoint(enum.Enum):
+    INTERMEDIATE = 0
+    OFF = 1
+    ON = 2
+    BAD = 3
+
+
+class Direction(typing.Enum):
+    UNKNOWN = 0
+    FORWARD = 1
+    BACKWARD = 2
+    BOTH = 3
+
+
+class Severity(typing.Enum):
+    UNKNOWN = 0
+    CRITICAL = 1
+    MAJOR = 2
+    MINOR = 3
+    WARNING = 4
+
+
+class Analogue(typing.NamedTuple):
+    i: int | None
+    f: float | None
+
+
+class Vector(typing.NamedTuple):
+    magnitude: Analogue
+    angle: Analogue | None
+
+
+class StepPosition(typing.NamedTuple):
+    value: int
+    """value in range [-64, 63]"""
+    transient: bool | None
+
+
+class BinaryControl(typing.Enum):
+    STOP = 0
+    LOWER = 1
+    HIGHER = 2
+    RESERVED = 3
+
+
 BasicValue: typing.NamedTuple = (bool | int | float | str | util.Bytes |
                                  list[bool])
 
-AcsiValue = Quality | Timestamp
+AcsiValue = (Quality | Timestamp | DoublePoint | Direction | Severity |
+             Analogue | Vector | StepPosition | BinaryControl)
 
 ArrayValue: typing.NamedTuple = Collection['Value']
 
