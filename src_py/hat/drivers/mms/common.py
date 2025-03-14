@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection
 import enum
 import typing
 import datetime
@@ -72,7 +72,7 @@ ObjectScope: typing.TypeAlias = (AaSpecificObjectScope |
 # data ########################################################################
 
 class ArrayData(typing.NamedTuple):
-    elements: Sequence['Data']
+    elements: Collection['Data']
 
 
 class BcdData(typing.NamedTuple):
@@ -84,7 +84,7 @@ class BinaryTimeData(typing.NamedTuple):
 
 
 class BitStringData(typing.NamedTuple):
-    value: Sequence[bool]
+    value: Collection[bool]
 
 
 class BooleanData(typing.NamedTuple):
@@ -92,7 +92,7 @@ class BooleanData(typing.NamedTuple):
 
 
 class BooleanArrayData(typing.NamedTuple):
-    value: Sequence[bool]
+    value: Collection[bool]
 
 
 class FloatingPointData(typing.NamedTuple):
@@ -120,7 +120,7 @@ class OctetStringData(typing.NamedTuple):
 
 
 class StructureData(typing.NamedTuple):
-    elements: Sequence['Data']
+    elements: Collection['Data']
 
 
 class UnsignedData(typing.NamedTuple):
@@ -207,8 +207,8 @@ class OctetStringTypeDescription(typing.NamedTuple):
 
 
 class StructureTypeDescription(typing.NamedTuple):
-    components: Sequence[tuple[str | None,
-                               typing.Union['TypeDescription', ObjectName]]]
+    components: Collection[tuple[str | None,
+                                 typing.Union['TypeDescription', ObjectName]]]
 
 
 class UnsignedTypeDescription(typing.NamedTuple):
@@ -255,7 +255,7 @@ class NameVariableSpecification(typing.NamedTuple):
 
 
 class ScatteredAccessDescriptionVariableSpecification(typing.NamedTuple):
-    specifications: Sequence['VariableSpecification']
+    specifications: Collection['VariableSpecification']
 
 
 class VariableDescriptionVariableSpecification(typing.NamedTuple):
@@ -296,21 +296,21 @@ class GetNamedVariableListAttributesRequest(typing.NamedTuple):
 
 
 class ReadRequest(typing.NamedTuple):
-    value: Sequence[VariableSpecification] | ObjectName
+    value: Collection[VariableSpecification] | ObjectName
 
 
 class WriteRequest(typing.NamedTuple):
-    specification: Sequence[VariableSpecification] | ObjectName
-    data: Sequence[Data]
+    specification: Collection[VariableSpecification] | ObjectName
+    data: Collection[Data]
 
 
 class DefineNamedVariableListRequest(typing.NamedTuple):
     name: ObjectName
-    specification: Sequence[VariableSpecification]
+    specification: Collection[VariableSpecification]
 
 
 class DeleteNamedVariableListRequest(typing.NamedTuple):
-    names: Sequence[ObjectName]
+    names: Collection[ObjectName]
 
 
 Request: typing.TypeAlias = (StatusRequest |
@@ -332,7 +332,7 @@ class StatusResponse(typing.NamedTuple):
 
 
 class GetNameListResponse(typing.NamedTuple):
-    identifiers: Sequence[str]
+    identifiers: Collection[str]
     more_follows: bool
 
 
@@ -340,7 +340,7 @@ class IdentifyResponse(typing.NamedTuple):
     vendor: str
     model: str
     revision: str
-    syntaxes: Sequence[asn1.ObjectIdentifier] | None
+    syntaxes: Collection[asn1.ObjectIdentifier] | None
 
 
 class GetVariableAccessAttributesResponse(typing.NamedTuple):
@@ -350,15 +350,15 @@ class GetVariableAccessAttributesResponse(typing.NamedTuple):
 
 class GetNamedVariableListAttributesResponse(typing.NamedTuple):
     mms_deletable: bool
-    specification: Sequence[VariableSpecification]
+    specification: Collection[VariableSpecification]
 
 
 class ReadResponse(typing.NamedTuple):
-    results: Sequence[DataAccessError | Data]
+    results: Collection[DataAccessError | Data]
 
 
 class WriteResponse(typing.NamedTuple):
-    results: Sequence[DataAccessError | None]
+    results: Collection[DataAccessError | None]
 
 
 class DefineNamedVariableListResponse(typing.NamedTuple):
@@ -509,8 +509,8 @@ class EventNotificationUnconfirmed(typing.NamedTuple):
 
 
 class InformationReportUnconfirmed(typing.NamedTuple):
-    specification: Sequence[VariableSpecification] | ObjectName
-    data: Sequence[DataAccessError | Data]
+    specification: Collection[VariableSpecification] | ObjectName
+    data: Collection[DataAccessError | Data]
 
 
 class UnsolicitedStatusUnconfirmed(typing.NamedTuple):

@@ -56,7 +56,7 @@ class BasicValueType(enum.Enum):
     INTEGER = 'INTEGER'  # int
     UNSIGNED = 'UNSIGNED'  # int
     FLOAT = 'FLOAT'  # float
-    BIT_STRING = 'BIT_STRING'  # list[bool]
+    BIT_STRING = 'BIT_STRING'  # Collection[bool]
     OCTET_STRING = 'OCTET_STRING'  # util.Bytes
     VISIBLE_STRING = 'VISIBLE_STRING'  # str
     MMS_STRING = 'MMS_STRING'  # str
@@ -176,7 +176,7 @@ class BinaryControl(typing.Enum):
 
 
 BasicValue: typing.NamedTuple = (bool | int | float | str | util.Bytes |
-                                 list[bool])
+                                 Collection[bool])
 
 AcsiValue = (Quality | Timestamp | DoublePoint | Direction | Severity |
              Analogue | Vector | StepPosition | BinaryControl)
@@ -365,7 +365,7 @@ class Command(typing.NamedTuple):
     """control number in range [0, 255]"""
     t: Timestamp
     test: bool
-    check: list[bool] | None
+    check: Collection[bool] | None
     """not available in cancel action"""
 
 
