@@ -118,7 +118,7 @@ async def test_connect(addr, conn_count):
      mms.DeleteNamedVariableListResponse(matched=0, deleted=0)),
     (mms.DeleteNamedVariableListRequest(
         names=[mms.VmdSpecificObjectName(identifier='x')]),
-     mms.ErrorResponse(error_class=mms.ErrorClass.RESOURCE, value=0))
+     mms.ResourceError.OTHER)
 ])
 async def test_request_response(addr, req, res):
 

@@ -58,7 +58,7 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 RequestCb: typing.TypeAlias = aio.AsyncCallable[['Connection', common.Request],
-                                                common.Response]
+                                                common.Response | common.Error]
 """Request callback"""
 
 UnconfirmedCb: typing.TypeAlias = aio.AsyncCallable[['Connection',
@@ -92,8 +92,11 @@ async def connect(addr: tcp.Address,
         initiate_req[1]['localDetailCalling'] = local_detail_calling
 
     req_user_data = _encode(initiate_req)
-    conn = await acse.connect(addr, [_mms_syntax_name], _mms_app_context_name,
-                              (_mms_syntax_name, req_user_data), **kwargs)
+    conn = await acse.connect(addr=addr,
+                              syntax_name_list=[_mms_syntax_name],
+                              app_context_name=_mms_app_context_name,
+                              user_data=(_mms_syntax_name, req_user_data),
+                              **kwargs)
 
     try:
         res_syntax_name, res_user_data = conn.conn_res_user_data
@@ -104,7 +107,9 @@ async def connect(addr: tcp.Address,
         if initiate_res[0] != 'initiate-ResponsePDU':
             raise Exception("invalid initiate response")
 
-        return Connection(conn, request_cb, unconfirmed_cb)
+        return Connection(conn=conn,
+                          request_cb=request_cb,
+                          unconfirmed_cb=unconfirmed_cb)
 
     except Exception:
         await aio.uncancellable(conn.async_close())
@@ -135,9 +140,9 @@ async def listen(connection_cb: ConnectionCb,
     server._unconfirmed_cb = unconfirmed_cb
     server._bind_connections = bind_connections
 
-    server._srv = await acse.listen(server._on_validate,
-                                    server._on_connection,
-                                    addr,
+    server._srv = await acse.listen(validate_cb=server._on_validate,
+                                    connection_cb=server._on_connection,
+                                    addr=addr,
                                     bind_connections=False,
                                     **kwargs)
 
@@ -188,8 +193,9 @@ class Server(aio.Resource):
     async def _on_connection(self, acse_conn):
         try:
             try:
-                conn = Connection(acse_conn, self._request_cb,
-                                  self._unconfirmed_cb)
+                conn = Connection(conn=acse_conn,
+                                  request_cb=self._request_cb,
+                                  unconfirmed_cb=self._unconfirmed_cb)
 
             except Exception:
                 await aio.uncancellable(acse_conn.async_close())
@@ -265,7 +271,7 @@ class Connection(aio.Resource):
 
     async def send_confirmed(self,
                              req: common.Request
-                             ) -> common.Response:
+                             ) -> common.Response | common.Error:
         """Send confirmed request and wait for response"""
         if not self.is_open:
             raise ConnectionError()
@@ -361,16 +367,18 @@ class Connection(aio.Resource):
 
         res = await aio.call(self._request_cb, self, req)
 
-        if isinstance(res, common.ErrorResponse):
-            res_pdu = 'confirmed-ErrorPDU', {
-                'invokeID': invoke_id,
-                'serviceError': {
-                    'errorClass': (res.error_class.value, res.value)}}
-
-        else:
+        if isinstance(res, common.Response):
             res_pdu = 'confirmed-ResponsePDU', {
                 'invokeID': invoke_id,
                 'service': encoder.encode_response(res)}
+
+        elif isinstance(res, common.Error):
+            res_pdu = 'confirmed-ErrorPDU', {
+                'invokeID': invoke_id,
+                'serviceError': encoder.encode_error(res)}
+
+        else:
+            TypeError('unsupported response/error type')
 
         res_data = _mms_syntax_name, _encode(res_pdu)
         await self._conn.send(res_data)
@@ -389,16 +397,14 @@ class Connection(aio.Resource):
 
     async def _process_error(self, data):
         invoke_id = data['invokeID']
-        error_class_name, value = data['serviceError']['errorClass']
-        error_class = common.ErrorClass(error_class_name)
-        res = common.ErrorResponse(error_class, value)
+        error = encoder.decode_error(data['serviceError'])
 
         future = self._response_futures.get(invoke_id)
         if not future or future.done():
             mlog.warning("dropping confirmed error (invoke_id: %s)", invoke_id)
             return
 
-        future.set_result(res)
+        future.set_result(error)
 
 
 def _encode(value):

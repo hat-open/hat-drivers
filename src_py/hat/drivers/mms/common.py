@@ -1,60 +1,10 @@
-import abc
+from collections.abc import Sequence
 import enum
 import typing
 import datetime
 
 from hat import asn1
 from hat import util
-
-
-Request = type('Request', (abc.ABC, ), {})
-Response = type('Response', (abc.ABC, ), {})
-Unconfirmed = type('Unconfirmed', (abc.ABC, ), {})
-Data = type('Data', (abc.ABC, ), {})
-TypeDescription = type('TypeDescription', (abc.ABC, ), {})
-ObjectName = type('ObjectName', (abc.ABC, ), {})
-ObjectScope = type('ObjectScope', (abc.ABC, ), {})
-VariableSpecification = type('VariableSpecification', (abc.ABC, ), {})
-
-
-def request(cls):
-    Request.register(cls)
-    return cls
-
-
-def response(cls):
-    Response.register(cls)
-    return cls
-
-
-def unconfirmed(cls):
-    Unconfirmed.register(cls)
-    return cls
-
-
-def data(cls):
-    Data.register(cls)
-    return cls
-
-
-def type_description(cls):
-    TypeDescription.register(cls)
-    return cls
-
-
-def object_name(cls):
-    ObjectName.register(cls)
-    return cls
-
-
-def object_scope(cls):
-    ObjectScope.register(cls)
-    return cls
-
-
-def variable_specification(cls):
-    VariableSpecification.register(cls)
-    return cls
 
 
 class DataAccessError(enum.Enum):
@@ -80,221 +30,103 @@ class ObjectClass(enum.Enum):
     UNDEFINED = 0xFF
 
 
-class ErrorClass(enum.Enum):
-    ACCESS = 'access'
-    APPLICATION_REFERENCE = 'application-reference'
-    CANCEL = 'cancel'
-    CONCLUDE = 'conclude'
-    DEFINITION = 'definition'
-    FILE = 'file'
-    INITIATE = 'initiate'
-    OTHERS = 'others'
-    RESOURCE = 'resource'
-    SERVICE = 'service'
-    SERVICE_PREEMPT = 'service-preempt'
-    TIME_RESOLUTION = 'time-resolution'
-    VMD_STATE = 'vmd-state'
+# object name #################################################################
+
+class AaSpecificObjectName(typing.NamedTuple):
+    identifier: str
 
 
-@request
-class StatusRequest(typing.NamedTuple):
+class DomainSpecificObjectName(typing.NamedTuple):
+    domain_id: str
+    item_id: str
+
+
+class VmdSpecificObjectName(typing.NamedTuple):
+    identifier: str
+
+
+ObjectName: typing.TypeAlias = (AaSpecificObjectName |
+                                DomainSpecificObjectName |
+                                VmdSpecificObjectName)
+
+
+# object scope ################################################################
+
+class AaSpecificObjectScope(typing.NamedTuple):
     pass
 
 
-@request
-class GetNameListRequest(typing.NamedTuple):
-    object_class: ObjectClass
-    object_scope: ObjectScope
-    continue_after: str | None
+class DomainSpecificObjectScope(typing.NamedTuple):
+    identifier: str
 
 
-@request
-class IdentifyRequest(typing.NamedTuple):
+class VmdSpecificObjectScope(typing.NamedTuple):
     pass
 
 
-@request
-class GetVariableAccessAttributesRequest(typing.NamedTuple):
-    value: ObjectName | int | str | util.Bytes
+ObjectScope: typing.TypeAlias = (AaSpecificObjectScope |
+                                 DomainSpecificObjectScope |
+                                 VmdSpecificObjectScope)
 
 
-@request
-class GetNamedVariableListAttributesRequest(typing.NamedTuple):
-    value: ObjectName
+# data ########################################################################
 
-
-@request
-class ReadRequest(typing.NamedTuple):
-    value: list[VariableSpecification] | ObjectName
-
-
-@request
-class WriteRequest(typing.NamedTuple):
-    specification: list[VariableSpecification] | ObjectName
-    data: list[Data]
-
-
-@request
-class DefineNamedVariableListRequest(typing.NamedTuple):
-    name: ObjectName
-    specification: list[VariableSpecification]
-
-
-@request
-class DeleteNamedVariableListRequest(typing.NamedTuple):
-    names: list[ObjectName]
-
-
-@response
-class ErrorResponse(typing.NamedTuple):
-    error_class: ErrorClass
-    value: int
-
-
-@response
-class StatusResponse(typing.NamedTuple):
-    logical: int
-    physical: int
-
-
-@response
-class GetNameListResponse(typing.NamedTuple):
-    identifiers: list[str]
-    more_follows: bool
-
-
-@response
-class IdentifyResponse(typing.NamedTuple):
-    vendor: str
-    model: str
-    revision: str
-    syntaxes: list[asn1.ObjectIdentifier] | None
-
-
-@response
-class GetVariableAccessAttributesResponse(typing.NamedTuple):
-    mms_deletable: bool
-    type_description: TypeDescription
-
-
-@response
-class GetNamedVariableListAttributesResponse(typing.NamedTuple):
-    mms_deletable: bool
-    specification: list[VariableSpecification]
-
-
-@response
-class ReadResponse(typing.NamedTuple):
-    results: list[DataAccessError | Data]
-
-
-@response
-class WriteResponse(typing.NamedTuple):
-    results: list[DataAccessError | None]
-
-
-@response
-class DefineNamedVariableListResponse(typing.NamedTuple):
-    pass
-
-
-@response
-class DeleteNamedVariableListResponse(typing.NamedTuple):
-    matched: int
-    deleted: int
-
-
-@unconfirmed
-class EventNotificationUnconfirmed(typing.NamedTuple):
-    enrollment: ObjectName
-    condition: ObjectName
-    severity: int
-    time: Data | int | None
-
-
-@unconfirmed
-class InformationReportUnconfirmed(typing.NamedTuple):
-    specification: list[VariableSpecification] | ObjectName
-    data: list[DataAccessError | Data]
-
-
-@unconfirmed
-class UnsolicitedStatusUnconfirmed(typing.NamedTuple):
-    logical: int
-    physical: int
-
-
-@data
 class ArrayData(typing.NamedTuple):
-    elements: list[Data]
+    elements: Sequence['Data']
 
 
-@data
 class BcdData(typing.NamedTuple):
     value: int
 
 
-@data
 class BinaryTimeData(typing.NamedTuple):
     value: datetime.datetime
 
 
-@data
 class BitStringData(typing.NamedTuple):
-    value: list[bool]
+    value: Sequence[bool]
 
 
-@data
 class BooleanData(typing.NamedTuple):
     value: bool
 
 
-@data
 class BooleanArrayData(typing.NamedTuple):
-    value: list[bool]
+    value: Sequence[bool]
 
 
-@data
 class FloatingPointData(typing.NamedTuple):
     value: float
 
 
-@data
 class GeneralizedTimeData(typing.NamedTuple):
     value: str
 
 
-@data
 class IntegerData(typing.NamedTuple):
     value: int
 
 
-@data
 class MmsStringData(typing.NamedTuple):
     value: str
 
 
-@data
 class ObjIdData(typing.NamedTuple):
     value: asn1.ObjectIdentifier
 
 
-@data
 class OctetStringData(typing.NamedTuple):
-    value: asn1.Bytes
+    value: util.Bytes
 
 
-@data
 class StructureData(typing.NamedTuple):
-    elements: list[Data]
+    elements: Sequence['Data']
 
 
-@data
 class UnsignedData(typing.NamedTuple):
     value: int
 
 
-@data
 class UtcTimeData(typing.NamedTuple):
     value: datetime.datetime
     leap_second: bool
@@ -304,140 +136,388 @@ class UtcTimeData(typing.NamedTuple):
     """accurate fraction bits [0,24]"""
 
 
-@data
 class VisibleStringData(typing.NamedTuple):
     value: str
 
 
-@type_description
+Data: typing.TypeAlias = (ArrayData |
+                          BcdData |
+                          BinaryTimeData |
+                          BitStringData |
+                          BooleanData |
+                          BooleanArrayData |
+                          FloatingPointData |
+                          GeneralizedTimeData |
+                          IntegerData |
+                          MmsStringData |
+                          ObjIdData |
+                          OctetStringData |
+                          StructureData |
+                          UnsignedData |
+                          UtcTimeData |
+                          VisibleStringData)
+
+
+# type description ############################################################
+
 class ArrayTypeDescription(typing.NamedTuple):
     number_of_elements: int
-    element_type: TypeDescription | ObjectName
+    element_type: typing.Union['TypeDescription', ObjectName]
 
 
-@type_description
 class BcdTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class BinaryTimeTypeDescription(typing.NamedTuple):
     xyz: bool
 
 
-@type_description
 class BitStringTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class BooleanTypeDescription(typing.NamedTuple):
     pass
 
 
-@type_description
 class FloatingPointTypeDescription(typing.NamedTuple):
     format_width: int
     exponent_width: int
 
 
-@type_description
 class GeneralizedTimeTypeDescription(typing.NamedTuple):
     pass
 
 
-@type_description
 class IntegerTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class MmsStringTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class ObjIdTypeDescription(typing.NamedTuple):
     pass
 
 
-@type_description
 class OctetStringTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class StructureTypeDescription(typing.NamedTuple):
-    components: list[tuple[str | None, TypeDescription | ObjectName]]
+    components: Sequence[tuple[str | None,
+                               typing.Union['TypeDescription', ObjectName]]]
 
 
-@type_description
 class UnsignedTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@type_description
 class UtcTimeTypeDescription(typing.NamedTuple):
     pass
 
 
-@type_description
 class VisibleStringTypeDescription(typing.NamedTuple):
     xyz: int
 
 
-@object_name
-class AaSpecificObjectName(typing.NamedTuple):
-    identifier: str
+TypeDescription: typing.TypeAlias = (ArrayTypeDescription |
+                                     BcdTypeDescription |
+                                     BinaryTimeTypeDescription |
+                                     BitStringTypeDescription |
+                                     BooleanTypeDescription |
+                                     FloatingPointTypeDescription |
+                                     GeneralizedTimeTypeDescription |
+                                     IntegerTypeDescription |
+                                     MmsStringTypeDescription |
+                                     ObjIdTypeDescription |
+                                     OctetStringTypeDescription |
+                                     StructureTypeDescription |
+                                     UnsignedTypeDescription |
+                                     UtcTimeTypeDescription |
+                                     VisibleStringTypeDescription)
 
 
-@object_name
-class DomainSpecificObjectName(typing.NamedTuple):
-    domain_id: str
-    item_id: str
+# variable specification ######################################################
 
-
-@object_name
-class VmdSpecificObjectName(typing.NamedTuple):
-    identifier: str
-
-
-@object_scope
-class AaSpecificObjectScope(typing.NamedTuple):
-    pass
-
-
-@object_scope
-class DomainSpecificObjectScope(typing.NamedTuple):
-    identifier: str
-
-
-@object_scope
-class VmdSpecificObjectScope(typing.NamedTuple):
-    pass
-
-
-@variable_specification
 class AddressVariableSpecification(typing.NamedTuple):
-    address: int | str | asn1.Bytes
+    address: int | str | util.Bytes
 
 
-@variable_specification
 class InvalidatedVariableSpecification(typing.NamedTuple):
     pass
 
 
-@variable_specification
 class NameVariableSpecification(typing.NamedTuple):
     name: ObjectName
 
 
-@variable_specification
 class ScatteredAccessDescriptionVariableSpecification(typing.NamedTuple):
-    specifications: list[VariableSpecification]
+    specifications: Sequence['VariableSpecification']
 
 
-@variable_specification
 class VariableDescriptionVariableSpecification(typing.NamedTuple):
-    address: int | str | asn1.Bytes
+    address: int | str | util.Bytes
     type_specification: TypeDescription | ObjectName
+
+
+VariableSpecification: typing.TypeAlias = (
+    AddressVariableSpecification |
+    InvalidatedVariableSpecification |
+    NameVariableSpecification |
+    ScatteredAccessDescriptionVariableSpecification |
+    VariableDescriptionVariableSpecification)
+
+
+# request #####################################################################
+
+class StatusRequest(typing.NamedTuple):
+    pass
+
+
+class GetNameListRequest(typing.NamedTuple):
+    object_class: ObjectClass
+    object_scope: ObjectScope
+    continue_after: str | None
+
+
+class IdentifyRequest(typing.NamedTuple):
+    pass
+
+
+class GetVariableAccessAttributesRequest(typing.NamedTuple):
+    value: ObjectName | int | str | util.Bytes
+
+
+class GetNamedVariableListAttributesRequest(typing.NamedTuple):
+    value: ObjectName
+
+
+class ReadRequest(typing.NamedTuple):
+    value: Sequence[VariableSpecification] | ObjectName
+
+
+class WriteRequest(typing.NamedTuple):
+    specification: Sequence[VariableSpecification] | ObjectName
+    data: Sequence[Data]
+
+
+class DefineNamedVariableListRequest(typing.NamedTuple):
+    name: ObjectName
+    specification: Sequence[VariableSpecification]
+
+
+class DeleteNamedVariableListRequest(typing.NamedTuple):
+    names: Sequence[ObjectName]
+
+
+Request: typing.TypeAlias = (StatusRequest |
+                             GetNameListRequest |
+                             IdentifyRequest |
+                             GetVariableAccessAttributesRequest |
+                             GetNamedVariableListAttributesRequest |
+                             ReadRequest |
+                             WriteRequest |
+                             DefineNamedVariableListRequest |
+                             DeleteNamedVariableListRequest)
+
+
+# response ####################################################################
+
+class StatusResponse(typing.NamedTuple):
+    logical: int
+    physical: int
+
+
+class GetNameListResponse(typing.NamedTuple):
+    identifiers: Sequence[str]
+    more_follows: bool
+
+
+class IdentifyResponse(typing.NamedTuple):
+    vendor: str
+    model: str
+    revision: str
+    syntaxes: Sequence[asn1.ObjectIdentifier] | None
+
+
+class GetVariableAccessAttributesResponse(typing.NamedTuple):
+    mms_deletable: bool
+    type_description: TypeDescription
+
+
+class GetNamedVariableListAttributesResponse(typing.NamedTuple):
+    mms_deletable: bool
+    specification: Sequence[VariableSpecification]
+
+
+class ReadResponse(typing.NamedTuple):
+    results: Sequence[DataAccessError | Data]
+
+
+class WriteResponse(typing.NamedTuple):
+    results: Sequence[DataAccessError | None]
+
+
+class DefineNamedVariableListResponse(typing.NamedTuple):
+    pass
+
+
+class DeleteNamedVariableListResponse(typing.NamedTuple):
+    matched: int
+    deleted: int
+
+
+Response: typing.TypeAlias = (StatusResponse |
+                              GetNameListResponse |
+                              IdentifyResponse |
+                              GetVariableAccessAttributesResponse |
+                              GetNamedVariableListAttributesResponse |
+                              ReadResponse |
+                              WriteResponse |
+                              DefineNamedVariableListResponse |
+                              DeleteNamedVariableListResponse)
+
+
+# error #######################################################################
+
+class VmdStateError(enum.Enum):
+    OTHER = 0
+    VMD_STATE_CONFLICT = 1
+    VMD_OPERATIONAL_PROBLEM = 2
+    DOMAIN_TRANSFER_PROBLEM = 3
+    STATE_MACHINE_ID_INVALID = 4
+
+
+class ApplicationReferenceError(enum.Enum):
+    OTHER = 0
+    APPLICATION_UNREACHABLE = 1
+    CONNECTION_LOST = 2
+    APPLICATION_REFERENCE_INVALID = 3
+    CONTEXT_UNSUPPORTED = 4
+
+
+class DefinitionError(enum.Enum):
+    OTHER = 0
+    OBJECT_UNDEFINED = 1
+    INVALID_ADDRESS = 2
+    TYPE_UNSUPPORTED = 3
+    TYPE_INCONSISTENT = 4
+    OBJECT_EXISTS = 5
+    OBJECT_ATTRIBUTE_INCONSISTENT = 6
+
+
+class ResourceError(enum.Enum):
+    OTHER = 0
+    MEMORY_UNAVAILABLE = 1
+    PROCESSOR_RESOURCE_UNAVAILABLE = 2
+    MASS_STORAGE_UNAVAILABLE = 3
+    CAPABILITY_UNAVAILABLE = 4
+    CAPABILITY_UNKNOWN = 5
+
+
+class ServiceError(enum.Enum):
+    OTHER = 0
+    PRIMITIVES_OUT_OF_SEQUENCE = 1
+    OBJECT_STATE_CONFLICT = 2
+    PDU_SIZE = 3
+    CONTINUATION_INVALID = 4
+    OBJECT_CONSTRAINT_CONFLICT = 5
+
+
+class ServicePreemptError(enum.Enum):
+    OTHER = 0
+    TIMEOUT = 1
+    DEADLOCK = 2
+    CANCEL = 3
+
+
+class TimeResolutionError(enum.Enum):
+    OTHER = 0
+    UNSUPPORTABLE_TIME_RESOLUTION = 1
+
+
+class AccessError(enum.Enum):
+    OTHER = 0
+    OBJECT_ACCESS_UNSUPPORTED = 1
+    OBJECT_NON_EXISTENT = 2
+    OBJECT_ACCESS_DENIED = 3
+    OBJECT_INVALIDATED = 4
+
+
+class InitiateError(enum.Enum):
+    OTHER = 0
+    MAX_SERVICES_OUTSTANDING_CALLING_INSUFFICIENT = 3
+    MAX_SERVICES_OUTSTANDING_CALLED_INSUFFICIENT = 4
+    SERVICE_CBB_INSUFFICIENT = 5
+    PARAMETER_CBB_INSUFFICIENT = 6
+    NESTING_LEVEL_INSUFFICIENT = 7
+
+
+class ConcludeError(enum.Enum):
+    OTHER = 0
+    FURTHER_COMMUNICATION_REQUIRED = 1
+
+
+class CancelError(enum.Enum):
+    OTHER = 0
+    INVOKE_ID_UNKNOWN = 1
+    CANCEL_NOT_POSSIBLE = 2
+
+
+class FileError(enum.Enum):
+    OTHER = 0
+    FILENAME_AMBIGUOUS = 1
+    FILE_BUSY = 2
+    FILENAME_SYNTAX_ERROR = 3
+    CONTENT_TYPE_INVALID = 4
+    POSITION_INVALID = 5
+    FILE_ACCESS_DENIED = 6
+    FILE_NON_EXISTENT = 7
+    DUPLICATE_FILENAME = 8
+    INSUFFICIENT_SPACE_IN_FILESTORE = 9
+
+
+class OtherError(typing.NamedTuple):
+    value: int
+
+
+Error: typing.TypeAlias = (VmdStateError |
+                           ApplicationReferenceError |
+                           DefinitionError |
+                           ResourceError |
+                           ServiceError |
+                           ServicePreemptError |
+                           TimeResolutionError |
+                           AccessError |
+                           InitiateError |
+                           ConcludeError |
+                           CancelError |
+                           FileError |
+                           OtherError)
+
+
+# unconfirmed #################################################################
+
+class EventNotificationUnconfirmed(typing.NamedTuple):
+    enrollment: ObjectName
+    condition: ObjectName
+    severity: int
+    time: Data | int | None
+
+
+class InformationReportUnconfirmed(typing.NamedTuple):
+    specification: Sequence[VariableSpecification] | ObjectName
+    data: Sequence[DataAccessError | Data]
+
+
+class UnsolicitedStatusUnconfirmed(typing.NamedTuple):
+    logical: int
+    physical: int
+
+
+Unconfirmed: typing.TypeAlias = (EventNotificationUnconfirmed |
+                                 InformationReportUnconfirmed |
+                                 UnsolicitedStatusUnconfirmed)

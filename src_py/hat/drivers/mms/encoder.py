@@ -15,8 +15,10 @@ def encode_request(req: common.Request) -> asn1.Value:
         service = {
             'objectClass': ('basicObjectClass', req.object_class.value),
             'objectScope': _encode_object_scope(req.object_scope)}
+
         if req.continue_after is not None:
             service['continueAfter'] = req.continue_after
+
         return 'getNameList', service
 
     if isinstance(req, common.IdentifyRequest):
@@ -25,8 +27,10 @@ def encode_request(req: common.Request) -> asn1.Value:
     if isinstance(req, common.GetVariableAccessAttributesRequest):
         if isinstance(req.value, common.ObjectName):
             service = 'name', _encode_object_name(req.value)
+
         else:
             service = 'address', _encode_address(req.value)
+
         return 'getVariableAccessAttributes', service
 
     if isinstance(req, common.GetNamedVariableListAttributesRequest):
@@ -35,24 +39,27 @@ def encode_request(req: common.Request) -> asn1.Value:
     if isinstance(req, common.ReadRequest):
         if isinstance(req.value, common.ObjectName):
             specification = 'variableListName', _encode_object_name(req.value)
+
         else:
             specification = 'listOfVariable', [
                 {'variableSpecification': _encode_variable_specification(i)}
                 for i in req.value]
+
         return 'read', {'variableAccessSpecification': specification}
 
     if isinstance(req, common.WriteRequest):
         if isinstance(req.specification, common.ObjectName):
             specification = ('variableListName',
                              _encode_object_name(req.specification))
+
         else:
             specification = 'listOfVariable', [
                 {'variableSpecification': _encode_variable_specification(i)}
                 for i in req.specification]
-        data = [_encode_data(i) for i in req.data]
+
         return 'write', {
             'variableAccessSpecification': specification,
-            'listOfData': data}
+            'listOfData': [_encode_data(i) for i in req.data]}
 
     if isinstance(req, common.DefineNamedVariableListRequest):
         return 'defineNamedVariableList', {
@@ -66,7 +73,7 @@ def encode_request(req: common.Request) -> asn1.Value:
             'listOfVariableListName': [_encode_object_name(i)
                                        for i in req.names]}
 
-    raise ValueError()
+    raise TypeError('unsupported req type')
 
 
 def decode_request(req: asn1.Value) -> common.Request:
@@ -78,12 +85,16 @@ def decode_request(req: asn1.Value) -> common.Request:
 
     if name == 'getNameList':
         subname, subdata = data['objectClass']
+
         if subname == 'basicObjectClass':
             object_class = common.ObjectClass(subdata)
+
         else:
             object_class = common.ObjectClass.UNDEFINED
+
         object_scope = _decode_object_scope(data['objectScope'])
         continue_after = data.get('continueAfter')
+
         return common.GetNameListRequest(object_class=object_class,
                                          object_scope=object_scope,
                                          continue_after=continue_after)
@@ -93,12 +104,16 @@ def decode_request(req: asn1.Value) -> common.Request:
 
     if name == 'getVariableAccessAttributes':
         subname, subdata = data
+
         if subname == 'address':
             value = _decode_address(subdata)
+
         elif subname == 'name':
             value = _decode_object_name(subdata)
+
         else:
-            raise ValueError()
+            raise ValueError('unsupported subname')
+
         return common.GetVariableAccessAttributesRequest(value)
 
     if name == 'getNamedVariableListAttributes':
@@ -107,48 +122,54 @@ def decode_request(req: asn1.Value) -> common.Request:
 
     if name == 'read':
         subname, subdata = data['variableAccessSpecification']
+
         if subname == 'variableListName':
             value = _decode_object_name(subdata)
+
         elif subname == 'listOfVariable':
             value = [_decode_variable_specification(i['variableSpecification'])
                      for i in subdata]
+
         else:
-            raise ValueError()
+            raise ValueError('unsupported subname')
+
         return common.ReadRequest(value)
 
     if name == 'write':
         subname, subdata = data['variableAccessSpecification']
+
         if subname == 'variableListName':
             specification = _decode_object_name(subdata)
+
         elif subname == 'listOfVariable':
             specification = [
                 _decode_variable_specification(i['variableSpecification'])
                 for i in subdata]
+
         else:
-            raise ValueError()
+            raise ValueError('unsupported subname')
+
         return common.WriteRequest(
-            specification, [_decode_data(i) for i in data['listOfData']])
+            specification=specification,
+            data=[_decode_data(i) for i in data['listOfData']])
 
     if name == 'defineNamedVariableList':
         return common.DefineNamedVariableListRequest(
-            _decode_object_name(data['variableListName']),
-            [_decode_variable_specification(i['variableSpecification'])
-             for i in data['listOfVariable']])
+            name=_decode_object_name(data['variableListName']),
+            specification=[
+                _decode_variable_specification(i['variableSpecification'])
+                for i in data['listOfVariable']])
 
     if name == 'deleteNamedVariableList':
         return common.DeleteNamedVariableListRequest(
             [_decode_object_name(i)
              for i in data.get('listOfVariableListName', [])])
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def encode_response(res: common.Response) -> asn1.Value:
-    """Encode response
-
-    `common.ErrorResponse` is not supported.
-
-    """
+    """Encode response"""
     if isinstance(res, common.StatusResponse):
         return 'status', {
             'vmdLogicalStatus': res.logical,
@@ -156,15 +177,17 @@ def encode_response(res: common.Response) -> asn1.Value:
 
     if isinstance(res, common.GetNameListResponse):
         return 'getNameList', {
-            'listOfIdentifier': res.identifiers,
+            'listOfIdentifier': list(res.identifiers),
             'moreFollows': res.more_follows}
 
     if isinstance(res, common.IdentifyResponse):
         service = {'vendorName': res.vendor,
                    'modelName': res.model,
                    'revision': res.revision}
+
         if res.syntaxes is not None:
-            service['listOfAbstractSyntaxes'] = res.syntaxes
+            service['listOfAbstractSyntaxes'] = list(res.syntaxes)
+
         return 'identify', service
 
     if isinstance(res, common.GetVariableAccessAttributesResponse):
@@ -184,12 +207,14 @@ def encode_response(res: common.Response) -> asn1.Value:
             (('failure', i.value) if isinstance(i, common.DataAccessError)
              else ('success', _encode_data(i)))
             for i in res.results]
+
         return 'read', {'listOfAccessResult': results}
 
     if isinstance(res, common.WriteResponse):
         results = [
             (('success', None) if i is None else ('failure', i.value))
             for i in res.results]
+
         return 'write', results
 
     if isinstance(res, common.DefineNamedVariableListResponse):
@@ -200,24 +225,21 @@ def encode_response(res: common.Response) -> asn1.Value:
             'numberMatched': res.matched,
             'numberDeleted': res.deleted}
 
-    raise ValueError()
+    raise TypeError('unsupported res type')
 
 
 def decode_response(res: asn1.Value) -> common.Response:
-    """Decode response
-
-    `common.ErrorResponse` is not supported.
-
-    """
+    """Decode response"""
     name, data = res
 
     if name == 'status':
-        return common.StatusResponse(data['vmdLogicalStatus'],
-                                     data['vmdPhysicalStatus'])
+        return common.StatusResponse(logical=data['vmdLogicalStatus'],
+                                     physical=data['vmdPhysicalStatus'])
 
     if name == 'getNameList':
-        return common.GetNameListResponse(data['listOfIdentifier'],
-                                          data.get('moreFollows', True))
+        return common.GetNameListResponse(
+            identifiers=data['listOfIdentifier'],
+            more_follows=data.get('moreFollows', True))
 
     if name == 'identify':
         return common.IdentifyResponse(
@@ -228,37 +250,135 @@ def decode_response(res: asn1.Value) -> common.Response:
 
     if name == 'getVariableAccessAttributes':
         return common.GetVariableAccessAttributesResponse(
-            data['mmsDeletable'],
-            _decode_type_description(data['typeDescription']))
+            mms_deletable=data['mmsDeletable'],
+            type_description=_decode_type_description(data['typeDescription']))
 
     if name == 'getNamedVariableListAttributes':
         specification = [
             _decode_variable_specification(i['variableSpecification'])
             for i in data['listOfVariable']]
+
         return common.GetNamedVariableListAttributesResponse(
-            data['mmsDeletable'], specification)
+            mms_deletable=data['mmsDeletable'],
+            specification=specification)
 
     if name == 'read':
         results = [
             (common.DataAccessError(i[1]) if i[0] == 'failure' else
              _decode_data(i[1]))
             for i in data['listOfAccessResult']]
+
         return common.ReadResponse(results)
 
     if name == 'write':
         results = [
             (None if i[0] == 'success' else common.DataAccessError(i[1]))
             for i in data]
+
         return common.WriteResponse(results)
 
     if name == 'defineNamedVariableList':
         return common.DefineNamedVariableListResponse()
 
     if name == 'deleteNamedVariableList':
-        return common.DeleteNamedVariableListResponse(data['numberMatched'],
-                                                      data['numberDeleted'])
+        return common.DeleteNamedVariableListResponse(
+            matched=data['numberMatched'],
+            deleted=data['numberDeleted'])
 
-    raise ValueError()
+    raise ValueError('unsupported name')
+
+
+def encode_error(error: common.Error) -> asn1.Value:
+    """Encode error"""
+    if isinstance(error, common.VmdStateError):
+        error_class = ('vmd-state', error.value)
+
+    elif isinstance(error, common.ApplicationReferenceError):
+        error_class = ('application-reference', error.value)
+
+    elif isinstance(error, common.DefinitionError):
+        error_class = ('definition', error.value)
+
+    elif isinstance(error, common.ResourceError):
+        error_class = ('resource', error.value)
+
+    elif isinstance(error, common.ServiceError):
+        error_class = ('service', error.value)
+
+    elif isinstance(error, common.ServicePreemptError):
+        error_class = ('service-preempt', error.value)
+
+    elif isinstance(error, common.TimeResolutionError):
+        error_class = ('time-resolution', error.value)
+
+    elif isinstance(error, common.AccessError):
+        error_class = ('access', error.value)
+
+    elif isinstance(error, common.InitiateError):
+        error_class = ('initiate', error.value)
+
+    elif isinstance(error, common.ConcludeError):
+        error_class = ('conclude', error.value)
+
+    elif isinstance(error, common.CancelError):
+        error_class = ('cancel', error.value)
+
+    elif isinstance(error, common.FileError):
+        error_class = ('file', error.value)
+
+    elif isinstance(error, common.OtherError):
+        error_class = ('others', error.value)
+
+    else:
+        raise TypeError('unsupported error type')
+
+    return {'errorClass': error_class}
+
+
+def decode_error(error: asn1.Value) -> common.Error:
+    """Decode error"""
+    name, value = error['errorClass']
+
+    if name == 'vmd-state':
+        return common.VmdStateError(value)
+
+    if name == 'application-reference':
+        return common.ApplicationReferenceError(value)
+
+    if name == 'definition':
+        return common.DefinitionError(value)
+
+    if name == 'resource':
+        return common.ResourceError(value)
+
+    if name == 'service':
+        return common.ServiceError(value)
+
+    if name == 'service-preempt':
+        return common.ServicePreemptError(value)
+
+    if name == 'time-resolution':
+        return common.TimeResolutionError(value)
+
+    if name == 'access':
+        return common.AccessError(value)
+
+    if name == 'initiate':
+        return common.InitiateError(value)
+
+    if name == 'conclude':
+        return common.ConcludeError(value)
+
+    if name == 'cancel':
+        return common.CancelError(value)
+
+    if name == 'file':
+        return common.FileError(value)
+
+    if name == 'others':
+        return common.OtherError(value)
+
+    raise ValueError('unsupported name')
 
 
 def encode_unconfirmed(unconfirmed: common.Unconfirmed) -> asn1.Value:
@@ -266,10 +386,13 @@ def encode_unconfirmed(unconfirmed: common.Unconfirmed) -> asn1.Value:
     if isinstance(unconfirmed, common.EventNotificationUnconfirmed):
         if unconfirmed.time is None:
             transition_time = 'undefined', None
+
         elif isinstance(unconfirmed.time, int):
             transition_time = 'timeSequenceIdentifier', unconfirmed.time
+
         else:
             transition_time = 'timeOfDay', unconfirmed.time
+
         return 'eventNotification', {
             'eventEnrollmentName': _encode_object_name(unconfirmed.enrollment),
             'eventConditionName': _encode_object_name(unconfirmed.condition),
@@ -280,14 +403,17 @@ def encode_unconfirmed(unconfirmed: common.Unconfirmed) -> asn1.Value:
         if isinstance(unconfirmed.specification, common.ObjectName):
             specification = ('variableListName',
                              _encode_object_name(unconfirmed.specification))
+
         else:
             specification = 'listOfVariable', [
                 {'variableSpecification': _encode_variable_specification(i)}
                 for i in unconfirmed.specification]
+
         data = [(('failure', i.value)
                  if isinstance(i, common.DataAccessError)
                  else ('success', _encode_data(i)))
                 for i in unconfirmed.data]
+
         return 'informationReport', {
             'variableAccessSpecification': specification,
             'listOfAccessResult': data}
@@ -297,7 +423,7 @@ def encode_unconfirmed(unconfirmed: common.Unconfirmed) -> asn1.Value:
             'vmdLogicalStatus': unconfirmed.logical,
             'vmdPhysicalStatus': unconfirmed.physical}
 
-    raise ValueError()
+    raise TypeError('unsupported unconfirmed type')
 
 
 def decode_unconfirmed(unconfirmed: asn1.Value) -> common.Unconfirmed:
@@ -313,24 +439,31 @@ def decode_unconfirmed(unconfirmed: asn1.Value) -> common.Unconfirmed:
 
     if name == 'informationReport':
         subname, subdata = data['variableAccessSpecification']
+
         if subname == 'variableListName':
             specification = _decode_object_name(subdata)
+
         elif subname == 'listOfVariable':
             specification = [
                 _decode_variable_specification(i['variableSpecification'])
                 for i in subdata]
+
         else:
-            raise ValueError()
+            raise ValueError('unsupported subname')
+
         data = [(common.DataAccessError(v) if k == 'failure'
                  else _decode_data(v))
                 for k, v in data['listOfAccessResult']]
-        return common.InformationReportUnconfirmed(specification, data)
+
+        return common.InformationReportUnconfirmed(specification=specification,
+                                                   data=data)
 
     if name == 'unsolicitedStatus':
         return common.UnsolicitedStatusUnconfirmed(
-            data['vmdLogicalStatus'], data['vmdPhysicalStatus'])
+            logical=data['vmdLogicalStatus'],
+            physical=data['vmdPhysicalStatus'])
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def _encode_data(data):
@@ -352,13 +485,13 @@ def _encode_data(data):
         return 'binary-time', bytes(binary_time)
 
     if isinstance(data, common.BitStringData):
-        return 'bit-string', data.value
+        return 'bit-string', list(data.value)
 
     if isinstance(data, common.BooleanData):
         return 'boolean', data.value
 
     if isinstance(data, common.BooleanArrayData):
-        return 'booleanArray', data.value
+        return 'booleanArray', list(data.value)
 
     if isinstance(data, common.FloatingPointData):
         floating_point = b'\x08' + struct.pack(">f", data.value)
@@ -388,6 +521,7 @@ def _encode_data(data):
     if isinstance(data, common.UtcTimeData):
         if data.accuracy is not None and not (0 <= data.accuracy <= 24):
             raise ValueError('invalid UtcTime accuracy')
+
         ts = data.value.timestamp()
         decimal = ts - int(ts)
         fraction = bytearray([0, 0, 0])
@@ -402,12 +536,13 @@ def _encode_data(data):
         utc_time = bytes([*struct.pack(">I", int(ts)),
                           *fraction,
                           quality])
+
         return 'utc-time', utc_time
 
     if isinstance(data, common.VisibleStringData):
         return 'visible-string', data.value
 
-    raise ValueError()
+    raise TypeError('unsupported data type')
 
 
 def _decode_data(data):
@@ -484,7 +619,7 @@ def _decode_data(data):
     if name == 'visible-string':
         return common.VisibleStringData(data)
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def _encode_type_description(t):
@@ -492,11 +627,14 @@ def _encode_type_description(t):
         if isinstance(t.element_type, common.TypeDescription):
             element_type = ('typeDescription',
                             _encode_type_description(t.element_type))
+
         elif isinstance(t.element_type, common.ObjectName):
             element_type = ('typeName',
                             _encode_object_name(t.element_type))
+
         else:
-            raise ValueError()
+            raise TypeError('unsupported element type')
+
         return 'array', {
             'numberOfElements': t.number_of_elements,
             'elementType': element_type}
@@ -538,14 +676,19 @@ def _encode_type_description(t):
         for k, v in t.components:
             if isinstance(v, common.TypeDescription):
                 component_type = 'typeDescription', _encode_type_description(v)
+
             elif isinstance(v, common.ObjectName):
                 component_type = 'typeName', _encode_object_name(v)
+
             else:
-                raise ValueError()
+                raise TypeError('unsupported value type')
+
             component = {'componentType': component_type}
             if k is not None:
                 component['componentName'] = k
+
             components.append(component)
+
         return 'structure', {'components': components}
 
     if isinstance(t, common.UnsignedTypeDescription):
@@ -557,7 +700,7 @@ def _encode_type_description(t):
     if isinstance(t, common.VisibleStringTypeDescription):
         return 'visible-string', t.xyz
 
-    raise ValueError()
+    raise TypeError('unsupported type description')
 
 
 def _decode_type_description(t):
@@ -565,14 +708,19 @@ def _decode_type_description(t):
 
     if name == 'array':
         subname, subdata = data['elementType']
+
         if subname == 'typeDescription':
             element_type = _decode_type_description(subdata)
+
         elif subname == 'typeName':
             element_type = _decode_object_name(subdata)
+
         else:
-            raise ValueError()
-        return common.ArrayTypeDescription(data['numberOfElements'],
-                                           element_type)
+            raise ValueError('unsupported subname')
+
+        return common.ArrayTypeDescription(
+            number_of_elements=data['numberOfElements'],
+            element_type=element_type)
 
     if name == 'bcd':
         return common.BcdTypeDescription(data)
@@ -587,8 +735,9 @@ def _decode_type_description(t):
         return common.BooleanTypeDescription()
 
     if name == 'floating-point':
-        return common.FloatingPointTypeDescription(data['format-width'],
-                                                   data['exponent-width'])
+        return common.FloatingPointTypeDescription(
+            format_width=data['format-width'],
+            exponent_width=data['exponent-width'])
 
     if name == 'generalized-time':
         return common.GeneralizedTimeTypeDescription()
@@ -609,14 +758,19 @@ def _decode_type_description(t):
         components = []
         for i in data['components']:
             subname, subdata = i['componentType']
+
             if subname == 'typeDescription':
                 component_type = _decode_type_description(subdata)
+
             elif subname == 'typeName':
                 component_type = _decode_object_name(subdata)
+
             else:
-                raise ValueError()
+                raise ValueError('unsupported subname')
+
             component = i.get('componentName'), component_type
             components.append(component)
+
         return common.StructureTypeDescription(components)
 
     if name == 'unsigned':
@@ -628,7 +782,7 @@ def _decode_type_description(t):
     if name == 'visible-string':
         return common.VisibleStringTypeDescription(data)
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def _encode_object_name(object_name):
@@ -643,22 +797,24 @@ def _encode_object_name(object_name):
     if isinstance(object_name, common.VmdSpecificObjectName):
         return 'vmd-specific', object_name.identifier
 
-    raise ValueError()
+    raise TypeError('unsupported object name type')
 
 
 def _decode_object_name(object_name):
     name, data = object_name
+
     if name == 'aa-specific':
         return common.AaSpecificObjectName(data)
 
     if name == 'domain-specific':
-        return common.DomainSpecificObjectName(data['domainID'],
-                                               data['itemID'])
+        return common.DomainSpecificObjectName(
+            domain_id=data['domainID'],
+            item_id=data['itemID'])
 
     if name == 'vmd-specific':
         return common.VmdSpecificObjectName(data)
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def _encode_object_scope(object_scope):
@@ -671,11 +827,12 @@ def _encode_object_scope(object_scope):
     if isinstance(object_scope, common.VmdSpecificObjectScope):
         return 'vmdSpecific', None
 
-    raise ValueError()
+    raise TypeError('unsupported object scope type')
 
 
 def _decode_object_scope(object_scope):
     name, data = object_scope
+
     if name == 'aaSpecific':
         return common.AaSpecificObjectScope()
 
@@ -685,7 +842,7 @@ def _decode_object_scope(object_scope):
     if name == 'vmdSpecific':
         return common.VmdSpecificObjectScope()
 
-    raise ValueError()
+    raise ValueError('unsupported name')
 
 
 def _encode_address(address):
@@ -724,21 +881,25 @@ def _encode_variable_specification(var_spec):
             type_specification = (
                 'typeDescription',
                 _encode_type_description(var_spec.type_specification))
+
         elif isinstance(var_spec.type_specification, common.ObjectName):
             type_specification = (
                 'typeName',
                 _encode_object_name(var_spec.type_specification))
+
         else:
-            raise ValueError()
+            raise TypeError('unsupported type specification type')
+
         return 'variableDescription', {
             'address': _encode_address(var_spec.address),
             'typeSpecification': type_specification}
 
-    raise ValueError()
+    raise TypeError('unsupported variable specification type')
 
 
 def _decode_variable_specification(var_spec):
     name, data = var_spec
+
     if name == 'address':
         return common.AddressVariableSpecification(_decode_address(data))
 
@@ -755,13 +916,18 @@ def _decode_variable_specification(var_spec):
 
     if name == 'variableDescription':
         subname, subdata = data['typeSpecification']
+
         if subname == 'typeDescription':
             type_specification = _decode_type_description(subdata)
+
         elif subname == 'typeName':
             type_specification = _decode_object_name(subdata)
-        else:
-            raise ValueError()
-        return common.VariableDescriptionVariableSpecification(
-            _decode_address(data['address']), type_specification)
 
-    raise ValueError()
+        else:
+            raise ValueError('unsupported subname')
+
+        return common.VariableDescriptionVariableSpecification(
+            address=_decode_address(data['address']),
+            type_specification=type_specification)
+
+    raise ValueError('unsupported name')
