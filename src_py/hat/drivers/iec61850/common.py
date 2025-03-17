@@ -153,8 +153,8 @@ class Severity(typing.Enum):
 
 
 class Analogue(typing.NamedTuple):
-    i: int | None
-    f: float | None
+    i: int | None = None
+    f: float | None = None
 
 
 class Vector(typing.NamedTuple):
@@ -270,7 +270,7 @@ class Brcb(typing.NamedTuple):
     integrity_period: int | None = None
     gi: bool | None = None
     purge_buffer: bool | None = None
-    entry_id: bytes | None = None
+    entry_id: util.Bytes | None = None
     time_of_entry: EntryTime | None = None
     reservation_time: int | None = None
 
@@ -278,7 +278,6 @@ class Brcb(typing.NamedTuple):
 class Urcb(typing.NamedTuple):
     report_id: str | None = None
     report_enable: bool | None = None
-    reserve: bool | None = None
     dataset: DatasetRef | None = None
     conf_revision: int | None = None
     optional_fields: set[OptionalField] | None = None
@@ -287,6 +286,7 @@ class Urcb(typing.NamedTuple):
     trigger_options: set[TriggerCondition] | None = None
     integrity_period: int | None = None
     gi: bool | None = None
+    reserve: bool | None = None
 
 
 Rcb: typing.TypeAlias = Brcb | Urcb
