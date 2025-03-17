@@ -139,14 +139,14 @@ class DoublePoint(enum.Enum):
     BAD = 3
 
 
-class Direction(typing.Enum):
+class Direction(enum.Enum):
     UNKNOWN = 0
     FORWARD = 1
     BACKWARD = 2
     BOTH = 3
 
 
-class Severity(typing.Enum):
+class Severity(enum.Enum):
     UNKNOWN = 0
     CRITICAL = 1
     MAJOR = 2
@@ -170,7 +170,7 @@ class StepPosition(typing.NamedTuple):
     transient: bool | None
 
 
-class BinaryControl(typing.Enum):
+class BinaryControl(enum.Enum):
     STOP = 0
     LOWER = 1
     HIGHER = 2

@@ -204,7 +204,7 @@ class Client(aio.Resource):
 
             refs.append(encoder.data_ref_from_object_name(i.name))
 
-        return ref
+        return refs
 
     async def get_rcb(self,
                       ref: common.RcbRef
