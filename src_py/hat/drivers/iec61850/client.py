@@ -6,6 +6,7 @@ import logging
 import typing
 
 from hat import aio
+from hat import util
 
 from hat.drivers import acse
 from hat.drivers import mms
@@ -332,14 +333,190 @@ class Client(aio.Resource):
                       ref: common.RcbRef,
                       rcb: common.Rcb
                       ) -> common.ServiceError | None:
-        pass
+        attrs = collections.deque()
+        data = collections.deque()
+
+        if rcb.report_id is not None:
+            attrs.append('RptID')
+            data.append(
+                _value_to_mms_data(rcb.report_id,
+                                   common.BasicValueType.VISIBLE_STRING))
+
+        if rcb.report_enable is not None:
+            attrs.append('RptEna')
+            data.append(
+                _value_to_mms_data(rcb.report_enable,
+                                   common.BasicValueType.BOOLEAN))
+
+        if rcb.dataset is not None:
+            attrs.append('DatSet')
+            data.append(
+                _value_to_mms_data(_dataset_ref_to_str(rcb.dataset, '$'),
+                                   common.BasicValueType.VISIBLE_STRING))
+
+        if rcb.conf_revision is not None:
+            attrs.append('ConfRev')
+            data.append(
+                _value_to_mms_data(rcb.conf_revision,
+                                   common.BasicValueType.UNSIGNED))
+
+        if rcb.optional_fields is not None:
+            attrs.append('OptFlds')
+            data.append(
+                _value_to_mms_data(
+                    [False,
+                     ...(common.OptionalField(i) in rcb.optional_fields
+                         for i in range(1, 9))],
+                    common.BasicValueType.BIT_STRING))
+
+        if rcb.buffer_time is not None:
+            attrs.append('BufTm')
+            data.append(
+                _value_to_mms_data(rcb.buffer_time,
+                                   common.BasicValueType.UNSIGNED))
+
+        if rcb.sequence_number is not None:
+            attrs.append('SqNum')
+            data.append(
+                _value_to_mms_data(rcb.sequence_number,
+                                   common.BasicValueType.UNSIGNED))
+
+        if rcb.trigger_options is not None:
+            attrs.append('TrgOps')
+            data.append(
+                _value_to_mms_data(
+                    [False,
+                     ...(common.TriggerCondition(i) in rcb.trigger_options
+                         for i in range(1, 5))],
+                    common.BasicValueType.BIT_STRING))
+
+        if rcb.integrity_period is not None:
+            attrs.append('IntgPd')
+            data.append(
+                _value_to_mms_data(rcb.integrity_period,
+                                   common.BasicValueType.UNSIGNED))
+
+        if rcb.gi is not None:
+            attrs.append('GI')
+            data.append(
+                _value_to_mms_data(rcb.gi,
+                                   common.BasicValueType.BOOLEAN))
+
+        if isinstance(rcb, common.Brcb):
+            if rcb.purge_buffer is not None:
+                attrs.append('PurgeBuf')
+                data.append(
+                    _value_to_mms_data(rcb.purge_buffer,
+                                       common.BasicValueType.BOOLEAN))
+
+            if rcb.entry_id is not None:
+                attrs.append('EntryID')
+                data.append(
+                    _value_to_mms_data(rcb.entry_id,
+                                       common.BasicValueType.OCTET_STRING))
+
+            if rcb.time_of_entry is not None:
+                attrs.append('TimeOfEntry')
+                data.append(mms.BinaryTimeData(rcb.time_of_entry))
+
+            if rcb.reservation_time is not None:
+                attrs.append('ResvTms')
+                data.append(
+                    _value_to_mms_data(rcb.reservation_time,
+                                       common.BasicValueType.INTEGER))
+
+        elif isinstance(rcb, common.Urcb):
+            if rcb.reserve is not None:
+                attrs.append('Resv')
+                data.append(
+                    _value_to_mms_data(rcb.reserve,
+                                       common.BasicValueType.BOOLEAN))
+
+        else:
+            raise TypeError('unsupported rcb type')
+
+        req = mms.WriteRequest(
+            specification=[
+                mms.NameVariableSpecification(
+                    _data_ref_to_object_name(
+                        common.DataRef(logical_device=ref.logical_device,
+                                       logical_node=ref.logical_node,
+                                       fc=ref.type.value,
+                                       names=[ref.name, attr])))
+                for attr in attrs],
+            data=data)
+
+        res = await self._send(req)
+
+        if isinstance(res, mms.Error):
+            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+
+        if not isinstance(res, mms.ReadResponse):
+            raise Exception('unsupported response type')
+
+        if any(i is not None for i in res.results):
+            if all(i == mms.DataAccessError.OBJECT_ACCESS_DENIED
+                   for i in res.results
+                   if i):
+                return common.ServiceError.ACCESS_VIOLATION
+
+            if all(i == mms.DataAccessError.OBJECT_NON_EXISTENT
+                   for i in res.results
+                   if i):
+                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+
+            if all(i == mms.DataAccessError.TEMPORARILY_UNAVAILABLE
+                   for i in res.results
+                   if i):
+                return common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT
+
+            if all(i == mms.DataAccessError.TYPE_INCONSISTENT
+                   for i in res.results
+                   if i):
+                return common.ServiceError.TYPE_CONFLICT
+
+            if all(i == mms.DataAccessError.OBJECT_VALUE_INVALID
+                   for i in res.results
+                   if i):
+                return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
+
+            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
     async def write_data(self,
                          ref: common.DataRef,
-                         type: common.ValueType,
+                         value_type: common.ValueType,
                          value: common.Value
                          ) -> common.ServiceError | None:
-        pass
+        req = mms.WriteRequest(
+            specification=[
+                mms.NameVariableSpecification(_data_ref_to_object_name(ref))],
+            data=[_value_to_mms_data(value, value_type)])
+
+        res = await self._send(req)
+
+        if isinstance(res, mms.Error):
+            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+
+        if not isinstance(res, mms.ReadResponse):
+            raise Exception('unsupported response type')
+
+        if res.results[0] is not None:
+            if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                return common.ServiceError.ACCESS_VIOLATION
+
+            if res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+
+            if res.results[0] == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:
+                return common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT
+
+            if res.results[0] == mms.DataAccessError.TYPE_INCONSISTENT:
+                return common.ServiceError.TYPE_CONFLICT
+
+            if res.results[0] == mms.DataAccessError.OBJECT_VALUE_INVALID:
+                return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
+
+            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
     async def select(self,
                      ref: common.CommandRef,
@@ -457,6 +634,16 @@ def _dataset_ref_from_str(ref_str, delimiter):
                                       name=name)
 
 
+def _dataset_ref_to_str(ref, delimiter):
+    if isinstance(ref, common.PersistedDatasetRef):
+        return f'{ref.logical_device}/{ref.logical_node}{delimiter}{ref.name}'
+
+    if isinstance(ref, common.NonPersistedDatasetRef):
+        return f'@{ref.name}'
+
+    raise TypeError('unsupported ref type')
+
+
 def _data_ref_to_object_name(ref):
     item_id = f'{ref.logical_node}${ref.fc}' + ''.join(
         (f'({i})' if isinstance(i, int) else f'${i}')
@@ -561,11 +748,7 @@ def _value_from_mms_data(mms_data, value_type):
         if not isinstance(mms_data, mms.UtcTimeData):
             raise Exception('unexpected data type')
 
-        return common.Timestamp(t=mms_data.value,
-                                leap_seconds_known=mms_data.leap_second,
-                                clock_failure=mms_data.clock_failure,
-                                clock_not_synchronized=mms.not_synchronized,
-                                time_accuracy=mms.accuracy)
+        return common.Timestamp(**mms_data._asdict())
 
     if value_type == common.AcsiValueType.DOUBLE_POINT:
         if not isinstance(mms_data, mms.BitStringData):
@@ -664,5 +847,160 @@ def _value_from_mms_data(mms_data, value_type):
 
         return [_value_from_mms_data(i, t)
                 for i, t in zip(mms_data.elements, value_type.elements)]
+
+    raise TypeError('unsupported value type')
+
+
+def _value_to_mms_data(value, value_type):
+    if value_type == common.BasicValueType.BOOLEAN:
+        if not isinstance(value, bool):
+            raise Exception('unexpected value type')
+
+        return mms.BooleanData(value)
+
+    if value_type == common.BasicValueType.INTEGER:
+        if not isinstance(value, int):
+            raise Exception('unexpected value type')
+
+        return mms.IntegerData(value)
+
+    if value_type == common.BasicValueType.UNSIGNED:
+        if not isinstance(value, int):
+            raise Exception('unexpected value type')
+
+        return mms.UnsignedData(value)
+
+    if value_type == common.BasicValueType.FLOAT:
+        if not isinstance(value, (float, int)):
+            raise Exception('unexpected value type')
+
+        return mms.FloatingPointData(value)
+
+    if value_type == common.BasicValueType.BIT_STRING:
+        if any(not isinstance(i, bool) for i in value):
+            raise Exception('unexpected value type')
+
+        return mms.BitStringData(value)
+
+    if value_type == common.BasicValueType.OCTET_STRING:
+        if not isinstance(value, util.Bytes):
+            raise Exception('unexpected value type')
+
+        return mms.OctetStringData(value)
+
+    if value_type == common.BasicValueType.VISIBLE_STRING:
+        if not isinstance(value, str):
+            raise Exception('unexpected value type')
+
+        return mms.VisibleStringData(value)
+
+    if value_type == common.BasicValueType.MMS_STRING:
+        if not isinstance(value, str):
+            raise Exception('unexpected value type')
+
+        return mms.MmsStringData(value)
+
+    if value_type == common.AcsiValueType.QUALITY:
+        if not isinstance(value, common.Quality):
+            raise Exception('unexpected value type')
+
+        mms.BitStringData([bool(value.validity.value & 2),
+                           bool(value.validity.value & 1),
+                           ...(common.QualityDetail(i) in value.details
+                               for i in range(2, 10)),
+                           bool(value.source.value),
+                           value.test,
+                           value.operator_blocked])
+
+    if value_type == common.AcsiValueType.TIMESTAMP:
+        if not isinstance(value, common.Timestamp):
+            raise Exception('unexpected value type')
+
+        return mms.UtcTimeData(**value._asdict())
+
+    if value_type == common.AcsiValueType.DOUBLE_POINT:
+        if not isinstance(value, common.DoublePoint):
+            raise Exception('unexpected value type')
+
+        return mms.BitStringData([bool(value.value & 2),
+                                  bool(value.value & 1)])
+
+    if value_type == common.AcsiValueType.DIRECTION:
+        if not isinstance(value, common.Direction):
+            raise Exception('unexpected value type')
+
+        return mms.IntegerData(value.value)
+
+    if value_type == common.AcsiValueType.SEVERITY:
+        if not isinstance(value, common.Severity):
+            raise Exception('unexpected value type')
+
+        return mms.IntegerData(value)
+
+    if value_type == common.AcsiValueType.ANALOGUE:
+        if not isinstance(value, common.Analogue):
+            raise Exception('unexpected value type')
+
+        if value.i is None and value.f is None:
+            raise Exception('invalid analogue value')
+
+        mms_data = mms.StructureData([])
+
+        if value.i is not None:
+            mms_data.elements.append(
+                _value_to_mms_data(value.i, common.BasicValueType.INTEGER))
+
+        if value.f is not None:
+            mms_data.elements.append(
+                _value_to_mms_data(value.f, common.BasicValueType.FLOAT))
+
+        return mms_data
+
+    if value_type == common.AcsiValueType.VECTOR:
+        if not isinstance(value, common.Vector):
+            raise Exception('unexpected value type')
+
+        mms_data = mms.StructureData([
+            _value_to_mms_data(value.magnitude,
+                               common.AcsiValueType.ANALOGUE)])
+
+        if value.angle is not None:
+            mms_data.elements.append(
+                _value_to_mms_data(value.angle, common.AcsiValueType.ANALOGUE))
+
+        return mms_data
+
+    if value_type == common.AcsiValueType.STEP_POSITION:
+        if not isinstance(value, common.StepPosition):
+            raise Exception('unexpected value type')
+
+        mms_data = mms.StructureData([
+            _value_to_mms_data(value.value, common.BasicValueType.INTEGER)])
+
+        if value.transient is not None:
+            mms_data.elements.append(
+                _value_to_mms_data(value.transient,
+                                   common.BasicValueType.BOOLEAN))
+
+    if value_type == common.AcsiValueType.BINARY_CONTROL:
+        if not isinstance(value, common.BinaryControl):
+            raise Exception('unexpected value type')
+
+        return mms.BitStringData([bool(value.value & 2),
+                                  bool(value.value & 1)])
+
+    if isinstance(value_type, common.ArrayValueType):
+        if any(not isinstance(i, value_type.type) for i in value):
+            raise Exception('unexpected value type')
+
+        return mms.ArrayData([_value_to_mms_data(i, value_type.type)
+                              for i in value])
+
+    if isinstance(value_type, common.StructValueType):
+        if len(value) != len(value_type.elements):
+            raise Exception('invalid structure size')
+
+        return mms.StructureData([_value_to_mms_data(i, t)
+                                  for i, t in zip(value, value_type.elements)])
 
     raise TypeError('unsupported value type')

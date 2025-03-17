@@ -91,12 +91,12 @@ ValueType: typing.TypeAlias = (BasicValueType |
 # values ######################################################################
 
 class Timestamp(typing.NamedTuple):
-    t: datetime.datetime
-    leap_seconds_known: bool
+    value: datetime.datetime
+    leap_second: bool
     clock_failure: bool
-    clock_not_synchronized: bool
-    time_accuracy: int | None
-    """number of bits of accuracy in regard to fraction of seconds [0, 24]"""
+    not_synchronized: bool
+    accuracy: int | None
+    """accurate fraction bits [0,24]"""
 
 
 class QualityValidity(enum.Enum):
