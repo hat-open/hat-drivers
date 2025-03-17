@@ -38,7 +38,9 @@ async def connect(addr: tcp.Address,
     client = Client()
     client._report_cb = report_cb
     client._termination_cb = termination_cb
+    client._loop = asyncio.get_running_loop()
     client._status_event = asyncio.Event()
+    client._last_appl_errors = {}
     client._report_data_defs = {report_def.report_id: report_def.data
                                 for report_def in reports}
 
@@ -47,7 +49,7 @@ async def connect(addr: tcp.Address,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
-    if status_delay is not None and client.is_open:
+    if client.is_open and status_delay is not None:
         client.async_group.spawn(client._status_loop, status_delay,
                                  status_timeout)
 
@@ -451,7 +453,7 @@ class Client(aio.Resource):
         if isinstance(res, mms.Error):
             return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
-        if not isinstance(res, mms.ReadResponse):
+        if not isinstance(res, mms.WriteResponse):
             raise Exception('unsupported response type')
 
         if any(i is not None for i in res.results):
@@ -497,7 +499,7 @@ class Client(aio.Resource):
         if isinstance(res, mms.Error):
             return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
-        if not isinstance(res, mms.ReadResponse):
+        if not isinstance(res, mms.WriteResponse):
             raise Exception('unsupported response type')
 
         if res.results[0] is not None:
@@ -520,27 +522,126 @@ class Client(aio.Resource):
 
     async def select(self,
                      ref: common.CommandRef,
-                     model: common.ControlModel,
                      cmd: common.Command | None
                      ) -> common.AdditionalCause | None:
-        pass
+        if cmd is not None:
+            return await self._command_with_last_appl_error(ref=ref,
+                                                            cmd=cmd,
+                                                            attr='SBOw',
+                                                            with_checks=True)
+
+        req = mms.ReadRequest([
+            mms.NameVariableSpecification(
+                _data_ref_to_object_name(
+                    common.DataRef(logical_device=ref.logical_device,
+                                   logical_node=ref.logical_node,
+                                   fc='CO',
+                                   names=[ref.name, 'SBO'])))])
+
+        res = await self._send(req)
+
+        if isinstance(res, mms.Error):
+            return common.AdditionalCause.UNKNOWN
+
+        if not isinstance(res, mms.ReadResponse):
+            raise Exception('unsupported response type')
+
+        if not isinstance(res.results[0], mms.VisibleStringData):
+            return common.AdditionalCause.UNKNOWN
+
+        if res.results[0].value == '':
+            return common.AdditionalCause.UNKNOWN
 
     async def cancel(self,
                      ref: common.CommandRef,
-                     model: common.ControlModel,
                      cmd: common.Command
                      ) -> common.AdditionalCause | None:
-        pass
+        return await self._command_with_last_appl_error(ref=ref,
+                                                        cmd=cmd,
+                                                        attr='Cancel',
+                                                        with_checks=False)
 
     async def operate(self,
                       ref: common.CommandRef,
-                      model: common.ControlModel,
                       cmd: common.Command
                       ) -> common.AdditionalCause | None:
-        pass
+        return await self._command_with_last_appl_error(ref=ref,
+                                                        cmd=cmd,
+                                                        attr='Oper',
+                                                        with_checks=True)
 
     async def _on_unconfirmed(self, conn, unconfirmed):
         self._status_event.set()
+
+        if not isinstance(unconfirmed, mms.InformationReportUnconfirmed):
+            return
+
+        if isinstance(unconfirmed.specification, mms.ObjectName):
+            if unconfirmed.specification == mms.VmdSpecificObjectName('RPT'):
+                await self._process_report(unconfirmed.data[0])
+
+        elif (len(unconfirmed.specification) == 1 and
+                list(unconfirmed.specification) == [
+                    mms.NameVariableSpecification(
+                        mms.VmdSpecificObjectName('LastApplError'))]):
+            self._process_last_appl_error(unconfirmed.data[0])
+
+        elif ((1 <= len(unconfirmed.specification) <= 2) and
+                all(isinstance(i, mms.NameVariableSpecification)
+                    for i in unconfirmed.specification)):
+            names = [i.name for i in unconfirmed.specification]
+            data = list(unconfirmed.data)
+
+            if ((len(names) == 1 and
+                 isinstance(names[0], mms.DomainSpecificObjectName)) or
+                (len(names) == 2 and
+                 names[0] == mms.VmdSpecificObjectName('LastApplError') and
+                 isinstance(names[1], mms.DomainSpecificObjectName))):
+                data_ref = _data_ref_from_object_name(names[-1])
+                data_ref_names = list(data_ref.names)
+
+                if (data_ref.fc == 'CO' and
+                        len(data_ref_names) == 2 and
+                        data_ref_names[1] == 'Oper'):
+                    await self._process_termination(
+                        ref=common.CommandRef(
+                            logical_device=data_ref.logical_device,
+                            logical_node=data_ref.logical_node,
+                            name=data_ref_names[0]),
+                        cmd_mms_data=data[-1],
+                        last_appl_error_mms_data=(data[0] if len(data) > 1
+                                                  else None))
+
+    async def _process_report(self, mms_data):
+        pass
+
+    def _process_last_appl_error(self, mms_data):
+        last_appl_error = _last_appl_error_from_mms_data(mms_data)
+
+        key = last_appl_error.name, last_appl_error.control_number
+        if key in self._last_appl_errors:
+            self._last_appl_errors[key] = last_appl_error
+
+    async def _process_termination(self, ref, cmd_mms_data,
+                                   last_appl_error_mms_data):
+        if not self._termination_cb:
+            return
+
+        cmd = _command_from_mms_data(cmd_mms_data)
+
+        if last_appl_error_mms_data:
+            last_appl_error = _last_appl_error_from_mms_data(
+                last_appl_error_mms_data)
+            additional_cause = last_appl_error.additional_cause
+
+        else:
+            additional_cause = None
+
+        termination = common.Termination(ref=ref,
+                                         cmd=cmd,
+                                         error=additional_cause)
+
+        await aio.call(self._termination_cb, termination)
 
     async def _send(self, req):
         res = await self._conn.send_confirmed(req)
@@ -608,6 +709,52 @@ class Client(aio.Resource):
             continue_after = identifiers[-1]
 
         return identifiers
+
+    async def _command_with_last_appl_error(self, ref, cmd, attr, with_checks):
+        req = mms.WriteRequest(
+            specification=[
+                mms.NameVariableSpecification(
+                    _data_ref_to_object_name(
+                        common.DataRef(logical_device=ref.logical_device,
+                                       logical_node=ref.logical_node,
+                                       fc='CO',
+                                       names=[ref.name, attr])))],
+            data=[_command_to_mms_data(cmd, with_checks)])
+
+        name = (f'{req.specification[0].name.domain_id}/'
+                f'{req.specification[0].name.item_id}')
+        key = name, cmd.control_number
+
+        if key in self._last_appl_errors:
+            raise Exception('active control number duplicate')
+
+        self._last_appl_errors[key] = None
+
+        try:
+            res = await self._send(req)
+
+        finally:
+            last_appl_error = self._last_appl_errors.pop(key, None)
+
+        if isinstance(res, mms.Error):
+            return common.AdditionalCause.UNKNOWN
+
+        if not isinstance(res, mms.WriteResponse):
+            raise Exception('unsupported response type')
+
+        if res.results[0] is not None:
+            if last_appl_error is None:
+                return common.AdditionalCause.UNKNOWN
+
+            return last_appl_error.additional_cause
+
+
+class _LastApplError(typing.NamedTuple):
+    name: str
+    error: int
+    origin: common.Originator
+    control_number: int
+    additional_cause: common.AdditionalCause
 
 
 def _dataset_ref_to_object_name(ref):
@@ -678,7 +825,7 @@ def _data_ref_from_object_name(object_name):
     return common.DataRef(logical_device=object_name.domain_id,
                           logical_node=logical_node,
                           fc=fc,
-                          names=list(names))
+                          names=names)
 
 
 def _value_from_mms_data(mms_data, value_type):
@@ -1004,3 +1151,15 @@ def _value_to_mms_data(value, value_type):
                                   for i, t in zip(value, value_type.elements)])
 
     raise TypeError('unsupported value type')
+
+
+def _command_to_mms_data(cmd, with_checks):
+    pass
+
+
+def _command_from_mms_data(mms_data):
+    pass
+
+
+def _last_appl_error_from_mms_data(mms_data):
+    pass

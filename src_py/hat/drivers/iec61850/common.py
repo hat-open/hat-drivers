@@ -34,7 +34,7 @@ class DataRef(typing.NamedTuple):
 class CommandRef(typing.NamedTuple):
     logical_device: str
     logical_node: str
-    names: Collection[str]
+    name: str
 
 
 class RcbType(enum.Enum):
@@ -358,6 +358,11 @@ class Originator(typing.NamedTuple):
     identification: util.Bytes
 
 
+class Check(typing.Enum):
+    SYNCHRO = 0
+    INTERLOCK = 1
+
+
 class Command(typing.NamedTuple):
     value: Value
     origin: Originator
@@ -365,8 +370,8 @@ class Command(typing.NamedTuple):
     """control number in range [0, 255]"""
     t: Timestamp
     test: bool
-    check: Collection[bool] | None
-    """not available in cancel action"""
+    checks: set[Check]
+    """ignored in cancel action"""
 
 
 class Termination(typing.NamedTuple):
