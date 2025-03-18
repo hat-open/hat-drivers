@@ -8,6 +8,8 @@ from hat import util
 
 EntryTime: typing.TypeAlias = datetime.datetime
 
+ReportId: typing.TypeAlias = str
+
 
 # references ##################################################################
 
@@ -237,6 +239,19 @@ class AdditionalCause(enum.Enum):
     LOCKED_BY_OTHER_CLIENT = 27
 
 
+class TestError(enum.Enum):
+    NO_ERROR = 0
+    UNKNOWN = 1
+    TIMEOUT_TEST_NOT_OK = 2
+    OPERATOR_TEST_NOT_OK = 3
+
+
+class CommandError(typing.NamedTuple):
+    service_error: ServiceError | None
+    additional_cause: AdditionalCause | None
+    test_error: TestError | None
+
+
 # rcb #########################################################################
 
 class OptionalField(enum.Enum):
@@ -259,7 +274,7 @@ class TriggerCondition(enum.Enum):
 
 
 class Brcb(typing.NamedTuple):
-    report_id: str | None = None
+    report_id: ReportId | None = None
     report_enable: bool | None = None
     dataset: DatasetRef | None = None
     conf_revision: int | None = None
@@ -276,7 +291,7 @@ class Brcb(typing.NamedTuple):
 
 
 class Urcb(typing.NamedTuple):
-    report_id: str | None = None
+    report_id: ReportId | None = None
     report_enable: bool | None = None
     dataset: DatasetRef | None = None
     conf_revision: int | None = None
@@ -294,16 +309,6 @@ Rcb: typing.TypeAlias = Brcb | Urcb
 
 # report ######################################################################
 
-class DataDef(typing.NamedTuple):
-    ref: DataRef
-    value: ValueType
-
-
-class ReportDef(typing.NamedTuple):
-    report_id: str
-    data: Collection[DataDef]
-
-
 class ReasonCode(enum.Enum):
     DATA_CHANGE = 1
     QUALITY_CHANGE = 2
@@ -320,7 +325,7 @@ class ReportData(typing.NamedTuple):
 
 
 class Report(typing.NamedTuple):
-    report_id: str
+    report_id: ReportId
     sequence_number: int | None
     subsequence_number: int | None
     more_segments_follow: bool | None
@@ -341,7 +346,7 @@ class ControlModel(enum.Enum):
     SBO_WITH_ENHANCED_SECURITY = 4
 
 
-class OriginatorCategory(enum.Enum):
+class OriginCategory(enum.Enum):
     NOT_SUPPORTED = 0
     BAY_CONTROL = 1
     STATION_CONTROL = 2
@@ -353,8 +358,8 @@ class OriginatorCategory(enum.Enum):
     PROCESS = 8
 
 
-class Originator(typing.NamedTuple):
-    category: OriginatorCategory
+class Origin(typing.NamedTuple):
+    category: OriginCategory
     identification: util.Bytes
 
 
@@ -365,7 +370,8 @@ class Check(typing.Enum):
 
 class Command(typing.NamedTuple):
     value: Value
-    origin: Originator
+    operate_time: Timestamp | None
+    origin: Origin
     control_number: int
     """control number in range [0, 255]"""
     t: Timestamp
@@ -377,4 +383,4 @@ class Command(typing.NamedTuple):
 class Termination(typing.NamedTuple):
     ref: CommandRef
     cmd: Command
-    error: AdditionalCause | None
+    error: CommandError | None
