@@ -681,9 +681,9 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
 def _origin_to_mms_data(origin):
     return mms.StructureData([
         value_to_mms_data(origin.category.value,
-                          common.AcsiValueType.INTEGER),
+                          common.BasicValueType.INTEGER),
         value_to_mms_data(origin.identification,
-                          common.AcsiValueType.OCTET_STRING)])
+                          common.BasicValueType.OCTET_STRING)])
 
 
 def _origin_from_mms_data(mms_data):

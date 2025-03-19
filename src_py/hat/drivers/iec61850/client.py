@@ -733,17 +733,17 @@ class Client(aio.Resource):
                                             with_checks=True)
 
         if last_appl_error_mms_data:
-            last_appl_error = encoder.last_appl_error_from_mms_data(
-                last_appl_error_mms_data)
+            error = _create_command_error(
+                service_error=None,
+                last_appl_error=encoder.last_appl_error_from_mms_data(
+                    last_appl_error_mms_data))
 
         else:
-            last_appl_error = None
+            error = None
 
-        termination = common.Termination(
-            ref=ref,
-            cmd=cmd,
-            error=_create_command_error(service_error=None,
-                                        last_appl_error=last_appl_error))
+        termination = common.Termination(ref=ref,
+                                         cmd=cmd,
+                                         error=error)
 
         await aio.call(self._termination_cb, termination)
 

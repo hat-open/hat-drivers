@@ -363,7 +363,7 @@ class Origin(typing.NamedTuple):
     identification: util.Bytes
 
 
-class Check(typing.Enum):
+class Check(enum.Enum):
     SYNCHRO = 0
     INTERLOCK = 1
 
