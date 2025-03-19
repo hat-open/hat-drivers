@@ -147,6 +147,9 @@ def value_from_mms_data(mms_data: mms.Data,
         if not isinstance(mms_data, mms.BitStringData):
             raise Exception('unexpected data type')
 
+        if len(mms_data.value) != 13:
+            raise Exception('invalid bit string length')
+
         return common.Quality(
             validity=common.QualityValidity((mms_data.value[0] << 1) |
                                             mms_data.value[1]),
@@ -166,6 +169,9 @@ def value_from_mms_data(mms_data: mms.Data,
     if value_type == common.AcsiValueType.DOUBLE_POINT:
         if not isinstance(mms_data, mms.BitStringData):
             raise Exception('unexpected data type')
+
+        if len(mms_data.value) != 2:
+            raise Exception('invalid bit string length')
 
         return common.DoublePoint((mms_data.value[0] << 1) |
                                   mms_data.value[1])
@@ -240,6 +246,9 @@ def value_from_mms_data(mms_data: mms.Data,
     if value_type == common.AcsiValueType.BINARY_CONTROL:
         if not isinstance(mms_data, mms.BitStringData):
             raise Exception('unexpected data type')
+
+        if len(mms_data.value) != 2:
+            raise Exception('invalid bit string length')
 
         return common.BinaryControl((mms_data.value[0] << 1) |
                                     mms_data.value[1])
@@ -451,12 +460,31 @@ def command_from_mms_data(mms_data: mms.Data,
     if not isinstance(mms_data, mms.StructureData):
         raise Exception('invalid data type')
 
+    if with_checks:
+        if len(mms_data.elements) == 7:
+            with_operate_time = True
+
+        elif len(mms_data.element) == 6:
+            with_operate_time = False
+
+        else:
+            raise Exception('invalid elements size')
+
+    else:
+        if len(mms_data.elements) == 6:
+            with_operate_time = True
+
+        elif len(mms_data.element) == 5:
+            with_operate_time = False
+
+        else:
+            raise Exception('invalid elements size')
+
     elements = iter(mms_data.elements)
 
     value = value_from_mms_data(next(elements), value_type)
 
-    if ((with_checks and len(mms_data.elements) == 7) or
-            (not with_checks and len(mms_data.elements) == 6)):
+    if with_operate_time:
         operate_time = value_from_mms_data(next(elements),
                                            common.AcsiValueType.TIMESTAMP)
 
@@ -470,12 +498,12 @@ def command_from_mms_data(mms_data: mms.Data,
     test = value_from_mms_data(next(elements), common.BasicValueType.BOOLEAN)
 
     if with_checks:
-        checks = {
-            common.Check(index)
-            for index, i in enumerate(
-                value_from_mms_data(next(elements),
-                                    common.BasicValueType.BIT_STRING))
-            if i}
+        checks_bits = value_from_mms_data(next(elements),
+                                          common.BasicValueType.BIT_STRING)
+        # TODO check checks_bits length
+        checks = {common.Check(index)
+                  for index, i in enumerate(checks_bits)
+                  if i}
 
     else:
         checks = set()
@@ -492,6 +520,9 @@ def command_from_mms_data(mms_data: mms.Data,
 def last_appl_error_from_mms_data(mms_data: mms.Data) -> LastApplError:
     if not isinstance(mms_data, mms.StructureData):
         raise Exception('invalid data type')
+
+    if len(mms_data.elements) != 5:
+        raise Exception('invalid elements size')
 
     elements = iter(mms_data.elements)
 
@@ -522,6 +553,9 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
 
     optional_fields_bits = value_from_mms_data(
         next(elements), common.BasicValueType.BIT_STRING)
+    if len(optional_fields_bits) == 10:
+        raise Exception('invalid optional fields size')
+
     optional_fields = {common.OptionalField(index)
                        for index, i in enumerate(optional_fields_bits[:-1])
                        if i}
@@ -611,6 +645,9 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
 
             reason_bits = value_from_mms_data(
                 next(elements), common.BasicValueType.BIT_STRING)
+            if len(reason_bits) != 7:
+                raise Exception('invalid reason bits size')
+
             reasons.append({common.ReasonCode(index)
                             for index, i in enumerate(reason_bits)
                             if i})
@@ -652,6 +689,9 @@ def _origin_to_mms_data(origin):
 def _origin_from_mms_data(mms_data):
     if not isinstance(mms_data, mms.StructureData):
         raise Exception('invalid data type')
+
+    if len(mms_data.elements) != 2:
+        raise Exception('invalid elements size')
 
     elements = iter(mms_data.elements)
 
