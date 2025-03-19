@@ -330,8 +330,8 @@ def value_to_mms_data(value: common.Value,
 
         mms.BitStringData([bool(value.validity.value & 2),
                            bool(value.validity.value & 1),
-                           ...(common.QualityDetail(i) in value.details
-                               for i in range(2, 10)),
+                           *(common.QualityDetail(i) in value.details
+                             for i in range(2, 10)),
                            bool(value.source.value),
                            value.test,
                            value.operator_blocked])

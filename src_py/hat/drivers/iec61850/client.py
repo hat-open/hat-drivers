@@ -312,13 +312,13 @@ class Client(aio.Resource):
             elif attr == 'OptFlds':
                 value = encoder.value_from_mms_data(
                     data, common.BasicValueType.BIT_STRING)
-                if len(value) != 9:
+                if len(value) != 10:
                     raise Exception('invalid optional fields size')
 
                 rcb = rcb._replace(
                     optional_fields={common.OptionalField(index)
                                      for index, i in enumerate(value)
-                                     if i})
+                                     if (1 <= index <= 8) and i})
 
             elif attr == 'BufTm':
                 rcb = rcb._replace(
@@ -333,13 +333,13 @@ class Client(aio.Resource):
             elif attr == 'TrgOps':
                 value = encoder.value_from_mms_data(
                     data, common.BasicValueType.BIT_STRING)
-                if len(value) != 5:
+                if len(value) != 6:
                     raise Exception('invalid trigger options size')
 
                 rcb = rcb._replace(
                     trigger_options={common.TriggerCondition(index)
                                      for index, i in enumerate(value)
-                                     if i})
+                                     if index >= 1 and i})
 
             elif attr == 'IntgPd':
                 rcb = rcb._replace(
@@ -619,9 +619,17 @@ class Client(aio.Resource):
             raise Exception('invalid results size')
 
         if not isinstance(res.results[0], mms.VisibleStringData):
-            return _create_command_error(
-                service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
-                last_appl_error=None)
+            if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                service_error = common.ServiceError.ACCESS_VIOLATION
+
+            elif res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                service_error = common.ServiceError.INSTANCE_NOT_AVAILABLE
+
+            else:
+                service_error = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+
+            return _create_command_error(service_error=service_error,
+                                         last_appl_error=None)
 
         if res.results[0].value == '':
             return _create_command_error(
