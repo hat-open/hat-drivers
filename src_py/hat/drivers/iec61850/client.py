@@ -15,10 +15,13 @@ from hat.drivers.iec61850 import encoder
 
 
 mlog = logging.getLogger(__name__)
+"""Module logger"""
 
 ReportCb: typing.TypeAlias = aio.AsyncCallable[[common.Report], None]
+"""Report callback"""
 
 TerminationCb: typing.TypeAlias = aio.AsyncCallable[[common.Termination], None]
+"""Termination callback"""
 
 
 async def connect(addr: tcp.Address,
@@ -35,6 +38,18 @@ async def connect(addr: tcp.Address,
                   **kwargs
                   ) -> 'Client':
     """Connect to IEC61850 server
+
+    `data_value_types` include value types used in report processing and
+    writing data.
+
+    `cmd_value_types` include value types used in command actions and
+    termination processing.
+
+    Only reports that are specified by `report_data_refs` are notified with
+    `report_cb`.
+
+    If `status_delay` is ``None``, periodical sending of status requests is
+    disabled.
 
     Additional arguments are passed directly to `hat.drivers.mms.connect`
     (`request_cb` and `unconfirmed_cb` are set by this coroutine).
@@ -67,19 +82,23 @@ async def connect(addr: tcp.Address,
 
 
 class Client(aio.Resource):
+    """Client"""
 
     @property
     def async_group(self):
+        """Async group"""
         return self._conn.async_group
 
     @property
     def info(self) -> acse.ConnectionInfo:
+        """Connection info"""
         return self._conn.info
 
     async def create_dataset(self,
                              ref: common.DatasetRef,
                              data: Iterable[common.DataRef]
                              ) -> common.ServiceError | None:
+        """Create dataset"""
         req = mms.DefineNamedVariableListRequest(
             name=encoder.dataset_ref_to_object_name(ref),
             specification=[
@@ -113,6 +132,7 @@ class Client(aio.Resource):
     async def delete_dataset(self,
                              ref: common.DatasetRef
                              ) -> common.ServiceError | None:
+        """Delete dataset"""
         req = mms.DeleteNamedVariableListRequest([
             encoder.dataset_ref_to_object_name(ref)])
 
@@ -137,6 +157,12 @@ class Client(aio.Resource):
             return common.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT
 
     async def get_dataset_refs(self) -> Collection[common.DatasetRef] | common.ServiceError:  # NOQA
+        """Get dataset references
+
+        All available persisted and non persisted dataset references are
+        returned.
+
+        """
         logical_devices = await self._get_name_list(
             object_class=mms.ObjectClass.DOMAIN,
             object_scope=mms.VmdSpecificObjectScope())
@@ -176,6 +202,7 @@ class Client(aio.Resource):
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef
                                     ) -> Collection[common.DataRef] | common.ServiceError:  # NOQA
+        """Get data references associated with single dataset"""
         req = mms.GetNamedVariableListAttributesRequest(
             encoder.dataset_ref_to_object_name(ref))
 
@@ -209,6 +236,7 @@ class Client(aio.Resource):
     async def get_rcb(self,
                       ref: common.RcbRef
                       ) -> common.Rcb | common.ServiceError:
+        """Get RCB values"""
         attrs = ['RptID', 'RptEna', 'DatSet', 'ConfRev', 'OptFlds', 'BufTm',
                  'SqNum', 'TrgOps', 'IntgPd', 'GI']
 
@@ -251,8 +279,13 @@ class Client(aio.Resource):
 
             return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
+        if len(attrs) != len(res.results):
+            raise Exception('invalid results length')
+
         for attr, data in zip(attrs, res.results):
             if isinstance(data, mms.DataAccessError):
+                mlog.warning("error reading rcb attribute %s: %s",
+                             attr, data.name)
                 continue
 
             if attr == 'RptID':
@@ -269,7 +302,7 @@ class Client(aio.Resource):
                 value = encoder.value_from_mms_data(
                     data, common.BasicValueType.VISIBLE_STRING)
                 rcb = rcb._replace(
-                    dataset=encoder.dataset_ref_from_str(value, '$'))
+                    dataset=encoder.dataset_ref_from_str(value))
 
             elif attr == 'ConfRev':
                 rcb = rcb._replace(
@@ -279,6 +312,9 @@ class Client(aio.Resource):
             elif attr == 'OptFlds':
                 value = encoder.value_from_mms_data(
                     data, common.BasicValueType.BIT_STRING)
+                if len(value) != 9:
+                    raise Exception('invalid optional fields size')
+
                 rcb = rcb._replace(
                     optional_fields={common.OptionalField(index)
                                      for index, i in enumerate(value)
@@ -297,6 +333,9 @@ class Client(aio.Resource):
             elif attr == 'TrgOps':
                 value = encoder.value_from_mms_data(
                     data, common.BasicValueType.BIT_STRING)
+                if len(value) != 5:
+                    raise Exception('invalid trigger options size')
+
                 rcb = rcb._replace(
                     trigger_options={common.TriggerCondition(index)
                                      for index, i in enumerate(value)
@@ -347,6 +386,7 @@ class Client(aio.Resource):
                       ref: common.RcbRef,
                       rcb: common.Rcb
                       ) -> common.ServiceError | None:
+        """Set RCB values"""
         attrs = collections.deque()
         data = collections.deque()
 
@@ -366,7 +406,7 @@ class Client(aio.Resource):
             attrs.append('DatSet')
             data.append(
                 encoder.value_to_mms_data(
-                    encoder.dataset_ref_to_str(rcb.dataset, '$'),
+                    encoder.dataset_ref_to_str(rcb.dataset),
                     common.BasicValueType.VISIBLE_STRING))
 
         if rcb.conf_revision is not None:
@@ -380,8 +420,8 @@ class Client(aio.Resource):
             data.append(
                 encoder.value_to_mms_data(
                     [False,
-                     ...(common.OptionalField(i) in rcb.optional_fields
-                         for i in range(1, 9)),
+                     *(common.OptionalField(i) in rcb.optional_fields
+                       for i in range(1, 9)),
                      False],
                     common.BasicValueType.BIT_STRING))
 
@@ -402,8 +442,8 @@ class Client(aio.Resource):
             data.append(
                 encoder.value_to_mms_data(
                     [False,
-                     ...(common.TriggerCondition(i) in rcb.trigger_options
-                         for i in range(1, 5))],
+                     *(common.TriggerCondition(i) in rcb.trigger_options
+                       for i in range(1, 5))],
                     common.BasicValueType.BIT_STRING))
 
         if rcb.integrity_period is not None:
@@ -419,6 +459,9 @@ class Client(aio.Resource):
                     rcb.gi, common.BasicValueType.BOOLEAN))
 
         if isinstance(rcb, common.Brcb):
+            if ref.type != common.RcbType.BUFFERED:
+                raise Exception("rcb type and reference type mismatch")
+
             if rcb.purge_buffer is not None:
                 attrs.append('PurgeBuf')
                 data.append(
@@ -442,6 +485,9 @@ class Client(aio.Resource):
                         rcb.reservation_time, common.BasicValueType.INTEGER))
 
         elif isinstance(rcb, common.Urcb):
+            if ref.type != common.RcbType.UNBUFFERED:
+                raise Exception("rcb type and reference type mismatch")
+
             if rcb.reserve is not None:
                 attrs.append('Resv')
                 data.append(
@@ -502,6 +548,7 @@ class Client(aio.Resource):
                          ref: common.DataRef,
                          value: common.Value
                          ) -> common.ServiceError | None:
+        """Write data"""
         value_type = self._data_value_types[ref]
 
         req = mms.WriteRequest(
@@ -517,6 +564,9 @@ class Client(aio.Resource):
 
         if not isinstance(res, mms.WriteResponse):
             raise Exception('unsupported response type')
+
+        if len(res.results) != 1:
+            raise Exception('invalid results size')
 
         if res.results[0] is not None:
             if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
@@ -540,6 +590,7 @@ class Client(aio.Resource):
                      ref: common.CommandRef,
                      cmd: common.Command | None
                      ) -> common.CommandError | None:
+        """Select command"""
         if cmd is not None:
             return await self._command_with_last_appl_error(ref=ref,
                                                             cmd=cmd,
@@ -564,6 +615,9 @@ class Client(aio.Resource):
         if not isinstance(res, mms.ReadResponse):
             raise Exception('unsupported response type')
 
+        if len(res.results) != 1:
+            raise Exception('invalid results size')
+
         if not isinstance(res.results[0], mms.VisibleStringData):
             return _create_command_error(
                 service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
@@ -578,6 +632,7 @@ class Client(aio.Resource):
                      ref: common.CommandRef,
                      cmd: common.Command
                      ) -> common.AdditionalCause | None:
+        """Cancel command"""
         return await self._command_with_last_appl_error(ref=ref,
                                                         cmd=cmd,
                                                         attr='Cancel',
@@ -587,6 +642,7 @@ class Client(aio.Resource):
                       ref: common.CommandRef,
                       cmd: common.Command
                       ) -> common.AdditionalCause | None:
+        """Operate command"""
         return await self._command_with_last_appl_error(ref=ref,
                                                         cmd=cmd,
                                                         attr='Oper',
@@ -595,47 +651,50 @@ class Client(aio.Resource):
     async def _on_unconfirmed(self, conn, unconfirmed):
         self._status_event.set()
 
-        if not isinstance(unconfirmed, mms.InformationReportUnconfirmed):
-            return
-
-        if isinstance(unconfirmed.specification, mms.ObjectName):
-            if unconfirmed.specification == mms.VmdSpecificObjectName('RPT'):
+        if _is_unconfirmed_report(unconfirmed):
+            try:
                 await self._process_report(unconfirmed.data)
 
-        elif (len(unconfirmed.specification) == 1 and
-                list(unconfirmed.specification) == [
-                    mms.NameVariableSpecification(
-                        mms.VmdSpecificObjectName('LastApplError'))]):
-            self._process_last_appl_error(unconfirmed.data[0])
+            except Exception as e:
+                mlog.error("error processing report: %s", e, exc_info=e)
 
-        elif ((1 <= len(unconfirmed.specification) <= 2) and
-                all(isinstance(i, mms.NameVariableSpecification)
-                    for i in unconfirmed.specification)):
+        elif _is_unconfirmed_last_appl_error(unconfirmed):
+            try:
+                self._process_last_appl_error(unconfirmed.data[0])
+
+            except Exception as e:
+                mlog.error("error processing last application error: %s",
+                           e, exc_info=e)
+
+        elif _is_unconfirmed_termination(unconfirmed):
             names = [i.name for i in unconfirmed.specification]
             data = list(unconfirmed.data)
 
-            if ((len(names) == 1 and
-                 isinstance(names[0], mms.DomainSpecificObjectName)) or
-                (len(names) == 2 and
-                 names[0] == mms.VmdSpecificObjectName('LastApplError') and
-                 isinstance(names[1], mms.DomainSpecificObjectName))):
-                data_ref = encoder.data_ref_from_object_name(names[-1])
-                data_ref_names = list(data_ref.names)
+            if len(names) != len(data):
+                mlog.warning("names/data size mismatch")
+                return
 
-                if (data_ref.fc == 'CO' and
-                        len(data_ref_names) == 2 and
-                        data_ref_names[1] == 'Oper'):
-                    await self._process_termination(
-                        ref=common.CommandRef(
-                            logical_device=data_ref.logical_device,
-                            logical_node=data_ref.logical_node,
-                            name=data_ref_names[0]),
-                        cmd_mms_data=data[-1],
-                        last_appl_error_mms_data=(data[0] if len(data) > 1
-                                                  else None))
+            data_ref = encoder.data_ref_from_object_name(names[-1])
+
+            try:
+                await self._process_termination(
+                    ref=common.CommandRef(
+                        logical_device=data_ref.logical_device,
+                        logical_node=data_ref.logical_node,
+                        name=data_ref.names[0]),
+                    cmd_mms_data=data[-1],
+                    last_appl_error_mms_data=(data[0] if len(data) > 1
+                                              else None))
+
+            except Exception as e:
+                mlog.error("error processing termination: %s", e, exc_info=e)
+
+        else:
+            mlog.info("received unprocessed unconfirmed message")
 
     async def _process_report(self, mms_data):
         if not self._report_cb:
+            mlog.info("report callback not defined - skipping report")
             return
 
         report_id = encoder.value_from_mms_data(
@@ -643,6 +702,7 @@ class Client(aio.Resource):
 
         data_defs = self._report_data_defs.get(report_id)
         if data_defs is None:
+            mlog.info("report id not defined - skipping report")
             return
 
         report = encoder.report_from_mms_data(mms_data, data_defs)
@@ -659,10 +719,13 @@ class Client(aio.Resource):
     async def _process_termination(self, ref, cmd_mms_data,
                                    last_appl_error_mms_data):
         if not self._termination_cb:
+            mlog.info("termination callback not defined - "
+                      "skipping termination")
             return
 
         value_type = self._cmd_value_types.get(ref)
         if value_type is None:
+            mlog.info("command value type not defined - skipping termination")
             return
 
         cmd = encoder.command_from_mms_data(mms_data=cmd_mms_data,
@@ -691,6 +754,7 @@ class Client(aio.Resource):
 
     async def _status_loop(self, delay, timeout):
         try:
+            mlog.debug("starting status loop")
             while True:
                 self._status_event.clear()
 
@@ -698,6 +762,7 @@ class Client(aio.Resource):
                     await aio.wait_for(self._status_event.wait(), delay)
                     continue
 
+                mlog.debug("sending status request")
                 await aio.wait_for(self._send(mms.StatusRequest()), timeout)
 
         except asyncio.TimeoutError:
@@ -710,6 +775,7 @@ class Client(aio.Resource):
             mlog.error("status loop error: %s", e, exc_info=e)
 
         finally:
+            mlog.debug("stopping status loop")
             self.close()
 
     async def _get_name_list(self, object_class, object_scope):
@@ -789,6 +855,9 @@ class Client(aio.Resource):
         if not isinstance(res, mms.WriteResponse):
             raise Exception('unsupported response type')
 
+        if len(res.results) != 1:
+            raise Exception('invalid results size')
+
         if res.results[0] is not None:
             return _create_command_error(service_error=None,
                                          last_appl_error=last_appl_error)
@@ -802,3 +871,65 @@ def _create_command_error(service_error, last_appl_error):
     return common.CommandError(service_error=service_error,
                                additional_cause=additional_cause,
                                test_error=test_error)
+
+
+def _is_unconfirmed_report(unconfirmed):
+    if not isinstance(unconfirmed, mms.InformationReportUnconfirmed):
+        return False
+
+    if not isinstance(unconfirmed.specification, mms.ObjectName):
+        return False
+
+    return unconfirmed.specification == mms.VmdSpecificObjectName('RPT')
+
+
+def _is_unconfirmed_last_appl_error(unconfirmed):
+    if not isinstance(unconfirmed, mms.InformationReportUnconfirmed):
+        return False
+
+    if isinstance(unconfirmed.specification, mms.ObjectName):
+        return False
+
+    if len(unconfirmed.specification) != 1:
+        return False
+
+    return unconfirmed.specification[0] == mms.NameVariableSpecification(
+        mms.VmdSpecificObjectName('LastApplError'))
+
+
+def _is_unconfirmed_termination(unconfirmed):
+    if not isinstance(unconfirmed, mms.InformationReportUnconfirmed):
+        return False
+
+    if isinstance(unconfirmed.specification, mms.ObjectName):
+        return False
+
+    if not (1 <= len(unconfirmed.specification) <= 2):
+        return False
+
+    if any(not isinstance(i, mms.NameVariableSpecification)
+           for i in unconfirmed.specification):
+        return False
+
+    names = [i.name for i in unconfirmed.specification]
+
+    if len(names) == 1:
+        if not isinstance(names[0], mms.DomainSpecificObjectName):
+            return False
+
+    elif len(names) == 2:
+        if names[0] != mms.VmdSpecificObjectName('LastApplError'):
+            return False
+
+        if not isinstance(names[1], mms.DomainSpecificObjectName):
+            return False
+
+    else:
+        return False
+
+    data_ref = encoder.data_ref_from_object_name(names[-1])
+    data_ref_names = list(data_ref.names)
+
+    return (data_ref.fc == 'CO' and
+            len(data_ref_names) == 2 and
+            data_ref_names[1] == 'Oper')

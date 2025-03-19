@@ -33,21 +33,21 @@ def dataset_ref_to_object_name(ref: common.DatasetRef) -> mms.ObjectName:
     raise TypeError('unsupported ref type')
 
 
-def dataset_ref_from_str(ref_str: str, delimiter: str) -> common.DatasetRef:
+def dataset_ref_from_str(ref_str: str) -> common.DatasetRef:
     if ref_str.startswith('@'):
         return common.NonPersistedDatasetRef(ref_str[1:])
 
     logical_device, rest = ref_str.split('/', 1)
-    logical_node, name = rest.split(delimiter)
+    logical_node, name = rest.split('$')
 
     return common.PersistedDatasetRef(logical_device=logical_device,
                                       logical_node=logical_node,
                                       name=name)
 
 
-def dataset_ref_to_str(ref: common.DatasetRef, delimiter: str) -> str:
+def dataset_ref_to_str(ref: common.DatasetRef) -> str:
     if isinstance(ref, common.PersistedDatasetRef):
-        return f'{ref.logical_device}/{ref.logical_node}{delimiter}{ref.name}'
+        return f'{ref.logical_device}/{ref.logical_node}${ref.name}'
 
     if isinstance(ref, common.NonPersistedDatasetRef):
         return f'@{ref.name}'
@@ -547,7 +547,7 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
     if common.OptionalField.DATA_SET_NAME in optional_fields:
         dataset_str = value_from_mms_data(next(elements),
                                           common.BasicValueType.VISIBLE_STRING)
-        dataset = dataset_ref_from_str(dataset_str, '$')
+        dataset = dataset_ref_from_str(dataset_str)
 
     else:
         dataset = None
