@@ -1,6 +1,7 @@
 from collections.abc import Collection
 import asyncio
 import datetime
+import math
 import pytest
 
 from hat import aio
@@ -1640,6 +1641,156 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
 
     cmd_term = await termination_queue.get()
     assert cmd_term == termination
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('mms_data_value, data_type, data_value', [
+    (mms.BooleanData(False),
+        iec61850.BasicValueType.BOOLEAN,
+        False),
+
+    (mms.IntegerData(1234),
+        iec61850.BasicValueType.INTEGER,
+        1234),
+
+    (mms.UnsignedData(4321),
+        iec61850.BasicValueType.UNSIGNED,
+        4321),
+
+    (mms.FloatingPointData(12.345),
+        iec61850.BasicValueType.FLOAT,
+        12.345),
+
+    (mms.BitStringData(value=[True] * 13),
+     iec61850.AcsiValueType.QUALITY,
+     iec61850.Quality(
+        iec61850.QualityValidity.QUESTIONABLE,
+        set([iec61850.QualityDetail.OVERFLOW,
+             iec61850.QualityDetail.OUT_OF_RANGE,
+             iec61850.QualityDetail.BAD_REFERENCE,
+             iec61850.QualityDetail.OSCILLATORY,
+             iec61850.QualityDetail.FAILURE,
+             iec61850.QualityDetail.OLD_DATA,
+             iec61850.QualityDetail.INCONSISTENT,
+             iec61850.QualityDetail.INACCURATE]),
+        iec61850.QualitySource.SUBSTITUTED,
+        True,
+        True)),
+
+    (mms.BitStringData(value=[False] * 13),
+     iec61850.AcsiValueType.QUALITY,
+     iec61850.Quality(
+        iec61850.QualityValidity.GOOD,
+        set([]),
+        iec61850.QualitySource.PROCESS,
+        False,
+        False)),
+
+    (mms.UtcTimeData(
+        datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        True, True, True, 3),
+     iec61850.AcsiValueType.TIMESTAMP,
+     iec61850.Timestamp(datetime.datetime(
+        2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        True, True, True, 3)),
+
+    (mms.StructureData([  # values
+        mms.BooleanData(False),
+        mms.BitStringData(value=[False] * 13),
+        mms.UtcTimeData(datetime.datetime(
+                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+              True, True, True, 3)]),
+     iec61850.StructValueType([iec61850.BasicValueType.BOOLEAN,
+                               iec61850.AcsiValueType.QUALITY,
+                               iec61850.AcsiValueType.TIMESTAMP]),
+     [False,
+      iec61850.Quality(
+        iec61850.QualityValidity.GOOD,
+        set([]),
+        iec61850.QualitySource.PROCESS,
+        False,
+        False),
+      iec61850.Timestamp(datetime.datetime(
+        2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        True, True, True, 3)]),
+
+    ])
+async def test_report(mms_srv_addr, mms_data_value, data_type, data_value):
+    rpt_id = 'rpt_xyz'
+    data_ref = iec61850.DataRef(logical_device='ld1',
+                                logical_node='ln2',
+                                fc='ST',
+                                names=('Pos', 'stVal'))
+
+    mms_conn_queue = aio.Queue()
+    report_queue = aio.Queue()
+
+    mms_srv = await mms.listen(
+        connection_cb=mms_conn_queue.put_nowait,
+        addr=mms_srv_addr)
+
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        data_value_types={data_ref: data_type},
+        report_data_refs={rpt_id: [data_ref]},
+        report_cb=report_queue.put_nowait)
+
+    mms_conn_srv = await mms_conn_queue.get()
+
+    mms_inf_report = mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData(rpt_id),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                True, True, True, True, True, True, True, True,
+                False,  # segmentation
+                ]),
+            mms.UnsignedData(123),  # SqNum
+            mms.BinaryTimeData(  # TimeOfEntry
+                datetime.datetime(2020, 1, 1, 1, 1,
+                                  tzinfo=datetime.timezone.utc)),
+            mms.VisibleStringData("ld1/ln2$ds1"),  # DataSetReference
+            mms.BooleanData(False),  # BufOvfl
+            mms.OctetStringData(b'entry_xyz'),  # EntryID
+            mms.UnsignedData(12),  # ConfRev
+            # mms.UnsignedData(11),  # SubSeqNum
+            # mms.BooleanData(False),  # MoreSegmentsFollow
+            mms.BitStringData([True]),  # inclusion-bitstring
+            mms.VisibleStringData('ld1/ln2$ST$Pos'),  # data-references
+            mms_data_value,
+            mms.BitStringData([  # ReasonCode
+                False, True, False, False, False, True, False])
+            ])
+    await mms_conn_srv.send_unconfirmed(mms_inf_report)
+
+    report = await report_queue.get()
+
+    assert report.report_id == rpt_id
+    assert report.sequence_number == 123
+    assert report.subsequence_number is None
+    assert report.more_segments_follow is None
+    assert report.dataset == iec61850.PersistedDatasetRef(
+            logical_device='ld1',
+            logical_node='ln2',
+            name='ds1')
+    assert report.buffer_overflow is False
+    assert report.conf_revision == 12
+    assert report.entry_time == datetime.datetime(
+        2020, 1, 1, 1, 1, tzinfo=datetime.timezone.utc)
+    assert report.entry_id == b'entry_xyz'
+    assert len(report.data) == 1
+    report_data = report.data[0]
+    assert report_data.ref == data_ref
+    assert report_data.reasons == set([
+        iec61850.ReasonCode.DATA_CHANGE,
+        iec61850.ReasonCode.GENERAL_INTERROGATION])
+    if isinstance(data_value, float):
+        assert math.isclose(report_data.value, data_value, rel_tol=1e-3)
+    else:
+        assert report_data.value == data_value
 
     await conn.async_close()
     await mms_srv.async_close()
