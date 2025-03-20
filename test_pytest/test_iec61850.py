@@ -511,19 +511,69 @@ async def test_get_dataset_data_refs(mms_srv_addr, dataset_ref, mms_request,
             2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
         reservation_time=5)),
 
-    # TODO: response including DataAccessError
+    # any attr that responded with DataAccessError is left None
+    (mms.ReadResponse([
+        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
+        mms.BooleanData(True),  # ReportEnable
+        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
+        mms.DataAccessError.OBJECT_ACCESS_DENIED,  # ConfigurationRevision
+        mms.BitStringData([  # OptionalFields
+            False, True, True, True, True, True, True, True, True,  False]),
+        mms.UnsignedData(3),  # BufferTime
+        mms.UnsignedData(456),  # SequenceNumber
+        mms.DataAccessError.OBJECT_UNDEFINED,  # TriggerOptionsEnabled
+        mms.UnsignedData(23),  # IntegrityPeriod
+        mms.BooleanData(True),  # GeneralInterrogation
+        mms.BooleanData(False),  # PurgeBuf
+        mms.DataAccessError.OBJECT_ATTRIBUTE_INCONSISTENT,  # EntryIdentifier
+        mms.BinaryTimeData(  # TimeOfEntry
+            datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)),
+        mms.IntegerData(5)]),  # ReserveTimeSecond
+     iec61850.Brcb(
+        report_id='rpt_xyz',
+        report_enable=True,
+        dataset=iec61850.PersistedDatasetRef(
+            logical_device='ln',
+            logical_node='ld',
+            name='ds1'),
+        conf_revision=None,
+        optional_fields=set([
+            iec61850.OptionalField.SEQUENCE_NUMBER,
+            iec61850.OptionalField.REPORT_TIME_STAMP,
+            iec61850.OptionalField.REASON_FOR_INCLUSION,
+            iec61850.OptionalField.DATA_SET_NAME,
+            iec61850.OptionalField.DATA_REFERENCE,
+            iec61850.OptionalField.BUFFER_OVERFLOW,
+            iec61850.OptionalField.ENTRY_ID,
+            iec61850.OptionalField.CONF_REVISION]),
+        buffer_time=3,
+        sequence_number=456,
+        trigger_options=None,
+        integrity_period=23,
+        gi=True,
+        purge_buffer=False,
+        entry_id=None,
+        time_of_entry=datetime.datetime(
+            2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        reservation_time=5)),
 
-    (mms.FileError.FILE_NON_EXISTENT,
+    (mms.ServiceError.PDU_SIZE,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
+
+    # any class, any unmapped error codes
+    (mms.AccessError.OBJECT_ACCESS_DENIED,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
+
+    (mms.ReadResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
+     iec61850.ServiceError.ACCESS_VIOLATION),
+
+    (mms.ReadResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
 
-    (mms.FileError.FILE_BUSY,
-     iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT),
+    # any other DataAccessError
+    (mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
-    (mms.FileError.FILENAME_SYNTAX_ERROR,
-     iec61850.ServiceError.PARAMETER_VALUE_INAPPROPRIATE),
-
-    (mms.FileError.FILE_ACCESS_DENIED,
-     iec61850.ServiceError.ACCESS_VIOLATION)
     ])
 async def test_get_brcb(mms_srv_addr, rcb_ref, mms_request,
                         mms_response, response):
@@ -617,19 +667,51 @@ async def test_get_brcb(mms_srv_addr, rcb_ref, mms_request,
         gi=True,
         reserve=False)),
 
-    # TODO: response including DataAccessError
+    # any attr that responded with DataAccessError is left None
+    (mms.ReadResponse([
+        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
+        mms.BooleanData(True),  # ReportEnable
+        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
+        mms.UnsignedData(123),  # ConfigurationRevision
+        mms.DataAccessError.OBJECT_NON_EXISTENT,  # OptionalFields
+        mms.UnsignedData(3),  # BufferTime
+        mms.DataAccessError.TYPE_UNSUPPORTED,  # SequenceNumber
+        mms.DataAccessError.OBJECT_ACCESS_UNSUPPORTED,  # TriggerOptionsEnabled
+        mms.UnsignedData(23),  # IntegrityPeriod
+        mms.DataAccessError.TEMPORARILY_UNAVAILABLE,  # GeneralInterrogation
+        mms.BooleanData(False)]),  # Reserve
+     iec61850.Urcb(
+        report_id='rpt_xyz',
+        report_enable=True,
+        dataset=iec61850.PersistedDatasetRef(
+            logical_device='ln',
+            logical_node='ld',
+            name='ds1'),
+        conf_revision=123,
+        optional_fields=None,
+        buffer_time=3,
+        sequence_number=None,
+        trigger_options=None,
+        integrity_period=23,
+        gi=None,
+        reserve=False)),
 
-    (mms.FileError.FILE_NON_EXISTENT,
+    (mms.ServiceError.PDU_SIZE,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
+
+    # any class, any unmapped error codes
+    (mms.AccessError.OBJECT_ACCESS_DENIED,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
+
+    (mms.ReadResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
+     iec61850.ServiceError.ACCESS_VIOLATION),
+
+    (mms.ReadResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
 
-    (mms.FileError.FILE_BUSY,
-     iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT),
-
-    (mms.FileError.FILENAME_SYNTAX_ERROR,
-     iec61850.ServiceError.PARAMETER_VALUE_INAPPROPRIATE),
-
-    (mms.FileError.FILE_ACCESS_DENIED,
-     iec61850.ServiceError.ACCESS_VIOLATION)
+    # any other DataAccessError
+    (mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
     ])
 async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
                         mms_response, response):
@@ -768,7 +850,6 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
                     item_id=f'ln3$RP$rcb_abc${da}'))
             for da in ['RptID',
                        'RptEna',
-                       'Resv',
                        'DatSet',
                        'ConfRev',
                        'OptFlds',
@@ -776,10 +857,10 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
                        'SqNum',
                        'TrgOps',
                        'IntgPd',
-                       'GI']],
+                       'GI',
+                       'Resv']],
         data=[mms.VisibleStringData('rpt_abc'),  # RptID
               mms.BooleanData(True),  # RptEna
-              mms.BooleanData(True),  # Resv
               mms.VisibleStringData("ln/ld$ds1"),  # DatSet
               mms.UnsignedData(123),  # ConfRev
               mms.BitStringData([  # OptFlds
@@ -790,7 +871,9 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
               mms.BitStringData([  # TrgOps
                   False, True, False, True, False, True]),
               mms.UnsignedData(23),  # IntgPd
-              mms.BooleanData(True)])),  # GI
+              mms.BooleanData(True),  # GI
+              mms.BooleanData(False),  # Resv
+              ])),
 
     (iec61850.RcbRef(logical_device='ld2',
                      logical_node='ln3',
@@ -877,7 +960,7 @@ async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
     (iec61850.DataRef(logical_device='ld1',
                       logical_node='ln2',
                       fc='ST',
-                      names=['da1', 'da2']),
+                      names=('da1', 'da2')),
      iec61850.BasicValueType.BOOLEAN,
      True,
      mms.WriteRequest(
@@ -890,7 +973,7 @@ async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
     (iec61850.DataRef(logical_device='ld1',
                       logical_node='ln2',
                       fc='ST',
-                      names=[2, 'd1']),
+                      names=(2, 'd1')),
      iec61850.BasicValueType.BOOLEAN,
      True,
      mms.WriteRequest(
@@ -942,9 +1025,11 @@ async def test_write_data(mms_srv_addr, ref, type, value, mms_request,
         addr=mms_srv_addr,
         request_cb=on_request)
 
-    conn = await iec61850.connect(addr=mms_srv_addr)
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        data_value_types={ref: type})
 
-    resp = await conn.write_data(ref, type, value)
+    resp = await conn.write_data(ref, value)
     assert resp == response
 
     req = await request_queue.get()
@@ -1046,23 +1131,16 @@ async def test_select_normal(mms_srv_addr, ref, mms_request,
     (mms.WriteResponse([mms.DataAccessError.TEMPORARILY_UNAVAILABLE]),
         None,
         iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT,
+            service_error=None,
             additional_cause=None,
             test_error=None)),
 
     (mms.WriteResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
         iec61850.AdditionalCause.NOT_SUPPORTED,
         iec61850.CommandError(
-            iec61850.ServiceError.ACCESS_VIOLATION,
+            service_error=None,
             additional_cause=iec61850.AdditionalCause.NOT_SUPPORTED,
-            test_error=None)),
-
-    (mms.WriteResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
-        iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
-        iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_NOT_AVAILABLE,
-            iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
-            test_error=None)),
+            test_error=iec61850.TestError.UNKNOWN)),
 
     (mms.VmdStateError.OTHER,
         None,
@@ -1076,7 +1154,7 @@ async def test_select_normal(mms_srv_addr, ref, mms_request,
         iec61850.CommandError(
             iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,
             additional_cause=iec61850.AdditionalCause.STEP_LIMIT,
-            test_error=None)),
+            test_error=iec61850.TestError.UNKNOWN)),
 ])
 async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
                                response):
@@ -1178,23 +1256,23 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
     (mms.WriteResponse([mms.DataAccessError.TEMPORARILY_UNAVAILABLE]),
         None,
         iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT,
+            service_error=None,
             additional_cause=None,
             test_error=None)),
 
     (mms.WriteResponse([mms.DataAccessError.TEMPORARILY_UNAVAILABLE]),
         iec61850.AdditionalCause.NOT_SUPPORTED,
         iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT,
+            service_error=None,
             additional_cause=iec61850.AdditionalCause.NOT_SUPPORTED,
-            test_error=None)),
+            test_error=iec61850.TestError.TIMEOUT_TEST_NOT_OK)),
 
     (mms.WriteResponse([mms.DataAccessError.TYPE_INCONSISTENT]),
         iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
         iec61850.CommandError(
-            iec61850.ServiceError.TYPE_CONFLICT,
-            iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
-            test_error=None)),
+            service_error=None,
+            additional_cause=iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,  # NOQA
+            test_error=iec61850.TestError.TIMEOUT_TEST_NOT_OK)),
 
     (mms.VmdStateError.OTHER,
         None,
@@ -1208,7 +1286,7 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
         iec61850.CommandError(
             iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,
             additional_cause=iec61850.AdditionalCause.STEP_LIMIT,
-            test_error=None)),
+            test_error=iec61850.TestError.TIMEOUT_TEST_NOT_OK)),
 ])
 async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
     cmd_ref = iec61850.CommandRef(
@@ -1246,7 +1324,7 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
                 data=[mms.StructureData(
                     elements=[
                         mms.VisibleStringData('ld1/ln2$CO$cmd1$Cancel'),
-                        mms.IntegerData(value=1),  # Error = Unknown
+                        mms.IntegerData(value=2),  # Error, Timeout Test Not OK
                         mms.StructureData([  # origin
                             mms.IntegerData(2),
                             mms.OctetStringData(b'orig_abc')]),
@@ -1306,23 +1384,23 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
     (mms.WriteResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
         None,
         iec61850.CommandError(
-            iec61850.ServiceError.ACCESS_VIOLATION,
+            service_error=None,
             additional_cause=None,
             test_error=None)),
 
     (mms.WriteResponse([mms.DataAccessError.TEMPORARILY_UNAVAILABLE]),
         iec61850.AdditionalCause.NOT_SUPPORTED,
         iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT,
+            service_error=None,
             additional_cause=iec61850.AdditionalCause.NOT_SUPPORTED,
-            test_error=None)),
+            test_error=iec61850.TestError.NO_ERROR)),
 
     (mms.WriteResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
         iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
         iec61850.CommandError(
-            iec61850.ServiceError.INSTANCE_NOT_AVAILABLE,
-            iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
-            test_error=None)),
+            service_error=None,
+            additional_cause=iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,  # NOQA
+            test_error=iec61850.TestError.NO_ERROR)),
 
     (mms.VmdStateError.OTHER,
         None,
@@ -1336,7 +1414,7 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
         iec61850.CommandError(
             iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,
             iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
-            test_error=None)),
+            test_error=iec61850.TestError.NO_ERROR)),
 ])
 async def test_operate(mms_srv_addr, mms_response, add_cause, response):
     cmd_ref = iec61850.CommandRef(
@@ -1374,7 +1452,7 @@ async def test_operate(mms_srv_addr, mms_response, add_cause, response):
                 data=[mms.StructureData(
                     elements=[
                         mms.VisibleStringData('ld1/ln2$CO$cmd1$Oper'),
-                        mms.IntegerData(value=1),  # Error = Unknown
+                        mms.IntegerData(value=0),  # Error = No Error
                         mms.StructureData([  # origin
                             mms.IntegerData(2),
                             mms.OctetStringData(b'orig_abc')]),
