@@ -333,7 +333,7 @@ class Report(typing.NamedTuple):
     buffer_overflow: bool | None
     conf_revision: int | None
     entry_time: EntryTime | None
-    entry_id: str | None
+    entry_id: util.Bytes | None
     data: Collection[ReportData]
 
 

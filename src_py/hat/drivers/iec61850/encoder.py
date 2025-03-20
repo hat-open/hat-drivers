@@ -548,12 +548,12 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
                          ) -> common.Report:
     elements = iter(mms_data)
 
-    report_id = value_to_mms_data(next(elements),
-                                  common.AcsiValueType.VISIBLE_STRING)
+    report_id = value_from_mms_data(next(elements),
+                                    common.BasicValueType.VISIBLE_STRING)
 
     optional_fields_bits = value_from_mms_data(
         next(elements), common.BasicValueType.BIT_STRING)
-    if len(optional_fields_bits) == 10:
+    if len(optional_fields_bits) != 10:
         raise Exception('invalid optional fields size')
 
     optional_fields = {common.OptionalField(index)
@@ -673,7 +673,7 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
                          dataset=dataset,
                          buffer_overflow=buffer_overflow,
                          conf_revision=conf_revision,
-                         entry_type=time_of_entry,
+                         entry_time=time_of_entry,
                          entry_id=entry_id,
                          data=data)
 
