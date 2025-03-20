@@ -1,5 +1,6 @@
 import asyncio
 import pytest
+import socket
 
 from hat import aio
 
@@ -7,6 +8,22 @@ from hat.drivers import icmp
 from hat.drivers.icmp import common
 from hat.drivers.icmp import encoder
 
+
+def has_permission():
+    try:
+        s = socket.socket(family=socket.AF_INET,
+                          type=socket.SOCK_DGRAM,
+                          proto=socket.IPPROTO_ICMP)
+        s.close()
+
+    except PermissionError:
+        return False
+
+    return True
+
+
+pytestmark = pytest.mark.skipif(not has_permission(),
+                                reason="insufficient permissions")
 
 # according to rfc5737, this ip is provided for use only in documentation
 unused_local_ip = '192.0.2.0'
