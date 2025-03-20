@@ -443,7 +443,7 @@ class Client(aio.Resource):
                 encoder.value_to_mms_data(
                     [False,
                      *(common.TriggerCondition(i) in rcb.trigger_options
-                       for i in range(1, 5))],
+                       for i in range(1, 6))],
                     common.BasicValueType.BIT_STRING))
 
         if rcb.integrity_period is not None:
