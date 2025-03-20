@@ -935,7 +935,12 @@ def _is_unconfirmed_termination(unconfirmed):
     else:
         return False
 
-    data_ref = encoder.data_ref_from_object_name(names[-1])
+    try:
+        data_ref = encoder.data_ref_from_object_name(names[-1])
+
+    except Exception:
+        return False
+
     data_ref_names = list(data_ref.names)
 
     return (data_ref.fc == 'CO' and
