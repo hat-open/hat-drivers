@@ -2034,19 +2034,19 @@ async def test_report_optional_fields(mms_srv_addr, mms_report, report):
     [{'value': mms.BooleanData(True),
       'type': iec61850.BasicValueType.BOOLEAN,
       'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
-      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d1$Pos'),
+      'mms_ref': mms.VisibleStringData('ld1/ln1$ST$d1$Pos'),
       'mms_reason': mms.BitStringData([
             False, True, False, False, False, True, False])},
      {'value': mms.BooleanData(False),
       'type': iec61850.BasicValueType.BOOLEAN,
       'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d2', 'Pos')),
-      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d2$Pos'),
+      'mms_ref': mms.VisibleStringData('ld1/ln1$ST$d2$Pos'),
       'mms_reason': mms.BitStringData([
             False, True, False, False, False, False, False])},
      {'value': mms.IntegerData(123),
       'type': iec61850.BasicValueType.INTEGER,
       'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
-      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d3$Pos'),
+      'mms_ref': mms.VisibleStringData('ld1/ln1$ST$d3$Pos'),
       'mms_reason': mms.BitStringData([
             False, False, False, False, False, False, False])}]
 ])

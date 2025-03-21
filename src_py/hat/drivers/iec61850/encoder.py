@@ -92,6 +92,11 @@ def data_ref_from_object_name(object_name: mms.ObjectName) -> common.DataRef:
                           names=tuple(names))
 
 
+def data_ref_from_str(ref_str: str) -> common.DataRef:
+    object_name = mms.DomainSpecificObjectName(*ref_str.split('/', 1))
+    return data_ref_from_object_name(object_name)
+
+
 def value_from_mms_data(mms_data: mms.Data,
                         value_type: common.ValueType
                         ) -> common.Value:
@@ -623,12 +628,16 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
         raise Exception('unexpected number of inclusion bits')
 
     if common.OptionalField.DATA_REFERENCE in optional_fields:
-        for exists in inclusion:
+        for exists, data_def in zip(inclusion, data_defs):
             if not exists:
                 continue
 
-            # TODO check data references
-            next(elements)
+            data_ref_str = value_from_mms_data(
+                next(elements), common.BasicValueType.VISIBLE_STRING)
+            data_ref = data_ref_from_str(data_ref_str)
+
+            if data_ref != data_def.ref:
+                raise Exception('data reference mismatch')
 
     values = collections.deque()
     for exists, data_def in zip(inclusion, data_defs):
