@@ -134,12 +134,12 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
          logical_device='ld',
          logical_node='ln',
          fc='ST',
-         names=['d', 'a1']),
+         names=('d', 'a1')),
        iec61850.DataRef(
           logical_device='ld',
           logical_node='ln',
           fc='ST',
-          names=['d', 'a2'])],
+          names=('d', 'a2'))],
       mms.DefineNamedVariableListRequest(
          name=mms.AaSpecificObjectName(identifier="ds_xyz"),
          specification=[
@@ -158,11 +158,11 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
       [iec61850.DataRef(logical_device='ld',
                         logical_node='ln',
                         fc='ST',
-                        names=['d', '1']),
+                        names=('d', '1')),
        iec61850.DataRef(logical_device='ld',
                         logical_node='ln',
                         fc='FC',
-                        names=['d', '2'])],
+                        names=('d', '2'))],
       mms.DefineNamedVariableListRequest(
          # TODO mms.VmdSpecificObjectName or DomainSpecificObjectName ?
          name=mms.DomainSpecificObjectName(
@@ -393,11 +393,11 @@ async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
      [iec61850.DataRef(logical_device='ld_abc',
                        logical_node='ln2',
                        fc='ST',
-                       names=['d', '1']),
+                       names=('d', '1')),
       iec61850.DataRef(logical_device='ld_def',
                        logical_node='ln3',
                        fc='MX',
-                       names=['d', '2'])]),
+                       names=('d', '2'))]),
 
     (mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
@@ -434,7 +434,7 @@ async def test_get_dataset_data_refs(mms_srv_addr, dataset_ref, mms_request,
             assert data_ref.logical_device == exp_data_ref.logical_device
             assert data_ref.logical_node == exp_data_ref.logical_node
             assert data_ref.fc == exp_data_ref.fc
-            assert list(data_ref.names) == exp_data_ref.names
+            assert data_ref.names == exp_data_ref.names
     else:
         assert resp == response
 

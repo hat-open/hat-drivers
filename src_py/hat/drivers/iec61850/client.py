@@ -257,7 +257,7 @@ class Client(aio.Resource):
                     common.DataRef(logical_device=ref.logical_device,
                                    logical_node=ref.logical_node,
                                    fc=ref.type.value,
-                                   names=[ref.name, attr])))
+                                   names=(ref.name, attr))))
             for attr in attrs])
 
         res = await self._send(req)
@@ -504,7 +504,7 @@ class Client(aio.Resource):
                         common.DataRef(logical_device=ref.logical_device,
                                        logical_node=ref.logical_node,
                                        fc=ref.type.value,
-                                       names=[ref.name, attr])))
+                                       names=(ref.name, attr))))
                 for attr in attrs],
             data=data)
 
@@ -603,7 +603,7 @@ class Client(aio.Resource):
                     common.DataRef(logical_device=ref.logical_device,
                                    logical_node=ref.logical_node,
                                    fc='CO',
-                                   names=[ref.name, 'SBO'])))])
+                                   names=(ref.name, 'SBO'))))])
 
         res = await self._send(req)
 
@@ -835,7 +835,7 @@ class Client(aio.Resource):
                         common.DataRef(logical_device=ref.logical_device,
                                        logical_node=ref.logical_node,
                                        fc='CO',
-                                       names=[ref.name, attr])))],
+                                       names=(ref.name, attr))))],
             data=[encoder.command_to_mms_data(cmd=cmd,
                                               value_type=value_type,
                                               with_checks=with_checks)])

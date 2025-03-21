@@ -30,7 +30,7 @@ class DataRef(typing.NamedTuple):
     logical_device: str
     logical_node: str
     fc: str
-    names: Collection[str | int]
+    names: tuple[str | int, ...]
 
 
 class CommandRef(typing.NamedTuple):

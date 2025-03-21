@@ -89,7 +89,7 @@ def data_ref_from_object_name(object_name: mms.ObjectName) -> common.DataRef:
     return common.DataRef(logical_device=object_name.domain_id,
                           logical_node=logical_node,
                           fc=fc,
-                          names=names)
+                          names=tuple(names))
 
 
 def value_from_mms_data(mms_data: mms.Data,
