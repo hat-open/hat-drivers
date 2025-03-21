@@ -17,6 +17,16 @@ async def mms_srv_addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
+def assert_data_value(value, expected_value):
+    if isinstance(value, float):
+        assert math.isclose(value, expected_value, rel_tol=1e-3)
+    elif isinstance(value, tuple):
+        for v, exp_v in zip(value, expected_value):
+            assert_data_value(v, exp_v)
+    else:
+        assert value == expected_value
+
+
 async def test_connect(mms_srv_addr):
     mms_conn_queue = aio.Queue()
     mms_srv = await mms.listen(connection_cb=mms_conn_queue.put_nowait,
@@ -1663,6 +1673,22 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
         iec61850.BasicValueType.FLOAT,
         12.345),
 
+    (mms.BitStringData([True, False, True]),
+     iec61850.BasicValueType.BIT_STRING,
+     [True, False, True]),
+
+    (mms.OctetStringData(b'abc123'),
+     iec61850.BasicValueType.OCTET_STRING,
+     b'abc123'),
+
+    (mms.VisibleStringData('abc123'),
+     iec61850.BasicValueType.VISIBLE_STRING,
+     'abc123'),
+
+    (mms.MmsStringData('xyz123'),
+     iec61850.BasicValueType.MMS_STRING,
+     'xyz123'),
+
     (mms.BitStringData(value=[True] * 13),
      iec61850.AcsiValueType.QUALITY,
      iec61850.Quality(
@@ -1696,16 +1722,50 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
         2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
         True, True, True, 3)),
 
+    (mms.BitStringData([True, False]),
+     iec61850.AcsiValueType.DOUBLE_POINT,
+     iec61850.DoublePoint.ON),
+
+    (mms.IntegerData(1),
+     iec61850.AcsiValueType.DIRECTION,
+     iec61850.Direction.FORWARD),
+
+    (mms.IntegerData(4),
+     iec61850.AcsiValueType.SEVERITY,
+     iec61850.Severity.WARNING),
+
+    (mms.StructureData([mms.IntegerData(12), mms.FloatingPointData(1.23)]),
+     iec61850.AcsiValueType.ANALOGUE,
+     iec61850.Analogue(i=12, f=1.23)),
+
+    (mms.StructureData([
+        mms.StructureData([mms.IntegerData(5), mms.FloatingPointData(1.23)]),
+        mms.StructureData([mms.IntegerData(0), mms.FloatingPointData(0.456)])
+        ]),
+     iec61850.AcsiValueType.VECTOR,
+     iec61850.Vector(magnitude=iec61850.Analogue(i=5, f=1.23),
+                     angle=iec61850.Analogue(i=0, f=0.456))),
+
+    (mms.StructureData([mms.IntegerData(63),
+                        mms.BooleanData(True)]),
+     iec61850.AcsiValueType.STEP_POSITION,
+     iec61850.StepPosition(value=63, transient=True)),
+
+    (mms.BitStringData([True, True]),
+     iec61850.AcsiValueType.BINARY_CONTROL,
+     iec61850.BinaryControl.RESERVED),
+
+    # DoublePoint, Quality, Timestamp
     (mms.StructureData([  # values
-        mms.BooleanData(False),
+        mms.BitStringData([False, True]),
         mms.BitStringData(value=[False] * 13),
         mms.UtcTimeData(datetime.datetime(
                 2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
               True, True, True, 3)]),
-     iec61850.StructValueType([iec61850.BasicValueType.BOOLEAN,
+     iec61850.StructValueType([iec61850.AcsiValueType.DOUBLE_POINT,
                                iec61850.AcsiValueType.QUALITY,
                                iec61850.AcsiValueType.TIMESTAMP]),
-     [False,
+     [iec61850.DoublePoint.OFF,
       iec61850.Quality(
         iec61850.QualityValidity.GOOD,
         set([]),
@@ -1715,9 +1775,25 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
       iec61850.Timestamp(datetime.datetime(
         2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
         True, True, True, 3)]),
+])
+@pytest.mark.parametrize('mms_reasons, reasons', [
+    (mms.BitStringData([False, True, False, False, False, True, False]),
+     set([iec61850.ReasonCode.DATA_CHANGE,
+          iec61850.ReasonCode.GENERAL_INTERROGATION])),
 
-    ])
-async def test_report(mms_srv_addr, mms_data_value, data_type, data_value):
+    (mms.BitStringData([False, True, True, True, True, True, True]),
+     set([iec61850.ReasonCode.DATA_CHANGE,
+          iec61850.ReasonCode.QUALITY_CHANGE,
+          iec61850.ReasonCode.DATA_UPDATE,
+          iec61850.ReasonCode.INTEGRITY,
+          iec61850.ReasonCode.GENERAL_INTERROGATION,
+          iec61850.ReasonCode.APPLICATION_TRIGGER])),
+
+    (mms.BitStringData([False, False, False, False, False, False, False]),
+     set())
+])
+async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
+                                   data_value, mms_reasons, reasons):
     rpt_id = 'rpt_xyz'
     data_ref = iec61850.DataRef(logical_device='ld1',
                                 logical_node='ln2',
@@ -1759,10 +1835,9 @@ async def test_report(mms_srv_addr, mms_data_value, data_type, data_value):
             # mms.UnsignedData(11),  # SubSeqNum
             # mms.BooleanData(False),  # MoreSegmentsFollow
             mms.BitStringData([True]),  # inclusion-bitstring
-            mms.VisibleStringData('ld1/ln2$ST$Pos'),  # data-references
+            mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
             mms_data_value,
-            mms.BitStringData([  # ReasonCode
-                False, True, False, False, False, True, False])
+            mms_reasons  # ReasonCode
             ])
     await mms_conn_srv.send_unconfirmed(mms_inf_report)
 
@@ -1784,13 +1859,282 @@ async def test_report(mms_srv_addr, mms_data_value, data_type, data_value):
     assert len(report.data) == 1
     report_data = report.data[0]
     assert report_data.ref == data_ref
-    assert report_data.reasons == set([
-        iec61850.ReasonCode.DATA_CHANGE,
-        iec61850.ReasonCode.GENERAL_INTERROGATION])
-    if isinstance(data_value, float):
-        assert math.isclose(report_data.value, data_value, rel_tol=1e-3)
-    else:
-        assert report_data.value == data_value
+
+    assert report_data.reasons == reasons
+    assert_data_value(report_data.value, data_value)
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('mms_report, report', [
+    (mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData('rpt_xyz'),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                True, True, True, True, True, True, True, True,
+                False]),  # segmentation
+            mms.UnsignedData(123),  # SqNum
+            mms.BinaryTimeData(  # TimeOfEntry
+                datetime.datetime(2020, 1, 1, 1, 1,
+                                  tzinfo=datetime.timezone.utc)),
+            mms.VisibleStringData("ld1/ln2$ds1"),  # DataSetReference
+            mms.BooleanData(False),  # BufOvfl
+            mms.OctetStringData(b'entry_xyz'),  # EntryID
+            mms.UnsignedData(12),  # ConfRev
+            mms.BitStringData([True]),  # inclusion-bitstring
+            mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
+            mms.BooleanData(True),  # value
+            mms.BitStringData([
+                False, True, False, False, False, True, False])  # ReasonCode
+            ]),
+     iec61850.Report(
+         report_id='rpt_xyz',
+         sequence_number=123,
+         subsequence_number=None,
+         more_segments_follow=None,
+         dataset=iec61850.PersistedDatasetRef('ld1', 'ln2', 'ds1'),
+         buffer_overflow=False,
+         conf_revision=12,
+         entry_time=datetime.datetime(
+            2020, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
+         entry_id=b'entry_xyz',
+         data=[iec61850.ReportData(
+            iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
+            True,
+            reasons=set([iec61850.ReasonCode.DATA_CHANGE,
+                         iec61850.ReasonCode.GENERAL_INTERROGATION]))])),
+
+    (mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData('rpt_xyz'),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                False, False, False, False, False, False, False, False,
+                False]),  # segmentation
+            mms.BitStringData([True]),  # inclusion-bitstring
+            mms.BooleanData(True),  # value
+            ]),
+     iec61850.Report(
+         report_id='rpt_xyz',
+         sequence_number=None,
+         subsequence_number=None,
+         more_segments_follow=None,
+         dataset=None,
+         buffer_overflow=None,
+         conf_revision=None,
+         entry_time=None,
+         entry_id=None,
+         data=[iec61850.ReportData(
+            iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
+            True,
+            reasons=None)])),
+
+    # segmentation
+    (mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData('rpt_xyz'),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                True, True, True, True, True, True, True, True,
+                True]),  # segmentation
+            mms.UnsignedData(123),  # SqNum
+            mms.BinaryTimeData(  # TimeOfEntry
+                datetime.datetime(2020, 1, 1, 1, 1,
+                                  tzinfo=datetime.timezone.utc)),
+            mms.VisibleStringData("ld1/ln2$ds1"),  # DataSetReference
+            mms.BooleanData(False),  # BufOvfl
+            mms.OctetStringData(b'entry_xyz'),  # EntryID
+            mms.UnsignedData(12),  # ConfRev
+            mms.UnsignedData(0),  # SubSeqNum
+            mms.BooleanData(True),  # MoreSegmentsFollow
+            mms.BitStringData([True]),  # inclusion-bitstring
+            mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
+            mms.BooleanData(True),  # value
+            mms.BitStringData([
+                False, True, False, False, False, True, False])  # ReasonCode
+            ]),
+     iec61850.Report(
+         report_id='rpt_xyz',
+         sequence_number=123,
+         subsequence_number=0,
+         more_segments_follow=True,
+         dataset=iec61850.PersistedDatasetRef('ld1', 'ln2', 'ds1'),
+         buffer_overflow=False,
+         conf_revision=12,
+         entry_time=datetime.datetime(
+            2020, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
+         entry_id=b'entry_xyz',
+         data=[iec61850.ReportData(
+            iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
+            True,
+            reasons=set([iec61850.ReasonCode.DATA_CHANGE,
+                         iec61850.ReasonCode.GENERAL_INTERROGATION]))])),
+
+    (mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData('rpt_xyz'),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                False, False, False, False, False, False, False, False,
+                True]),  # segmentation
+            mms.UnsignedData(11),  # SubSeqNum
+            mms.BooleanData(False),  # MoreSegmentsFollow
+            mms.BitStringData([True]),  # inclusion-bitstring
+            mms.BooleanData(True),  # value
+            ]),
+     iec61850.Report(
+         report_id='rpt_xyz',
+         sequence_number=None,
+         subsequence_number=11,
+         more_segments_follow=False,
+         dataset=None,
+         buffer_overflow=None,
+         conf_revision=None,
+         entry_time=None,
+         entry_id=None,
+         data=[iec61850.ReportData(
+            iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
+            True,
+            reasons=None)])),
+])
+async def test_report_optional_fields(mms_srv_addr, mms_report, report):
+    mms_conn_queue = aio.Queue()
+    report_queue = aio.Queue()
+
+    mms_srv = await mms.listen(
+        connection_cb=mms_conn_queue.put_nowait,
+        addr=mms_srv_addr)
+
+    data_ref = report.data[0].ref
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        data_value_types={data_ref: iec61850.BasicValueType.BOOLEAN},
+        report_data_refs={report.report_id: [data_ref]},
+        report_cb=report_queue.put_nowait)
+
+    mms_conn_srv = await mms_conn_queue.get()
+
+    await mms_conn_srv.send_unconfirmed(mms_report)
+
+    rcv_report = await report_queue.get()
+    rcv_report = rcv_report._replace(data=list(rcv_report.data))
+    assert rcv_report == report
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('data_defs', [
+    [{'value': mms.BooleanData(True),
+      'type': iec61850.BasicValueType.BOOLEAN,
+      'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
+      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d1$Pos'),
+      'mms_reason': mms.BitStringData([
+            False, True, False, False, False, True, False])},
+     {'value': mms.BooleanData(False),
+      'type': iec61850.BasicValueType.BOOLEAN,
+      'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d2', 'Pos')),
+      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d2$Pos'),
+      'mms_reason': mms.BitStringData([
+            False, True, False, False, False, False, False])},
+     {'value': mms.IntegerData(123),
+      'type': iec61850.BasicValueType.INTEGER,
+      'ref': iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
+      'mms_ref': mms.VisibleStringData('ld1/ln2$ST$d3$Pos'),
+      'mms_reason': mms.BitStringData([
+            False, False, False, False, False, False, False])}]
+])
+@pytest.mark.parametrize('inclusion, report_data', [
+    ([True, True, True],
+     [iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
+         value=True,
+         reasons=set([iec61850.ReasonCode.DATA_CHANGE,
+                      iec61850.ReasonCode.GENERAL_INTERROGATION])),
+      iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d2', 'Pos')),
+         value=False,
+         reasons=set([iec61850.ReasonCode.DATA_CHANGE])),
+      iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
+         value=123,
+         reasons=set([]))]),
+
+    ([False, False, False],
+     []),
+
+    ([False, False, True],
+     [iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
+         value=123,
+         reasons=set([]))]),
+
+    ([True, False, True],
+     [iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
+         value=True,
+         reasons=set([iec61850.ReasonCode.DATA_CHANGE,
+                      iec61850.ReasonCode.GENERAL_INTERROGATION])),
+      iec61850.ReportData(
+         ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
+         value=123,
+         reasons=set([]))]),
+
+])
+async def test_report_inclusion(mms_srv_addr, data_defs,
+                                inclusion, report_data):
+    report_id = 'rpt_xyz'
+    mms_conn_queue = aio.Queue()
+    report_queue = aio.Queue()
+
+    mms_srv = await mms.listen(
+        connection_cb=mms_conn_queue.put_nowait,
+        addr=mms_srv_addr)
+
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        data_value_types={
+            data_def['ref']: data_def['type']
+            for data_def in data_defs},
+        report_data_refs={
+            report_id: [data_def['ref']
+                        for data_def in data_defs]},
+        report_cb=report_queue.put_nowait)
+
+    mms_conn_srv = await mms_conn_queue.get()
+    data_references = []
+    data_values = []
+    data_reasons = []
+    for data_def, included in zip(data_defs, inclusion):
+        if not included:
+            continue
+        data_references.append(data_def['mms_ref'])
+        data_values.append(data_def['value'])
+        data_reasons.append(data_def['mms_reason'])
+    mms_report = mms.InformationReportUnconfirmed(
+        specification=mms.VmdSpecificObjectName(identifier='RPT'),
+        data=[
+            mms.VisibleStringData('rpt_xyz'),  # RptID
+            mms.BitStringData([   # OptFlds
+                False,  # reserved
+                False, False, True, False, True, False, False, False,
+                False]),  # segmentation
+            mms.BitStringData(inclusion),  # inclusion-bitstring
+            *data_references,  # data-references
+            *data_values,
+            *data_reasons  # ReasonCode
+        ])  # value
+
+    await mms_conn_srv.send_unconfirmed(mms_report)
+
+    rcv_report = await report_queue.get()
+    assert list(rcv_report.data) == report_data
 
     await conn.async_close()
     await mms_srv.async_close()
