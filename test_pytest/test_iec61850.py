@@ -17,12 +17,12 @@ async def mms_srv_addr():
     return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
-def assert_data_value(value, expected_value):
+def assert_equal(value, expected_value):
     if isinstance(value, float):
         assert math.isclose(value, expected_value, rel_tol=1e-3)
-    elif isinstance(value, tuple):
+    elif isinstance(value, (tuple, list)):
         for v, exp_v in zip(value, expected_value):
-            assert_data_value(v, exp_v)
+            assert_equal(v, exp_v)
     else:
         assert value == expected_value
 
@@ -164,7 +164,6 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
                         fc='FC',
                         names=('d', '2'))],
       mms.DefineNamedVariableListRequest(
-         # TODO mms.VmdSpecificObjectName or DomainSpecificObjectName ?
          name=mms.DomainSpecificObjectName(
             domain_id="ld",
             item_id="ln$ds_xyz"),
@@ -200,8 +199,7 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
     (mms.ApplicationReferenceError.OTHER,
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
-    # TODO: mms reject value-out-of-range ?
-
+    # TODO: add MMS Reject, when added to mms
 ])
 async def test_create_dataset(mms_srv_addr, dataset_ref, data_refs,
                               mms_request, mms_response, response):
@@ -253,6 +251,14 @@ async def test_create_dataset(mms_srv_addr, dataset_ref, data_refs,
                                          deleted=0),
      iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
 
+    (mms.DeleteNamedVariableListResponse(matched=0,
+                                         deleted=1),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+
+    (mms.DeleteNamedVariableListResponse(matched=1,
+                                         deleted=13),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+
     (mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
 
@@ -262,8 +268,6 @@ async def test_create_dataset(mms_srv_addr, dataset_ref, data_refs,
     # any class any, unmapped error codes
     (mms.ServicePreemptError.DEADLOCK,
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-
-    # TODO: MMS Response- ?
     ])
 async def test_delete_dataset(mms_srv_addr, dataset_ref, mms_request,
                               mms_response, response):
@@ -351,7 +355,6 @@ async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
 
     conn = await iec61850.connect(addr=mms_srv_addr)
 
-    # TODO: missing ld in funcion arg?
     resp = await conn.get_dataset_refs()
     if isinstance(resp, Collection):
         resp = list(resp)
@@ -398,6 +401,18 @@ async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
                        logical_node='ln3',
                        fc='MX',
                        names=('d', '2'))]),
+
+    (mms.GetNamedVariableListAttributesResponse(
+        mms_deletable=True,
+        specification=[
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(
+                    domain_id="ld1",
+                    item_id="ln2$MX$d(2)$1"))]),
+     [iec61850.DataRef(logical_device='ld1',
+                       logical_node='ln2',
+                       fc='MX',
+                       names=['d', 2, '1'])]),
 
     (mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
@@ -834,10 +849,7 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
         report_id='rpt_abc',
         report_enable=True,
         reserve=False,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
+        dataset=iec61850.NonPersistedDatasetRef('ds_xyz'),
         conf_revision=123,
         optional_fields=set([
             iec61850.OptionalField.SEQUENCE_NUMBER,
@@ -872,7 +884,7 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
                        'Resv']],
         data=[mms.VisibleStringData('rpt_abc'),  # RptID
               mms.BooleanData(True),  # RptEna
-              mms.VisibleStringData("ln/ld$ds1"),  # DatSet
+              mms.AaSpecificObjectName("@ds_xyz"),  # DatSet
               mms.UnsignedData(123),  # ConfRev
               mms.BitStringData([  # OptFlds
                   False, True, False, True, False, True, False, True, True,
@@ -940,7 +952,7 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
     (mms.WriteResponse([mms.DataAccessError.OBJECT_INVALIDATED]),
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
-    # TODO: MMS Reject?
+    # TODO: add MMS Reject, when added to mms
     ])
 async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
                        mms_response, response):
@@ -967,33 +979,132 @@ async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('ref, type, value, mms_request', [
+@pytest.mark.parametrize('ref, mms_ref', [
     (iec61850.DataRef(logical_device='ld1',
                       logical_node='ln2',
                       fc='ST',
                       names=('da1', 'da2')),
-     iec61850.BasicValueType.BOOLEAN,
-     True,
-     mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id='ln2$ST$da1$da2'))],
-        data=[mms.BooleanData(True)])),
+     mms.NameVariableSpecification(
+        mms.DomainSpecificObjectName(
+            domain_id='ld1',
+            item_id='ln2$ST$da1$da2'))),
     (iec61850.DataRef(logical_device='ld1',
                       logical_node='ln2',
                       fc='ST',
                       names=(2, 'd1')),
-     iec61850.BasicValueType.BOOLEAN,
-     True,
-     mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id='ln2$ST(2)$d1'))],
-        data=[mms.BooleanData(True)])),
+     mms.NameVariableSpecification(
+        mms.DomainSpecificObjectName(
+            domain_id='ld1',
+            item_id='ln2$ST(2)$d1'))),
+    ])
+@pytest.mark.parametrize('value_type, value, mms_value', [
+    (iec61850.BasicValueType.BOOLEAN, True,
+     mms.BooleanData(True)),
+
+    (iec61850.BasicValueType.INTEGER, -123,
+     mms.IntegerData(-123)),
+
+    (iec61850.BasicValueType.UNSIGNED, 123,
+     mms.UnsignedData(123)),
+
+    (iec61850.BasicValueType.FLOAT, 123.456,
+     mms.FloatingPointData(123.456)),
+
+    (iec61850.BasicValueType.BIT_STRING, [True, False, True],
+     mms.BitStringData([True, False, True])),
+
+    (iec61850.BasicValueType.OCTET_STRING, b'xyz',
+     mms.OctetStringData(b'xyz')),
+
+    (iec61850.BasicValueType.VISIBLE_STRING, 'bla_abc_123',
+     mms.VisibleStringData('bla_abc_123')),
+
+    (iec61850.BasicValueType.MMS_STRING, 'bla_abc_123',
+     mms.MmsStringData('bla_abc_123')),
+
+    (iec61850.AcsiValueType.QUALITY,
+     iec61850.Quality(
+        iec61850.QualityValidity.QUESTIONABLE,
+        set([iec61850.QualityDetail.OVERFLOW,
+             iec61850.QualityDetail.OUT_OF_RANGE,
+             iec61850.QualityDetail.BAD_REFERENCE,
+             iec61850.QualityDetail.OSCILLATORY,
+             iec61850.QualityDetail.FAILURE,
+             iec61850.QualityDetail.OLD_DATA,
+             iec61850.QualityDetail.INCONSISTENT,
+             iec61850.QualityDetail.INACCURATE]),
+        iec61850.QualitySource.SUBSTITUTED,
+        True,
+        True),
+     mms.BitStringData([True] * 13)),
+
+    (iec61850.AcsiValueType.TIMESTAMP,
+     iec61850.Timestamp(datetime.datetime(
+        2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        False, True, False, 2),
+     mms.UtcTimeData(
+        datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        False, True, False, 2)),
+
+    (iec61850.AcsiValueType.DOUBLE_POINT,
+     iec61850.DoublePoint.OFF,
+     mms.BitStringData([False, True])),
+
+    (iec61850.AcsiValueType.DIRECTION,
+     iec61850.Direction.FORWARD,
+     mms.IntegerData(1)),
+
+    (iec61850.AcsiValueType.SEVERITY,
+     iec61850.Severity.WARNING,
+     mms.IntegerData(4)),
+
+    (iec61850.AcsiValueType.ANALOGUE,
+     iec61850.Analogue(i=43, f=3.21),
+     mms.StructureData([mms.IntegerData(43), mms.FloatingPointData(3.21)])),
+
+    (iec61850.AcsiValueType.VECTOR,
+     iec61850.Vector(magnitude=iec61850.Analogue(i=432, f=3.21),
+                     angle=iec61850.Analogue(i=-123, f=-13.456)),
+     mms.StructureData([
+        mms.StructureData([mms.IntegerData(432),
+                           mms.FloatingPointData(3.21)]),
+        mms.StructureData([mms.IntegerData(-123),
+                           mms.FloatingPointData(-13.456)])
+     ])),
+
+    (iec61850.AcsiValueType.STEP_POSITION,
+     iec61850.StepPosition(value=63, transient=True),
+     mms.StructureData([mms.IntegerData(63),
+                        mms.BooleanData(True)])),
+
+    (iec61850.AcsiValueType.BINARY_CONTROL,
+     iec61850.BinaryControl.RESERVED,
+     mms.BitStringData([True, True])),
+
+    (iec61850.ArrayValueType(iec61850.BasicValueType.VISIBLE_STRING),
+     [f'abc{i}' for i in range(10)],
+     mms.ArrayData([mms.VisibleStringData(f'abc{i}') for i in range(10)])),
+
+    (iec61850.StructValueType([iec61850.AcsiValueType.DOUBLE_POINT,
+                               iec61850.AcsiValueType.QUALITY,
+                               iec61850.AcsiValueType.TIMESTAMP]),
+     [iec61850.DoublePoint.OFF,
+      iec61850.Quality(
+        iec61850.QualityValidity.GOOD,
+        set([]),
+        iec61850.QualitySource.PROCESS,
+        False,
+        False),
+      iec61850.Timestamp(datetime.datetime(
+        2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        True, True, True, 3)],
+     mms.StructureData([  # values
+        mms.BitStringData([False, True]),
+        mms.BitStringData(value=[False] * 13),
+        mms.UtcTimeData(datetime.datetime(
+                   2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 True, True, True, 3)])),
+
     ])
 @pytest.mark.parametrize('mms_response, response', [
     (mms.WriteResponse([None]), None),
@@ -1021,10 +1132,10 @@ async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
     (mms.WriteResponse([mms.DataAccessError.OBJECT_ACCESS_UNSUPPORTED]),
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
-    # TODO: MMS Reject?
+    # TODO: add MMS Reject, when added to mms
     ])
-async def test_write_data(mms_srv_addr, ref, type, value, mms_request,
-                          mms_response, response):
+async def test_write_data(mms_srv_addr, ref, value_type, value,
+                          mms_ref, mms_value, mms_response, response):
     request_queue = aio.Queue()
 
     def on_request(conn, req):
@@ -1038,13 +1149,18 @@ async def test_write_data(mms_srv_addr, ref, type, value, mms_request,
 
     conn = await iec61850.connect(
         addr=mms_srv_addr,
-        data_value_types={ref: type})
+        data_value_types={ref: value_type})
 
     resp = await conn.write_data(ref, value)
     assert resp == response
 
     req = await request_queue.get()
-    assert req == mms_request
+    assert isinstance(req, mms.WriteRequest)
+    assert len(req.specification) == 1
+    assert req.specification[0] == mms_ref
+    assert len(req.data) == 1
+    assert type(req.data[0]) is type(mms_value)
+    assert_equal(req.data[0], mms_value)
 
     await conn.async_close()
     await mms_srv.async_close()
@@ -1065,7 +1181,6 @@ async def test_write_data(mms_srv_addr, ref, type, value, mms_request,
     (mms.ReadResponse([mms.VisibleStringData('ln1/ln2$CO$cmd1$SBO')]),
         None),
 
-    # TODO: which addCause Error?
     (mms.ReadResponse([mms.VisibleStringData('')]),
      iec61850.CommandError(
         iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,
@@ -1130,6 +1245,101 @@ async def test_select_normal(mms_srv_addr, ref, mms_request,
     await mms_srv.async_close()
 
 
+@pytest.mark.parametrize('cmd_ref, mms_cmd_ref, value_type, cmd, mms_req', [
+    (iec61850.CommandRef('ld1', 'ln2', 'cmd3'),
+     mms.VisibleStringData('ld1/ln2$CO$cmd3$SBOw'),
+     iec61850.BasicValueType.BOOLEAN,
+     iec61850.Command(
+        value=True,
+        operate_time=None,
+        origin=iec61850.Origin(
+            iec61850.OriginCategory.STATION_CONTROL,
+            b'orig_xyz'),
+        control_number=123,
+        t=iec61850.Timestamp(
+            value=datetime.datetime(
+                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+            leap_second=False,
+            clock_failure=False,
+            not_synchronized=False,
+            accuracy=None),
+        test=False,
+        checks=set([iec61850.Check.SYNCHRO, iec61850.Check.INTERLOCK])),
+     mms.WriteRequest(
+        specification=[
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(domain_id='ld1',
+                                             item_id='ln2$CO$cmd3$SBOw'))],
+        data=[mms.StructureData([
+              mms.BooleanData(True),  # ctlVal
+              mms.StructureData([
+                  mms.IntegerData(2),
+                  mms.OctetStringData(b'orig_xyz')]),  # origin
+              mms.UnsignedData(123),  # ctlNum
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                  False,
+                  False,
+                  False,
+                  None),  # T
+              mms.BooleanData(False),  # Test
+              mms.BitStringData([True, True])])])),  # Check
+
+    (iec61850.CommandRef('ld2', 'ln3', 'cmd4'),
+     mms.VisibleStringData('ld2/ln3$CO$cmd4$SBOw'),
+     iec61850.AcsiValueType.DOUBLE_POINT,
+     iec61850.Command(
+        value=iec61850.DoublePoint.OFF,
+        operate_time=iec61850.Timestamp(
+            value=datetime.datetime(
+                2025, 3, 25, 10, 27, 30, 41219, datetime.timezone.utc),
+            leap_second=False,
+            clock_failure=False,
+            not_synchronized=False,
+            accuracy=1),
+        origin=iec61850.Origin(
+            iec61850.OriginCategory.STATION_CONTROL,
+            b'orig_xyz'),
+        control_number=321,
+        t=iec61850.Timestamp(
+            value=datetime.datetime(
+                2025, 3, 25, 10, 10, 19, 79806, datetime.timezone.utc),
+            leap_second=True,
+            clock_failure=True,
+            not_synchronized=True,
+            accuracy=3),
+        test=True,
+        checks=set([])),
+     mms.WriteRequest(
+        specification=[
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(domain_id='ld2',
+                                             item_id='ln3$CO$cmd4$SBOw'))],
+        data=[mms.StructureData([
+              mms.BitStringData([False, True]),  # ctlVal
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2025, 3, 25, 10, 27, 30, 41219, datetime.timezone.utc),
+                  False,
+                  False,
+                  False,
+                  1),  # OperTm
+              mms.StructureData([
+                  mms.IntegerData(2),
+                  mms.OctetStringData(b'orig_xyz')]),  # origin
+              mms.UnsignedData(321),  # ctlNum
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2025, 3, 25, 10, 10, 19, 79806, datetime.timezone.utc),
+                  True,
+                  True,
+                  True,
+                  3),  # T
+              mms.BooleanData(True),  # Test
+              mms.BitStringData([False, False])])])),  # Check
+
+    ])
 @pytest.mark.parametrize('mms_response, add_cause, response', [
     (mms.WriteResponse([None]),
         None,
@@ -1167,29 +1377,9 @@ async def test_select_normal(mms_srv_addr, ref, mms_request,
             additional_cause=iec61850.AdditionalCause.STEP_LIMIT,
             test_error=iec61850.TestError.UNKNOWN)),
 ])
-async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
+async def test_select_enhanced(mms_srv_addr, cmd_ref, mms_cmd_ref, cmd,
+                               value_type, mms_req, mms_response, add_cause,
                                response):
-    cmd_ref = iec61850.CommandRef(
-         logical_device='ld1',
-         logical_node='ln2',
-         name='cmd1')
-    command = iec61850.Command(
-        value=True,
-        operate_time=None,
-        origin=iec61850.Origin(
-            iec61850.OriginCategory.STATION_CONTROL,
-            b'orig_xyz'),
-        control_number=123,
-        t=iec61850.Timestamp(
-            value=datetime.datetime(
-                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-            leap_second=False,
-            clock_failure=False,
-            not_synchronized=False,
-            accuracy=None),
-        test=False,
-        checks=set([iec61850.Check.SYNCHRO, iec61850.Check.INTERLOCK]))
-
     mms_conn_queue = aio.Queue()
     request_queue = aio.Queue()
 
@@ -1203,12 +1393,12 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
                     mms.VmdSpecificObjectName(identifier='LastApplError'))],
                 data=[mms.StructureData(
                     elements=[
-                        mms.VisibleStringData('ld1/ln2$CO$cmd1$SBOw'),
+                        mms_cmd_ref,
                         mms.IntegerData(value=1),  # Error = Unknown
                         mms.StructureData([  # origin
                             mms.IntegerData(2),
                             mms.OctetStringData(b'orig_abc')]),
-                        mms.UnsignedData(123),  # ctlNum
+                        mms.UnsignedData(cmd.control_number),  # ctlNum
                         mms.IntegerData(value=add_cause.value)])])
             await mms_conn_srv.send_unconfirmed(inf_rpt)
 
@@ -1221,20 +1411,46 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
 
     conn = await iec61850.connect(
         addr=mms_srv_addr,
-        cmd_value_types={cmd_ref: iec61850.BasicValueType.BOOLEAN})
+        cmd_value_types={cmd_ref: value_type})
 
-    resp = await conn.select(cmd_ref, command)
+    resp = await conn.select(cmd_ref, cmd)
     assert resp == response
 
     req = await request_queue.get()
-    assert req == mms.WriteRequest(
+    assert req == mms_req
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('cmd_ref, mms_cmd_ref, cmd, value_type, mms_req', [
+    (iec61850.CommandRef('ld1', 'ln2', 'cmd1'),
+     mms.VisibleStringData('ld1/ln2$CO$cmd1$Cancel'),
+     iec61850.Command(
+        value=5,
+        operate_time=None,
+        origin=iec61850.Origin(
+            iec61850.OriginCategory.STATION_CONTROL,
+            b'orig_xyz'),
+        control_number=123,
+        t=iec61850.Timestamp(
+            value=datetime.datetime(
+                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+            leap_second=False,
+            clock_failure=False,
+            not_synchronized=False,
+            accuracy=None),
+        test=False,
+        checks=set([iec61850.Check.INTERLOCK])),
+     iec61850.BasicValueType.INTEGER,
+     mms.WriteRequest(
         specification=[
             mms.NameVariableSpecification(
                 mms.DomainSpecificObjectName(
                     domain_id='ld1',
-                    item_id='ln2$CO$cmd1$SBOw'))],
+                    item_id='ln2$CO$cmd1$Cancel'))],
         data=[mms.StructureData([
-              mms.BooleanData(True),  # ctlVal
+              mms.IntegerData(5),  # ctlVal
               mms.StructureData([
                   mms.IntegerData(2),
                   mms.OctetStringData(b'orig_xyz')]),  # origin
@@ -1246,15 +1462,48 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
                   False,
                   False,
                   None),  # T
-              mms.BooleanData(False),  # Test
-              mms.BitStringData([True, True])])])  # Check
+              mms.BooleanData(False)])])),  # Test
 
-    await conn.async_close()
-    await mms_srv.async_close()
-
-
-# TODO: additional cause pairing
-
+    (iec61850.CommandRef('ld4', 'ln5', 'cmd6'),
+     mms.VisibleStringData('ld4/ln5$CO$cmd6$Cancel'),
+     iec61850.Command(
+        value=5.43,
+        operate_time=None,
+        origin=iec61850.Origin(
+            iec61850.OriginCategory.STATION_CONTROL,
+            b'orig_xyz'),
+        control_number=456,
+        t=iec61850.Timestamp(
+            value=datetime.datetime(
+                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+            leap_second=False,
+            clock_failure=False,
+            not_synchronized=False,
+            accuracy=None),
+        test=False,
+        checks=set([iec61850.Check.INTERLOCK])),
+     iec61850.BasicValueType.FLOAT,
+     mms.WriteRequest(
+        specification=[
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(
+                    domain_id='ld4',
+                    item_id='ln5$CO$cmd6$Cancel'))],
+        data=[mms.StructureData([
+              mms.FloatingPointData(5.43),  # ctlVal
+              mms.StructureData([
+                  mms.IntegerData(2),
+                  mms.OctetStringData(b'orig_xyz')]),  # origin
+              mms.UnsignedData(456),  # ctlNum
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                  False,
+                  False,
+                  False,
+                  None),  # T
+              mms.BooleanData(False)])])),  # Test
+    ])
 @pytest.mark.parametrize('mms_response, add_cause, response', [
     (mms.WriteResponse([None]),
         None,
@@ -1299,28 +1548,8 @@ async def test_select_enhanced(mms_srv_addr, mms_response, add_cause,
             additional_cause=iec61850.AdditionalCause.STEP_LIMIT,
             test_error=iec61850.TestError.TIMEOUT_TEST_NOT_OK)),
 ])
-async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
-    cmd_ref = iec61850.CommandRef(
-         logical_device='ld1',
-         logical_node='ln2',
-         name='cmd1')
-    command = iec61850.Command(
-        value=True,
-        operate_time=None,
-        origin=iec61850.Origin(
-            iec61850.OriginCategory.STATION_CONTROL,
-            b'orig_xyz'),
-        control_number=123,
-        t=iec61850.Timestamp(
-            value=datetime.datetime(
-                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-            leap_second=False,
-            clock_failure=False,
-            not_synchronized=False,
-            accuracy=None),
-        test=False,
-        checks=set([iec61850.Check.INTERLOCK]))
-
+async def test_cancel(mms_srv_addr, cmd_ref, mms_cmd_ref, cmd, value_type,
+                      mms_req, mms_response, add_cause, response):
     mms_conn_queue = aio.Queue()
     request_queue = aio.Queue()
 
@@ -1334,12 +1563,12 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
                     mms.VmdSpecificObjectName(identifier='LastApplError'))],
                 data=[mms.StructureData(
                     elements=[
-                        mms.VisibleStringData('ld1/ln2$CO$cmd1$Cancel'),
+                        mms_cmd_ref,
                         mms.IntegerData(value=2),  # Error, Timeout Test Not OK
                         mms.StructureData([  # origin
                             mms.IntegerData(2),
                             mms.OctetStringData(b'orig_abc')]),
-                        mms.UnsignedData(123),  # ctlNum
+                        mms.UnsignedData(cmd.control_number),  # ctlNum
                         mms.IntegerData(value=add_cause.value)])])
             await mms_conn_srv.send_unconfirmed(inf_rpt)
 
@@ -1352,20 +1581,49 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
 
     conn = await iec61850.connect(
         addr=mms_srv_addr,
-        cmd_value_types={cmd_ref: iec61850.BasicValueType.BOOLEAN})
+        cmd_value_types={cmd_ref: value_type})
 
-    resp = await conn.cancel(cmd_ref, command)
+    resp = await conn.cancel(cmd_ref, cmd)
     assert resp == response
 
     req = await request_queue.get()
-    assert req == mms.WriteRequest(
+    assert_equal(req, mms_req)
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('cmd_ref, mms_ref, cmd, value_type, mms_req', [
+    (iec61850.CommandRef(
+         logical_device='ld1',
+         logical_node='ln2',
+         name='cmd1'),
+     mms.VisibleStringData('ld1/ln2$CO$cmd1$Oper'),
+     iec61850.Command(
+             value=3,
+             operate_time=None,
+             origin=iec61850.Origin(
+                 iec61850.OriginCategory.STATION_CONTROL,
+                 b'orig_xyz'),
+             control_number=123,
+             t=iec61850.Timestamp(
+                 value=datetime.datetime(
+                     2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 leap_second=False,
+                 clock_failure=False,
+                 not_synchronized=False,
+                 accuracy=None),
+             test=False,
+             checks=set([iec61850.Check.SYNCHRO])),
+     iec61850.BasicValueType.UNSIGNED,
+     mms.WriteRequest(
         specification=[
             mms.NameVariableSpecification(
                 mms.DomainSpecificObjectName(
                     domain_id='ld1',
-                    item_id='ln2$CO$cmd1$Cancel'))],
+                    item_id='ln2$CO$cmd1$Oper'))],
         data=[mms.StructureData([
-              mms.BooleanData(True),  # ctlVal
+              mms.UnsignedData(3),  # ctlVal
               mms.StructureData([
                   mms.IntegerData(2),
                   mms.OctetStringData(b'orig_xyz')]),  # origin
@@ -1377,12 +1635,66 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
                   False,
                   False,
                   None),  # T
-              mms.BooleanData(False)])])  # Test
+              mms.BooleanData(False),  # Test
+              mms.BitStringData([True, False])])])),  # Check
 
-    await conn.async_close()
-    await mms_srv.async_close()
-
-
+    (iec61850.CommandRef(
+         logical_device='a',
+         logical_node='b',
+         name='c'),
+     mms.VisibleStringData('a/b$CO$c$Oper'),
+     iec61850.Command(
+             value=[True, False],
+             operate_time=iec61850.Timestamp(
+                 value=datetime.datetime(
+                    2025, 3, 25, 12, 10, 55, 139367, datetime.timezone.utc),
+                 leap_second=True,
+                 clock_failure=False,
+                 not_synchronized=True,
+                 accuracy=None),
+             origin=iec61850.Origin(
+                 iec61850.OriginCategory.STATION_CONTROL,
+                 b'orig_xyz'),
+             control_number=11,
+             t=iec61850.Timestamp(
+                 value=datetime.datetime(
+                     2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 leap_second=False,
+                 clock_failure=False,
+                 not_synchronized=False,
+                 accuracy=None),
+             test=False,
+             checks=set([])),
+     iec61850.BasicValueType.BIT_STRING,
+     mms.WriteRequest(
+        specification=[
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(
+                    domain_id='a',
+                    item_id='b$CO$c$Oper'))],
+        data=[mms.StructureData([
+              mms.BitStringData([True, False]),  # ctlVal
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2025, 3, 25, 12, 10, 55, 139367, datetime.timezone.utc),
+                  True,
+                  False,
+                  True,
+                  None),  # OperTm
+              mms.StructureData([
+                  mms.IntegerData(2),
+                  mms.OctetStringData(b'orig_xyz')]),  # origin
+              mms.UnsignedData(11),  # ctlNum
+              mms.UtcTimeData(
+                  datetime.datetime(
+                    2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                  False,
+                  False,
+                  False,
+                  None),  # T
+              mms.BooleanData(False),  # Test
+              mms.BitStringData([False, False])])])),  # Check
+    ])
 @pytest.mark.parametrize('mms_response, add_cause, response', [
     (mms.WriteResponse([None]),
         None,
@@ -1427,28 +1739,8 @@ async def test_cancel(mms_srv_addr, mms_response, add_cause, response):
             iec61850.AdditionalCause.PARAMETER_CHANGE_IN_EXECUTION,
             test_error=iec61850.TestError.NO_ERROR)),
 ])
-async def test_operate(mms_srv_addr, mms_response, add_cause, response):
-    cmd_ref = iec61850.CommandRef(
-         logical_device='ld1',
-         logical_node='ln2',
-         name='cmd1')
-    command = iec61850.Command(
-        value=iec61850.DoublePoint.ON,
-        operate_time=None,
-        origin=iec61850.Origin(
-            iec61850.OriginCategory.STATION_CONTROL,
-            b'orig_xyz'),
-        control_number=123,
-        t=iec61850.Timestamp(
-            value=datetime.datetime(
-                2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-            leap_second=False,
-            clock_failure=False,
-            not_synchronized=False,
-            accuracy=None),
-        test=False,
-        checks=set([iec61850.Check.SYNCHRO]))
-
+async def test_operate(mms_srv_addr, cmd_ref, mms_ref, cmd, value_type,
+                       mms_req, mms_response, add_cause, response):
     mms_conn_queue = aio.Queue()
     request_queue = aio.Queue()
 
@@ -1462,12 +1754,12 @@ async def test_operate(mms_srv_addr, mms_response, add_cause, response):
                     mms.VmdSpecificObjectName(identifier='LastApplError'))],
                 data=[mms.StructureData(
                     elements=[
-                        mms.VisibleStringData('ld1/ln2$CO$cmd1$Oper'),
+                        mms_ref,
                         mms.IntegerData(value=0),  # Error = No Error
                         mms.StructureData([  # origin
                             mms.IntegerData(2),
                             mms.OctetStringData(b'orig_abc')]),
-                        mms.UnsignedData(123),  # ctlNum
+                        mms.UnsignedData(cmd.control_number),  # ctlNum
                         mms.IntegerData(value=add_cause.value)])])
             await mms_conn_srv.send_unconfirmed(inf_rpt)
 
@@ -1480,33 +1772,203 @@ async def test_operate(mms_srv_addr, mms_response, add_cause, response):
 
     conn = await iec61850.connect(
         addr=mms_srv_addr,
-        cmd_value_types={cmd_ref: iec61850.AcsiValueType.DOUBLE_POINT})
+        cmd_value_types={cmd_ref: value_type})
 
-    resp = await conn.operate(cmd_ref, command)
+    resp = await conn.operate(cmd_ref, cmd)
     assert resp == response
 
     req = await request_queue.get()
-    assert req == mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id='ln2$CO$cmd1$Oper'))],
-        data=[mms.StructureData([
-              mms.BitStringData(value=[True, False]),  # ctlVal
-              mms.StructureData([
-                  mms.IntegerData(2),
-                  mms.OctetStringData(b'orig_xyz')]),  # origin
-              mms.UnsignedData(123),  # ctlNum
-              mms.UtcTimeData(
-                  datetime.datetime(
-                    2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-                  False,
-                  False,
-                  False,
-                  None),  # T
-              mms.BooleanData(False),  # Test
-              mms.BitStringData([True, False])])])  # Check
+    assert req == mms_req
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('mss_add_cause, response', [
+    # paired correctly with request's name and control numberr
+    (mms.InformationReportUnconfirmed(
+        specification=[mms.NameVariableSpecification(
+            mms.VmdSpecificObjectName(identifier='LastApplError'))],
+        data=[mms.StructureData(
+            elements=[
+                mms.VisibleStringData('ld1/ln2$CO$cmd1$Oper'),
+                mms.IntegerData(value=0),  # Error = No Error
+                mms.StructureData([  # origin
+                    mms.IntegerData(2),
+                    mms.OctetStringData(b'orig_abc')]),
+                mms.UnsignedData(123),  # ctlNum
+                mms.IntegerData(
+                    iec61850.AdditionalCause.NOT_SUPPORTED.value)])]),
+     iec61850.CommandError(
+        service_error=None,
+        test_error=iec61850.TestError.NO_ERROR,
+        additional_cause=iec61850.AdditionalCause.NOT_SUPPORTED)),
+
+    # not paired - wrong control number
+    (mms.InformationReportUnconfirmed(
+        specification=[mms.NameVariableSpecification(
+            mms.VmdSpecificObjectName(identifier='LastApplError'))],
+        data=[mms.StructureData(
+            elements=[
+                mms.VisibleStringData('ld1/ln2$CO$cmd1$Oper'),
+                mms.IntegerData(value=0),  # Error = No Error
+                mms.StructureData([  # origin
+                    mms.IntegerData(2),
+                    mms.OctetStringData(b'orig_abc')]),
+                mms.UnsignedData(456),  # ctlNum
+                mms.IntegerData(
+                    iec61850.AdditionalCause.NOT_SUPPORTED.value)])]),
+     iec61850.CommandError(None, None, None)),
+
+    # not paired - wrong reference
+    (mms.InformationReportUnconfirmed(
+        specification=[mms.NameVariableSpecification(
+            mms.VmdSpecificObjectName(identifier='LastApplError'))],
+        data=[mms.StructureData(
+            elements=[
+                mms.VisibleStringData('ld2/ln2$CO$cmd1$Oper'),
+                mms.IntegerData(value=0),  # Error = No Error
+                mms.StructureData([  # origin
+                    mms.IntegerData(2),
+                    mms.OctetStringData(b'orig_abc')]),
+                mms.UnsignedData(123),  # ctlNum
+                mms.IntegerData(
+                    iec61850.AdditionalCause.NOT_SUPPORTED.value)])]),
+     iec61850.CommandError(None, None, None)),
+])
+async def test_add_cause_pairing(mms_srv_addr, mss_add_cause, response):
+    cmd_ref = iec61850.CommandRef('ld1', 'ln2', 'cmd1')
+    cmd = iec61850.Command(
+             value=3,
+             operate_time=None,
+             origin=iec61850.Origin(
+                 iec61850.OriginCategory.STATION_CONTROL,
+                 b'orig_xyz'),
+             control_number=123,
+             t=iec61850.Timestamp(
+                 value=datetime.datetime(
+                     2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 leap_second=False,
+                 clock_failure=False,
+                 not_synchronized=False,
+                 accuracy=None),
+             test=False,
+             checks=set([iec61850.Check.SYNCHRO]))
+
+    mms_conn_queue = aio.Queue()
+
+    async def on_request(conn, req):
+        mms_conn_srv = await mms_conn_queue.get()
+        await mms_conn_srv.send_unconfirmed(mss_add_cause)
+
+        return mms.WriteResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED])
+
+    mms_srv = await mms.listen(
+        connection_cb=mms_conn_queue.put_nowait,
+        addr=mms_srv_addr,
+        request_cb=on_request)
+
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        cmd_value_types={cmd_ref: iec61850.BasicValueType.UNSIGNED})
+
+    resp = await conn.operate(cmd_ref, cmd)
+    assert resp == response
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+async def test_command_active_control_num(mms_srv_addr):
+    cmd_ref = iec61850.CommandRef('ld1', 'ln2', 'cmd1')
+    cmd = iec61850.Command(
+             value=3,
+             operate_time=None,
+             origin=iec61850.Origin(
+                 iec61850.OriginCategory.STATION_CONTROL,
+                 b'orig_xyz'),
+             control_number=123,
+             t=iec61850.Timestamp(
+                 value=datetime.datetime(
+                     2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 leap_second=False,
+                 clock_failure=False,
+                 not_synchronized=False,
+                 accuracy=None),
+             test=False,
+             checks=set([iec61850.Check.SYNCHRO]))
+
+    async def on_request(conn, req):
+        await asyncio.Future()
+
+    mms_srv = await mms.listen(
+        connection_cb=lambda _: None,
+        addr=mms_srv_addr,
+        request_cb=on_request)
+
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        cmd_value_types={cmd_ref: iec61850.BasicValueType.UNSIGNED})
+
+    async with aio.Group() as group:
+        group.spawn(conn.operate, cmd_ref, cmd)
+        await asyncio.sleep(0.001)
+        with pytest.raises(Exception):
+            await conn.operate(cmd_ref, cmd)
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('mms_response', [
+    None,  # no response, timeout
+    mms.WriteResponse([None, None]),  # response length > 1
+    # response length > 1
+    mms.WriteResponse([mms.DataAccessError.TEMPORARILY_UNAVAILABLE,
+                       mms.DataAccessError.OBJECT_NON_EXISTENT]),
+    # wrong response type
+    mms.ReadResponse([mms.VisibleStringData('ln1/ln2$CO$cmd1$Oper')]),
+    ])
+async def test_command_response_invalid(mms_srv_addr, mms_response):
+    cmd_ref = iec61850.CommandRef('ld1', 'ln2', 'cmd1')
+    cmd = iec61850.Command(
+             value=3,
+             operate_time=None,
+             origin=iec61850.Origin(
+                 iec61850.OriginCategory.STATION_CONTROL,
+                 b'orig_xyz'),
+             control_number=123,
+             t=iec61850.Timestamp(
+                 value=datetime.datetime(
+                     2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+                 leap_second=False,
+                 clock_failure=False,
+                 not_synchronized=False,
+                 accuracy=None),
+             test=False,
+             checks=set([iec61850.Check.SYNCHRO]))
+
+    async def on_request(conn, req):
+        if mms_response:
+            return mms_response
+
+        await asyncio.Future()
+
+    mms_srv = await mms.listen(
+        connection_cb=lambda _: None,
+        addr=mms_srv_addr,
+        request_cb=on_request)
+
+    conn = await iec61850.connect(
+        addr=mms_srv_addr,
+        cmd_value_types={cmd_ref: iec61850.BasicValueType.UNSIGNED})
+
+    if mms_response:
+        with pytest.raises(Exception):
+            await conn.operate(cmd_ref, cmd)
+    else:
+        with pytest.raises(asyncio.TimeoutError):
+            await aio.wait_for(conn.operate(cmd_ref, cmd), 0.01)
 
     await conn.async_close()
     await mms_srv.async_close()
@@ -1755,6 +2217,10 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
      iec61850.AcsiValueType.BINARY_CONTROL,
      iec61850.BinaryControl.RESERVED),
 
+    (mms.ArrayData([mms.IntegerData(i) for i in range(10)]),
+     iec61850.ArrayValueType(iec61850.BasicValueType.INTEGER),
+     [i for i in range(10)]),
+
     # DoublePoint, Quality, Timestamp
     (mms.StructureData([  # values
         mms.BitStringData([False, True]),
@@ -1861,7 +2327,7 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
     assert report_data.ref == data_ref
 
     assert report_data.reasons == reasons
-    assert_data_value(report_data.value, data_value)
+    assert_equal(report_data.value, data_value)
 
     await conn.async_close()
     await mms_srv.async_close()
