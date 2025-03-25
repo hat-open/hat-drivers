@@ -333,13 +333,13 @@ def value_to_mms_data(value: common.Value,
         if not isinstance(value, common.Quality):
             raise Exception('unexpected value type')
 
-        mms.BitStringData([bool(value.validity.value & 2),
-                           bool(value.validity.value & 1),
-                           *(common.QualityDetail(i) in value.details
-                             for i in range(2, 10)),
-                           bool(value.source.value),
-                           value.test,
-                           value.operator_blocked])
+        return mms.BitStringData([bool(value.validity.value & 2),
+                                  bool(value.validity.value & 1),
+                                  *(common.QualityDetail(i) in value.details
+                                    for i in range(2, 10)),
+                                  bool(value.source.value),
+                                  value.test,
+                                  value.operator_blocked])
 
     if value_type == common.AcsiValueType.TIMESTAMP:
         if not isinstance(value, common.Timestamp):
@@ -364,7 +364,7 @@ def value_to_mms_data(value: common.Value,
         if not isinstance(value, common.Severity):
             raise Exception('unexpected value type')
 
-        return mms.IntegerData(value)
+        return mms.IntegerData(value.value)
 
     if value_type == common.AcsiValueType.ANALOGUE:
         if not isinstance(value, common.Analogue):
@@ -409,6 +409,8 @@ def value_to_mms_data(value: common.Value,
             mms_data.elements.append(
                 value_to_mms_data(value.transient,
                                   common.BasicValueType.BOOLEAN))
+
+        return mms_data
 
     if value_type == common.AcsiValueType.BINARY_CONTROL:
         if not isinstance(value, common.BinaryControl):
