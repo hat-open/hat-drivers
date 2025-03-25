@@ -412,7 +412,7 @@ async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
      [iec61850.DataRef(logical_device='ld1',
                        logical_node='ln2',
                        fc='MX',
-                       names=['d', 2, '1'])]),
+                       names=('d', 2, '1'))]),
 
     (mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),

@@ -420,9 +420,6 @@ def value_to_mms_data(value: common.Value,
                                   bool(value.value & 1)])
 
     if isinstance(value_type, common.ArrayValueType):
-        if any(not isinstance(i, value_type.type) for i in value):
-            raise Exception('unexpected value type')
-
         return mms.ArrayData([value_to_mms_data(i, value_type.type)
                               for i in value])
 
