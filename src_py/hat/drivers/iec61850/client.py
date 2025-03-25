@@ -94,6 +94,12 @@ class Client(aio.Resource):
         """Connection info"""
         return self._conn.info
 
+    async def get_logical_devices(self) -> Collection[str] | common.ServiceError:  # NOQA
+        """Get logical devices"""
+        return await self._get_name_list(
+            object_class=mms.ObjectClass.DOMAIN,
+            object_scope=mms.VmdSpecificObjectScope())
+
     async def create_dataset(self,
                              ref: common.DatasetRef,
                              data: Iterable[common.DataRef]
@@ -156,37 +162,29 @@ class Client(aio.Resource):
         if res.matched != res.deleted:
             return common.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT
 
-    async def get_dataset_refs(self) -> Collection[common.DatasetRef] | common.ServiceError:  # NOQA
-        """Get dataset references
+    async def get_persisted_dataset_refs(self,
+                                         logical_device: str
+                                         ) -> Collection[common.PersistedDatasetRef] | common.ServiceError:  # NOQA
+        """Get persisted dataset references associated with logical device"""
+        identifiers = await self._get_name_list(
+            object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
+            object_scope=mms.DomainSpecificObjectScope(logical_device))
 
-        All available persisted and non persisted dataset references are
-        returned.
-
-        """
-        logical_devices = await self._get_name_list(
-            object_class=mms.ObjectClass.DOMAIN,
-            object_scope=mms.VmdSpecificObjectScope())
-
-        if isinstance(logical_devices, common.ServiceError):
-            return logical_devices
+        if isinstance(identifiers, common.ServiceError):
+            return identifiers
 
         refs = collections.deque()
+        for identifier in identifiers:
+            logical_node, name = identifier.split('$')
+            refs.append(
+                common.PersistedDatasetRef(logical_device=logical_device,
+                                           logical_node=logical_node,
+                                           name=name))
 
-        for logical_device in logical_devices:
-            identifiers = await self._get_name_list(
-                object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
-                object_scope=mms.DomainSpecificObjectScope(logical_device))
+        return refs
 
-            if isinstance(identifiers, common.ServiceError):
-                return identifiers
-
-            for identifier in identifiers:
-                logical_node, name = identifier.split('$')
-                refs.append(
-                    common.PersistedDatasetRef(logical_device=logical_device,
-                                               logical_node=logical_node,
-                                               name=name))
-
+    async def get_non_persisted_dataset_refs(self) -> Collection[common.NonPersistedDatasetRef] | common.ServiceError:  # NOQA
+        """Get non persisted dataset references"""
         names = await self._get_name_list(
             object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
             object_scope=mms.AaSpecificObjectScope())
@@ -194,10 +192,8 @@ class Client(aio.Resource):
         if isinstance(names, common.ServiceError):
             return names
 
-        for name in names:
-            refs.append(common.NonPersistedDatasetRef(name))
-
-        return refs
+        return [common.NonPersistedDatasetRef(name)
+                for name in names]
 
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef

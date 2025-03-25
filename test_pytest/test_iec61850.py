@@ -128,6 +128,53 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
     await mms_srv.async_close()
 
 
+@pytest.mark.parametrize('mms_res, response', [
+    (mms.GetNameListResponse(identifiers=[],
+                             more_follows=False),
+     []),
+
+    (mms.GetNameListResponse(identifiers=['a', 'b', 'c'],
+                             more_follows=False),
+     ['a', 'b', 'c']),
+
+    (mms.AccessError.OBJECT_NON_EXISTENT,
+     iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
+
+    (mms.AccessError.OBJECT_ACCESS_DENIED,
+     iec61850.ServiceError.ACCESS_VIOLATION),
+
+    (mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT,
+     iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
+
+    (mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
+])
+async def test_get_logical_devices(mms_srv_addr, mms_res, response):
+
+    def on_request(conn, req):
+        assert req == mms.GetNameListRequest(
+            object_class=mms.ObjectClass.DOMAIN,
+            object_scope=mms.VmdSpecificObjectScope(),
+            continue_after=None)
+
+        return mms_res
+
+    mms_srv = await mms.listen(
+        connection_cb=lambda _: None,
+        addr=mms_srv_addr,
+        request_cb=on_request)
+
+    conn = await iec61850.connect(addr=mms_srv_addr)
+
+    resp = await conn.get_logical_devices()
+    if not isinstance(resp, iec61850.ServiceError):
+        resp = list(resp)
+    assert resp == response
+
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
 @pytest.mark.parametrize("dataset_ref, data_refs, mms_request", [
      (iec61850.NonPersistedDatasetRef("ds_xyz"),
       [iec61850.DataRef(
@@ -294,59 +341,48 @@ async def test_delete_dataset(mms_srv_addr, dataset_ref, mms_request,
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('mms_req_resp, response', [
-    ({mms.GetNameListRequest(
-        mms.ObjectClass.DOMAIN,
-        mms.VmdSpecificObjectScope(), None):
-      mms.GetNameListResponse(['ld1', 'ld2'], False),
-      mms.GetNameListRequest(
-        mms.ObjectClass.NAMED_VARIABLE_LIST,
-        mms.DomainSpecificObjectScope('ld1'), None):
-      mms.GetNameListResponse(['ln1$ds1', 'ln1$ds2'], False),
-      mms.GetNameListRequest(
-        mms.ObjectClass.NAMED_VARIABLE_LIST,
-        mms.DomainSpecificObjectScope('ld2'), None):
-      mms.GetNameListResponse([], False),
-      mms.GetNameListRequest(mms.ObjectClass.NAMED_VARIABLE_LIST,
-                             mms.AaSpecificObjectScope(), None):
-      mms.GetNameListResponse(['ds_abc', 'ds_def'], False)},
-     [iec61850.PersistedDatasetRef(logical_device='ld1',
+@pytest.mark.parametrize('logical_device, mms_res, response', [
+    ('ld1',
+     mms.GetNameListResponse(identifiers=[],
+                             more_follows=False),
+     []),
+
+    ('ld2',
+     mms.GetNameListResponse(identifiers=['ln1$ds1', 'ln2$ds2'],
+                             more_follows=False),
+     [iec61850.PersistedDatasetRef(logical_device='ld2',
                                    logical_node='ln1',
                                    name='ds1'),
-      iec61850.PersistedDatasetRef(logical_device='ld1',
-                                   logical_node='ln1',
-                                   name='ds2'),
-      iec61850.NonPersistedDatasetRef('ds_abc'),
-      iec61850.NonPersistedDatasetRef('ds_def')]),
+      iec61850.PersistedDatasetRef(logical_device='ld2',
+                                   logical_node='ln2',
+                                   name='ds2')]),
 
-    ({mms.GetNameListRequest(
-        mms.ObjectClass.DOMAIN,
-        mms.VmdSpecificObjectScope(), None):
-      mms.AccessError.OBJECT_NON_EXISTENT},
+    ('ld',
+     mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
 
-    ({mms.GetNameListRequest(mms.ObjectClass.DOMAIN,
-                             mms.VmdSpecificObjectScope(), None):
-      mms.AccessError.OBJECT_ACCESS_DENIED},
+    ('ld',
+     mms.AccessError.OBJECT_ACCESS_DENIED,
      iec61850.ServiceError.ACCESS_VIOLATION),
 
-    ({mms.GetNameListRequest(mms.ObjectClass.DOMAIN,
-                             mms.VmdSpecificObjectScope(), None):
-      mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT},
+    ('ld',
+     mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT,
      iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
 
-    # any class any, unmapped error codes
-    ({mms.GetNameListRequest(mms.ObjectClass.DOMAIN,
-                             mms.VmdSpecificObjectScope(), None):
-      mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED},
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-    ])
-async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
-    request_queue = aio.Queue()
+    ('ld',
+     mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
+])
+async def test_get_persisted_dataset_refs(mms_srv_addr, logical_device,
+                                          mms_res, response):
 
     def on_request(conn, req):
-        request_queue.put_nowait(req)
-        return mms_req_resp[req]
+        assert req == mms.GetNameListRequest(
+            object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
+            object_scope=mms.DomainSpecificObjectScope(logical_device),
+            continue_after=None)
+
+        return mms_res
 
     mms_srv = await mms.listen(
         connection_cb=lambda _: None,
@@ -355,14 +391,58 @@ async def test_get_dataset_refs(mms_srv_addr, mms_req_resp, response):
 
     conn = await iec61850.connect(addr=mms_srv_addr)
 
-    resp = await conn.get_dataset_refs()
-    if isinstance(resp, Collection):
+    resp = await conn.get_persisted_dataset_refs(logical_device)
+    if not isinstance(resp, iec61850.ServiceError):
         resp = list(resp)
     assert resp == response
 
-    for mms_req in mms_req_resp:
-        req = await request_queue.get()
-        assert req == mms_req
+    await conn.async_close()
+    await mms_srv.async_close()
+
+
+@pytest.mark.parametrize('mms_res, response', [
+    (mms.GetNameListResponse(identifiers=[],
+                             more_follows=False),
+     []),
+
+    (mms.GetNameListResponse(identifiers=['ds1', 'ds2'],
+                             more_follows=False),
+     [iec61850.NonPersistedDatasetRef('ds1'),
+      iec61850.NonPersistedDatasetRef('ds2')]),
+
+    (mms.AccessError.OBJECT_NON_EXISTENT,
+     iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
+
+    (mms.AccessError.OBJECT_ACCESS_DENIED,
+     iec61850.ServiceError.ACCESS_VIOLATION),
+
+    (mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT,
+     iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
+
+    (mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED,
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
+])
+async def test_get_non_persisted_dataset_refs(mms_srv_addr, mms_res, response):
+
+    def on_request(conn, req):
+        assert req == mms.GetNameListRequest(
+            object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
+            object_scope=mms.AaSpecificObjectScope(),
+            continue_after=None)
+
+        return mms_res
+
+    mms_srv = await mms.listen(
+        connection_cb=lambda _: None,
+        addr=mms_srv_addr,
+        request_cb=on_request)
+
+    conn = await iec61850.connect(addr=mms_srv_addr)
+
+    resp = await conn.get_non_persisted_dataset_refs()
+    if not isinstance(resp, iec61850.ServiceError):
+        resp = list(resp)
+    assert resp == response
 
     await conn.async_close()
     await mms_srv.async_close()
