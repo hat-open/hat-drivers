@@ -635,7 +635,7 @@ class Client(aio.Resource):
     async def cancel(self,
                      ref: common.CommandRef,
                      cmd: common.Command
-                     ) -> common.AdditionalCause | None:
+                     ) -> common.CommandError | None:
         """Cancel command"""
         return await self._command_with_last_appl_error(ref=ref,
                                                         cmd=cmd,
@@ -645,7 +645,7 @@ class Client(aio.Resource):
     async def operate(self,
                       ref: common.CommandRef,
                       cmd: common.Command
-                      ) -> common.AdditionalCause | None:
+                      ) -> common.CommandError | None:
         """Operate command"""
         return await self._command_with_last_appl_error(ref=ref,
                                                         cmd=cmd,
