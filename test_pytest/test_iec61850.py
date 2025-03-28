@@ -240,7 +240,7 @@ async def test_get_logical_devices(mms_srv_addr, mms_res, response):
      iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
 
     (mms.ResourceError.CAPABILITY_UNAVAILABLE,
-     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT),
 
     # any class any, unmapped error codes
     (mms.ApplicationReferenceError.OTHER,
@@ -296,15 +296,15 @@ async def test_create_dataset(mms_srv_addr, dataset_ref, data_refs,
 
     (mms.DeleteNamedVariableListResponse(matched=1,
                                          deleted=0),
-     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT),
 
     (mms.DeleteNamedVariableListResponse(matched=0,
                                          deleted=1),
-     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT),
 
     (mms.DeleteNamedVariableListResponse(matched=1,
                                          deleted=13),
-     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT),
+     iec61850.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT),
 
     (mms.AccessError.OBJECT_NON_EXISTENT,
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),

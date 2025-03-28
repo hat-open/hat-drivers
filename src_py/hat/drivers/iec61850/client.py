@@ -128,7 +128,7 @@ class Client(aio.Resource):
                 return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
 
             if res == mms.ResourceError.CAPABILITY_UNAVAILABLE:
-                return common.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT
+                return common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
 
             return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
@@ -160,7 +160,7 @@ class Client(aio.Resource):
             return common.ServiceError.INSTANCE_NOT_AVAILABLE
 
         if res.matched != res.deleted:
-            return common.ServiceError.FAILED_DUE_TO_SERVER_CONTRAINT
+            return common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
 
     async def get_persisted_dataset_refs(self,
                                          logical_device: str
