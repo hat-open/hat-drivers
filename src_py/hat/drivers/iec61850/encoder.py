@@ -33,6 +33,21 @@ def dataset_ref_to_object_name(ref: common.DatasetRef) -> mms.ObjectName:
     raise TypeError('unsupported ref type')
 
 
+def dataset_ref_from_object_name(object_name: mms.ObjectName
+                                 ) -> common.DatasetRef:
+    if isinstance(object_name, mms.DomainSpecificObjectName):
+        logical_node, name = object_name.item_id.split('$')
+        return common.PersistedDatasetRef(
+            logical_device=object_name.domain_id,
+            logical_node=logical_node,
+            name=name)
+
+    if isinstance(object_name, mms.AaSpecificObjectName):
+        return common.NonPersistedDatasetRef(object_name.identifier)
+
+    raise TypeError('unsupported object name type')
+
+
 def dataset_ref_from_str(ref_str: str) -> common.DatasetRef:
     if ref_str.startswith('@'):
         return common.NonPersistedDatasetRef(ref_str[1:])
@@ -90,6 +105,11 @@ def data_ref_from_object_name(object_name: mms.ObjectName) -> common.DataRef:
                           logical_node=logical_node,
                           fc=fc,
                           names=tuple(names))
+
+
+def data_ref_to_str(ref: common.DataRef) -> str:
+    object_name = data_ref_to_object_name(ref)
+    return f'{object_name.domain_id}/{object_name.item_id}'
 
 
 def data_ref_from_str(ref_str: str) -> common.DataRef:
@@ -431,6 +451,158 @@ def value_to_mms_data(value: common.Value,
                                   for i, t in zip(value, value_type.elements)])
 
     raise TypeError('unsupported value type')
+
+
+def rcb_attr_value_from_mms_data(mms_data: mms.Data,
+                                 attr_type: common.RcbAttrType
+                                 ) -> common.RcbAttrValue:
+    if attr_type == common.RcbAttrType.REPORT_ID:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.VISIBLE_STRING)
+
+    if attr_type == common.RcbAttrType.REPORT_ENABLE:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.DATASET:
+        return dataset_ref_from_str(
+            value_from_mms_data(
+                mms_data, common.BasicValueType.VISIBLE_STRING))
+
+    if attr_type == common.RcbAttrType.CONF_REVISION:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.OPTIONAL_FIELDS:
+        value = value_from_mms_data(
+            mms_data, common.BasicValueType.BIT_STRING)
+        if len(value) != 10:
+            raise Exception('invalid optional fields size')
+
+        return {common.OptionalField(index)
+                for index, i in enumerate(value)
+                if (1 <= index <= 8) and i}
+
+    if attr_type == common.RcbAttrType.BUFFER_TIME:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.SEQUENCE_NUMBER:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.TRIGGER_OPTIONS:
+        value = value_from_mms_data(
+            mms_data, common.BasicValueType.BIT_STRING)
+        if len(value) != 6:
+            raise Exception('invalid trigger options size')
+
+        return {common.TriggerCondition(index)
+                for index, i in enumerate(value)
+                if index >= 1 and i}
+
+    if attr_type == common.RcbAttrType.INTEGRITY_PERIOD:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.GI:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.PURGE_BUFFER:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.ENTRY_ID:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.OCTET_STRING)
+
+    if attr_type == common.RcbAttrType.TIME_OF_ENTRY:
+        if not isinstance(mms_data, mms.BinaryTimeData):
+            raise Exception('unexpected data type')
+
+        return mms_data.value
+
+    if attr_type == common.RcbAttrType.RESERVATION_TIME:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.INTEGER)
+
+    if attr_type == common.RcbAttrType.RESERVE:
+        return value_from_mms_data(
+            mms_data, common.BasicValueType.BOOLEAN)
+
+    raise ValueError('unsupported attribute type')
+
+
+def rcb_attr_value_to_mms_data(attr_value: common.RcbAttrValue,
+                               attr_type: common.RcbAttrType
+                               ) -> mms.Data:
+    if attr_type == common.RcbAttrType.REPORT_ID:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.VISIBLE_STRING)
+
+    if attr_type == common.RcbAttrType.REPORT_ENABLE:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.DATASET:
+        return value_to_mms_data(
+            dataset_ref_to_str(attr_value),
+            common.BasicValueType.VISIBLE_STRING)
+
+    if attr_type == common.RcbAttrType.CONF_REVISION:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.OPTIONAL_FIELDS:
+        return value_to_mms_data(
+            [False,
+             *(common.OptionalField(i) in attr_value for i in range(1, 9)),
+             False],
+            common.BasicValueType.BIT_STRING)
+
+    if attr_type == common.RcbAttrType.BUFFER_TIME:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.SEQUENCE_NUMBER:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.TRIGGER_OPTIONS:
+        return value_to_mms_data(
+            [False,
+             *(common.TriggerCondition(i) in attr_value for i in range(1, 6))],
+            common.BasicValueType.BIT_STRING)
+
+    if attr_type == common.RcbAttrType.INTEGRITY_PERIOD:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.UNSIGNED)
+
+    if attr_type == common.RcbAttrType.GI:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.PURGE_BUFFER:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.BOOLEAN)
+
+    if attr_type == common.RcbAttrType.ENTRY_ID:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.OCTET_STRING)
+
+    if attr_type == common.RcbAttrType.TIME_OF_ENTRY:
+        return mms.BinaryTimeData(attr_value)
+
+    if attr_type == common.RcbAttrType.RESERVATION_TIME:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.INTEGER)
+
+    if attr_type == common.RcbAttrType.RESERVE:
+        return value_to_mms_data(
+            attr_value, common.BasicValueType.BOOLEAN)
+
+    raise ValueError('unsupported attribute type')
 
 
 def command_to_mms_data(cmd: common.Command,

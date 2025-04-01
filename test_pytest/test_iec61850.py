@@ -128,53 +128,6 @@ async def test_conn_close_on_mms_closed(mms_srv_addr):
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('mms_res, response', [
-    (mms.GetNameListResponse(identifiers=[],
-                             more_follows=False),
-     []),
-
-    (mms.GetNameListResponse(identifiers=['a', 'b', 'c'],
-                             more_follows=False),
-     ['a', 'b', 'c']),
-
-    (mms.AccessError.OBJECT_NON_EXISTENT,
-     iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
-
-    (mms.AccessError.OBJECT_ACCESS_DENIED,
-     iec61850.ServiceError.ACCESS_VIOLATION),
-
-    (mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT,
-     iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
-
-    (mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED,
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
-])
-async def test_get_logical_devices(mms_srv_addr, mms_res, response):
-
-    def on_request(conn, req):
-        assert req == mms.GetNameListRequest(
-            object_class=mms.ObjectClass.DOMAIN,
-            object_scope=mms.VmdSpecificObjectScope(),
-            continue_after=None)
-
-        return mms_res
-
-    mms_srv = await mms.listen(
-        connection_cb=lambda _: None,
-        addr=mms_srv_addr,
-        request_cb=on_request)
-
-    conn = await iec61850.connect(addr=mms_srv_addr)
-
-    resp = await conn.get_logical_devices()
-    if not isinstance(resp, iec61850.ServiceError):
-        resp = list(resp)
-    assert resp == response
-
-    await conn.async_close()
-    await mms_srv.async_close()
-
-
 @pytest.mark.parametrize("dataset_ref, data_refs, mms_request", [
      (iec61850.NonPersistedDatasetRef("ds_xyz"),
       [iec61850.DataRef(
@@ -400,54 +353,6 @@ async def test_get_persisted_dataset_refs(mms_srv_addr, logical_device,
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('mms_res, response', [
-    (mms.GetNameListResponse(identifiers=[],
-                             more_follows=False),
-     []),
-
-    (mms.GetNameListResponse(identifiers=['ds1', 'ds2'],
-                             more_follows=False),
-     [iec61850.NonPersistedDatasetRef('ds1'),
-      iec61850.NonPersistedDatasetRef('ds2')]),
-
-    (mms.AccessError.OBJECT_NON_EXISTENT,
-     iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
-
-    (mms.AccessError.OBJECT_ACCESS_DENIED,
-     iec61850.ServiceError.ACCESS_VIOLATION),
-
-    (mms.ServiceError.OBJECT_CONSTRAINT_CONFLICT,
-     iec61850.ServiceError.PARAMETER_VALUE_INCONSISTENT),
-
-    (mms.ConcludeError.FURTHER_COMMUNICATION_REQUIRED,
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
-])
-async def test_get_non_persisted_dataset_refs(mms_srv_addr, mms_res, response):
-
-    def on_request(conn, req):
-        assert req == mms.GetNameListRequest(
-            object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
-            object_scope=mms.AaSpecificObjectScope(),
-            continue_after=None)
-
-        return mms_res
-
-    mms_srv = await mms.listen(
-        connection_cb=lambda _: None,
-        addr=mms_srv_addr,
-        request_cb=on_request)
-
-    conn = await iec61850.connect(addr=mms_srv_addr)
-
-    resp = await conn.get_non_persisted_dataset_refs()
-    if not isinstance(resp, iec61850.ServiceError):
-        resp = list(resp)
-    assert resp == response
-
-    await conn.async_close()
-    await mms_srv.async_close()
-
-
 @pytest.mark.parametrize("dataset_ref, mms_request", [
     (iec61850.NonPersistedDatasetRef('nonp_ds1'),
      mms.GetNamedVariableListAttributesRequest(
@@ -540,153 +445,120 @@ async def test_get_dataset_data_refs(mms_srv_addr, dataset_ref, mms_request,
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('rcb_ref, mms_request', [
-    (iec61850.RcbRef(logical_device='ld1',
-                     logical_node='ln2',
-                     type=iec61850.RcbType.BUFFERED,
-                     name='rcb_xyz'),
-     mms.ReadRequest([
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id=f'ln2$BR$rcb_xyz${da}'))
-            for da in ['RptID',
-                       'RptEna',
-                       'DatSet',
-                       'ConfRev',
-                       'OptFlds',
-                       'BufTm',
-                       'SqNum',
-                       'TrgOps',
-                       'IntgPd',
-                       'GI',
-                       'PurgeBuf',
-                       'EntryID',
-                       'TimeOfEntry',
-                       'ResvTms']])),
-    ])
-@pytest.mark.parametrize('mms_response, response', [
-    (mms.ReadResponse([
-        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
-        mms.BooleanData(True),  # ReportEnable
-        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
-        mms.UnsignedData(123),  # ConfigurationRevision
-        mms.BitStringData([  # OptionalFields
-            False, True, True, True, True, True, True, True, True,  False]),
-        mms.UnsignedData(3),  # BufferTime
-        mms.UnsignedData(456),  # SequenceNumber
-        mms.BitStringData([  # TriggerOptionsEnabled
-            False, True, True, True, True, True]),
-        mms.UnsignedData(23),  # IntegrityPeriod
-        mms.BooleanData(True),  # GeneralInterrogation
-        mms.BooleanData(False),  # PurgeBuf
-        mms.OctetStringData(b'entry_xyz'),  # EntryIdentifier
-        mms.BinaryTimeData(  # TimeOfEntry
-            datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)),
-        mms.IntegerData(5)]),  # ReserveTimeSecond
-     iec61850.Brcb(
-        report_id='rpt_xyz',
-        report_enable=True,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
-        conf_revision=123,
-        optional_fields=set([
-            iec61850.OptionalField.SEQUENCE_NUMBER,
-            iec61850.OptionalField.REPORT_TIME_STAMP,
-            iec61850.OptionalField.REASON_FOR_INCLUSION,
-            iec61850.OptionalField.DATA_SET_NAME,
-            iec61850.OptionalField.DATA_REFERENCE,
-            iec61850.OptionalField.BUFFER_OVERFLOW,
-            iec61850.OptionalField.ENTRY_ID,
-            iec61850.OptionalField.CONF_REVISION]),
-        buffer_time=3,
-        sequence_number=456,
-        trigger_options=set([
-            iec61850.TriggerCondition.DATA_CHANGE,
-            iec61850.TriggerCondition.QUALITY_CHANGE,
-            iec61850.TriggerCondition.DATA_UPDATE,
-            iec61850.TriggerCondition.INTEGRITY,
-            iec61850.TriggerCondition.GENERAL_INTERROGATION]),
-        integrity_period=23,
-        gi=True,
-        purge_buffer=False,
-        entry_id=b'entry_xyz',
-        time_of_entry=datetime.datetime(
-            2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-        reservation_time=5)),
+@pytest.mark.parametrize('rcb_type', iec61850.RcbType)
+@pytest.mark.parametrize('rcb_attr_type, mms_response, rcb_attr_value', [
+    (iec61850.RcbAttrType.REPORT_ID,
+     mms.ReadResponse([mms.VisibleStringData('rpt_xyz')]),
+     'rpt_xyz'),
 
-    # any attr that responded with DataAccessError is left None
-    (mms.ReadResponse([
-        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
-        mms.BooleanData(True),  # ReportEnable
-        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
-        mms.DataAccessError.OBJECT_ACCESS_DENIED,  # ConfigurationRevision
-        mms.BitStringData([  # OptionalFields
-            False, True, True, True, True, True, True, True, True,  False]),
-        mms.UnsignedData(3),  # BufferTime
-        mms.UnsignedData(456),  # SequenceNumber
-        mms.DataAccessError.OBJECT_UNDEFINED,  # TriggerOptionsEnabled
-        mms.UnsignedData(23),  # IntegrityPeriod
-        mms.BooleanData(True),  # GeneralInterrogation
-        mms.BooleanData(False),  # PurgeBuf
-        mms.DataAccessError.OBJECT_ATTRIBUTE_INCONSISTENT,  # EntryIdentifier
-        mms.BinaryTimeData(  # TimeOfEntry
-            datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)),
-        mms.IntegerData(5)]),  # ReserveTimeSecond
-     iec61850.Brcb(
-        report_id='rpt_xyz',
-        report_enable=True,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
-        conf_revision=None,
-        optional_fields=set([
-            iec61850.OptionalField.SEQUENCE_NUMBER,
-            iec61850.OptionalField.REPORT_TIME_STAMP,
-            iec61850.OptionalField.REASON_FOR_INCLUSION,
-            iec61850.OptionalField.DATA_SET_NAME,
-            iec61850.OptionalField.DATA_REFERENCE,
-            iec61850.OptionalField.BUFFER_OVERFLOW,
-            iec61850.OptionalField.ENTRY_ID,
-            iec61850.OptionalField.CONF_REVISION]),
-        buffer_time=3,
-        sequence_number=456,
-        trigger_options=None,
-        integrity_period=23,
-        gi=True,
-        purge_buffer=False,
-        entry_id=None,
-        time_of_entry=datetime.datetime(
-            2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-        reservation_time=5)),
+    (iec61850.RcbAttrType.REPORT_ENABLE,
+     mms.ReadResponse([mms.BooleanData(True)]),
+     True),
 
-    (mms.ServiceError.PDU_SIZE,
+    (iec61850.RcbAttrType.DATASET,
+     mms.ReadResponse([mms.VisibleStringData("ld/ln$ds")]),
+     iec61850.PersistedDatasetRef(logical_device='ld',
+                                  logical_node='ln',
+                                  name='ds')),
+
+    (iec61850.RcbAttrType.DATASET,
+     mms.ReadResponse([mms.VisibleStringData("@ds")]),
+     iec61850.NonPersistedDatasetRef('ds')),
+
+    (iec61850.RcbAttrType.CONF_REVISION,
+     mms.ReadResponse([mms.UnsignedData(123)]),
+     123),
+
+    (iec61850.RcbAttrType.OPTIONAL_FIELDS,
+     mms.ReadResponse([mms.BitStringData([False, *([True] * 8), False])]),
+     set(iec61850.OptionalField)),
+
+    (iec61850.RcbAttrType.BUFFER_TIME,
+     mms.ReadResponse([mms.UnsignedData(3)]),
+     3),
+
+    (iec61850.RcbAttrType.SEQUENCE_NUMBER,
+     mms.ReadResponse([mms.UnsignedData(456)]),
+     456),
+
+    (iec61850.RcbAttrType.TRIGGER_OPTIONS,
+     mms.ReadResponse([mms.BitStringData([False, *([True] * 5)])]),
+     set(iec61850.TriggerCondition)),
+
+    (iec61850.RcbAttrType.INTEGRITY_PERIOD,
+     mms.ReadResponse([mms.UnsignedData(23)]),
+     23),
+
+    (iec61850.RcbAttrType.GI,
+     mms.ReadResponse([mms.BooleanData(True)]),
+     True),
+
+    (iec61850.RcbAttrType.PURGE_BUFFER,
+     mms.ReadResponse([mms.BooleanData(True)]),
+     True),
+
+    (iec61850.RcbAttrType.ENTRY_ID,
+     mms.ReadResponse([mms.OctetStringData(b'entry_xyz')]),
+     b'entry_xyz'),
+
+    (iec61850.RcbAttrType.TIME_OF_ENTRY,
+     mms.ReadResponse([
+        mms.BinaryTimeData(datetime.datetime(2020, 2, 3, 4, 5,
+                                             tzinfo=datetime.timezone.utc))]),
+     datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)),
+
+    (iec61850.RcbAttrType.RESERVATION_TIME,
+     mms.ReadResponse([mms.IntegerData(5)]),
+     5),
+
+    (iec61850.RcbAttrType.RESERVE,
+     mms.ReadResponse([mms.BooleanData(True)]),
+     True),
+
+    (iec61850.RcbAttrType.REPORT_ID,
+     mms.ServiceError.PDU_SIZE,
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
-    # any class, any unmapped error codes
-    (mms.AccessError.OBJECT_ACCESS_DENIED,
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-
-    (mms.ReadResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
+    (iec61850.RcbAttrType.REPORT_ID,
+     mms.ReadResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
      iec61850.ServiceError.ACCESS_VIOLATION),
 
-    (mms.ReadResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
+    (iec61850.RcbAttrType.REPORT_ID,
+     mms.ReadResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
      iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
 
-    # any other DataAccessError
-    (mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
+    (iec61850.RcbAttrType.REPORT_ID,
+     mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
+     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
+])
+async def test_get_rcb_attr(mms_srv_addr, rcb_type, rcb_attr_type,
+                            mms_response, rcb_attr_value):
+    if rcb_type == iec61850.RcbType.BUFFERED:
+        if rcb_attr_type == iec61850.RcbAttrType.RESERVE:
+            return
 
-    ])
-async def test_get_brcb(mms_srv_addr, rcb_ref, mms_request,
-                        mms_response, response):
-    request_queue = aio.Queue()
+    elif rcb_type == iec61850.RcbType.UNBUFFERED:
+        if rcb_attr_type in (iec61850.RcbAttrType.PURGE_BUFFER,
+                             iec61850.RcbAttrType.ENTRY_ID,
+                             iec61850.RcbAttrType.TIME_OF_ENTRY,
+                             iec61850.RcbAttrType.RESERVATION_TIME):
+            return
+
+    rcb_ref = iec61850.RcbRef(logical_device='ld',
+                              logical_node='ln',
+                              type=rcb_type,
+                              name='name')
 
     def on_request(conn, req):
-        request_queue.put_nowait(req)
+        assert req == mms.ReadRequest([
+            mms.NameVariableSpecification(
+                mms.DomainSpecificObjectName(
+                    domain_id=rcb_ref.logical_device,
+                    item_id=(f'{rcb_ref.logical_node}$'
+                             f'{rcb_type.value}$'
+                             f'{rcb_ref.name}$'
+                             f'{rcb_attr_type.value}')))])
+
         return mms_response
 
     mms_srv = await mms.listen(
@@ -696,318 +568,85 @@ async def test_get_brcb(mms_srv_addr, rcb_ref, mms_request,
 
     conn = await iec61850.connect(addr=mms_srv_addr)
 
-    resp = await conn.get_rcb(rcb_ref)
-    assert resp == response
-
-    req = await request_queue.get()
-    assert req == mms_request
+    resp = await conn.get_rcb_attr(rcb_ref, rcb_attr_type)
+    assert resp == rcb_attr_value
 
     await conn.async_close()
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('rcb_ref, mms_request', [
-    (iec61850.RcbRef(logical_device='ld1',
-                     logical_node='ln2',
-                     type=iec61850.RcbType.UNBUFFERED,
-                     name='rcb_xyz'),
-     mms.ReadRequest([
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id=f'ln2$RP$rcb_xyz${da}'))
-            for da in ['RptID',
-                       'RptEna',
-                       'DatSet',
-                       'ConfRev',
-                       'OptFlds',
-                       'BufTm',
-                       'SqNum',
-                       'TrgOps',
-                       'IntgPd',
-                       'GI',
-                       'Resv']])),
-    ])
+@pytest.mark.parametrize('rcb_type', iec61850.RcbType)
+@pytest.mark.parametrize('rcb_attr_type, rcb_attr_value, mms_data', [
+    (iec61850.RcbAttrType.REPORT_ID,
+     'rpt_xyz',
+     mms.VisibleStringData('rpt_xyz')),
+
+    (iec61850.RcbAttrType.REPORT_ENABLE,
+     True,
+     mms.BooleanData(True)),
+
+    (iec61850.RcbAttrType.DATASET,
+     iec61850.PersistedDatasetRef(logical_device='ld',
+                                  logical_node='ln',
+                                  name='ds'),
+     mms.VisibleStringData("ld/ln$ds")),
+
+    (iec61850.RcbAttrType.DATASET,
+     iec61850.NonPersistedDatasetRef('ds'),
+     mms.VisibleStringData("@ds")),
+
+    (iec61850.RcbAttrType.CONF_REVISION,
+     123,
+     mms.UnsignedData(123)),
+
+    (iec61850.RcbAttrType.OPTIONAL_FIELDS,
+     set(iec61850.OptionalField),
+     mms.BitStringData([False, *([True] * 8), False])),
+
+    (iec61850.RcbAttrType.BUFFER_TIME,
+     3,
+     mms.UnsignedData(3)),
+
+    (iec61850.RcbAttrType.SEQUENCE_NUMBER,
+     456,
+     mms.UnsignedData(456)),
+
+    (iec61850.RcbAttrType.TRIGGER_OPTIONS,
+     set(iec61850.TriggerCondition),
+     mms.BitStringData([False, *([True] * 5)])),
+
+    (iec61850.RcbAttrType.INTEGRITY_PERIOD,
+     23,
+     mms.UnsignedData(23)),
+
+    (iec61850.RcbAttrType.GI,
+     True,
+     mms.BooleanData(True)),
+
+    (iec61850.RcbAttrType.PURGE_BUFFER,
+     True,
+     mms.BooleanData(True)),
+
+    (iec61850.RcbAttrType.ENTRY_ID,
+     b'entry_xyz',
+     mms.OctetStringData(b'entry_xyz')),
+
+    (iec61850.RcbAttrType.TIME_OF_ENTRY,
+     datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+     mms.BinaryTimeData(datetime.datetime(2020, 2, 3, 4, 5,
+                                          tzinfo=datetime.timezone.utc))),
+
+    (iec61850.RcbAttrType.RESERVATION_TIME,
+     5,
+     mms.IntegerData(5)),
+
+    (iec61850.RcbAttrType.RESERVE,
+     True,
+     mms.BooleanData(True))
+])
 @pytest.mark.parametrize('mms_response, response', [
-    (mms.ReadResponse([
-        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
-        mms.BooleanData(True),  # ReportEnable
-        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
-        mms.UnsignedData(123),  # ConfigurationRevision
-        mms.BitStringData([  # OptionalFields
-            False, True, True, True, True, True, True, True, True,  False]),
-        mms.UnsignedData(3),  # BufferTime
-        mms.UnsignedData(456),  # SequenceNumber
-        mms.BitStringData([  # TriggerOptionsEnabled
-            False, True, True, True, True, True]),
-        mms.UnsignedData(23),  # IntegrityPeriod
-        mms.BooleanData(True),  # GeneralInterrogation
-        mms.BooleanData(False),  # Reserve
-        ]),
-     iec61850.Urcb(
-        report_id='rpt_xyz',
-        report_enable=True,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
-        conf_revision=123,
-        optional_fields=set([
-            iec61850.OptionalField.SEQUENCE_NUMBER,
-            iec61850.OptionalField.REPORT_TIME_STAMP,
-            iec61850.OptionalField.REASON_FOR_INCLUSION,
-            iec61850.OptionalField.DATA_SET_NAME,
-            iec61850.OptionalField.DATA_REFERENCE,
-            iec61850.OptionalField.BUFFER_OVERFLOW,
-            iec61850.OptionalField.ENTRY_ID,
-            iec61850.OptionalField.CONF_REVISION]),
-        buffer_time=3,
-        sequence_number=456,
-        trigger_options=set([
-            iec61850.TriggerCondition.DATA_CHANGE,
-            iec61850.TriggerCondition.QUALITY_CHANGE,
-            iec61850.TriggerCondition.DATA_UPDATE,
-            iec61850.TriggerCondition.INTEGRITY,
-            iec61850.TriggerCondition.GENERAL_INTERROGATION]),
-        integrity_period=23,
-        gi=True,
-        reserve=False)),
-
-    # any attr that responded with DataAccessError is left None
-    (mms.ReadResponse([
-        mms.VisibleStringData('rpt_xyz'),  # ReportIdentifier
-        mms.BooleanData(True),  # ReportEnable
-        mms.VisibleStringData("ln/ld$ds1"),  # DataSetReference
-        mms.UnsignedData(123),  # ConfigurationRevision
-        mms.DataAccessError.OBJECT_NON_EXISTENT,  # OptionalFields
-        mms.UnsignedData(3),  # BufferTime
-        mms.DataAccessError.TYPE_UNSUPPORTED,  # SequenceNumber
-        mms.DataAccessError.OBJECT_ACCESS_UNSUPPORTED,  # TriggerOptionsEnabled
-        mms.UnsignedData(23),  # IntegrityPeriod
-        mms.DataAccessError.TEMPORARILY_UNAVAILABLE,  # GeneralInterrogation
-        mms.BooleanData(False)]),  # Reserve
-     iec61850.Urcb(
-        report_id='rpt_xyz',
-        report_enable=True,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
-        conf_revision=123,
-        optional_fields=None,
-        buffer_time=3,
-        sequence_number=None,
-        trigger_options=None,
-        integrity_period=23,
-        gi=None,
-        reserve=False)),
-
-    (mms.ServiceError.PDU_SIZE,
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-
-    # any class, any unmapped error codes
-    (mms.AccessError.OBJECT_ACCESS_DENIED,
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-
-    (mms.ReadResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED]),
-     iec61850.ServiceError.ACCESS_VIOLATION),
-
-    (mms.ReadResponse([mms.DataAccessError.OBJECT_NON_EXISTENT]),
-     iec61850.ServiceError.INSTANCE_NOT_AVAILABLE),
-
-    # any other DataAccessError
-    (mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
-     iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
-    ])
-async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
-                        mms_response, response):
-    request_queue = aio.Queue()
-
-    def on_request(conn, req):
-        request_queue.put_nowait(req)
-        return mms_response
-
-    mms_srv = await mms.listen(
-        connection_cb=lambda _: None,
-        addr=mms_srv_addr,
-        request_cb=on_request)
-
-    conn = await iec61850.connect(addr=mms_srv_addr)
-
-    resp = await conn.get_rcb(rcb_ref)
-    assert resp == response
-
-    req = await request_queue.get()
-    assert req == mms_request
-
-    await conn.async_close()
-    await mms_srv.async_close()
-
-
-@pytest.mark.parametrize('rcb_ref, rcb, mms_request', [
-    (iec61850.RcbRef(logical_device='ld1',
-                     logical_node='ln2',
-                     type=iec61850.RcbType.BUFFERED,
-                     name='rcb_xyz'),
-     iec61850.Brcb(
-        report_id='rpt_xyz',
-        report_enable=True,
-        dataset=iec61850.PersistedDatasetRef(
-            logical_device='ln',
-            logical_node='ld',
-            name='ds1'),
-        conf_revision=123,
-        optional_fields=set([
-            iec61850.OptionalField.SEQUENCE_NUMBER,
-            iec61850.OptionalField.REPORT_TIME_STAMP,
-            iec61850.OptionalField.REASON_FOR_INCLUSION,
-            iec61850.OptionalField.DATA_SET_NAME,
-            iec61850.OptionalField.DATA_REFERENCE,
-            iec61850.OptionalField.BUFFER_OVERFLOW,
-            iec61850.OptionalField.ENTRY_ID,
-            iec61850.OptionalField.CONF_REVISION]),
-        buffer_time=3,
-        sequence_number=456,
-        trigger_options=set([
-            iec61850.TriggerCondition.DATA_CHANGE,
-            iec61850.TriggerCondition.QUALITY_CHANGE,
-            iec61850.TriggerCondition.DATA_UPDATE,
-            iec61850.TriggerCondition.INTEGRITY,
-            iec61850.TriggerCondition.GENERAL_INTERROGATION]),
-        integrity_period=23,
-        gi=True,
-        purge_buffer=False,
-        entry_id=b'entry_xyz',
-        time_of_entry=datetime.datetime(
-            2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-        reservation_time=5),
-     mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld1',
-                    item_id=f'ln2$BR$rcb_xyz${da}'))
-            for da in ['RptID',
-                       'RptEna',
-                       'DatSet',
-                       'ConfRev',
-                       'OptFlds',
-                       'BufTm',
-                       'SqNum',
-                       'TrgOps',
-                       'IntgPd',
-                       'GI',
-                       'PurgeBuf',
-                       'EntryID',
-                       'TimeOfEntry',
-                       'ResvTms']],
-        data=[mms.VisibleStringData('rpt_xyz'),  # RptID
-              mms.BooleanData(True),  # RptEna
-              mms.VisibleStringData("ln/ld$ds1"),  # DatSet
-              mms.UnsignedData(123),  # ConfRev
-              mms.BitStringData([  # OptFlds
-                  False, True, True, True, True, True, True, True, True,
-                  False]),
-              mms.UnsignedData(3),  # BufTm
-              mms.UnsignedData(456),  # SqNum
-              mms.BitStringData([  # TrgOps
-                  False, True, True, True, True, True]),
-              mms.UnsignedData(23),  # IntgPd
-              mms.BooleanData(True),  # GI
-              mms.BooleanData(False),  # PurgeBuf
-              mms.OctetStringData(b'entry_xyz'),  # EntryID
-              mms.BinaryTimeData(  # TimeofEntry
-                  datetime.datetime(
-                    2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)),
-              mms.IntegerData(5)])),  # ResvTms
-
-    (iec61850.RcbRef(logical_device='ld2',
-                     logical_node='ln3',
-                     type=iec61850.RcbType.UNBUFFERED,
-                     name='rcb_abc'),
-     iec61850.Urcb(
-        report_id='rpt_abc',
-        report_enable=True,
-        reserve=False,
-        dataset=iec61850.NonPersistedDatasetRef('ds_xyz'),
-        conf_revision=123,
-        optional_fields=set([
-            iec61850.OptionalField.SEQUENCE_NUMBER,
-            iec61850.OptionalField.REASON_FOR_INCLUSION,
-            iec61850.OptionalField.DATA_REFERENCE,
-            iec61850.OptionalField.ENTRY_ID,
-            iec61850.OptionalField.CONF_REVISION]),
-        buffer_time=3,
-        sequence_number=456,
-        trigger_options=set([
-            iec61850.TriggerCondition.DATA_CHANGE,
-            iec61850.TriggerCondition.DATA_UPDATE,
-            iec61850.TriggerCondition.GENERAL_INTERROGATION]),
-        integrity_period=23,
-        gi=True),
-     mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld2',
-                    item_id=f'ln3$RP$rcb_abc${da}'))
-            for da in ['RptID',
-                       'RptEna',
-                       'DatSet',
-                       'ConfRev',
-                       'OptFlds',
-                       'BufTm',
-                       'SqNum',
-                       'TrgOps',
-                       'IntgPd',
-                       'GI',
-                       'Resv']],
-        data=[mms.VisibleStringData('rpt_abc'),  # RptID
-              mms.BooleanData(True),  # RptEna
-              mms.AaSpecificObjectName("@ds_xyz"),  # DatSet
-              mms.UnsignedData(123),  # ConfRev
-              mms.BitStringData([  # OptFlds
-                  False, True, False, True, False, True, False, True, True,
-                  False]),
-              mms.UnsignedData(3),  # BufTm
-              mms.UnsignedData(456),  # SqNum
-              mms.BitStringData([  # TrgOps
-                  False, True, False, True, False, True]),
-              mms.UnsignedData(23),  # IntgPd
-              mms.BooleanData(True),  # GI
-              mms.BooleanData(False),  # Resv
-              ])),
-
-    (iec61850.RcbRef(logical_device='ld2',
-                     logical_node='ln3',
-                     type=iec61850.RcbType.UNBUFFERED,
-                     name='rcb_abc'),
-     iec61850.Urcb(
-        report_id='rpt_abc',
-        report_enable=True,
-        reserve=None,
-        dataset=None,
-        conf_revision=None,
-        optional_fields=None,
-        buffer_time=None,
-        sequence_number=None,
-        trigger_options=None,
-        integrity_period=None,
-        gi=None),
-     mms.WriteRequest(
-        specification=[
-            mms.NameVariableSpecification(
-                mms.DomainSpecificObjectName(
-                    domain_id='ld2',
-                    item_id=f'ln3$RP$rcb_abc${da}'))
-            for da in ['RptID',
-                       'RptEna']],
-        data=[mms.VisibleStringData('rpt_abc'),  # ReportIdentifier
-              mms.BooleanData(True)]))  # ReportEnable
-
-    ])
-@pytest.mark.parametrize('mms_response, response', [
-    (mms.WriteResponse([None]), None),
+    (mms.WriteResponse([None]),
+     None),
 
     # any class any, unmapped error codes
     (mms.AccessError.OBJECT_NON_EXISTENT,
@@ -1033,13 +672,37 @@ async def test_get_urcb(mms_srv_addr, rcb_ref, mms_request,
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT),
 
     # TODO: add MMS Reject, when added to mms
-    ])
-async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
-                       mms_response, response):
-    request_queue = aio.Queue()
+])
+async def test_set_rcb_attrs(mms_srv_addr, rcb_type, rcb_attr_type, mms_data,
+                             rcb_attr_value, mms_response, response):
+    if rcb_type == iec61850.RcbType.BUFFERED:
+        if rcb_attr_type == iec61850.RcbAttrType.RESERVE:
+            return
+
+    elif rcb_type == iec61850.RcbType.UNBUFFERED:
+        if rcb_attr_type in (iec61850.RcbAttrType.PURGE_BUFFER,
+                             iec61850.RcbAttrType.ENTRY_ID,
+                             iec61850.RcbAttrType.TIME_OF_ENTRY,
+                             iec61850.RcbAttrType.RESERVATION_TIME):
+            return
+
+    rcb_ref = iec61850.RcbRef(logical_device='ld',
+                              logical_node='ln',
+                              type=rcb_type,
+                              name='name')
 
     def on_request(conn, req):
-        request_queue.put_nowait(req)
+        assert req == mms.WriteRequest(
+            specification=[
+                mms.NameVariableSpecification(
+                    mms.DomainSpecificObjectName(
+                        domain_id=rcb_ref.logical_device,
+                        item_id=(f'{rcb_ref.logical_node}$'
+                                 f'{rcb_type.value}$'
+                                 f'{rcb_ref.name}$'
+                                 f'{rcb_attr_type.value}')))],
+            data=[mms_data])
+
         return mms_response
 
     mms_srv = await mms.listen(
@@ -1049,11 +712,8 @@ async def test_set_rcb(mms_srv_addr, rcb_ref, rcb, mms_request,
 
     conn = await iec61850.connect(addr=mms_srv_addr)
 
-    resp = await conn.set_rcb(rcb_ref, rcb)
+    resp = await conn.set_rcb_attrs(rcb_ref, [(rcb_attr_type, rcb_attr_value)])
     assert resp == response
-
-    req = await request_queue.get()
-    assert req == mms_request
 
     await conn.async_close()
     await mms_srv.async_close()

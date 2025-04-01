@@ -94,12 +94,6 @@ class Client(aio.Resource):
         """Connection info"""
         return self._conn.info
 
-    async def get_logical_devices(self) -> Collection[str] | common.ServiceError:  # NOQA
-        """Get logical devices"""
-        return await self._get_name_list(
-            object_class=mms.ObjectClass.DOMAIN,
-            object_scope=mms.VmdSpecificObjectScope())
-
     async def create_dataset(self,
                              ref: common.DatasetRef,
                              data: Iterable[common.DataRef]
@@ -183,18 +177,6 @@ class Client(aio.Resource):
 
         return refs
 
-    async def get_non_persisted_dataset_refs(self) -> Collection[common.NonPersistedDatasetRef] | common.ServiceError:  # NOQA
-        """Get non persisted dataset references"""
-        names = await self._get_name_list(
-            object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
-            object_scope=mms.AaSpecificObjectScope())
-
-        if isinstance(names, common.ServiceError):
-            return names
-
-        return [common.NonPersistedDatasetRef(name)
-                for name in names]
-
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef
                                     ) -> Collection[common.DataRef] | common.ServiceError:  # NOQA
@@ -229,20 +211,21 @@ class Client(aio.Resource):
 
         return refs
 
-    async def get_rcb(self,
-                      ref: common.RcbRef
-                      ) -> common.Rcb | common.ServiceError:
-        """Get RCB values"""
-        attrs = ['RptID', 'RptEna', 'DatSet', 'ConfRev', 'OptFlds', 'BufTm',
-                 'SqNum', 'TrgOps', 'IntgPd', 'GI']
-
+    async def get_rcb_attr(self,
+                           ref: common.RcbRef,
+                           attr_type: common.RcbAttrType
+                           ) -> common.RcbAttrValue | common.ServiceError:
+        """Get RCB attribute value"""
         if ref.type == common.RcbType.BUFFERED:
-            attrs.extend(['PurgeBuf', 'EntryID', 'TimeOfEntry', 'ResvTms'])
-            rcb = common.Brcb()
+            if attr_type == common.RcbAttrType.RESERVE:
+                raise ValueError('unsupported attribute type')
 
         elif ref.type == common.RcbType.UNBUFFERED:
-            attrs.extend(['Resv'])
-            rcb = common.Urcb()
+            if attr_type in (common.RcbAttrType.PURGE_BUFFER,
+                             common.RcbAttrType.ENTRY_ID,
+                             common.RcbAttrType.TIME_OF_ENTRY,
+                             common.RcbAttrType.RESERVATION_TIME):
+                raise ValueError('unsupported attribute type')
 
         else:
             raise TypeError('unsupported rcb type')
@@ -253,8 +236,7 @@ class Client(aio.Resource):
                     common.DataRef(logical_device=ref.logical_device,
                                    logical_node=ref.logical_node,
                                    fc=ref.type.value,
-                                   names=(ref.name, attr))))
-            for attr in attrs])
+                                   names=(ref.name, attr_type.value))))])
 
         res = await self._send(req)
 
@@ -264,234 +246,49 @@ class Client(aio.Resource):
         if not isinstance(res, mms.ReadResponse):
             raise Exception('unsupported response type')
 
-        if all(isinstance(i, mms.DataAccessError) for i in res.results):
-            if all(i == mms.DataAccessError.OBJECT_ACCESS_DENIED
-                   for i in res.results):
+        if len(res.results) != 1:
+            raise Exception('invalid results length')
+
+        mms_data = res.results[0]
+
+        if isinstance(mms_data, mms.DataAccessError):
+            if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
                 return common.ServiceError.ACCESS_VIOLATION
 
-            if all(i == mms.DataAccessError.OBJECT_NON_EXISTENT
-                   for i in res.results):
+            if mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
                 return common.ServiceError.INSTANCE_NOT_AVAILABLE
 
             return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
 
-        if len(attrs) != len(res.results):
-            raise Exception('invalid results length')
+        return encoder.rcb_attr_value_from_mms_data(mms_data, attr_type)
 
-        for attr, data in zip(attrs, res.results):
-            if isinstance(data, mms.DataAccessError):
-                mlog.warning("error reading rcb attribute %s: %s",
-                             attr, data.name)
-                continue
-
-            if attr == 'RptID':
-                rcb = rcb._replace(
-                    report_id=encoder.value_from_mms_data(
-                        data, common.BasicValueType.VISIBLE_STRING))
-
-            elif attr == 'RptEna':
-                rcb = rcb._replace(
-                    report_enable=encoder.value_from_mms_data(
-                        data, common.BasicValueType.BOOLEAN))
-
-            elif attr == 'DatSet':
-                value = encoder.value_from_mms_data(
-                    data, common.BasicValueType.VISIBLE_STRING)
-                rcb = rcb._replace(
-                    dataset=encoder.dataset_ref_from_str(value))
-
-            elif attr == 'ConfRev':
-                rcb = rcb._replace(
-                    conf_revision=encoder.value_from_mms_data(
-                        data, common.BasicValueType.UNSIGNED))
-
-            elif attr == 'OptFlds':
-                value = encoder.value_from_mms_data(
-                    data, common.BasicValueType.BIT_STRING)
-                if len(value) != 10:
-                    raise Exception('invalid optional fields size')
-
-                rcb = rcb._replace(
-                    optional_fields={common.OptionalField(index)
-                                     for index, i in enumerate(value)
-                                     if (1 <= index <= 8) and i})
-
-            elif attr == 'BufTm':
-                rcb = rcb._replace(
-                    buffer_time=encoder.value_from_mms_data(
-                        data, common.BasicValueType.UNSIGNED))
-
-            elif attr == 'SqNum':
-                rcb = rcb._replace(
-                    sequence_number=encoder.value_from_mms_data(
-                        data, common.BasicValueType.UNSIGNED))
-
-            elif attr == 'TrgOps':
-                value = encoder.value_from_mms_data(
-                    data, common.BasicValueType.BIT_STRING)
-                if len(value) != 6:
-                    raise Exception('invalid trigger options size')
-
-                rcb = rcb._replace(
-                    trigger_options={common.TriggerCondition(index)
-                                     for index, i in enumerate(value)
-                                     if index >= 1 and i})
-
-            elif attr == 'IntgPd':
-                rcb = rcb._replace(
-                    integrity_period=encoder.value_from_mms_data(
-                        data, common.BasicValueType.UNSIGNED))
-
-            elif attr == 'GI':
-                rcb = rcb._replace(
-                    gi=encoder.value_from_mms_data(
-                        data, common.BasicValueType.BOOLEAN))
-
-            elif attr == 'PurgeBuf':
-                rcb = rcb._replace(
-                    purge_buffer=encoder.value_from_mms_data(
-                        data, common.BasicValueType.BOOLEAN))
-
-            elif attr == 'EntryID':
-                rcb = rcb._replace(
-                    entry_id=encoder.value_from_mms_data(
-                        data, common.BasicValueType.OCTET_STRING))
-
-            elif attr == 'TimeOfEntry':
-                if not isinstance(data, mms.BinaryTimeData):
-                    raise Exception('unexpected data type')
-
-                rcb = rcb._replace(time_of_entry=data.value)
-
-            elif attr == 'ResvTms':
-                rcb = rcb._replace(
-                    reservation_time=encoder.value_from_mms_data(
-                        data, common.BasicValueType.INTEGER))
-
-            elif attr == 'Resv':
-                rcb = rcb._replace(
-                    reserve=encoder.value_from_mms_data(
-                        data, common.BasicValueType.BOOLEAN))
-
-            else:
-                raise ValueError('unsupported attribute')
-
-        return rcb
-
-    async def set_rcb(self,
-                      ref: common.RcbRef,
-                      rcb: common.Rcb
-                      ) -> common.ServiceError | None:
-        """Set RCB values"""
-        attrs = collections.deque()
+    async def set_rcb_attrs(self,
+                            ref: common.RcbRef,
+                            attrs: Iterable[tuple[common.RcbAttrType,
+                                                  common.RcbAttrValue]]
+                            ) -> common.ServiceError | None:
+        """Set RCB attribute values"""
+        attr_names = collections.deque()
         data = collections.deque()
 
-        if rcb.report_id is not None:
-            attrs.append('RptID')
+        for attr_type, attr_value in attrs:
+            if ref.type == common.RcbType.BUFFERED:
+                if attr_type == common.RcbAttrType.RESERVE:
+                    raise ValueError('unsupported attribute type')
+
+            elif ref.type == common.RcbType.UNBUFFERED:
+                if attr_type in (common.RcbAttrType.PURGE_BUFFER,
+                                 common.RcbAttrType.ENTRY_ID,
+                                 common.RcbAttrType.TIME_OF_ENTRY,
+                                 common.RcbAttrType.RESERVATION_TIME):
+                    raise ValueError('unsupported attribute type')
+
+            else:
+                raise TypeError('unsupported rcb type')
+
+            attr_names.append(attr_type.value)
             data.append(
-                encoder.value_to_mms_data(
-                    rcb.report_id, common.BasicValueType.VISIBLE_STRING))
-
-        if rcb.report_enable is not None:
-            attrs.append('RptEna')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.report_enable, common.BasicValueType.BOOLEAN))
-
-        if rcb.dataset is not None:
-            attrs.append('DatSet')
-            data.append(
-                encoder.value_to_mms_data(
-                    encoder.dataset_ref_to_str(rcb.dataset),
-                    common.BasicValueType.VISIBLE_STRING))
-
-        if rcb.conf_revision is not None:
-            attrs.append('ConfRev')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.conf_revision, common.BasicValueType.UNSIGNED))
-
-        if rcb.optional_fields is not None:
-            attrs.append('OptFlds')
-            data.append(
-                encoder.value_to_mms_data(
-                    [False,
-                     *(common.OptionalField(i) in rcb.optional_fields
-                       for i in range(1, 9)),
-                     False],
-                    common.BasicValueType.BIT_STRING))
-
-        if rcb.buffer_time is not None:
-            attrs.append('BufTm')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.buffer_time, common.BasicValueType.UNSIGNED))
-
-        if rcb.sequence_number is not None:
-            attrs.append('SqNum')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.sequence_number, common.BasicValueType.UNSIGNED))
-
-        if rcb.trigger_options is not None:
-            attrs.append('TrgOps')
-            data.append(
-                encoder.value_to_mms_data(
-                    [False,
-                     *(common.TriggerCondition(i) in rcb.trigger_options
-                       for i in range(1, 6))],
-                    common.BasicValueType.BIT_STRING))
-
-        if rcb.integrity_period is not None:
-            attrs.append('IntgPd')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.integrity_period, common.BasicValueType.UNSIGNED))
-
-        if rcb.gi is not None:
-            attrs.append('GI')
-            data.append(
-                encoder.value_to_mms_data(
-                    rcb.gi, common.BasicValueType.BOOLEAN))
-
-        if isinstance(rcb, common.Brcb):
-            if ref.type != common.RcbType.BUFFERED:
-                raise Exception("rcb type and reference type mismatch")
-
-            if rcb.purge_buffer is not None:
-                attrs.append('PurgeBuf')
-                data.append(
-                    encoder.value_to_mms_data(
-                        rcb.purge_buffer, common.BasicValueType.BOOLEAN))
-
-            if rcb.entry_id is not None:
-                attrs.append('EntryID')
-                data.append(
-                    encoder.value_to_mms_data(
-                        rcb.entry_id, common.BasicValueType.OCTET_STRING))
-
-            if rcb.time_of_entry is not None:
-                attrs.append('TimeOfEntry')
-                data.append(mms.BinaryTimeData(rcb.time_of_entry))
-
-            if rcb.reservation_time is not None:
-                attrs.append('ResvTms')
-                data.append(
-                    encoder.value_to_mms_data(
-                        rcb.reservation_time, common.BasicValueType.INTEGER))
-
-        elif isinstance(rcb, common.Urcb):
-            if ref.type != common.RcbType.UNBUFFERED:
-                raise Exception("rcb type and reference type mismatch")
-
-            if rcb.reserve is not None:
-                attrs.append('Resv')
-                data.append(
-                    encoder.value_to_mms_data(
-                        rcb.reserve, common.BasicValueType.BOOLEAN))
-
-        else:
-            raise TypeError('unsupported rcb type')
+                encoder.rcb_attr_value_to_mms_data(attr_value, attr_type))
 
         req = mms.WriteRequest(
             specification=[
@@ -500,8 +297,8 @@ class Client(aio.Resource):
                         common.DataRef(logical_device=ref.logical_device,
                                        logical_node=ref.logical_node,
                                        fc=ref.type.value,
-                                       names=(ref.name, attr))))
-                for attr in attrs],
+                                       names=(ref.name, attr_name))))
+                for attr_name in attr_names],
             data=data)
 
         res = await self._send(req)

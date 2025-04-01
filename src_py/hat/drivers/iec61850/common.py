@@ -273,38 +273,69 @@ class TriggerCondition(enum.Enum):
     GENERAL_INTERROGATION = 5
 
 
-class Brcb(typing.NamedTuple):
-    report_id: ReportId | None = None
-    report_enable: bool | None = None
-    dataset: DatasetRef | None = None
-    conf_revision: int | None = None
-    optional_fields: set[OptionalField] | None = None
-    buffer_time: int | None = None
-    sequence_number: int | None = None
-    trigger_options: set[TriggerCondition] | None = None
-    integrity_period: int | None = None
-    gi: bool | None = None
-    purge_buffer: bool | None = None
-    entry_id: util.Bytes | None = None
-    time_of_entry: EntryTime | None = None
-    reservation_time: int | None = None
+class RcbAttrType(enum.Enum):
+    REPORT_ID = 'RptID'
+    REPORT_ENABLE = 'RptEna'
+    DATASET = 'DatSet'
+    CONF_REVISION = 'ConfRev'
+    OPTIONAL_FIELDS = 'OptFlds'
+    BUFFER_TIME = 'BufTm'
+    SEQUENCE_NUMBER = 'SqNum'
+    TRIGGER_OPTIONS = 'TrgOps'
+    INTEGRITY_PERIOD = 'IntgPd'
+    GI = 'GI'
+    PURGE_BUFFER = 'PurgeBuf'  # brcb
+    ENTRY_ID = 'EntryID'  # brcb
+    TIME_OF_ENTRY = 'TimeOfEntry'  # brcb
+    RESERVATION_TIME = 'ResvTms'  # brcb
+    RESERVE = 'Resv'  # urcb
 
 
-class Urcb(typing.NamedTuple):
-    report_id: ReportId | None = None
-    report_enable: bool | None = None
-    dataset: DatasetRef | None = None
-    conf_revision: int | None = None
-    optional_fields: set[OptionalField] | None = None
-    buffer_time: int | None = None
-    sequence_number: int | None = None
-    trigger_options: set[TriggerCondition] | None = None
-    integrity_period: int | None = None
-    gi: bool | None = None
-    reserve: bool | None = None
+ReportIdRcbAttrValue: typing.TypeAlias = ReportId
 
+ReportEnableRcbAttrValue: typing.TypeAlias = bool
 
-Rcb: typing.TypeAlias = Brcb | Urcb
+DatasetRcbAttrValue: typing.TypeAlias = DatasetRef
+
+ConfRevisionRcbAttrValue: typing.TypeAlias = int
+
+OptionalFieldsRcbAttrValue: typing.TypeAlias = set[OptionalField]
+
+BufferTimeRcbAttrValue: typing.TypeAlias = int
+
+SequenceNumberRcbAttrValue: typing.TypeAlias = int
+
+TriggerOptionsRcbAttrValue: typing.TypeAlias = set[TriggerCondition]
+
+IntegrityPeriodRcbAttrValue: typing.TypeAlias = int
+
+GiRcbAttrValue: typing.TypeAlias = bool
+
+PurgeBufferRcbAttrValue: typing.TypeAlias = bool
+
+EntryIdRcbAttrValue: typing.TypeAlias = util.Bytes
+
+TimeOfEntryRcbAttrValue: typing.TypeAlias = EntryTime
+
+ReservationTimeRcbAttrValue: typing.TypeAlias = int
+
+ReserveRcbAttrValue: typing.TypeAlias = bool
+
+RcbAttrValue: typing.TypeAlias = (ReportIdRcbAttrValue |
+                                  ReportEnableRcbAttrValue |
+                                  DatasetRcbAttrValue |
+                                  ConfRevisionRcbAttrValue |
+                                  OptionalFieldsRcbAttrValue |
+                                  BufferTimeRcbAttrValue |
+                                  SequenceNumberRcbAttrValue |
+                                  TriggerOptionsRcbAttrValue |
+                                  IntegrityPeriodRcbAttrValue |
+                                  GiRcbAttrValue |
+                                  PurgeBufferRcbAttrValue |
+                                  EntryIdRcbAttrValue |
+                                  TimeOfEntryRcbAttrValue |
+                                  ReservationTimeRcbAttrValue |
+                                  ReserveRcbAttrValue)
 
 
 # report ######################################################################
