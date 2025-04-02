@@ -292,8 +292,8 @@ def value_from_mms_data(mms_data: mms.Data,
         if len(mms_data.elements) != len(value_type.elements):
             raise Exception('invalid structure size')
 
-        return [value_from_mms_data(i, t)
-                for i, t in zip(mms_data.elements, value_type.elements)]
+        return {k: value_from_mms_data(i, t)
+                for i, (k, t) in zip(mms_data.elements, value_type.elements)}
 
     raise TypeError('unsupported value type')
 
@@ -444,11 +444,8 @@ def value_to_mms_data(value: common.Value,
                               for i in value])
 
     if isinstance(value_type, common.StructValueType):
-        if len(value) != len(value_type.elements):
-            raise Exception('invalid structure size')
-
-        return mms.StructureData([value_to_mms_data(i, t)
-                                  for i, t in zip(value, value_type.elements)])
+        return mms.StructureData([value_to_mms_data(value[k], t)
+                                  for k, t in value_type.elements])
 
     raise TypeError('unsupported value type')
 

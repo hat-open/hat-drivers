@@ -825,19 +825,18 @@ async def test_set_rcb_attrs(mms_srv_addr, rcb_type, rcb_attr_type, mms_data,
      [f'abc{i}' for i in range(10)],
      mms.ArrayData([mms.VisibleStringData(f'abc{i}') for i in range(10)])),
 
-    (iec61850.StructValueType([iec61850.AcsiValueType.DOUBLE_POINT,
-                               iec61850.AcsiValueType.QUALITY,
-                               iec61850.AcsiValueType.TIMESTAMP]),
-     [iec61850.DoublePoint.OFF,
-      iec61850.Quality(
-        iec61850.QualityValidity.GOOD,
-        set([]),
-        iec61850.QualitySource.PROCESS,
-        False,
-        False),
-      iec61850.Timestamp(datetime.datetime(
-        2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-        True, True, True, 3)],
+    (iec61850.StructValueType([('v', iec61850.AcsiValueType.DOUBLE_POINT),
+                               ('q', iec61850.AcsiValueType.QUALITY),
+                               ('t', iec61850.AcsiValueType.TIMESTAMP)]),
+     {'v': iec61850.DoublePoint.OFF,
+      'q': iec61850.Quality(iec61850.QualityValidity.GOOD,
+                            set([]),
+                            iec61850.QualitySource.PROCESS,
+                            False,
+                            False),
+      't': iec61850.Timestamp(
+        datetime.datetime(2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
+        True, True, True, 3)},
      mms.StructureData([  # values
         mms.BitStringData([False, True]),
         mms.BitStringData(value=[False] * 13),
@@ -1524,7 +1523,7 @@ async def test_operate(mms_srv_addr, cmd_ref, mms_ref, cmd, value_type,
     await mms_srv.async_close()
 
 
-@pytest.mark.parametrize('mss_add_cause, response', [
+@pytest.mark.parametrize('mms_add_cause, response', [
     # paired correctly with request's name and control numberr
     (mms.InformationReportUnconfirmed(
         specification=[mms.NameVariableSpecification(
@@ -1576,7 +1575,7 @@ async def test_operate(mms_srv_addr, cmd_ref, mms_ref, cmd, value_type,
                     iec61850.AdditionalCause.NOT_SUPPORTED.value)])]),
      iec61850.CommandError(None, None, None)),
 ])
-async def test_add_cause_pairing(mms_srv_addr, mss_add_cause, response):
+async def test_add_cause_pairing(mms_srv_addr, mms_add_cause, response):
     cmd_ref = iec61850.CommandRef('ld1', 'ln2', 'cmd1')
     cmd = iec61850.Command(
              value=3,
@@ -1599,7 +1598,7 @@ async def test_add_cause_pairing(mms_srv_addr, mss_add_cause, response):
 
     async def on_request(conn, req):
         mms_conn_srv = await mms_conn_queue.get()
-        await mms_conn_srv.send_unconfirmed(mss_add_cause)
+        await mms_conn_srv.send_unconfirmed(mms_add_cause)
 
         return mms.WriteResponse([mms.DataAccessError.OBJECT_ACCESS_DENIED])
 
@@ -1968,19 +1967,19 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
         mms.UtcTimeData(datetime.datetime(
                 2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
               True, True, True, 3)]),
-     iec61850.StructValueType([iec61850.AcsiValueType.DOUBLE_POINT,
-                               iec61850.AcsiValueType.QUALITY,
-                               iec61850.AcsiValueType.TIMESTAMP]),
-     [iec61850.DoublePoint.OFF,
-      iec61850.Quality(
+     iec61850.StructValueType([('v', iec61850.AcsiValueType.DOUBLE_POINT),
+                               ('q', iec61850.AcsiValueType.QUALITY),
+                               ('t', iec61850.AcsiValueType.TIMESTAMP)]),
+     {'v': iec61850.DoublePoint.OFF,
+      'q': iec61850.Quality(
         iec61850.QualityValidity.GOOD,
         set([]),
         iec61850.QualitySource.PROCESS,
         False,
         False),
-      iec61850.Timestamp(datetime.datetime(
+      't': iec61850.Timestamp(datetime.datetime(
         2020, 2, 3, 4, 5, tzinfo=datetime.timezone.utc),
-        True, True, True, 3)]),
+        True, True, True, 3)}),
 ])
 @pytest.mark.parametrize('mms_reasons, reasons', [
     (mms.BitStringData([False, True, False, False, False, True, False]),

@@ -81,7 +81,7 @@ class ArrayValueType(typing.NamedTuple):
 
 
 class StructValueType(typing.NamedTuple):
-    elements: Collection['ValueType']
+    elements: Collection[typing.Tuple[str, 'ValueType']]
 
 
 ValueType: typing.TypeAlias = (BasicValueType |
@@ -185,7 +185,7 @@ AcsiValue = (Quality | Timestamp | DoublePoint | Direction | Severity |
 
 ArrayValue: typing.NamedTuple = Collection['Value']
 
-StructValue: typing.NamedTuple = Collection['Value']
+StructValue: typing.NamedTuple = typing.Dict[str, 'Value']
 
 Value: typing.NamedTuple = BasicValue | AcsiValue | ArrayValue | StructValue
 
