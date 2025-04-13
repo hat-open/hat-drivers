@@ -211,64 +211,78 @@ class Client(aio.Resource):
 
         return refs
 
-    async def get_rcb_attr(self,
-                           ref: common.RcbRef,
-                           attr_type: common.RcbAttrType
-                           ) -> common.RcbAttrValue | common.ServiceError:
+    async def get_rcb_attrs(self,
+                            ref: common.RcbRef,
+                            attr_types: Collection[common.RcbAttrType]
+                            ) -> dict[common.RcbAttrType,
+                                      common.RcbAttrValue | common.ServiceError]:  # NOQA
         """Get RCB attribute value"""
-        if ref.type == common.RcbType.BUFFERED:
-            if attr_type == common.RcbAttrType.RESERVE:
-                raise ValueError('unsupported attribute type')
+        specification = collections.deque()
 
-        elif ref.type == common.RcbType.UNBUFFERED:
-            if attr_type in (common.RcbAttrType.PURGE_BUFFER,
-                             common.RcbAttrType.ENTRY_ID,
-                             common.RcbAttrType.TIME_OF_ENTRY,
-                             common.RcbAttrType.RESERVATION_TIME):
-                raise ValueError('unsupported attribute type')
+        for attr_type in attr_types:
+            if ref.type == common.RcbType.BUFFERED:
+                if attr_type == common.RcbAttrType.RESERVE:
+                    raise ValueError('unsupported attribute type')
 
-        else:
-            raise TypeError('unsupported rcb type')
+            elif ref.type == common.RcbType.UNBUFFERED:
+                if attr_type in (common.RcbAttrType.PURGE_BUFFER,
+                                 common.RcbAttrType.ENTRY_ID,
+                                 common.RcbAttrType.TIME_OF_ENTRY,
+                                 common.RcbAttrType.RESERVATION_TIME):
+                    raise ValueError('unsupported attribute type')
 
-        req = mms.ReadRequest([
-            mms.NameVariableSpecification(
-                encoder.data_ref_to_object_name(
-                    common.DataRef(logical_device=ref.logical_device,
-                                   logical_node=ref.logical_node,
-                                   fc=ref.type.value,
-                                   names=(ref.name, attr_type.value))))])
+            else:
+                raise TypeError('unsupported rcb type')
+
+            specification.append(
+                mms.NameVariableSpecification(
+                    encoder.data_ref_to_object_name(
+                        common.DataRef(logical_device=ref.logical_device,
+                                       logical_node=ref.logical_node,
+                                       fc=ref.type.value,
+                                       names=(ref.name, attr_type.value)))))
+
+        req = mms.ReadRequest(specification)
 
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            return {attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                    for attr_type in attr_types}
 
         if not isinstance(res, mms.ReadResponse):
             raise Exception('unsupported response type')
 
-        if len(res.results) != 1:
+        if len(res.results) != len(attr_types):
             raise Exception('invalid results length')
 
-        mms_data = res.results[0]
+        results = {}
 
-        if isinstance(mms_data, mms.DataAccessError):
-            if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
-                return common.ServiceError.ACCESS_VIOLATION
+        for attr_types, mms_data in zip(attr_types, res.results):
+            if isinstance(mms_data, mms.DataAccessError):
+                if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                    results[attr_type] = common.ServiceError.ACCESS_VIOLATION
 
-            if mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+                elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                    results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE  # NOQA
 
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+                else:
+                    results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-        return encoder.rcb_attr_value_from_mms_data(mms_data, attr_type)
+            else:
+                results[attr_type] = encoder.rcb_attr_value_from_mms_data(
+                    mms_data, attr_type)
+
+        return results
 
     async def set_rcb_attrs(self,
                             ref: common.RcbRef,
-                            attrs: Iterable[tuple[common.RcbAttrType,
-                                                  common.RcbAttrValue]]
-                            ) -> common.ServiceError | None:
+                            attrs: Collection[tuple[common.RcbAttrType,
+                                                    common.RcbAttrValue]]
+                            ) -> dict[common.RcbAttrType,
+                                      common.ServiceError | None]:
         """Set RCB attribute values"""
-        attr_names = collections.deque()
+        specification = collections.deque()
         data = collections.deque()
 
         for attr_type, attr_value in attrs:
@@ -286,56 +300,56 @@ class Client(aio.Resource):
             else:
                 raise TypeError('unsupported rcb type')
 
-            attr_names.append(attr_type.value)
-            data.append(
-                encoder.rcb_attr_value_to_mms_data(attr_value, attr_type))
-
-        req = mms.WriteRequest(
-            specification=[
+            specification.append(
                 mms.NameVariableSpecification(
                     encoder.data_ref_to_object_name(
                         common.DataRef(logical_device=ref.logical_device,
                                        logical_node=ref.logical_node,
                                        fc=ref.type.value,
-                                       names=(ref.name, attr_name))))
-                for attr_name in attr_names],
-            data=data)
+                                       names=(ref.name, attr_type.value)))))
+            data.append(
+                encoder.rcb_attr_value_to_mms_data(attr_value, attr_type))
+
+        req = mms.WriteRequest(specification=specification,
+                               data=data)
 
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            return {attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                    for attr_type, _ in attrs}
 
         if not isinstance(res, mms.WriteResponse):
             raise Exception('unsupported response type')
 
-        if any(i is not None for i in res.results):
-            if all(i == mms.DataAccessError.OBJECT_ACCESS_DENIED
-                   for i in res.results
-                   if i):
-                return common.ServiceError.ACCESS_VIOLATION
+        if len(res.results) != len(attrs):
+            raise Exception('invalid results length')
 
-            if all(i == mms.DataAccessError.OBJECT_NON_EXISTENT
-                   for i in res.results
-                   if i):
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+        results = {}
 
-            if all(i == mms.DataAccessError.TEMPORARILY_UNAVAILABLE
-                   for i in res.results
-                   if i):
-                return common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT
+        for (attr_type, _), mms_data in zip(attrs, res.results):
+            if mms_data is None:
+                results[attr_type] = None
 
-            if all(i == mms.DataAccessError.TYPE_INCONSISTENT
-                   for i in res.results
-                   if i):
-                return common.ServiceError.TYPE_CONFLICT
+            elif mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                results[attr_type] = common.ServiceError.ACCESS_VIOLATION
 
-            if all(i == mms.DataAccessError.OBJECT_VALUE_INVALID
-                   for i in res.results
-                   if i):
-                return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
+            elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE
 
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            elif mms_data == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:
+                results[attr_type] = common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT  # NOQA
+
+            elif mms_data == mms.DataAccessError.TYPE_INCONSISTENT:
+                results[attr_type] = common.ServiceError.TYPE_CONFLICT
+
+            elif mms_data == mms.DataAccessError.OBJECT_VALUE_INVALID:
+                results[attr_type] = common.ServiceError.PARAMETER_VALUE_INCONSISTENT  # NOQA
+
+            else:
+                results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+
+        return results
 
     async def write_data(self,
                          ref: common.DataRef,

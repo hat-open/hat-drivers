@@ -1,6 +1,6 @@
 [project]
 name = "hat-drivers"
-version = "0.9.3"
+version = "0.9.4"
 description = "Hat communication drivers"
 readme = "README.rst"
 requires-python = ">=3.10"

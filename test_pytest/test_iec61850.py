@@ -531,8 +531,8 @@ async def test_get_dataset_data_refs(mms_srv_addr, dataset_ref, mms_request,
      mms.ReadResponse([mms.DataAccessError.HARDWARE_FAULT]),
      iec61850.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT)
 ])
-async def test_get_rcb_attr(mms_srv_addr, rcb_type, rcb_attr_type,
-                            mms_response, rcb_attr_value):
+async def test_get_rcb_attrs(mms_srv_addr, rcb_type, rcb_attr_type,
+                             mms_response, rcb_attr_value):
     if rcb_type == iec61850.RcbType.BUFFERED:
         if rcb_attr_type == iec61850.RcbAttrType.RESERVE:
             return
@@ -568,8 +568,8 @@ async def test_get_rcb_attr(mms_srv_addr, rcb_type, rcb_attr_type,
 
     conn = await iec61850.connect(addr=mms_srv_addr)
 
-    resp = await conn.get_rcb_attr(rcb_ref, rcb_attr_type)
-    assert resp == rcb_attr_value
+    resp = await conn.get_rcb_attrs(rcb_ref, [rcb_attr_type])
+    assert resp == {rcb_attr_type: rcb_attr_value}
 
     await conn.async_close()
     await mms_srv.async_close()
@@ -713,7 +713,7 @@ async def test_set_rcb_attrs(mms_srv_addr, rcb_type, rcb_attr_type, mms_data,
     conn = await iec61850.connect(addr=mms_srv_addr)
 
     resp = await conn.set_rcb_attrs(rcb_ref, [(rcb_attr_type, rcb_attr_value)])
-    assert resp == response
+    assert resp == {rcb_attr_type: response}
 
     await conn.async_close()
     await mms_srv.async_close()
