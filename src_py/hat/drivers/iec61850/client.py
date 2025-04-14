@@ -258,7 +258,7 @@ class Client(aio.Resource):
 
         results = {}
 
-        for attr_types, mms_data in zip(attr_types, res.results):
+        for attr_type, mms_data in zip(attr_types, res.results):
             if isinstance(mms_data, mms.DataAccessError):
                 if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
                     results[attr_type] = common.ServiceError.ACCESS_VIOLATION
