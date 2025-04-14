@@ -1983,16 +1983,16 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
 ])
 @pytest.mark.parametrize('mms_reasons, reasons', [
     (mms.BitStringData([False, True, False, False, False, True, False]),
-     set([iec61850.ReasonCode.DATA_CHANGE,
-          iec61850.ReasonCode.GENERAL_INTERROGATION])),
+     set([iec61850.Reason.DATA_CHANGE,
+          iec61850.Reason.GENERAL_INTERROGATION])),
 
     (mms.BitStringData([False, True, True, True, True, True, True]),
-     set([iec61850.ReasonCode.DATA_CHANGE,
-          iec61850.ReasonCode.QUALITY_CHANGE,
-          iec61850.ReasonCode.DATA_UPDATE,
-          iec61850.ReasonCode.INTEGRITY,
-          iec61850.ReasonCode.GENERAL_INTERROGATION,
-          iec61850.ReasonCode.APPLICATION_TRIGGER])),
+     set([iec61850.Reason.DATA_CHANGE,
+          iec61850.Reason.QUALITY_CHANGE,
+          iec61850.Reason.DATA_UPDATE,
+          iec61850.Reason.INTEGRITY,
+          iec61850.Reason.GENERAL_INTERROGATION,
+          iec61850.Reason.APPLICATION_TRIGGER])),
 
     (mms.BitStringData([False, False, False, False, False, False, False]),
      set())
@@ -2042,7 +2042,7 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
             mms.BitStringData([True]),  # inclusion-bitstring
             mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
             mms_data_value,
-            mms_reasons  # ReasonCode
+            mms_reasons  # Reason
             ])
     await mms_conn_srv.send_unconfirmed(mms_inf_report)
 
@@ -2093,7 +2093,7 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
             mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
             mms.BooleanData(True),  # value
             mms.BitStringData([
-                False, True, False, False, False, True, False])  # ReasonCode
+                False, True, False, False, False, True, False])  # Reason
             ]),
      iec61850.Report(
          report_id='rpt_xyz',
@@ -2109,8 +2109,8 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
          data=[iec61850.ReportData(
             iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
             True,
-            reasons=set([iec61850.ReasonCode.DATA_CHANGE,
-                         iec61850.ReasonCode.GENERAL_INTERROGATION]))])),
+            reasons=set([iec61850.Reason.DATA_CHANGE,
+                         iec61850.Reason.GENERAL_INTERROGATION]))])),
 
     (mms.InformationReportUnconfirmed(
         specification=mms.VmdSpecificObjectName(identifier='RPT'),
@@ -2161,7 +2161,7 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
             mms.VisibleStringData('ld1/ln2$ST$Pos$stVal'),  # data-references
             mms.BooleanData(True),  # value
             mms.BitStringData([
-                False, True, False, False, False, True, False])  # ReasonCode
+                False, True, False, False, False, True, False])  # Reason
             ]),
      iec61850.Report(
          report_id='rpt_xyz',
@@ -2177,8 +2177,8 @@ async def test_report_value_reason(mms_srv_addr, mms_data_value, data_type,
          data=[iec61850.ReportData(
             iec61850.DataRef('ld1', 'ln2', 'ST', ('Pos', 'stVal')),
             True,
-            reasons=set([iec61850.ReasonCode.DATA_CHANGE,
-                         iec61850.ReasonCode.GENERAL_INTERROGATION]))])),
+            reasons=set([iec61850.Reason.DATA_CHANGE,
+                         iec61850.Reason.GENERAL_INTERROGATION]))])),
 
     (mms.InformationReportUnconfirmed(
         specification=mms.VmdSpecificObjectName(identifier='RPT'),
@@ -2260,12 +2260,12 @@ async def test_report_optional_fields(mms_srv_addr, mms_report, report):
      [iec61850.ReportData(
          ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
          value=True,
-         reasons=set([iec61850.ReasonCode.DATA_CHANGE,
-                      iec61850.ReasonCode.GENERAL_INTERROGATION])),
+         reasons=set([iec61850.Reason.DATA_CHANGE,
+                      iec61850.Reason.GENERAL_INTERROGATION])),
       iec61850.ReportData(
          ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d2', 'Pos')),
          value=False,
-         reasons=set([iec61850.ReasonCode.DATA_CHANGE])),
+         reasons=set([iec61850.Reason.DATA_CHANGE])),
       iec61850.ReportData(
          ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
          value=123,
@@ -2284,8 +2284,8 @@ async def test_report_optional_fields(mms_srv_addr, mms_report, report):
      [iec61850.ReportData(
          ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d1', 'Pos')),
          value=True,
-         reasons=set([iec61850.ReasonCode.DATA_CHANGE,
-                      iec61850.ReasonCode.GENERAL_INTERROGATION])),
+         reasons=set([iec61850.Reason.DATA_CHANGE,
+                      iec61850.Reason.GENERAL_INTERROGATION])),
       iec61850.ReportData(
          ref=iec61850.DataRef('ld1', 'ln1', 'ST', ('d3', 'Pos')),
          value=123,
@@ -2333,7 +2333,7 @@ async def test_report_inclusion(mms_srv_addr, data_defs,
             mms.BitStringData(inclusion),  # inclusion-bitstring
             *data_references,  # data-references
             *data_values,
-            *data_reasons  # ReasonCode
+            *data_reasons  # Reason
         ])  # value
 
     await mms_conn_srv.send_unconfirmed(mms_report)

@@ -825,7 +825,7 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
             if len(reason_bits) != 7:
                 raise Exception('invalid reason bits size')
 
-            reasons.append({common.ReasonCode(index)
+            reasons.append({common.Reason(index)
                             for index, i in enumerate(reason_bits)
                             if i})
 

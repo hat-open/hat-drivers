@@ -340,7 +340,7 @@ RcbAttrValue: typing.TypeAlias = (ReportIdRcbAttrValue |
 
 # report ######################################################################
 
-class ReasonCode(enum.Enum):
+class Reason(enum.Enum):
     DATA_CHANGE = 1
     QUALITY_CHANGE = 2
     DATA_UPDATE = 3
@@ -352,7 +352,7 @@ class ReasonCode(enum.Enum):
 class ReportData(typing.NamedTuple):
     ref: DataRef
     value: Value
-    reasons: set[ReasonCode] | None
+    reasons: set[Reason] | None
 
 
 class Report(typing.NamedTuple):
