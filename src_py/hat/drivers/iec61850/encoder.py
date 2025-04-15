@@ -647,7 +647,7 @@ def command_from_mms_data(mms_data: mms.Data,
         if len(mms_data.elements) == 6:
             with_operate_time = True
 
-        elif len(mms_data.element) == 5:
+        elif len(mms_data.elements) == 5:
             with_operate_time = False
 
         else:
