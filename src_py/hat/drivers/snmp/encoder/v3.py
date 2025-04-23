@@ -63,7 +63,7 @@ def encode_msg(msg: Msg,
 
     if msg.priv:
         pdu_bytes = common.encoder.encode(
-            'SNMPv3MessageSyntax', 'ScopedPDU', pdu)
+            asn1.TypeRef('SNMPv3MessageSyntax', 'ScopedPDU'), pdu)
 
         encrypted_pdu, priv_params_bytes = _encrypt_pdu(priv_key, pdu_bytes)
         msg_data = 'encryptedPDU', encrypted_pdu
@@ -83,7 +83,7 @@ def encode_msg(msg: Msg,
         'msgPrivacyParameters': priv_params_bytes}
 
     security_params_bytes = common.encoder.encode(
-        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        asn1.TypeRef('USMSecurityParametersSyntax', 'UsmSecurityParameters'),
         security_params)
 
     msg_value = {'msgVersion': common.Version.V3.value,
@@ -96,14 +96,15 @@ def encode_msg(msg: Msg,
 
     if msg.auth:
         msg_bytes = common.encoder.encode(
-            'SNMPv3MessageSyntax', 'SNMPv3Message', msg_value)
+            asn1.TypeRef('SNMPv3MessageSyntax', 'SNMPv3Message'), msg_value)
 
         auth_params_bytes = _gen_auth_params_bytes(auth_key, msg_bytes)
 
         security_params['msgAuthenticationParameters'] = auth_params_bytes
 
         security_params_bytes = common.encoder.encode(
-            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            asn1.TypeRef('USMSecurityParametersSyntax',
+                         'UsmSecurityParameters'),
             security_params)
 
         msg_value['msgSecurityParameters'] = security_params_bytes
@@ -129,7 +130,7 @@ def decode_msg(msg: asn1.Value,
     priv = bool(msg_flags[0] & 2)
 
     security_params, _ = common.encoder.decode(
-        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        asn1.TypeRef('USMSecurityParametersSyntax', 'UsmSecurityParameters'),
         msg['msgSecurityParameters'])
 
     authorative_engine = AuthorativeEngine(
@@ -152,13 +153,14 @@ def decode_msg(msg: asn1.Value,
         security_params = {**security_params,
                            'msgAuthenticationParameters': b'\x00' * 12}
         security_params_bytes = common.encoder.encode(
-            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            asn1.TypeRef('USMSecurityParametersSyntax',
+                         'UsmSecurityParameters'),
             security_params)
 
         msg = {**msg,
                'msgSecurityParameters': security_params_bytes}
         msg_bytes = common.encoder.encode(
-            'SNMPv3MessageSyntax', 'SNMPv3Message', msg)
+            asn1.TypeRef('SNMPv3MessageSyntax', 'SNMPv3Message'), msg)
 
         generated_auth_params_bytes = _gen_auth_params_bytes(auth_key,
                                                              msg_bytes)
@@ -183,7 +185,7 @@ def decode_msg(msg: asn1.Value,
                                  msg['msgData'][1])
 
         pdu, _ = common.encoder.decode(
-            'SNMPv3MessageSyntax', 'ScopedPDU', pdu_bytes)
+            asn1.TypeRef('SNMPv3MessageSyntax', 'ScopedPDU'), pdu_bytes)
 
     else:
         if msg['msgData'][0] != 'plaintext':

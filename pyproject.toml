@@ -1,6 +1,6 @@
 [project]
 name = "hat-drivers"
-version = "0.9.7"
+version = "0.9.8"
 description = "Hat communication drivers"
 readme = "README.rst"
 requires-python = ">=3.10"
@@ -8,7 +8,7 @@ license = {text = "Apache-2.0"}
 dependencies = [
     "aiohttp ~=3.10.11",
     "hat-aio ~=0.7.12",
-    "hat-asn1 ~=0.6.10",
+    "hat-asn1 ~=0.7.0",
     "hat-json ~=0.6.2",
     "hat-sbs ~=0.7.5",
     "hat-util ~=0.6.19",

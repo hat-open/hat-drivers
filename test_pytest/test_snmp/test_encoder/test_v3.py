@@ -1,5 +1,7 @@
 import pytest
 
+from hat import asn1
+
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
 from hat.drivers.snmp.encoder import common
@@ -281,7 +283,7 @@ def test_auth_change_in_the_middle(auth_key):
     msg_value = encoder.v3.encode_msg(msg, auth_key=auth_key)
 
     security_params, _ = common.encoder.decode(
-        'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+        asn1.TypeRef('USMSecurityParametersSyntax', 'UsmSecurityParameters'),
         msg_value['msgSecurityParameters'])
     auth_params = change_bytes(security_params['msgAuthenticationParameters'])
 
@@ -290,7 +292,8 @@ def test_auth_change_in_the_middle(auth_key):
     msg_value = {
         **msg_value,
         'msgSecurityParameters': common.encoder.encode(
-            'USMSecurityParametersSyntax', 'UsmSecurityParameters',
+            asn1.TypeRef('USMSecurityParametersSyntax',
+                         'UsmSecurityParameters'),
             security_params)}
 
     with pytest.raises(Exception, match='authentication failed'):

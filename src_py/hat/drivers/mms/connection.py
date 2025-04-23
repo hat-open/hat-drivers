@@ -8,6 +8,7 @@ import typing
 
 from hat import aio
 from hat import asn1
+from hat import json
 
 from hat.drivers import acse
 from hat.drivers import tcp
@@ -48,10 +49,10 @@ _mms_syntax_name = (1, 0, 9506, 2, 1)
 # (iso, standard, iso9506, part, mms-annex-version1)
 _mms_app_context_name = (1, 0, 9506, 2, 3)
 
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    _encoder = asn1.Encoder(asn1.Encoding.BER,
-                            asn1.Repository.from_json(_path))
+with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
+    _encoder = asn1.ber.BerEncoder(
+        asn1.repository_from_json(
+            json.decode_stream(_f)))
 
 
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
@@ -408,8 +409,10 @@ class Connection(aio.Resource):
 
 
 def _encode(value):
-    return _encoder.encode_value('ISO-9506-MMS-1', 'MMSpdu', value)
+    return _encoder.encode_value(asn1.TypeRef('ISO-9506-MMS-1', 'MMSpdu'),
+                                 value)
 
 
 def _decode(entity):
-    return _encoder.decode_value('ISO-9506-MMS-1', 'MMSpdu', entity)
+    return _encoder.decode_value(asn1.TypeRef('ISO-9506-MMS-1', 'MMSpdu'),
+                                 entity)

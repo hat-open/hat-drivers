@@ -136,8 +136,8 @@ def task_pip_requirements():
 def _get_subtask_asn1(src_paths, dst_path):
 
     def generate():
-        repo = asn1.Repository(*src_paths)
-        data = repo.to_json()
+        repo = asn1.create_repository(*src_paths)
+        data = asn1.repository_to_json(repo)
         json.encode_file(data, dst_path, indent=None)
 
     return {'name': str(dst_path),

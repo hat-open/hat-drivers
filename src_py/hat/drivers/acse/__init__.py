@@ -7,6 +7,7 @@ import typing
 
 from hat import aio
 from hat import asn1
+from hat import json
 
 from hat.drivers import copp
 from hat.drivers import tcp
@@ -17,10 +18,10 @@ mlog = logging.getLogger(__name__)
 # (joint-iso-itu-t, association-control, abstract-syntax, apdus, version1)
 _acse_syntax_name = (2, 2, 1, 0, 1)
 
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    _encoder = asn1.Encoder(asn1.Encoding.BER,
-                            asn1.Repository.from_json(_path))
+with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
+    _encoder = asn1.ber.BerEncoder(
+        asn1.repository_from_json(
+            json.decode_stream(_f)))
 
 
 class ConnectionInfo(typing.NamedTuple):
@@ -507,8 +508,8 @@ def _rlre_apdu():
 
 
 def _encode(value):
-    return _encoder.encode_value('ACSE-1', 'ACSE-apdu', value)
+    return _encoder.encode_value(asn1.TypeRef('ACSE-1', 'ACSE-apdu'), value)
 
 
 def _decode(entity):
-    return _encoder.decode_value('ACSE-1', 'ACSE-apdu', entity)
+    return _encoder.decode_value(asn1.TypeRef('ACSE-1', 'ACSE-apdu'), entity)

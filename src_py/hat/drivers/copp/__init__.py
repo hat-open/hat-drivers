@@ -7,6 +7,7 @@ import typing
 
 from hat import aio
 from hat import asn1
+from hat import json
 
 from hat.drivers import cosp
 from hat.drivers import tcp
@@ -14,10 +15,10 @@ from hat.drivers import tcp
 
 mlog = logging.getLogger(__name__)
 
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    _encoder = asn1.Encoder(asn1.Encoding.BER,
-                            asn1.Repository.from_json(_path))
+with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
+    _encoder = asn1.ber.BerEncoder(
+        asn1.repository_from_json(
+            json.decode_stream(_f)))
 
 
 class ConnectionInfo(typing.NamedTuple):
@@ -506,9 +507,10 @@ def _sytax_names_from_cp_ppdu(cp_ppdu):
 
 
 def _encode(name, value):
-    return _encoder.encode('ISO8823-PRESENTATION', name, value)
+    return _encoder.encode(asn1.TypeRef('ISO8823-PRESENTATION', name), value)
 
 
 def _decode(name, data):
-    res, _ = _encoder.decode('ISO8823-PRESENTATION', name, memoryview(data))
+    res, _ = _encoder.decode(asn1.TypeRef('ISO8823-PRESENTATION', name),
+                             memoryview(data))
     return res

@@ -3,9 +3,10 @@ from hat.drivers.snmp.common import *  # NOQA
 import importlib.resources
 
 from hat import asn1
+from hat import json
 
 
-with importlib.resources.as_file(importlib.resources.files(__package__) /
-                                 'asn1_repo.json') as _path:
-    encoder = asn1.Encoder(asn1.Encoding.BER,
-                           asn1.Repository.from_json(_path))
+with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
+    encoder = asn1.ber.BerEncoder(
+        asn1.repository_from_json(
+            json.decode_stream(_f)))
