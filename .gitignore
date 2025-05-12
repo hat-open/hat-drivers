@@ -1,4 +1,5 @@
 /.doit.db
+/.mypy_cache
 /.peru
 /build
 /compile_flags.txt
