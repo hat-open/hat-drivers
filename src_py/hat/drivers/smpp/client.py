@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import logging
 
 from hat import aio
 from hat import util
@@ -9,13 +10,18 @@ from hat.drivers.smpp import common
 from hat.drivers.smpp import transport
 
 
+mlog: logging.Logger = logging.getLogger(__name__)
+"""Module logger"""
+
+
 async def connect(addr: tcp.Address,
                   system_id: str = '',
                   password: str = '',
-                  close_timeout: float = 1,
+                  close_timeout: float = 0.1,
                   enquire_link_delay: float | None = None,
                   enquire_link_timeout: float = 10
                   ) -> 'Client':
+    """Connect to remote SMPP server"""
     client = Client()
     client._async_group = aio.Group()
     client._equire_link_event = asyncio.Event()
@@ -61,6 +67,7 @@ class Client(aio.Resource):
 
     @property
     def async_group(self) -> aio.Group:
+        """Async group"""
         return self._async_group
 
     async def send_message(self,
@@ -75,6 +82,7 @@ class Client(aio.Resource):
                            src_addr: str = '',
                            data_coding: common.DataCoding = common.DataCoding.DEFAULT  # NOQA
                            ) -> common.MessageId:
+        """Send message"""
         optional_params = {}
         gsm_features = set()
 
@@ -171,10 +179,10 @@ class Client(aio.Resource):
             pass
 
         except asyncio.TimeoutError:
-            pass
+            mlog.warning('enquire link timeout')
 
-        except Exception:
-            pass
+        except Exception as e:
+            mlog.error('equire link loop error: %s', e, exc_info=e)
 
         finally:
             self.close()

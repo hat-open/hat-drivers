@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import logging
 import typing
 
 from hat import aio
@@ -8,6 +9,8 @@ from hat.drivers import tcp
 from hat.drivers.smpp.transport import common
 from hat.drivers.smpp.transport import encoder
 
+
+mlog: logging.Logger = logging.getLogger(__name__)
 
 RequestCb: typing.TypeAlias = aio.AsyncCallable[
     [common.Request],
@@ -117,8 +120,8 @@ class Connection(aio.Resource):
         except ConnectionError:
             pass
 
-        except Exception:
-            pass
+        except Exception as e:
+            mlog.error('receive loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
