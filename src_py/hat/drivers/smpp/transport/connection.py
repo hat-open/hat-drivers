@@ -92,7 +92,7 @@ class Connection(aio.Resource):
                     sequence_number = encoder.decode_sequence_number(
                         header_bytes)
 
-                    await self._send(command_id=encoder.GENERIC_NACK,
+                    await self._send(command_id=encoder.CommandId.GENERIC_NACK,
                                      command_status=e.command_status,
                                      sequence_number=sequence_number,
                                      body=None)
