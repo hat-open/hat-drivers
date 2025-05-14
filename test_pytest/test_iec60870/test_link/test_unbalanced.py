@@ -7,6 +7,8 @@ from hat import aio
 
 from hat.drivers import serial
 from hat.drivers.iec60870.link import unbalanced
+from hat.drivers.iec60870.link import endpoint
+from hat.drivers.iec60870.link import common
 
 
 @pytest.fixture
@@ -79,6 +81,31 @@ async def test_connect(mock_serial):
     assert slave_conn.is_open
     await master.async_close()
     await slave.async_close()
+
+
+async def test_response_ack(mock_serial):
+    master = await unbalanced.master.create_master(port='1')
+
+    ep = await endpoint.create(port='1',
+                               address_size=common.AddressSize.ONE,
+                               direction_valid=False)
+
+    master_conn_fut = master.async_group.spawn(master.connect, 1)
+    req = await ep.receive()
+    assert isinstance(req, common.ReqFrame)
+    assert req.function == common.ReqFunction.RESET_LINK
+
+    await ep.send(common.ResFrame(direction=None,
+                                  access_demand=False,
+                                  data_flow_control=False,
+                                  function=common.ResFunction.ACK,
+                                  address=req.address,
+                                  data=b''))
+    master_conn = await master_conn_fut
+    assert master_conn.is_open
+
+    await master.async_close()
+    await ep.async_close()
 
 
 async def test_send_receive(mock_serial):

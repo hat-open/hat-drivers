@@ -100,7 +100,7 @@ class Master(aio.Resource):
 
             if not (isinstance(res, common.ShortFrame) or
                     (isinstance(res, common.ResFrame) and
-                     res.function != common.ResFunction.ACK)):
+                     res.function == common.ResFunction.ACK)):
                 raise Exception('invalid reset response')
 
         except BaseException:
