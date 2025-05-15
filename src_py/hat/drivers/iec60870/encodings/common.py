@@ -91,18 +91,54 @@ def time_to_datetime(t: Time
                      ) -> datetime.datetime:
     """Convert Time to datetime.datetime"""
     # TODO document edge cases (local time, os implementation, ...)
-    # TODO maybe allow diferent time size (use now for time)
-    if t.size != TimeSize.SEVEN:
-        raise ValueError('unsupported time size')
+    # TODO support TimeSize.FOUR
+    if t.size == TimeSize.TWO:
+        local_now = datetime.datetime.now()
+        local_dt = local_now.replace(
+            second=int(t.milliseconds / 1000),
+            microsecond=(t.milliseconds % 1000) * 1000)
 
-    local_dt = datetime.datetime(
-        year=2000 + t.years if t.years < 70 else 1900 + t.years,
-        month=t.months,
-        day=t.day_of_month,
-        hour=t.hours,
-        minute=t.minutes,
-        second=int(t.milliseconds / 1000),
-        microsecond=(t.milliseconds % 1000) * 1000,
-        fold=not t.summer_time)
+        local_seconds = local_now.second + local_now.microsecond / 1_000_000
+        t_seconds = t.milliseconds / 1_000
+
+        if abs(local_seconds - t_seconds) > 30:
+            if local_seconds < t_seconds:
+                local_dt = local_dt - datetime.timedelta(minutes=1)
+
+            else:
+                local_dt = local_dt + datetime.timedelta(minutes=1)
+
+    elif t.size == TimeSize.THREE:
+        local_now = datetime.datetime.now()
+        local_dt = local_now.replace(
+            minute=t.minutes,
+            second=int(t.milliseconds / 1000),
+            microsecond=(t.milliseconds % 1000) * 1000)
+
+        local_minutes = (local_now.minute +
+                         local_now.second / 60 +
+                         local_now.microsecond / 60_000_000)
+        t_minutes = t.minutes + t.milliseconds / 60_000
+
+        if abs(local_minutes - t_minutes) > 30:
+            if local_minutes < t_minutes:
+                local_dt = local_dt - datetime.timedelta(hours=1)
+
+            else:
+                local_dt = local_dt + datetime.timedelta(hours=1)
+
+    elif t.size == TimeSize.SEVEN:
+        local_dt = datetime.datetime(
+            year=2000 + t.years if t.years < 70 else 1900 + t.years,
+            month=t.months,
+            day=t.day_of_month,
+            hour=t.hours,
+            minute=t.minutes,
+            second=int(t.milliseconds / 1000),
+            microsecond=(t.milliseconds % 1000) * 1000,
+            fold=not t.summer_time)
+
+    else:
+        raise ValueError('unsupported time size')
 
     return local_dt.astimezone(tz=datetime.timezone.utc)

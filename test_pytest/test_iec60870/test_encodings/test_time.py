@@ -75,11 +75,17 @@ def test_time_from_to_datetime(invalid):
     assert dtime == dt_from_to
 
 
-def test_time_to_datetime_exception():
-    t_60870 = common.time_from_datetime(
-        datetime.datetime.now(datetime.timezone.utc))
+def test_time_to_datetime_sizes():
+    now_dt = datetime.datetime.now(datetime.timezone.utc)
+    now_t = common.time_from_datetime(now_dt)
+
     for size in [common.TimeSize.TWO,
                  common.TimeSize.THREE,
-                 common.TimeSize.FOUR]:
+                 common.TimeSize.SEVEN]:
+        result_dt = common.time_to_datetime(now_t._replace(size=size))
+
+        assert abs((result_dt - now_dt).total_seconds()) < 0.01
+
+    for size in [common.TimeSize.FOUR]:
         with pytest.raises(ValueError):
-            common.time_to_datetime(t_60870._replace(size=size))
+            common.time_to_datetime(now_t._replace(size=size))
