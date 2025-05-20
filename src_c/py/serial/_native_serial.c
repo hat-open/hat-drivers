@@ -4,19 +4,18 @@
 #include <hat/serial.h>
 
 
-// clang-format off
 typedef struct {
-    PyObject_HEAD
+    PyObject ob_base;
     hat_serial_t *serial;
-    PyObject *empty_tuple;
     PyObject *close_cb;
     PyObject *in_change_cb;
     PyObject *out_change_cb;
     PyObject *drain_cb;
 } Serial;
-// clang-format on
 
 
+// ensure that self is not dealloced during this call
+// (callback should reference self)
 static void on_serial_close(hat_serial_t *s) {
     Serial *self = (Serial *)hat_serial_get_ctx(s);
 
@@ -25,12 +24,15 @@ static void on_serial_close(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->close_cb, self->empty_tuple, NULL));
+    if (self->close_cb && self->close_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(self->close_cb));
 
     PyGILState_Release(gstate);
 }
 
 
+// ensure that self is not dealloced during this call
+// (callback should reference self)
 static void on_serial_in_change(hat_serial_t *s) {
     Serial *self = (Serial *)hat_serial_get_ctx(s);
 
@@ -39,12 +41,15 @@ static void on_serial_in_change(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->in_change_cb, self->empty_tuple, NULL));
+    if (self->in_change_cb && self->in_change_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(self->in_change_cb));
 
     PyGILState_Release(gstate);
 }
 
 
+// ensure that self is not dealloced during this call
+// (callback should reference self)
 static void on_serial_out_change(hat_serial_t *s) {
     Serial *self = (Serial *)hat_serial_get_ctx(s);
 
@@ -53,12 +58,15 @@ static void on_serial_out_change(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->out_change_cb, self->empty_tuple, NULL));
+    if (self->out_change_cb && self->out_change_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(self->out_change_cb));
 
     PyGILState_Release(gstate);
 }
 
 
+// ensure that self is not dealloced during this call
+// (callback should reference self)
 static void on_serial_drain(hat_serial_t *s) {
     Serial *self = (Serial *)hat_serial_get_ctx(s);
 
@@ -67,7 +75,8 @@ static void on_serial_drain(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_Call(self->drain_cb, self->empty_tuple, NULL));
+    if (self->drain_cb && self->drain_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(self->drain_cb));
 
     PyGILState_Release(gstate);
 }
@@ -87,24 +96,16 @@ static PyObject *Serial_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->serial = NULL;
-    self->empty_tuple = NULL;
     self->close_cb = NULL;
     self->in_change_cb = NULL;
     self->out_change_cb = NULL;
     self->drain_cb = NULL;
-
-    self->empty_tuple = PyTuple_New(0);
-    if (!self->empty_tuple) {
-        Py_DECREF(self);
-        return NULL;
-    }
 
     self->serial =
         hat_serial_create(&hat_py_allocator, in_buff_size, out_buff_size,
                           on_serial_close, on_serial_in_change, NULL,
                           on_serial_out_change, NULL, on_serial_drain, self);
     if (!self->serial) {
-        Py_DECREF(self->empty_tuple);
         Py_DECREF(self);
         PyErr_SetString(PyExc_MemoryError, "error creating serial object");
         return NULL;
@@ -114,15 +115,15 @@ static PyObject *Serial_new(PyTypeObject *type, PyObject *args,
 }
 
 
+// ensure that object will not be deallocated from serial background thread
 static void Serial_dealloc(Serial *self) {
+    Py_CLEAR(self->close_cb);
+    Py_CLEAR(self->in_change_cb);
+    Py_CLEAR(self->out_change_cb);
+    Py_CLEAR(self->drain_cb);
+
     if (self->serial)
         hat_serial_destroy(self->serial);
-
-    Py_XDECREF(self->empty_tuple);
-    Py_XDECREF(self->close_cb);
-    Py_XDECREF(self->in_change_cb);
-    Py_XDECREF(self->out_change_cb);
-    Py_XDECREF(self->drain_cb);
 
     PyObject_Free((PyObject *)self);
 }
@@ -164,14 +165,14 @@ static PyObject *Serial_open(Serial *self, PyObject *args, PyObject *kwargs) {
         return NULL;
     }
 
-    Py_RETURN_NONE;
+    return Py_NewRef(Py_None);
 }
 
 
 static PyObject *Serial_close(Serial *self, PyObject *args) {
     hat_serial_close(self->serial);
 
-    Py_RETURN_NONE;
+    return Py_NewRef(Py_None);
 }
 
 
@@ -179,7 +180,7 @@ static PyObject *Serial_read(Serial *self, PyObject *args) {
     size_t data_len = hat_serial_get_available(self->serial);
 
     if (!data_len)
-        Py_RETURN_NONE;
+        return Py_NewRef(Py_None);
 
     PyObject *data_bytes = PyBytes_FromStringAndSize(NULL, data_len);
     if (!data_bytes)
@@ -220,39 +221,35 @@ static PyObject *Serial_write(Serial *self, PyObject *data_bytes) {
 static PyObject *Serial_drain(Serial *self, PyObject *args) {
     hat_serial_drain(self->serial);
 
-    Py_RETURN_NONE;
+    return Py_NewRef(Py_None);
 }
 
 
 static PyObject *Serial_set_close_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->close_cb);
-    Py_XINCREF(cb);
-    self->close_cb = cb;
-    Py_RETURN_NONE;
+    Py_CLEAR(self->close_cb);
+    self->close_cb = Py_XNewRef(cb);
+    return Py_NewRef(Py_None);
 }
 
 
 static PyObject *Serial_set_in_change_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->in_change_cb);
-    Py_XINCREF(cb);
-    self->in_change_cb = cb;
-    Py_RETURN_NONE;
+    Py_CLEAR(self->in_change_cb);
+    self->in_change_cb = Py_XNewRef(cb);
+    return Py_NewRef(Py_None);
 }
 
 
 static PyObject *Serial_set_out_change_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->out_change_cb);
-    Py_XINCREF(cb);
-    self->out_change_cb = cb;
-    Py_RETURN_NONE;
+    Py_CLEAR(self->out_change_cb);
+    self->out_change_cb = Py_XNewRef(cb);
+    return Py_NewRef(Py_None);
 }
 
 
 static PyObject *Serial_set_drain_cb(Serial *self, PyObject *cb) {
-    Py_XDECREF(self->drain_cb);
-    Py_XINCREF(cb);
-    self->drain_cb = cb;
-    Py_RETURN_NONE;
+    Py_CLEAR(self->drain_cb);
+    self->drain_cb = Py_XNewRef(cb);
+    return Py_NewRef(Py_None);
 }
 
 

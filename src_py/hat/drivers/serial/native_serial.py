@@ -2,7 +2,6 @@
 
 import asyncio
 import contextlib
-import functools
 import logging
 import sys
 
@@ -213,8 +212,12 @@ class Endpoint(common.Endpoint):
             serial_set_cb(None)
 
     def _create_serial_cb(self, future):
-        return functools.partial(self._loop.call_soon_threadsafe,
-                                 _try_set_result, future, None)
+
+        # use wrapper to keep reference to self
+        def wrapper():
+            self._loop.call_soon_threadsafe(_try_set_result, future, None)
+
+        return wrapper
 
 
 def _try_set_result(future, result):
