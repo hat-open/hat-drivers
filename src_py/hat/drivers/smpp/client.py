@@ -19,15 +19,20 @@ async def connect(addr: tcp.Address,
                   password: str = '',
                   close_timeout: float = 0.1,
                   enquire_link_delay: float | None = None,
-                  enquire_link_timeout: float = 10
+                  enquire_link_timeout: float = 10,
+                  **kwargs
                   ) -> 'Client':
-    """Connect to remote SMPP server"""
+    """Connect to remote SMPP server
+
+    Additional arguments are passed directly to `tcp.connect`.
+
+    """
     client = Client()
     client._async_group = aio.Group()
     client._equire_link_event = asyncio.Event()
     client._bound = False
 
-    conn = await tcp.connect(addr)
+    conn = await tcp.connect(addr, **kwargs)
     client._conn = transport.Connection(
         conn=conn,
         request_cb=client._on_request,
