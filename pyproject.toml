@@ -20,6 +20,7 @@ classifiers = [
 ]
 
 [project.scripts]
+hat-iec61850-manager = "hat.drivers.iec61850.manager.main:main"
 hat-mqtt-manager = "hat.drivers.mqtt.manager:main"
 hat-snmp-manager = "hat.drivers.snmp.manager.cli:main"
 

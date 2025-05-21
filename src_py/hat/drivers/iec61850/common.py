@@ -296,7 +296,7 @@ ReportIdRcbAttrValue: typing.TypeAlias = ReportId
 
 ReportEnableRcbAttrValue: typing.TypeAlias = bool
 
-DatasetRcbAttrValue: typing.TypeAlias = DatasetRef
+DatasetRcbAttrValue: typing.TypeAlias = DatasetRef | None
 
 ConfRevisionRcbAttrValue: typing.TypeAlias = int
 
