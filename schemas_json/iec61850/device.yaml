@@ -1,0 +1,403 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "hat-drivers://iec61850/device.yaml"
+type: object
+required:
+    - connection
+    - value_types
+    - datasets
+    - rcbs
+    - data
+    - commands
+properties:
+    connection:
+        type: object
+        required:
+            - host
+            - port
+        properties:
+            host:
+                type: string
+            port:
+                type: integer
+            tsel:
+                type: integer
+            ssel:
+                type: integer
+            psel:
+                type: integer
+            ap_title:
+                type: array
+                items:
+                    type: integer
+            ae_qualifier:
+                type: integer
+    value_types:
+        type: array
+        items:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - fc
+                - name
+                - type
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                fc:
+                    type: string
+                name:
+                    type: string
+                type:
+                    oneOf:
+                      - $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
+                      - type: 'null'
+    datasets:
+        type: array
+        items:
+            type: object
+            required:
+                - ref
+                - values
+            properties:
+                ref:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
+                values:
+                    type: array
+                    items:
+                        $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/value"
+    rcbs:
+        type: array
+        items:
+            type: object
+            required:
+                - ref
+                - report_id
+                - dataset
+                - conf_revision
+                - optional_fields
+                - buffer_time
+                - trigger_options
+                - integrity_period
+                - uneditable
+            properties:
+                ref:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/rcb"
+                report_id:
+                    type: string
+                dataset:
+                    oneOf:
+                        - type: 'null'
+                        - $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
+                conf_revision:
+                    type: integer
+                optional_fields:
+                    type: array
+                    items:
+                        enum:
+                            - SEQUENCE_NUMBER
+                            - REPORT_TIME_STAMP
+                            - REASON_FOR_INCLUSION
+                            - DATA_SET_NAME
+                            - DATA_REFERENCE
+                            - BUFFER_OVERFLOW
+                            - ENTRY_ID
+                            - CONF_REVISION
+                buffer_time:
+                    type: integer
+                trigger_options:
+                    type: array
+                    items:
+                        enum:
+                            - DATA_CHANGE
+                            - QUALITY_CHANGE
+                            - DATA_UPDATE
+                            - INTEGRITY
+                            - GENERAL_INTERROGATION
+                integrity_period:
+                    type: integer
+                uneditable:
+                    type: array
+                    items:
+                        enum:
+                            - REPORT_ID
+                            - DATASET
+                            - OPTIONAL_FIELDS
+                            - BUFFER_TIME
+                            - TRIGGER_OPTIONS
+                            - INTEGRITY_PERIOD
+    data:
+        type: array
+        items:
+            type: object
+            required:
+                - ref
+                - cdc
+                - datasets
+                - values
+            properties:
+                ref:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
+                cdc:
+                    enum:
+                        - SPS
+                        - DPS
+                        - INS
+                        - ENS
+                        - ACT
+                        - ACD
+                        - SEC
+                        - BCR
+                        - HST
+                        - VSS
+                        - MV
+                        - CMV
+                        - SAV
+                        # - WYE
+                        # - DEL
+                        # - SEQ
+                        # - HMV
+                        # - HWYE
+                        # - HDEL
+                        - SPC
+                        - DPC
+                        - INC
+                        - ENC
+                        - BSC
+                        - ISC
+                        - APC
+                        - BAC
+                        - SPG
+                        - ING
+                        - ENG
+                        - ORG
+                        - TSG
+                        - CUG
+                        - VSG
+                        - ASG
+                        - CURVE
+                        - CSG
+                        - DPL
+                        - LPL
+                        - CSD
+                datasets:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
+                values:
+                    type: array
+                    items:
+                        type: object
+                        required:
+                            - path
+                            - writable
+                        properties:
+                            path:
+                                type: array
+                                items:
+                                    type:
+                                        - string
+                                        - number
+                            writable:
+                                type: boolean
+                            enumerated:
+                                required:
+                                    - name
+                                    - values
+                                properties:
+                                    name:
+                                        type: string
+                                    values:
+                                        type: array
+                                        items:
+                                            type: object
+                                            required:
+                                                - value
+                                                - label
+                                            properties:
+                                                value:
+                                                    type: integer
+                                                label:
+                                                    type: string
+    commands:
+        type: array
+        items:
+            type: object
+            required:
+                - ref
+                - model
+                - with_operate_time
+                - cdc
+            properties:
+                ref:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/command"
+                model:
+                    enum:
+                        - DIRECT_WITH_NORMAL_SECURITY
+                        - SBO_WITH_NORMAL_SECURITY
+                        - DIRECT_WITH_ENHANCED_SECURITY
+                        - SBO_WITH_ENHANCED_SECURITY
+                with_operate_time:
+                    type: boolean
+                cdc:
+                    enum:
+                        - SPC
+                        - DPC
+                        - INC
+                        - ENC
+                        - BSC
+                        - ISC
+                        - APC
+                        - BAC
+                enumerated:
+                    required:
+                        - name
+                        - values
+                    properties:
+                        name:
+                            type: string
+                        values:
+                            type: array
+                            items:
+                                type: object
+                                required:
+                                    - value
+                                    - label
+                                properties:
+                                    value:
+                                        type: integer
+                                    label:
+                                        type: string
+$defs:
+    refs:
+        value:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - fc
+                - names
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                fc:
+                    type: string
+                names:
+                    type: array
+                    items:
+                        type:
+                            - string
+                            - integer
+        data:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - names
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                names:
+                    type: array
+                    items:
+                        type:
+                            - string
+                            - integer
+        command:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - name
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                name:
+                    type: string
+        rcb:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - type
+                - name
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                type:
+                    enum:
+                        - BUFFERED
+                        - UNBUFFERED
+                name:
+                    type: string
+        dataset:
+            type: object
+            required:
+                - logical_device
+                - logical_node
+                - name
+            properties:
+                logical_device:
+                    type: string
+                logical_node:
+                    type: string
+                name:
+                    type: string
+    value_type:
+        oneOf:
+          - enum:
+                - BOOLEAN
+                - INTEGER
+                - UNSIGNED
+                - FLOAT
+                - BIT_STRING
+                - OCTET_STRING
+                - VISIBLE_STRING
+                - MMS_STRING
+                - QUALITY
+                - TIMESTAMP
+                - DOUBLE_POINT
+                - DIRECTION
+                - SEVERITY
+                - ANALOGUE
+                - VECTOR
+                - STEP_POSITION
+                - BINARY_CONTROL
+          - type: object
+            required:
+                - type
+                - element_type
+            properties:
+                type:
+                    const: ARRAY
+                element_type:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
+                length:
+                    type: integer
+          - type: object
+            required:
+                - type
+                - elements
+            properties:
+                type:
+                    const: STRUCT
+                elements:
+                    type: array
+                    items:
+                        type: object
+                        requried:
+                            - name
+                            - type
+                        properties:
+                            name:
+                                type: string
+                            type:
+                                $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
