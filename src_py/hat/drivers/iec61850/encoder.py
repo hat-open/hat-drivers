@@ -468,9 +468,9 @@ def rcb_attr_value_from_mms_data(mms_data: mms.Data,
             mms_data, common.BasicValueType.BOOLEAN)
 
     if attr_type == common.RcbAttrType.DATASET:
-        return dataset_ref_from_str(
-            value_from_mms_data(
-                mms_data, common.BasicValueType.VISIBLE_STRING))
+        value = value_from_mms_data(
+            mms_data, common.BasicValueType.VISIBLE_STRING)
+        return dataset_ref_from_str(value) if value else None
 
     if attr_type == common.RcbAttrType.CONF_REVISION:
         return value_from_mms_data(
@@ -550,7 +550,7 @@ def rcb_attr_value_to_mms_data(attr_value: common.RcbAttrValue,
 
     if attr_type == common.RcbAttrType.DATASET:
         return value_to_mms_data(
-            dataset_ref_to_str(attr_value),
+            (dataset_ref_to_str(attr_value) if attr_value is not None else ''),
             common.BasicValueType.VISIBLE_STRING)
 
     if attr_type == common.RcbAttrType.CONF_REVISION:
