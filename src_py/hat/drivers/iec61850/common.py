@@ -78,6 +78,7 @@ class AcsiValueType(enum.Enum):
 
 class ArrayValueType(typing.NamedTuple):
     type: 'ValueType'
+    length: int
 
 
 class StructValueType(typing.NamedTuple):

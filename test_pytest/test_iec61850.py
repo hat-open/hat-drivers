@@ -821,7 +821,8 @@ async def test_set_rcb_attrs(mms_srv_addr, rcb_type, rcb_attr_type, mms_data,
      iec61850.BinaryControl.RESERVED,
      mms.BitStringData([True, True])),
 
-    (iec61850.ArrayValueType(iec61850.BasicValueType.VISIBLE_STRING),
+    (iec61850.ArrayValueType(type=iec61850.BasicValueType.VISIBLE_STRING,
+                             length=10),
      [f'abc{i}' for i in range(10)],
      mms.ArrayData([mms.VisibleStringData(f'abc{i}') for i in range(10)])),
 
@@ -1957,7 +1958,8 @@ async def test_termination(mms_srv_addr, mms_inf_report, termination):
      iec61850.BinaryControl.RESERVED),
 
     (mms.ArrayData([mms.IntegerData(i) for i in range(10)]),
-     iec61850.ArrayValueType(iec61850.BasicValueType.INTEGER),
+     iec61850.ArrayValueType(type=iec61850.BasicValueType.INTEGER,
+                             length=10),
      [i for i in range(10)]),
 
     # DoublePoint, Quality, Timestamp

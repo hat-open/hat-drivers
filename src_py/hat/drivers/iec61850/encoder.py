@@ -282,6 +282,9 @@ def value_from_mms_data(mms_data: mms.Data,
         if not isinstance(mms_data, mms.ArrayData):
             raise Exception('unexpected data type')
 
+        if len(mms_data.elements) != value_type.length:
+            raise Exception('invalid array length')
+
         return [value_from_mms_data(i, value_type.type)
                 for i in mms_data.elements]
 
@@ -440,6 +443,9 @@ def value_to_mms_data(value: common.Value,
                                   bool(value.value & 1)])
 
     if isinstance(value_type, common.ArrayValueType):
+        if len(value) != value_type.length:
+            raise Exception('invalid array length')
+
         return mms.ArrayData([value_to_mms_data(i, value_type.type)
                               for i in value])
 
