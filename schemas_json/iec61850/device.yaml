@@ -11,9 +11,6 @@ required:
 properties:
     connection:
         type: object
-        required:
-            - host
-            - port
         properties:
             host:
                 type: string
@@ -155,12 +152,12 @@ properties:
                         - MV
                         - CMV
                         - SAV
-                        # - WYE
-                        # - DEL
-                        # - SEQ
-                        # - HMV
-                        # - HWYE
-                        # - HDEL
+                        - WYE
+                        - DEL
+                        - SEQ
+                        - HMV
+                        - HWYE
+                        - HDEL
                         - SPC
                         - DPC
                         - INC
