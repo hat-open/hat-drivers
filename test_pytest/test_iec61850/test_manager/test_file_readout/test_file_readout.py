@@ -1,4 +1,6 @@
-from pathlib import Path
+import importlib.resources
+
+import pytest
 
 from hat import json
 from hat import util
@@ -6,16 +8,19 @@ from hat import util
 from hat.drivers.iec61850.manager.file_readout import readout
 
 
-package_path = Path(__file__).parent
-device_schema_path = (Path(__file__).parents[4] /
-                      'schemas_json/iec61850/device.yaml')
-json_schema_repo = json.create_schema_repository(device_schema_path)
-validator = json.DefaultSchemaValidator(json_schema_repo)
 json_schema_id = "hat-drivers://iec61850/device.yaml"
 
 
-def test_1():
-    res = readout(package_path / 'test1.cid')
+@pytest.fixture(scope='session')
+def validator(pytestconfig):
+    json_schema_repo = json.create_schema_repository(
+        pytestconfig.rootpath / 'schemas_json')
+    return json.DefaultSchemaValidator(json_schema_repo)
+
+
+def test_1(validator):
+    with importlib.resources.open_text(__package__, 'test1.cid') as f:
+        res = readout(f)
 
     assert len(res) == 1
     for device_name, device_json in res.items():
@@ -46,8 +51,9 @@ def test_1():
         assert data['cdc'] == 'CMV'
 
 
-def test_2():
-    res = readout(package_path / 'test2.cid')
+def test_2(validator):
+    with importlib.resources.open_text(__package__, 'test2.cid') as f:
+        res = readout(f)
 
     assert len(res) == 1
     for device_name, device_json in res.items():
@@ -59,40 +65,45 @@ def test_2():
     assert len(device_json['rcbs']) == 15
 
 
-def test_3():
-    res = readout(package_path / 'test3.scd')
+def test_3(validator):
+    with importlib.resources.open_text(__package__, 'test3.scd') as f:
+        res = readout(f)
 
     assert len(res) == 3
     for device_name, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
 
-def test_4():
-    res = readout(package_path / 'test4.scd')
+def test_4(validator):
+    with importlib.resources.open_text(__package__, 'test4.scd') as f:
+        res = readout(f)
 
     assert len(res) == 2
     for device_name, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
 
-def test_5():
-    res = readout(package_path / 'test5.scd')
+def test_5(validator):
+    with importlib.resources.open_text(__package__, 'test5.scd') as f:
+        res = readout(f)
 
     assert len(res) == 1
     for device_name, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
 
-def test_6():
-    res = readout(package_path / 'test6.cid')
+def test_6(validator):
+    with importlib.resources.open_text(__package__, 'test6.cid') as f:
+        res = readout(f)
 
     assert len(res) == 1
     for device_name, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
 
-def test_7():
-    res = readout(package_path / 'test7.cid')
+def test_7(validator):
+    with importlib.resources.open_text(__package__, 'test7.cid') as f:
+        res = readout(f)
 
     assert len(res) == 1
     for device_name, device_json in res.items():
