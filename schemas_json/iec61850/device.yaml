@@ -139,6 +139,7 @@ properties:
                     $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
                 cdc:
                     enum:
+                        - null
                         - SPS
                         - DPS
                         - INS
@@ -180,21 +181,19 @@ properties:
                         - LPL
                         - CSD
                 datasets:
-                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
+                    type: array
+                    items:
+                        $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
                 values:
                     type: array
                     items:
                         type: object
                         required:
-                            - path
+                            - name
                             - writable
                         properties:
-                            path:
-                                type: array
-                                items:
-                                    type:
-                                        - string
-                                        - number
+                            name:
+                                type: string
                             writable:
                                 type: boolean
                             enumerated:
