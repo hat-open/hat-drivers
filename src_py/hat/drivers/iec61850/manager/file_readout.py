@@ -46,8 +46,8 @@ def readout(source: typing.TextIO | Path
             for ied_name, device_conf in _parse_ieds(root_el)}
 
 
-def _read_xml(path):
-    it = xml.etree.ElementTree.iterparse(str(path))
+def _read_xml(source):
+    it = xml.etree.ElementTree.iterparse(source)
     for _, el in it:
         prefix, has_namespace, postfix = el.tag.partition('}')
         if has_namespace:
