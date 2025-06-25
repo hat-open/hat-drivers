@@ -59,8 +59,11 @@ def _parse_ieds(root_el):
     for ied_el in root_el.findall("./IED"):
         ied_name = ied_el.get('name')
         if ied_name == 'TEMPLATE':
-            mlog.warning('ied name is TEMPLATE: insufficient structure')
+            mlog.warning(
+                "ied name is 'TEMPLATE': possible insufficient structure")
+
         uneditable_rcb = list(_parse_uneditable_rcb(ied_el))
+
         for ap_el in ied_el.findall("./AccessPoint"):
             if ap_el.find("./Server/LDevice") is None:
                 continue
@@ -80,18 +83,15 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
     value_types = []
 
     for ld_el in ap_el.findall("./Server/LDevice"):
-        inst = ld_el.get('inst')
-        logical_device = f"{ied_name}{inst}"
+        logical_device = _create_logical_device(ied_name, ld_el.get('inst'))
         for ln_el in ld_el:
-            if ln_el.tag not in ('LN0', 'LN'):
+            if ln_el.tag not in {'LN0', 'LN'}:
                 continue
 
-            prefix = ln_el.get('prefix') or ''
+            logical_node = _create_logical_node(ln_el.get('prefix'),
+                                                ln_el.get('lnClass'),
+                                                ln_el.get('inst'))
             ln_type = ln_el.get('lnType')
-            ln_class = ln_el.get('lnClass')
-            inst = ln_el.get('inst') or ''
-            logical_node = f"{prefix}{ln_class}{inst}"
-
             ln_type_el = root_el.find(f"./DataTypeTemplates/LNodeType"
                                       f"[@id='{ln_type}']")
 
@@ -192,6 +192,7 @@ def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
                            'fc': fc,
                            'name': do_el.get('name'),
                            'type': value_type}
+
         except Exception as e:
             mlog.warning('value type %s/%s.%s ignored: %s',
                          logical_device, logical_node, do_name, e, exc_info=e)
@@ -290,34 +291,39 @@ def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
             yield {
                 'ref': {'logical_device': logical_device,
                         'logical_node': logical_node,
-                        'name': dataset_el.get('name')},
+                        'name': name},
                 'values': list(_parse_dataset_values(dataset_el, ied_name))}
+
         except Exception as e:
             mlog.warning('dataset %s ignored: %s', name, e, exc_info=e)
 
 
 def _parse_dataset_values(dataset_el, ied_name):
-    for fcda_el in dataset_el:
+    ds_name = dataset_el.get('name')
+    for i, fcda_el in enumerate(dataset_el):
         if fcda_el.tag != 'FCDA':
             continue
+        try:
+            fc = fcda_el.get('fc')
+            do_name = fcda_el.get('doName')
+            da_name = fcda_el.get('daName')
+            names = []
+            if do_name:
+                names.extend(_names_from_fcda_name(do_name))
+            if da_name:
+                names.extend(_names_from_fcda_name(da_name))
+            yield {
+                'logical_device': _create_logical_device(
+                    ied_name, fcda_el.get('ldInst')),
+                'logical_node': _create_logical_node(fcda_el.get('prefix'),
+                                                     fcda_el.get('lnClass'),
+                                                     fcda_el.get('lnInst')),
+                'fc': fc,
+                'names': names}
 
-        ld_inst = fcda_el.get('ldInst')
-        prefix = fcda_el.get('prefix') or ''
-        ln_class = fcda_el.get('lnClass')
-        ln_inst = fcda_el.get('lnInst') or ''
-        fc = fcda_el.get('fc')
-        do_name = fcda_el.get('doName')
-        da_name = fcda_el.get('daName')
-        names = []
-        if do_name:
-            names.extend(_names_from_fcda_name(do_name))
-        if da_name:
-            names.extend(_names_from_fcda_name(da_name))
-        yield {
-            'logical_device': f"{ied_name}{ld_inst}",
-            'logical_node': f"{prefix}{ln_class}{ln_inst}",
-            'fc': fc,
-            'names': names}
+        except Exception as e:
+            mlog.warning('dataset %s value at index %s ignored: %s',
+                         ds_name, i, e, exc_info=e)
 
 
 def _names_from_fcda_name(name):
@@ -339,6 +345,7 @@ def _parse_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
                                   logical_device=logical_device,
                                   logical_node=logical_node,
                                   uneditable_rcb=uneditable_rcb)
+
         except Exception as e:
             mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
 
@@ -353,16 +360,7 @@ def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
                           'UNBUFFERED': 'RP'}[rcb_type]
         report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
 
-    # indexed rcbs
-    rcb_names = [name]
-    rpt_enabled_el = rc_el.find('./RptEnabled')
-    indexed = rc_el.get('indexed') != 'false'
-    if rpt_enabled_el is not None:
-        max_rcbs = int(rpt_enabled_el.get('max', '1'))
-        if indexed or max_rcbs > 1:
-            rcb_names = [f'{name}{i+1:02}' for i in range(max_rcbs)]
-
-    for rcb_name in rcb_names:
+    for rcb_name in _parse_rcb_names(rc_el):
         yield {
             'ref': {'logical_device': logical_device,
                     'logical_node': logical_node,
@@ -378,6 +376,23 @@ def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
             'trigger_options': list(_parse_rcb_trg_ops(rc_el)),
             'integrity_period': int(rc_el.get('intgPd', '0')),
             'uneditable': uneditable_rcb}
+
+
+def _parse_rcb_names(rc_el):
+    name = rc_el.get('name')
+    rpt_enabled_el = rc_el.find('./RptEnabled')
+    max_rcbs = 0
+    if rpt_enabled_el is not None:
+        max_rcbs = int(rpt_enabled_el.get('max', '1'))
+
+    indexed = rc_el.get('indexed') != 'false'
+
+    if indexed and max_rcbs > 1:
+        for i in range(max_rcbs):
+            yield f'{name}{i+1:02}'
+
+    else:
+        yield name
 
 
 def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
@@ -415,6 +430,7 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         name = node_el.get('name')
         try:
             yield from parse_node(node_el, [])
+
         except Exception as e:
             mlog.warning('data %s/%s.%s ignored: %s',
                          logical_device, logical_node, name, e, exc_info=e)
@@ -444,10 +460,10 @@ def _get_data_values(root_el, type_el):
         value = {'name': value_name,
                  'writable': writable}
         node_el = attrs[value_name]
-        if node_el.get('bType') == 'Enum':
-            enum_type_el = root_el.find(f"./DataTypeTemplates/EnumType"
-                                        f"[@id='{node_el.get('type')}']")
-            value['enumerated'] = _parse_enumerated(enum_type_el)
+        node_btype = node_el.get('bType')
+        node_type = node_el.get('type')
+        if node_btype == 'Enum':
+            value['enumerated'] = _parse_enumerated(root_el, node_type)
 
         yield value
 
@@ -460,40 +476,20 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
         do_type_el = root_el.find(f"./DataTypeTemplates/*"
                                   f"[@id='{do_type}']")
         cdc = do_type_el.get('cdc')
-        if cdc not in ['SPC',
+        if cdc not in {'SPC',
                        'DPC',
                        'INC',
                        'ENC',
                        'BSC',
                        'ISC',
                        'APC',
-                       'BAC']:
+                       'BAC'}:
             continue
 
-        ctl_model_el = do_type_el.find("./DA[@name='ctlModel']")
-        if ctl_model_el is None:
-            continue
-
-        val_el = ln_el.find(f"./DOI[@name='{do_name}']"
-                            f"/DAI[@name='ctlModel']"
-                            f"/Val")
-        if val_el is None:
-            val_el = ctl_model_el.find('.Val')
-        if val_el is None:
-            continue
-
-        ctl_model = val_el.text
-        if ctl_model in ['status-only',
-                         None]:
-            continue
         try:
-            model = {
-                'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
-                'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
-                'direct-with-enhanced-security':
-                    'DIRECT_WITH_ENHANCED_SECURITY',
-                'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
-                }[ctl_model]
+            model = _parse_command_model(ln_el, do_el, do_type_el)
+            if model is None:
+                continue
 
             oper_el = do_type_el.find("./DA[@name='Oper']")
             oper_type = oper_el.get('type')
@@ -513,16 +509,45 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
 
             ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
             if ctl_val_el.get('bType') == 'Enum':
-                ctl_val_type = ctl_val_el.get('type')
-                enum_type_el = root_el.find(f"./DataTypeTemplates/EnumType"
-                                            f"[@id='{ctl_val_type}']")
-                cmd['enumerated'] = _parse_enumerated(enum_type_el)
+                cmd['enumerated'] = _parse_enumerated(
+                    root_el, ctl_val_el.get('type'))
 
             yield cmd
 
         except Exception as e:
             mlog.warning('command %s/%s.%s ignored: %s',
                          logical_device, logical_node, do_name, e, exc_info=e)
+
+
+def _parse_command_model(ln_el, do_el, do_type_el):
+    do_name = do_el.get('name')
+    ctl_model_el = do_type_el.find("./DA[@name='ctlModel']")
+    if ctl_model_el is None:
+        return
+
+    val_el = ln_el.find(f"./DOI[@name='{do_name}']"
+                        f"/DAI[@name='ctlModel']"
+                        f"/Val")
+    if val_el is None:
+        val_el = ctl_model_el.find('.Val')
+    if val_el is None:
+        return
+
+    ctl_model = val_el.text
+    if ctl_model is None or ctl_model == 'status-only':
+        return
+
+    model = {
+        'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
+        'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
+        'direct-with-enhanced-security':
+            'DIRECT_WITH_ENHANCED_SECURITY',
+        'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
+        }.get(ctl_model)
+    if model is None:
+        raise Exception(f'unknown control model {ctl_model}')
+
+    return model
 
 
 def _parse_rcb_opt_flds(rc_el):
@@ -691,8 +716,8 @@ def _get_basic_value_type(node):
                     {'name': 'APPID',
                      'type': 'UNSIGNED'}]}
 
-    if btype in ["EntryTime",
-                 "Currency"]:
+    if btype in {"EntryTime",
+                 "Currency"}:
         mlog.warning('basic types EntryTime and Currency not supported:'
                      'respective DO has undefined type')
 
@@ -701,11 +726,21 @@ def _get_basic_value_type(node):
     # "SvOptFlds"
 
 
-def _parse_enumerated(type_el):
+def _parse_enumerated(root_el, type_name):
+    type_el = root_el.find(f"./DataTypeTemplates/EnumType"
+                           f"[@id='{type_name}']")
     return {'name': type_el.get('id'),
             'values': [{'value': int(val_el.get('ord')),
                         'label': val_el.text}
                        for val_el in type_el if val_el.text]}
+
+
+def _create_logical_device(ied_name, inst):
+    return f"{ied_name}{inst}"
+
+
+def _create_logical_node(prefix, ln_class, inst):
+    return f"{prefix or ''}{ln_class}{inst or ''}"
 
 
 def _get_cdc_value_names(type_el):
@@ -932,20 +967,22 @@ def _get_cdc_value_names(type_el):
         yield 'dataNs'
         return
 
-    if cdc in ['WYE',
+    if cdc in {'WYE',
                'DEL',
                'SEQ',
                'HMV',
                'HWYE',
-               'HDEL']:
+               'HDEL'}:
         return
 
     for da_el in type_el:
         fc = da_el.get('fc')
         btype = da_el.get('bType')
-        if (fc in ['MX', 'ST', 'SP'] and
-                btype not in ['Quality',
-                              'Timestamp']):
+        if (fc in {'MX',
+                   'ST',
+                   'SP'} and
+                btype not in {'Quality',
+                              'Timestamp'}):
             yield da_el.get('name')
 
 
