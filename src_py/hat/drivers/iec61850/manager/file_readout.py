@@ -68,6 +68,7 @@ def _parse_ieds(root_el):
             if ap_el.find("./Server/LDevice") is None:
                 continue
 
+            mlog.info('IED %s', ied_name)
             yield ied_name, _parse_device(root_el=root_el,
                                           ap_el=ap_el,
                                           ied_name=ied_name,
@@ -95,6 +96,8 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
             ln_type_el = root_el.find(f"./DataTypeTemplates/LNodeType"
                                       f"[@id='{ln_type}']")
 
+            mlog.info('value types for %s/%s ...',
+                      logical_device, logical_node)
             value_types.extend(_parse_value_types(
                 root_el, ln_type_el, logical_device, logical_node))
 
@@ -181,6 +184,8 @@ def _parse_connection(root_el, ied_name, ap_name):
 def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
     for do_el in ln_type_el:
         do_name = do_el.get('name')
+        mlog.debug('value type %s/%s.%s',
+                   logical_device, logical_node, do_name)
         try:
             value_type_fc = _parse_value_type_fc(root_el, do_el)
             fcs = set(_get_all_fcs(value_type_fc))
@@ -296,6 +301,7 @@ def _get_value_type_for_fc(value_type, fc):
 def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
     for dataset_el in ln_el.findall('./DataSet'):
         name = dataset_el.get('name')
+        mlog.info("dataset %s/%s.%s", logical_device, logical_node, name)
         try:
             yield {
                 'ref': {'logical_device': logical_device,
@@ -364,11 +370,12 @@ def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
     report_id = rc_el.get('rptID')
     dataset = rc_el.get('datSet')
     rcb_type = 'BUFFERED' if rc_el.get('buffered') == 'true' else 'UNBUFFERED'
+    rcb_type_short = {'BUFFERED': 'BR',
+                      'UNBUFFERED': 'RP'}[rcb_type]
     if not report_id:
-        rcb_type_short = {'BUFFERED': 'BR',
-                          'UNBUFFERED': 'RP'}[rcb_type]
         report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
-
+    mlog.info('rcb %s/%s.%s.%s',
+              logical_device, logical_node, rcb_type_short, name)
     for rcb_name in _parse_rcb_names(rc_el):
         yield {
             'ref': {'logical_device': logical_device,
@@ -437,6 +444,7 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
 
     for node_el in ln_type_el:
         name = node_el.get('name')
+        mlog.info('data %s/%s.%s', logical_device, logical_node, name)
         try:
             yield from parse_node(node_el, [])
 
@@ -495,6 +503,7 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
                        'BAC'}:
             continue
 
+        mlog.info('command %s/%s.%s', logical_device, logical_node, do_name)
         try:
             model = _parse_command_model(ln_el, do_el, do_type_el)
             if model is None:
