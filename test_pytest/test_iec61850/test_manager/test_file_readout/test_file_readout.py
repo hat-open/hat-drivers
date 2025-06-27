@@ -35,6 +35,7 @@ def test_1(validator):
     writable_values = [j for i in device_json['data'] for j in i['values']
                        if j['writable']]
     assert len(writable_values) == 2
+    assert len(device_json['value_types']) == 125
 
     ld = "DemoMeasurement"
     ln = "I3pMMXU1"
@@ -54,6 +55,48 @@ def test_1(validator):
                                "names": [do_name, subdo_name]})
         assert data['cdc'] == 'CMV'
 
+    # different fcs on the same address are split
+    value_types = [i for i in device_json['value_types']
+                   if (i['logical_device'] == 'DemoMeasurement' and
+                       i['logical_node'] == 'LLN0' and
+                       i['name'] == 'Health')]
+    assert len(value_types) == 2
+    assert util.first(value_types, lambda i: i['fc'] == 'ST')
+    assert util.first(value_types, lambda i: i['fc'] == 'DC')
+
+    # command, data and control model on the same address
+    value_types = [i for i in device_json['value_types']
+                   if (i['logical_device'] == 'DemoProtCtrl' and
+                       i['logical_node'] == 'Obj1CSWI4' and
+                       i['name'] == 'Pos')]
+    assert len(value_types) == 3
+    st_value_type = util.first(value_types, lambda i: i['fc'] == 'ST')
+    assert st_value_type['type']['type'] == 'STRUCT'
+    assert len(st_value_type['type']['elements']) == 3
+    assert ({'name': 'stVal', 'type': 'DOUBLE_POINT'} in
+            st_value_type['type']['elements'])
+    assert ({'name': 'q', 'type': 'QUALITY'} in
+            st_value_type['type']['elements'])
+    assert ({'name': 't', 'type': 'TIMESTAMP'} in
+            st_value_type['type']['elements'])
+    cf_value_type = util.first(value_types, lambda i: i['fc'] == 'CF')
+    assert len(cf_value_type['type']['elements']) == 1
+    assert ({'name': 'ctlModel', 'type': 'INTEGER'} in
+            cf_value_type['type']['elements'])
+    co_value_type = util.first(value_types, lambda i: i['fc'] == 'CO')
+    assert len(co_value_type['type']['elements']) == 3
+    assert util.first(co_value_type['type']['elements'],
+                      lambda i: i['name'] == 'SBOw')
+    assert util.first(co_value_type['type']['elements'],
+                      lambda i: i['name'] == 'Oper')
+    assert util.first(co_value_type['type']['elements'],
+                      lambda i: i['name'] == 'Cancel')
+
+    # rcb with rcbID="" get generated rptID as ld/ln.BR/RP.name
+    rcbs = device_json['rcbs']
+    assert rcbs[0]['report_id'] == 'DemoMeasurement/LLN0.BR.brcb1'
+    assert rcbs[1]['report_id'] == 'DemoMeasurement/LLN0.RP.urcb1'
+
 
 def test_2(validator):
     with importlib.resources.open_text(__package__, 'test2.cid') as f:
@@ -72,6 +115,7 @@ def test_2(validator):
     writable_values = [j for i in device_json['data'] for j in i['values']
                        if j['writable']]
     assert len(writable_values) == 0
+    assert len(device_json['value_types']) == 512
 
     ds_conf = util.first(device_json['datasets'],
                          lambda i: i['ref'] == {
@@ -129,6 +173,10 @@ def test_3(validator):
     assert res['LKKU']['connection']['ap_title'] == [1, 3, 9999, 23]
     assert res['LKKU']['connection']['ae_qualifier'] == 23
 
+    assert len(res['E1_7SA']['value_types']) == 4023
+    assert len(res['E1_REL']['value_types']) == 1334
+    assert len(res['LKKU']['value_types']) == 3
+
     # verify a E1_REL dataset values
     assert len(res['E1_REL']['datasets']) == 5
     ds_staturg = util.first(res['E1_REL']['datasets'],
@@ -159,6 +207,7 @@ def test_4(validator):
     assert len(device_json['rcbs']) == 42
     assert len(device_json['commands']) == 99
     assert len(device_json['data']) == 2050
+    assert len(device_json['value_types']) == 4079
 
     # indexed rcbs
     rcbs = [rcb_conf for rcb_conf in device_json['rcbs']
@@ -173,6 +222,36 @@ def test_4(validator):
     assert len(device_json['rcbs']) == 32
     assert len(device_json['commands']) == 92
     assert len(device_json['data']) == 741
+    assert len(device_json['value_types']) == 1334
+
+    # command, data and control model on the same address
+    value_types = [i for i in device_json['value_types']
+                   if (i['logical_device'] == 'E1_RELSES_1' and
+                       i['logical_node'] == 'LLN0' and
+                       i['name'] == 'Mod')]
+    assert len(value_types) == 4
+    co_value_type = util.first(value_types, lambda i: i['fc'] == 'CO')
+    assert len(co_value_type['type']['elements']) == 1
+    el_oper = co_value_type['type']['elements'][0]
+    assert el_oper == {'name': 'Oper',
+                       'type': {'elements': [{'name': 'ctlVal',
+                                              'type': 'INTEGER'},
+                                             {'name': 'origin',
+                                              'type': {'elements': [
+                                                {'name': 'orCat',
+                                                 'type': 'INTEGER'},
+                                                {'name': 'orIdent',
+                                                 'type': 'OCTET_STRING'}],
+                                               'type': 'STRUCT'}},
+                                             {'name': 'ctlNum',
+                                              'type': 'UNSIGNED'},
+                                             {'name': 'T',
+                                              'type': 'TIMESTAMP'},
+                                             {'name': 'Test',
+                                              'type': 'BOOLEAN'},
+                                             {'name': 'Check',
+                                              'type': 'INTEGER'}],
+                                'type': 'STRUCT'}}
 
 
 def test_5(validator):
@@ -192,6 +271,7 @@ def test_5(validator):
     writable_values = [j for i in device_json['data'] for j in i['values']
                        if j['writable']]
     assert len(writable_values) == 77
+    assert len(device_json['value_types']) == 1337
 
 
 def test_6(validator):
@@ -211,3 +291,4 @@ def test_6(validator):
     writable_values = [j for i in device_json['data'] for j in i['values']
                        if j['writable']]
     assert len(writable_values) == 0
+    assert len(device_json['value_types']) == 655

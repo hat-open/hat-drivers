@@ -199,18 +199,14 @@ def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
 
 
 def _parse_value_type_fc(root_el, node_el, is_array_element=False):
+    if node_el.tag == 'ProtNs':
+        return
+
     basic_value_type = _get_basic_value_type(node_el)
     if basic_value_type:
         return basic_value_type
 
-    type = node_el.get('type')
-    btype = node_el.get('bType')
     fc = node_el.get('fc')
-    node_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                f"[@id='{type}']")
-    if node_type_el is None:
-        mlog.warning('type %s ignored: not defined', type)
-        return
 
     array_length = node_el.get('count')
     if array_length and not is_array_element:
@@ -224,17 +220,30 @@ def _parse_value_type_fc(root_el, node_el, is_array_element=False):
                 'length': array_length,
                 'fc': fc}
 
-    if btype == 'Struct':
-        elements = [{'type': _parse_value_type_fc(root_el, da_el),
-                     'name': da_el.get('name'),
-                     'fc': da_el.get('fc')}
-                    for da_el in node_type_el]
-        if any(el['type'] is None for el in elements):
-            return
+    type = node_el.get('type')
+    if type is None:
+        return
 
-        return {'type': 'STRUCT',
-                'elements': elements,
-                'fc': fc}
+    node_type_el = root_el.find(f"./DataTypeTemplates/*"
+                                f"[@id='{type}']")
+    if node_type_el is None:
+        mlog.warning('type %s ignored: not defined', type)
+        return
+
+    elements = []
+    for da_el in node_type_el:
+        el_type = _parse_value_type_fc(root_el, da_el)
+        if el_type is None:
+            continue
+
+        elements.append(
+            {'type': el_type,
+             'name': da_el.get('name'),
+             'fc': da_el.get('fc')})
+
+    return {'type': 'STRUCT',
+            'elements': elements,
+            'fc': fc}
 
 
 def _get_all_fcs(value_type):
