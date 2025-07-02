@@ -55,6 +55,11 @@ def test_1(validator):
                                "names": [do_name, subdo_name]})
         assert data['cdc'] == 'CMV'
 
+    # number of data that have values in datasets
+    data_with_values_in_ds = [d for d in device_json['data']
+                              if any(val['datasets'] for val in d['values'])]
+    assert len(data_with_values_in_ds) == 12
+
     # different fcs on the same address are split
     value_types = [i for i in device_json['value_types']
                    if (i['logical_device'] == 'DemoMeasurement' and
@@ -252,6 +257,23 @@ def test_4(validator):
                                              {'name': 'Check',
                                               'type': 'INTEGER'}],
                                 'type': 'STRUCT'}}
+
+    # data values in multiple datasets
+    data_conf = util.first(
+        device_json['data'],
+        lambda i: i['ref'] == {'logical_device': 'E1_RELLD0',
+                               'logical_node': 'ECPSCH1',
+                               'names': ['ProTx']})
+    assert data_conf
+    assert len(data_conf['values']) == 1
+    assert len(data_conf['values'][0]['datasets']) == 2
+    assert data_conf['values'][0]['datasets'] == [
+        {'logical_device': 'E1_RELLD0',
+         'logical_node': 'LLN0',
+         'name': 'StatUrg'},
+        {'logical_device': 'E1_RELLD0',
+         'logical_node': 'LLN0',
+         'name': 'StatUrg_A'}]
 
 
 def test_5(validator):

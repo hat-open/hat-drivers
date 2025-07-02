@@ -207,11 +207,11 @@ def _parse_value_type_fc(root_el, node_el, is_array_element=False):
     if node_el.tag == 'ProtNs':
         return
 
+    fc = node_el.get('fc')
     basic_value_type = _get_basic_value_type(node_el)
     if basic_value_type:
-        return basic_value_type
-
-    fc = node_el.get('fc')
+        return {'type': basic_value_type,
+                'fc': fc}
 
     array_length = node_el.get('count')
     if array_length and not is_array_element:
@@ -267,23 +267,17 @@ def _get_all_fcs(value_type):
 
 
 def _get_value_type_for_fc(value_type, fc):
-    if isinstance(value_type, str):
-        return value_type
+    if value_type['fc'] is not None and value_type['fc'] != fc:
+        return
 
     if value_type['type'] == 'ARRAY':
-        if value_type['fc'] is not None and value_type['fc'] != fc:
-            return
-
         element_type = _get_value_type_for_fc(value_type['element_type'], fc)
         if element_type:
             return {'type': 'ARRAY',
                     'element_type': element_type,
                     'length': value_type['length']}
 
-    if value_type['type'] == 'STRUCT':
-        if value_type['fc'] is not None and value_type['fc'] != fc:
-            return
-
+    elif value_type['type'] == 'STRUCT':
         elements = []
         for el in value_type['elements']:
             if el['fc'] is not None and el['fc'] != fc:
@@ -296,6 +290,9 @@ def _get_value_type_for_fc(value_type, fc):
         if elements:
             return {'type': 'STRUCT',
                     'elements': elements}
+
+    elif isinstance(value_type['type'], str):
+        return value_type['type']
 
 
 def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
@@ -318,6 +315,7 @@ def _parse_dataset_values(dataset_el, ied_name):
     for i, fcda_el in enumerate(dataset_el):
         if fcda_el.tag != 'FCDA':
             continue
+
         try:
             fc = fcda_el.get('fc')
             do_name = fcda_el.get('doName')
@@ -414,7 +412,7 @@ def _parse_rcb_names(rc_el):
 def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
                 logical_node, datasets):
 
-    def parse_node(node_el, names):
+    def parse_node(node_el, names, fc):
         if not node_el.get('name'):
             return
 
@@ -428,6 +426,7 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         if type_el is None:
             return
 
+        fc = node_el.get('fc') or fc
         cdc = type_el.get('cdc')
         if cdc:
             data_ref = {'logical_device': logical_device,
@@ -436,53 +435,76 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
             yield {
                 'ref': data_ref,
                 'cdc': cdc if cdc in _cdc_builtin else None,
-                'datasets': list(_get_data_datasets(data_ref, datasets)),
-                'values': list(_get_data_values(root_el, type_el))}
+                'values': list(_get_data_values(
+                    root_el, type_el, data_ref, datasets, fc))}
 
         for nd_el in type_el:
-            yield from parse_node(nd_el, names)
+            yield from parse_node(nd_el, names, fc)
 
     for node_el in ln_type_el:
         name = node_el.get('name')
         mlog.info('data %s/%s.%s', logical_device, logical_node, name)
         try:
-            yield from parse_node(node_el, [])
+            yield from parse_node(node_el, [], None)
 
         except Exception as e:
             mlog.warning('data %s/%s.%s ignored: %s',
                          logical_device, logical_node, name, e, exc_info=e)
 
 
-def _get_data_datasets(data_ref, datasets):
-    data_datasets = []
-    for dataset in datasets:
-        for value in dataset['values']:
-            if (data_ref['logical_device'] == value['logical_device'] and
-                data_ref['logical_node'] == value['logical_node'] and
-                data_ref['names'] ==
-                    value['names'][:len(data_ref['names'])] and
-                    dataset['ref'] not in data_datasets):
-                data_datasets.append(dataset['ref'])
-                yield dataset['ref']
-
-
-def _get_data_values(root_el, type_el):
+def _get_data_values(root_el, type_el, data_ref, datasets, fc):
     cdc = type_el.get('cdc')
-    attrs = {node_el.get('name'): node_el for node_el in type_el}
+    cdc_value_names = set(_get_cdc_value_names(type_el))
     writable = _get_cdc_writeable(cdc)
-    for value_name in _get_cdc_value_names(type_el):
-        if value_name not in attrs:
+    for node_el in type_el:
+        value_name = node_el.get('name')
+        if value_name not in cdc_value_names:
             continue
 
+        fc = node_el.get('fc') or fc
+        value_ref = {
+            'logical_device': data_ref['logical_device'],
+            'logical_node': data_ref['logical_node'],
+            'fc': fc,
+            'names': [*data_ref['names'], value_name]}
         value = {'name': value_name,
+                 'datasets': list(_get_value_datasets(value_ref, datasets)),
                  'writable': writable}
-        node_el = attrs[value_name]
+
         node_btype = node_el.get('bType')
         node_type = node_el.get('type')
         if node_btype == 'Enum':
             value['enumerated'] = _parse_enumerated(root_el, node_type)
 
         yield value
+
+
+def _get_value_datasets(value_ref, datasets):
+    for dataset in datasets:
+        for ds_val_ref in dataset['values']:
+            if _value_refs_match(value_ref, ds_val_ref):
+                yield dataset['ref']
+
+
+def _value_refs_match(ref1, ref2):
+    if ref1['logical_device'] != ref2['logical_device']:
+        return False
+
+    if ref1['logical_node'] != ref2['logical_node']:
+        return False
+
+    if ref1['fc'] != ref2['fc']:
+        return False
+
+    if ref1['names'] == ref2['names']:
+        return True
+
+    if len(ref1['names']) < len(ref2['names']):
+        names_min, names_max = ref1['names'], ref2['names']
+    else:
+        names_min, names_max = ref2['names'], ref1['names']
+
+    return names_max[:len(names_min)] == names_min
 
 
 def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
