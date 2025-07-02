@@ -132,7 +132,6 @@ properties:
             required:
                 - ref
                 - cdc
-                - datasets
                 - values
             properties:
                 ref:
@@ -180,20 +179,21 @@ properties:
                         - DPL
                         - LPL
                         - CSD
-                datasets:
-                    type: array
-                    items:
-                        $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
                 values:
                     type: array
                     items:
                         type: object
                         required:
                             - name
+                            - datasets
                             - writable
                         properties:
                             name:
                                 type: string
+                            datasets:
+                                type: array
+                                items:
+                                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
                             writable:
                                 type: boolean
                             enumerated:
