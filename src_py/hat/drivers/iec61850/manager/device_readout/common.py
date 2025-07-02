@@ -8,6 +8,13 @@ from hat.drivers.iec61850.manager.common import (DatasetRef,
                                                  ControlModel)
 
 
+class RootDataRef(typing.NamedTuple):
+    logical_device: str
+    logical_node: str
+    fc: str
+    name: str
+
+
 class Cdc(enum.Enum):
     SPS = 'SPS'
     DPS = 'DPS'
@@ -58,13 +65,13 @@ class CdcDataRef(typing.NamedTuple):
 
 
 class CdcDataValue(typing.NamedTuple):
-    path: tuple[str | int, ...]
+    name: str
+    datasets: Collection[DatasetRef]
     writable: bool
 
 
 class CdcData(typing.NamedTuple):
-    cdc: Cdc
-    datasets: Collection[DatasetRef]
+    cdc: Cdc | None
     values: Collection[CdcDataValue]
 
 

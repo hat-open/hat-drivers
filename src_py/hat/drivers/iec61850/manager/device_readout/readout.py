@@ -10,8 +10,7 @@ from hat.drivers import tcp
 from hat.drivers.iec61850 import encoder
 from hat.drivers.iec61850.manager.device_readout import common
 from hat.drivers.iec61850.manager.device_readout.parser import (get_cdc_data,
-                                                                get_cdc_commands,  # NOQA
-                                                                update_value_types)  # NOQA
+                                                                get_cdc_commands)  # NOQA
 from hat.drivers.iec61850.manager.device_readout.client import Client
 
 
@@ -31,7 +30,7 @@ async def readout(addr: tcp.Address,
                   remote_ae_qualifier: int | None = None,
                   local_detail_calling: int | None = None
                   ) -> common.DeviceConf:
-    value_types: dict[common.DataRef, common.ValueType | None] = {}
+    value_types: dict[common.RootDataRef, common.ValueType | None] = {}
     dataset_data_refs: dict[common.DatasetRef, Collection[common.DataRef]] = {}
     rcb_attr_values: dict[common.RcbRef, dict[common.RcbAttrType,
                                               common.RcbAttrValue]] = {}
@@ -63,31 +62,32 @@ async def readout(addr: tcp.Address,
         for logical_device in logical_devices:
             mlog.info('logical device %s: getting root data refs..',
                       logical_device)
-            data_refs = await client.get_root_data_refs(logical_device)
+            root_data_refs = await client.get_root_data_refs(logical_device)
 
             mlog.info('logical device %s: got %s root data refs',
-                      logical_device, len(data_refs))
+                      logical_device, len(root_data_refs))
 
-            for data_ref in data_refs:
-                data_name = data_ref.names[0]
-                if not isinstance(data_name, str):
-                    raise Exception('invalid data name')
-
+            for root_data_ref in root_data_refs:
+                data_ref = common.DataRef(
+                    logical_device=root_data_ref.logical_device,
+                    logical_node=root_data_ref.logical_node,
+                    fc=root_data_ref.fc,
+                    names=(root_data_ref.name, ))
                 data_ref_str = encoder.data_ref_to_str(data_ref)
 
                 mlog.info('logical device %s: getting value type for %s...',
                           logical_device, data_ref_str)
                 value_type = await client.get_value_type(data_ref)
-                value_types[data_ref] = value_type
+                value_types[root_data_ref] = value_type
 
                 mlog.info('logical device %s: got value type for %s',
                           logical_device, data_ref_str)
 
-                if data_ref.fc == 'CO':
+                if root_data_ref.fc == 'CO':
                     cmd_ref = common.CommandRef(
-                        logical_device=data_ref.logical_device,
-                        logical_node=data_ref.logical_node,
-                        name=data_name)
+                        logical_device=root_data_ref.logical_device,
+                        logical_node=root_data_ref.logical_node,
+                        name=root_data_ref.data_name)
 
                     mlog.info('logical device %s: getting control model '
                               'for %s...',
@@ -99,12 +99,12 @@ async def readout(addr: tcp.Address,
                               'for %s...',
                               logical_device, cmd_model.name, data_ref_str)
 
-                elif data_ref.fc in ('BR', 'RP'):
+                elif root_data_ref.fc in ('BR', 'RP'):
                     rcb_ref = common.RcbRef(
-                        logical_device=data_ref.logical_device,
-                        logical_node=data_ref.logical_node,
-                        type=common.RcbType(data_ref.fc),
-                        name=data_name)
+                        logical_device=root_data_ref.logical_device,
+                        logical_node=root_data_ref.logical_node,
+                        type=common.RcbType(root_data_ref.fc),
+                        name=root_data_ref.data_name)
 
                     mlog.info('logical device %s: getting rcb attr values '
                               'for %s...',
@@ -139,7 +139,6 @@ async def readout(addr: tcp.Address,
 
     cdc_data = get_cdc_data(value_types, dataset_data_refs)
     cdc_commands = get_cdc_commands(value_types, cmd_models)
-    value_types = update_value_types(value_types, cdc_data)
 
     return {
         'connection': _get_connection_conf(addr=addr,
@@ -183,16 +182,16 @@ def _get_connection_conf(addr: tcp.Address,
     return connection_conf
 
 
-def _get_value_types_conf(value_types: dict[common.DataRef,
+def _get_value_types_conf(value_types: dict[common.RootDataRef,
                                             common.ValueType | None]
                           ) -> json.Data:
-    return [{'logical_device': data_ref.logical_device,
-             'logical_node': data_ref.logical_node,
-             'fc': data_ref.fc,
-             'name': data_ref.names[0],
+    return [{'logical_device': root_data_ref.logical_device,
+             'logical_node': root_data_ref.logical_node,
+             'fc': root_data_ref.fc,
+             'name': root_data_ref.name,
              'type': (_value_type_to_json(value_type) if value_type is not None
                       else None)}
-            for data_ref, value_type in value_types.items()]
+            for root_data_ref, value_type in value_types.items()]
 
 
 def _get_datasets_conf(dataset_data_refs: dict[common.DatasetRef,
@@ -231,9 +230,10 @@ def _get_rcbs_conf(rcb_attr_values: dict[common.RcbRef,
 def _get_data_conf(cdc_data: dict[common.CdcDataRef, common.CdcData]
                    ) -> json.Data:
     return [{'ref': _cdc_data_ref_to_json(i_ref),
-             'cdc': i.cdc.name,
-             'datasets': [_dataset_ref_to_json(ds) for ds in i.datasets],
-             'values': [{'path': list(value.path),
+             'cdc': (i.cdc.name if i.cdc else None),
+             'values': [{'name': list(value.name),
+                         'datasets': [_dataset_ref_to_json(ds)
+                                      for ds in value.datasets],
                          'writable': value.writable}
                         for value in i.values]}
             for i_ref, i in cdc_data.items()]
