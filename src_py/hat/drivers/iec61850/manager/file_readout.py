@@ -468,6 +468,7 @@ def _get_data_values(root_el, type_el, data_ref, datasets, fc):
             'fc': fc,
             'names': [*data_ref['names'], value_name]}
         value = {'name': value_name,
+                 'fc': fc,
                  'datasets': list(_get_value_datasets(value_ref, datasets)),
                  'writable': writable}
 
