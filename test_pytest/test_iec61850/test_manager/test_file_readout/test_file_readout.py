@@ -266,8 +266,11 @@ def test_4(validator):
                                'names': ['ProTx']})
     assert data_conf
     assert len(data_conf['values']) == 1
-    assert len(data_conf['values'][0]['datasets']) == 2
-    assert data_conf['values'][0]['datasets'] == [
+    value_conf = data_conf['values'][0]
+    assert value_conf['name'] == 'stVal'
+    assert value_conf['fc'] == 'ST'
+    assert len(value_conf['datasets']) == 2
+    assert value_conf['datasets'] == [
         {'logical_device': 'E1_RELLD0',
          'logical_node': 'LLN0',
          'name': 'StatUrg'},
