@@ -66,6 +66,7 @@ class CdcDataRef(typing.NamedTuple):
 
 class CdcDataValue(typing.NamedTuple):
     name: str
+    fc: str
     datasets: Collection[DatasetRef]
     writable: bool
 
