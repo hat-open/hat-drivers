@@ -185,10 +185,13 @@ properties:
                         type: object
                         required:
                             - name
+                            - fc
                             - datasets
                             - writable
                         properties:
                             name:
+                                type: string
+                            fc:
                                 type: string
                             datasets:
                                 type: array
