@@ -87,7 +87,7 @@ async def readout(addr: tcp.Address,
                     cmd_ref = common.CommandRef(
                         logical_device=root_data_ref.logical_device,
                         logical_node=root_data_ref.logical_node,
-                        name=root_data_ref.data_name)
+                        name=root_data_ref.name)
 
                     mlog.info('logical device %s: getting control model '
                               'for %s...',
@@ -104,7 +104,7 @@ async def readout(addr: tcp.Address,
                         logical_device=root_data_ref.logical_device,
                         logical_node=root_data_ref.logical_node,
                         type=common.RcbType(root_data_ref.fc),
-                        name=root_data_ref.data_name)
+                        name=root_data_ref.name)
 
                     mlog.info('logical device %s: getting rcb attr values '
                               'for %s...',
@@ -231,7 +231,8 @@ def _get_data_conf(cdc_data: dict[common.CdcDataRef, common.CdcData]
                    ) -> json.Data:
     return [{'ref': _cdc_data_ref_to_json(i_ref),
              'cdc': (i.cdc.name if i.cdc else None),
-             'values': [{'name': list(value.name),
+             'values': [{'name': value.name,
+                         'fc': value.fc,
                          'datasets': [_dataset_ref_to_json(ds)
                                       for ds in value.datasets],
                          'writable': value.writable}

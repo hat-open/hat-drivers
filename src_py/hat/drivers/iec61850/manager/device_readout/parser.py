@@ -16,12 +16,13 @@ def get_cdc_data(value_types: dict[common.RootDataRef,
         if not isinstance(value_type, common.StructValueType):
             continue
 
-        cdc_data_ref = common.CdcDataRef(
+        data_ref = common.DataRef(
             logical_device=root_data_ref.logical_device,
             logical_node=root_data_ref.logical_node,
+            fc=root_data_ref.fc,
             names=(root_data_ref.name, ))
 
-        parser.parse(cdc_data_ref=cdc_data_ref,
+        parser.parse(data_ref=data_ref,
                      struct_value_type=value_type)
 
     return parser.cdc_data
@@ -77,8 +78,13 @@ class _CdcDataParser:
         return self._cdc_data
 
     def parse(self,
-              cdc_data_ref: common.CdcDataRef,
+              data_ref: common.DataRef,
               struct_value_type: common.StructValueType):
+        cdc_data_ref = common.CdcDataRef(
+            logical_device=data_ref.logical_device,
+            logical_node=data_ref.logical_node,
+            names=data_ref.names)
+
         cdc_data = self._cdc_data.get(cdc_data_ref)
         if not cdc_data:
             cdc_data = common.CdcData(cdc=self._get_cdc(cdc_data_ref),
@@ -88,24 +94,28 @@ class _CdcDataParser:
         for name, value_type in struct_value_type.elements:
             if isinstance(value_type, common.StructValueType):
                 self.parse(
-                    cdc_data_ref=cdc_data_ref._replace(
-                        names=(*cdc_data_ref.names, name)),
+                    data_ref=data_ref._replace(
+                        names=(*data_ref.names, name)),
                     struct_value_type=value_type)
 
             elif isinstance(value_type, common.ArrayValueType):
                 if isinstance(value_type.type, common.StructValueType):
                     for i in range(value_type.length):
                         self.parse(
-                            cdc_data_ref=cdc_data_ref._replace(
-                                names=(*cdc_data_ref.names, name, i)),
+                            data_ref=data_ref._replace(
+                                names=(*data_ref.names, name, i)),
                             struct_value_type=value_type.type)
 
             elif value_type not in {common.AcsiValueType.QUALITY,
                                     common.AcsiValueType.TIMESTAMP}:
                 cdc_data_value = common.CdcDataValue(
                     name=name,
-                    datasets=self._get_datasets(cdc_data_ref, name),
-                    writable=self._get_writable(cdc_data_ref, name))
+                    fc=data_ref.fc,
+                    datasets=self._get_datasets(
+                        data_ref._replace(
+                            names=(*data_ref.names, name))),
+                    writable=self._get_writable(
+                        cdc_data.cdc, data_ref.fc, name))
 
                 cdc_data.values.append(cdc_data_value)
 
@@ -113,7 +123,11 @@ class _CdcDataParser:
         value_types = {}
 
         for fc in ['ST', 'MX', 'CO', 'SP', 'SG', 'SE', 'DC']:
-            fc_value_type = self._get_value_type(cdc_data_ref, fc)
+            fc_value_type = self._get_value_type(
+                common.DataRef(logical_device=cdc_data_ref.logical_device,
+                               logical_node=cdc_data_ref.logical_node,
+                               fc=fc,
+                               names=cdc_data_ref.names))
 
             if isinstance(fc_value_type, common.StructValueType):
                 value_types[fc] = {
@@ -354,27 +368,39 @@ class _CdcDataParser:
 
             return common.Cdc.CSD
 
-    def _get_datasets(self, cdc_data_ref, name):
-        # TODO
-        return []
+    def _get_datasets(self, data_ref):
+        dataset_refs = collections.deque()
 
-    def _get_writable(self, cdc_data_ref, name):
-        # TODO
-        return False
+        for dataset_ref, data_refs in self._dataset_data_refs.items():
+            for ref in data_refs:
+                if (ref.logical_device != data_ref.logical_device or
+                        ref.logical_device != data_ref.logical_node or
+                        ref.logical_device != data_ref.logical_fc):
+                    continue
 
-    def _get_value_type(self, cdc_data_ref, fc):
-        if (not cdc_data_ref.names or
-                not isinstance(cdc_data_ref.names[0], str)):
+                if any(i != j for i, j in zip(ref.names, data_ref.names)):
+                    continue
+
+                dataset_refs.append(dataset_ref)
+                break
+
+        return dataset_refs
+
+    def _get_writable(self, cdc, fc, name):
+        return fc in {'SP', 'SG', 'SE'}
+
+    def _get_value_type(self, data_ref):
+        if not data_ref.names or not isinstance(data_ref.names[0], str):
             return
 
         root_data_ref = common.RootDataRef(
-            logical_device=cdc_data_ref.logical_device,
-            logical_node=cdc_data_ref.logical_node,
-            fc=fc,
-            name=cdc_data_ref.names[0])
+            logical_device=data_ref.logical_device,
+            logical_node=data_ref.logical_node,
+            fc=data_ref.fc,
+            name=data_ref.names[0])
 
         value_type = self._value_types.get(root_data_ref)
-        path = cdc_data_ref.names[1:]
+        path = data_ref.names[1:]
 
         while value_type and path:
             name, path = path[0], path[1:]
@@ -400,14 +426,13 @@ def _get_command_cdc(cmd_ref: common.CommandRef,
                      st_value_type: common.ValueType
                      ) -> common.Cdc | None:
     if (not isinstance(co_value_type, common.StructValueType) or
-            not isinstance(st_value_type, common.StructValueType) or
-            not co_value_type.elements or
-            not st_value_type.elements):
+            not isinstance(st_value_type, common.StructValueType)):
         return
 
-    ctl_val_name, ctl_val_value_type = next(iter(co_value_type.element))
-    if ctl_val_name != 'ctlVal':
-        return
+    ctl_val_value_type = next((value_type
+                               for name, value_type in co_value_type.elements
+                               if name == 'ctlVal'),
+                              None)
 
     st_val_value_type = next((value_type
                               for name, value_type in st_value_type.elements
