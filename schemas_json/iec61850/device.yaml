@@ -64,7 +64,7 @@ properties:
                 values:
                     type: array
                     items:
-                        $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/value"
+                        $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
     rcbs:
         type: array
         items:
@@ -130,106 +130,57 @@ properties:
         items:
             type: object
             required:
-                - ref
-                - cdc
-                - values
+                - value
+                - value_type
+                - datasets
+                - writable
             properties:
-                ref:
+                value:
                     $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
-                cdc:
-                    enum:
-                        - null
-                        - SPS
-                        - DPS
-                        - INS
-                        - ENS
-                        - ACT
-                        - ACD
-                        - SEC
-                        - BCR
-                        - HST
-                        - VSS
-                        - MV
-                        - CMV
-                        - SAV
-                        - WYE
-                        - DEL
-                        - SEQ
-                        - HMV
-                        - HWYE
-                        - HDEL
-                        - SPC
-                        - DPC
-                        - INC
-                        - ENC
-                        - BSC
-                        - ISC
-                        - APC
-                        - BAC
-                        - SPG
-                        - ING
-                        - ENG
-                        - ORG
-                        - TSG
-                        - CUG
-                        - VSG
-                        - ASG
-                        - CURVE
-                        - CSG
-                        - DPL
-                        - LPL
-                        - CSD
-                values:
+                value_type:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
+                quality:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
+                timestamp:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
+                selected:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/data"
+                datasets:
                     type: array
                     items:
                         type: object
                         required:
-                            - name
-                            - fc
-                            - datasets
-                            - writable
+                            - ref
+                            - quality
+                            - timestamp
+                            - selected
                         properties:
-                            name:
-                                type: string
-                            fc:
-                                type: string
-                            datasets:
-                                type: array
-                                items:
-                                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
-                            writable:
+                            ref:
+                                $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/dataset"
+                            quality:
                                 type: boolean
-                            enumerated:
-                                required:
-                                    - name
-                                    - values
-                                properties:
-                                    name:
-                                        type: string
-                                    values:
-                                        type: array
-                                        items:
-                                            type: object
-                                            required:
-                                                - value
-                                                - label
-                                            properties:
-                                                value:
-                                                    type: integer
-                                                label:
-                                                    type: string
+                            timestamp:
+                                type: boolean
+                            selected:
+                                type: boolean
+                writable:
+                    type: boolean
+                enumerated:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/enumerated"
     commands:
         type: array
         items:
             type: object
             required:
                 - ref
+                - value_type
                 - model
                 - with_operate_time
-                - cdc
             properties:
                 ref:
                     $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/command"
+                value_type:
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
                 model:
                     enum:
                         - DIRECT_WITH_NORMAL_SECURITY
@@ -238,38 +189,11 @@ properties:
                         - SBO_WITH_ENHANCED_SECURITY
                 with_operate_time:
                     type: boolean
-                cdc:
-                    enum:
-                        - SPC
-                        - DPC
-                        - INC
-                        - ENC
-                        - BSC
-                        - ISC
-                        - APC
-                        - BAC
                 enumerated:
-                    required:
-                        - name
-                        - values
-                    properties:
-                        name:
-                            type: string
-                        values:
-                            type: array
-                            items:
-                                type: object
-                                required:
-                                    - value
-                                    - label
-                                properties:
-                                    value:
-                                        type: integer
-                                    label:
-                                        type: string
+                    $ref: "hat-drivers://iec61850/device.yaml#/$defs/enumerated"
 $defs:
     refs:
-        value:
+        data:
             type: object
             required:
                 - logical_device
@@ -282,23 +206,6 @@ $defs:
                 logical_node:
                     type: string
                 fc:
-                    type: string
-                names:
-                    type: array
-                    items:
-                        type:
-                            - string
-                            - integer
-        data:
-            type: object
-            required:
-                - logical_device
-                - logical_node
-                - names
-            properties:
-                logical_device:
-                    type: string
-                logical_node:
                     type: string
                 names:
                     type: array
@@ -400,3 +307,22 @@ $defs:
                                 type: string
                             type:
                                 $ref: "hat-drivers://iec61850/device.yaml#/$defs/value_type"
+    enumerated:
+        required:
+            - name
+            - values
+        properties:
+            name:
+                type: string
+            values:
+                type: array
+                items:
+                    type: object
+                    required:
+                        - value
+                        - label
+                    properties:
+                        value:
+                            type: integer
+                        label:
+                            type: string
