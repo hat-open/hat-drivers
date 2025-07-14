@@ -1,11 +1,20 @@
 from hat.drivers.iec61850.manager.common import *  # NOQA
 
-from collections.abc import Collection
-import enum
 import typing
 
-from hat.drivers.iec61850.manager.common import (DatasetRef,
-                                                 ControlModel)
+from hat import json
+
+from hat.drivers.iec61850.manager.common import (BasicValueType,
+                                                 AcsiValueType,
+                                                 ArrayValueType,
+                                                 StructValueType,
+                                                 ValueType,
+                                                 DataRef,
+                                                 PersistedDatasetRef,
+                                                 NonPersistedDatasetRef,
+                                                 DatasetRef,
+                                                 RcbRef,
+                                                 CommandRef)
 
 
 class RootDataRef(typing.NamedTuple):
@@ -15,68 +24,54 @@ class RootDataRef(typing.NamedTuple):
     name: str
 
 
-class Cdc(enum.Enum):
-    SPS = 'SPS'
-    DPS = 'DPS'
-    INS = 'INS'
-    ENS = 'ENS'
-    ACT = 'ACT'
-    ACD = 'ACD'
-    SEC = 'SEC'
-    BCR = 'BCR'
-    HST = 'HST'
-    VSS = 'VSS'
-    MV = 'MV'
-    CMV = 'CMV'
-    SAV = 'SAV'
-    WYE = 'WYE'
-    DEL = 'DEL'
-    SEQ = 'SEQ'
-    HMV = 'HMV'
-    HWYE = 'HWYE'
-    HDEL = 'HDEL'
-    SPC = 'SPC'
-    DPC = 'DPC'
-    INC = 'INC'
-    ENC = 'ENC'
-    BSC = 'BSC'
-    ISC = 'ISC'
-    APC = 'APC'
-    BAC = 'BAC'
-    SPG = 'SPG'
-    ING = 'ING'
-    ENG = 'ENG'
-    ORG = 'ORG'
-    TSG = 'TSG'
-    CUG = 'CUG'
-    VSG = 'VSG'
-    ASG = 'ASG'
-    CURVE = 'CURVE'
-    CSG = 'CSG'
-    DPL = 'DPL'
-    LPL = 'LPL'
-    CSD = 'CSD'
+def value_type_to_json(value_type: ValueType) -> json.Data:
+    if isinstance(value_type, BasicValueType):
+        return value_type.name
+
+    if isinstance(value_type, AcsiValueType):
+        return value_type.name
+
+    if isinstance(value_type, ArrayValueType):
+        return {'type': 'ARRAY',
+                'element_type': value_type_to_json(value_type.type),
+                'length': value_type.length}
+
+    if isinstance(value_type, StructValueType):
+        return {'type': 'STRUCT',
+                'elements': [{'name': i_name,
+                              'type': value_type_to_json(i_type)}
+                             for i_name, i_type in value_type.elements]}
+
+    raise TypeError('unsupported value type')
 
 
-class CdcDataRef(typing.NamedTuple):
-    logical_device: str
-    logical_node: str
-    names: tuple[str | int, ...]
+def data_ref_to_json(ref: DataRef) -> json.Data:
+    return {'logical_device': ref.logical_device,
+            'logical_node': ref.logical_node,
+            'fc': ref.fc,
+            'names': list(ref.names)}
 
 
-class CdcDataValue(typing.NamedTuple):
-    name: str
-    fc: str
-    datasets: Collection[DatasetRef]
-    writable: bool
+def dataset_ref_to_json(ref: DatasetRef) -> json.Data:
+    if isinstance(ref, PersistedDatasetRef):
+        return {'logical_device': ref.logical_device,
+                'logical_node': ref.logical_node,
+                'name': ref.name}
+
+    if isinstance(ref, NonPersistedDatasetRef):
+        return ref.name
+
+    raise TypeError('unsupported ref type')
 
 
-class CdcData(typing.NamedTuple):
-    cdc: Cdc | None
-    values: Collection[CdcDataValue]
+def rcb_ref_to_json(ref: RcbRef) -> json.Data:
+    return {'logical_device': ref.logical_device,
+            'logical_node': ref.logical_node,
+            'type': ref.type.name,
+            'name': ref.name}
 
 
-class CdcCommand(typing.NamedTuple):
-    cdc: Cdc
-    model: ControlModel
-    with_operate_time: bool
+def command_ref_to_json(ref: CommandRef) -> json.Data:
+    return {'logical_device': ref.logical_device,
+            'logical_node': ref.logical_node,
+            'name': ref.name}
