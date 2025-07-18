@@ -18,37 +18,69 @@ mlog: logging.Logger = logging.getLogger(__name__)
 def create_argument_parser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser('device-readout')
 
-    parser.add_argument('--port', metavar='N', type=int, default=102)
+    parser.add_argument(
+        '--port', metavar='N', type=int, default=102,
+        help="remote TCP port (default 102)")
 
-    parser.add_argument('--local-tsel', metavar='N', type=int, default=None)
-    parser.add_argument('--remote-tsel', metavar='N', type=int, default=None)
+    parser.add_argument(
+        '--local-tsel', metavar='N', type=int, default=1, nargs='?',
+        help="local tsel (if set without argument, tsel is not used) "
+             "(default 1)")
 
-    parser.add_argument('--local-ssel', metavar='N', type=int, default=None)
-    parser.add_argument('--remote-ssel', metavar='N', type=int, default=None)
+    parser.add_argument(
+        '--remote-tsel', metavar='N', type=int, default=1, nargs='?',
+        help="remote tsel (if set without argument, tsel is not used) "
+             "(default 1)")
 
-    parser.add_argument('--local-psel', metavar='N', type=int, default=None)
-    parser.add_argument('--remote-psel', metavar='N', type=int, default=None)
+    parser.add_argument(
+        '--local-ssel', metavar='N', type=int, default=1, nargs='?',
+        help="local ssel (if set without argument, ssel is not used) "
+             "(default 1)")
 
-    parser.add_argument('--local-ap-title', metavar='OID',
-                        type=(lambda x: tuple(x.split('.'))),
-                        default=None)
-    parser.add_argument('--remote-ap-title', metavar='OID',
-                        type=(lambda x: tuple(x.split('.'))),
-                        default=None)
+    parser.add_argument(
+        '--remote-ssel', metavar='N', type=int, default=1, nargs='?',
+        help="remote ssel (if set without argument, ssel is not used) "
+             "(default 1)")
 
-    parser.add_argument('--local-ae-qualifier', metavar='N', type=int,
-                        default=None)
-    parser.add_argument('--remote-ae-qualifier', metavar='N', type=int,
-                        default=None)
+    parser.add_argument(
+        '--local-psel', metavar='N', type=int, default=1, nargs='?',
+        help="local psel (if set without argument, psel is not used) "
+             "(default 1)")
 
-    parser.add_argument('--local-detail-calling', metavar='N', type=int,
-                        default=None)
+    parser.add_argument(
+        '--remote-psel', metavar='N', type=int, default=1, nargs='?',
+        help="remote psel (if set without argument, psel is not used) "
+             "(default 1)")
+
+    parser.add_argument(
+        '--local-ap-title', metavar='OID', default=None,
+        type=(lambda x: tuple(x.split('.'))),
+        help="local AP title (default not set)")
+
+    parser.add_argument(
+        '--remote-ap-title', metavar='OID', default=None,
+        type=(lambda x: tuple(x.split('.'))),
+        help="remote AP title (default not set)")
+
+    parser.add_argument(
+        '--local-ae-qualifier', metavar='N', type=int, default=None,
+        help="local AE qualifier (default not set)")
+
+    parser.add_argument(
+        '--remote-ae-qualifier', metavar='N', type=int, default=None,
+        help="remote AE qualifier (default not set)")
+
+    parser.add_argument(
+        '--local-detail-calling', metavar='N', type=int, default=None,
+        help="local detail calling (default not set)")
 
     parser.add_argument(
         '--output', metavar='PATH', type=Path, default=Path('-'),
         help="output devices file path or - for stdout (default -)")
 
-    parser.add_argument('host')
+    parser.add_argument(
+        'host',
+        help="remote host name or IP address")
 
     return parser
 
