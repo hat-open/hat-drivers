@@ -298,7 +298,7 @@ class Connection(aio.Resource):
                     await aio.wait_for(self._ping_event.wait(), timeout)
                     continue
 
-                mlog.debug("ping timeout")
+                mlog.warning("ping timeout")
                 break
 
         except ConnectionError:
