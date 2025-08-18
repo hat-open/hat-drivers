@@ -54,12 +54,12 @@ def create_argument_parser(subparsers) -> argparse.ArgumentParser:
 
     parser.add_argument(
         '--local-ap-title', metavar='OID', default=None,
-        type=(lambda x: tuple(x.split('.'))),
+        type=(lambda x: tuple(int(i) for i in x.split('.'))),
         help="local AP title (default not set)")
 
     parser.add_argument(
         '--remote-ap-title', metavar='OID', default=None,
-        type=(lambda x: tuple(x.split('.'))),
+        type=(lambda x: tuple(int(i) for i in x.split('.'))),
         help="remote AP title (default not set)")
 
     parser.add_argument(
