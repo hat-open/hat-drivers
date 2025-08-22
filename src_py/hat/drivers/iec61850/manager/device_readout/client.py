@@ -265,10 +265,7 @@ def _value_type_from_type_description(type_description: mms.TypeDescription
             if element_type is None:
                 return
 
-            updated_element_type = _update_struct_element_type(
-                i_name, element_type)
-
-            elements.append((i_name, updated_element_type))
+            elements.append((i_name, element_type))
 
         return common.StructValueType(elements)
 
@@ -282,57 +279,3 @@ def _value_type_from_type_description(type_description: mms.TypeDescription
         return common.BasicValueType.VISIBLE_STRING
 
     raise TypeError('unsupported type description')
-
-
-def _update_struct_element_type(name: str,
-                                value_type: common.ValueType
-                                ) -> common.ValueType:
-    if value_type == common.BasicValueType.BIT_STRING:
-        if name in {'q', 'subQ'}:
-            return common.AcsiValueType.QUALITY
-
-        if name in {'stVal', 'subVal'}:
-            return common.AcsiValueType.DOUBLE_POINT
-
-        if name == 'ctlVal':
-            return common.AcsiValueType.BINARY_CONTROL
-
-    elif value_type == common.BasicValueType.INTEGER:
-        if name in {'dirGeneral', 'dirPhsA', 'dirPhsB', 'dirPhsC', 'dirNeut'}:
-            return common.AcsiValueType.DIRECTION
-
-        if name == 'sev':
-            return common.AcsiValueType.SEVERITY
-
-    elif isinstance(value_type, common.StructValueType):
-        if name in {'instMag', 'mag', 'subMag', 'min', 'max', 'mxVal',
-                    'subVal', 'minVal', 'maxVal', 'stepSize', 'ctlVal',
-                    'setMag'}:
-            if 1 <= len(value_type.elements) <= 2:
-                elements = list(value_type.elements)
-
-                if (elements == [('i', common.BasicValueType.INTEGER)] or
-                        elements == [('f', common.BasicValueType.FLOAT)] or
-                        elements == [('i', common.BasicValueType.INTEGER),
-                                     ('f', common.BasicValueType.FLOAT)]):
-                    return common.AcsiValueType.ANALOGUE
-
-        if name in {'instCVal', 'cVal', 'subCVal'}:
-            if 1 <= len(value_type.elements) <= 2:
-                elements = list(value_type.elements)
-
-                if (elements == [('mag', common.AcsiValueType.ANALOGUE)] or
-                        elements == [('mag', common.AcsiValueType.ANALOGUE),
-                                     ('ang', common.AcsiValueType.ANALOGUE)]):
-                    return common.AcsiValueType.VECTOR
-
-        if name in {'valWTr', 'subVal'}:
-            if 1 <= len(value_type.elements) <= 2:
-                elements = list(value_type.elements)
-
-                if (elements == [('posVal', common.BasicValueType.INTEGER)] or
-                        elements == [('posVal', common.BasicValueType.INTEGER),
-                                     ('transInd', common.BasicValueType.BOOLEAN)]):  # NOQA
-                    return common.AcsiValueType.STEP_POSITION
-
-    return value_type
