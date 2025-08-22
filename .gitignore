@@ -5,6 +5,7 @@
 /compile_flags.txt
 /peru
 /src_py/**/asn1_repo.json
+/src_py/**/json_schema_repo.json
 /src_py/**/sbs_repo.json
 /src_py/hat/drivers/modbus/transport/_encoder.*
 /src_py/hat/drivers/serial/_native_serial.*

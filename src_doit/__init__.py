@@ -25,6 +25,7 @@ __all__ = ['task_clean_all',
            'task_test',
            'task_docs',
            'task_asn1',
+           'task_json_schema',
            'task_sbs',
            'task_peru',
            'task_format',
@@ -41,6 +42,7 @@ def task_clean_all():
     return {'actions': [(common.rm_rf, [
         common.build_dir,
         *common.src_py_dir.rglob('asn1_repo.json'),
+        *common.src_py_dir.rglob('json_schema_repo.json'),
         *common.src_py_dir.rglob('sbs_repo.json'),
         *(common.src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
         *(common.src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
@@ -58,6 +60,7 @@ def task_build():
         platform=common.target_platform,
         is_purelib=False,
         task_dep=['asn1',
+                  'json_schema',
                   'sbs',
                   'pymodules'])
 
@@ -110,6 +113,14 @@ def task_asn1():
         dst_path=common.src_py_dir / 'hat/drivers/snmp/encoder/asn1_repo.json')
 
 
+def task_json_schema():
+    """Generate JSON Schema repository"""
+    yield _get_subtask_json_schema(
+        src_paths=[common.schemas_json_dir / 'iec61850/device.yaml'],
+        dst_path=(common.src_py_dir /
+                  'hat/drivers/iec61850/manager/json_schema_repo.json'))
+
+
 def task_sbs():
     """Generate SBS repository"""
     yield _get_subtask_sbs(
@@ -139,6 +150,18 @@ def _get_subtask_asn1(src_paths, dst_path):
         repo = asn1.create_repository(*src_paths)
         data = asn1.repository_to_json(repo)
         json.encode_file(data, dst_path, indent=None)
+
+    return {'name': str(dst_path),
+            'actions': [generate],
+            'file_dep': src_paths,
+            'targets': [dst_path]}
+
+
+def _get_subtask_json_schema(src_paths, dst_path):
+
+    def generate():
+        repo = json.create_schema_repository(*src_paths)
+        json.encode_file(repo, dst_path, indent=None)
 
     return {'name': str(dst_path),
             'actions': [generate],
