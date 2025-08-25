@@ -74,6 +74,7 @@ def task_check():
 def task_test():
     """Test"""
     return get_task_run_pytest(task_dep=['asn1',
+                                         'json_schema',
                                          'sbs',
                                          'pymodules'])
 

@@ -5,6 +5,7 @@ import pytest
 from hat import json
 from hat import util
 
+from hat.drivers.iec61850.manager.common import json_schema_repo
 from hat.drivers.iec61850.manager.file_readout import readout
 
 
@@ -13,8 +14,6 @@ json_schema_id = "hat-drivers://iec61850/device.yaml"
 
 @pytest.fixture(scope='session')
 def validator(pytestconfig):
-    json_schema_repo = json.create_schema_repository(
-        pytestconfig.rootpath / 'schemas_json')
     return json.DefaultSchemaValidator(json_schema_repo)
 
 
@@ -31,34 +30,61 @@ def test_1(validator):
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 6
     assert len(device_json['commands']) == 4
-    assert len(device_json['data']) == 84
-    writable_values = [j for i in device_json['data'] for j in i['values']
-                       if j['writable']]
-    assert len(writable_values) == 2
+    assert len(device_json['data']) == 123
+    writable_values = [i for i in device_json['data'] if i['writable']]
+    assert len(writable_values) == 3
     assert len(device_json['value_types']) == 125
 
-    ld = "DemoMeasurement"
-    ln = "I3pMMXU1"
-    do_name = "A"
-    data = util.first(device_json['data'],
-                      lambda i: i['ref'] == {
-                           "logical_device": ld,
-                           "logical_node": ln,
-                           "names": [do_name]})
-    assert data['cdc'] == 'WYE'
-
+    # assert parent and child data exist for sub DO
     for subdo_name in ["phsA", "phsB", "phsC"]:
-        data = util.first(device_json['data'],
-                          lambda i: i['ref'] == {
-                               "logical_device": ld,
-                               "logical_node": ln,
-                               "names": [do_name, subdo_name]})
-        assert data['cdc'] == 'CMV'
+        data_parent = util.first(
+            device_json['data'],
+            lambda i: i['value'] == {
+                "logical_device": "DemoMeasurement",
+                "logical_node": "I3pMMXU1",
+                "fc": "MX",
+                "names": ["A", subdo_name, "cVal"]})
+        assert data_parent
+        assert len(data_parent['datasets']) == 1
+        assert data_parent['quality'] == {
+            "logical_device": "DemoMeasurement",
+            "logical_node": "I3pMMXU1",
+            "fc": "MX",
+            "names": ["A", subdo_name, "q"]}
+        assert data_parent['timestamp'] == {
+            "logical_device": "DemoMeasurement",
+            "logical_node": "I3pMMXU1",
+            "fc": "MX",
+            "names": ["A", subdo_name, "t"]}
 
-    # number of data that have values in datasets
-    data_with_values_in_ds = [d for d in device_json['data']
-                              if any(val['datasets'] for val in d['values'])]
-    assert len(data_with_values_in_ds) == 12
+        data_child = util.first(
+            device_json['data'],
+            lambda i: i['value'] == {
+                "logical_device": "DemoMeasurement",
+                "logical_node": "I3pMMXU1",
+                "fc": "MX",
+                "names": ["A", subdo_name, "cVal", "mag"]})
+        assert data_child
+        assert len(data_child['datasets']) == 1
+        assert data_child['value_type'] == {
+            'type': 'STRUCT', 'elements': [{'type': 'FLOAT', 'name': 'f'}]}
+        assert data_child['datasets'] == data_parent['datasets']
+        assert data_child['quality'] == data_parent['quality']
+        assert data_child['timestamp'] == data_parent['timestamp']
+
+        data_child = util.first(
+            device_json['data'],
+            lambda i: i['value'] == {
+                "logical_device": "DemoMeasurement",
+                "logical_node": "I3pMMXU1",
+                "fc": "MX",
+                "names": ["A", subdo_name, "cVal", "mag", "f"]})
+        assert data_child
+        assert len(data_child['datasets']) == 1
+        assert data_child['value_type'] == 'FLOAT'
+        assert data_child['datasets'] == data_parent['datasets']
+        assert data_child['quality'] == data_parent['quality']
+        assert data_child['timestamp'] == data_parent['timestamp']
 
     # different fcs on the same address are split
     value_types = [i for i in device_json['value_types']
@@ -116,9 +142,8 @@ def test_2(validator):
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 15
     assert len(device_json['commands']) == 2
-    assert len(device_json['data']) == 256
-    writable_values = [j for i in device_json['data'] for j in i['values']
-                       if j['writable']]
+    assert len(device_json['data']) == 369
+    writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 0
     assert len(device_json['value_types']) == 512
 
@@ -211,7 +236,7 @@ def test_4(validator):
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 42
     assert len(device_json['commands']) == 99
-    assert len(device_json['data']) == 2050
+    assert len(device_json['data']) == 3463
     assert len(device_json['value_types']) == 4079
 
     # indexed rcbs
@@ -226,7 +251,7 @@ def test_4(validator):
     assert len(device_json['datasets']) == 5
     assert len(device_json['rcbs']) == 32
     assert len(device_json['commands']) == 92
-    assert len(device_json['data']) == 741
+    assert len(device_json['data']) == 1309
     assert len(device_json['value_types']) == 1334
 
     # command, data and control model on the same address
@@ -261,22 +286,25 @@ def test_4(validator):
     # data values in multiple datasets
     data_conf = util.first(
         device_json['data'],
-        lambda i: i['ref'] == {'logical_device': 'E1_RELLD0',
-                               'logical_node': 'ECPSCH1',
-                               'names': ['ProTx']})
+        lambda i: i['value'] == {'logical_device': 'E1_RELLD0',
+                                 'logical_node': 'ECPSCH1',
+                                 'fc': 'ST',
+                                 'names': ['ProTx', 'stVal']})
     assert data_conf
-    assert len(data_conf['values']) == 1
-    value_conf = data_conf['values'][0]
-    assert value_conf['name'] == 'stVal'
-    assert value_conf['fc'] == 'ST'
-    assert len(value_conf['datasets']) == 2
-    assert value_conf['datasets'] == [
-        {'logical_device': 'E1_RELLD0',
-         'logical_node': 'LLN0',
-         'name': 'StatUrg'},
-        {'logical_device': 'E1_RELLD0',
-         'logical_node': 'LLN0',
-         'name': 'StatUrg_A'}]
+    assert len(data_conf['datasets']) == 2
+    assert data_conf['datasets'] == [
+        {'ref': {'logical_device': 'E1_RELLD0',
+                 'logical_node': 'LLN0',
+                 'name': 'StatUrg'},
+         'quality': True,
+         'selected': False,
+         'timestamp': True},
+        {'ref': {'logical_device': 'E1_RELLD0',
+                 'logical_node': 'LLN0',
+                 'name': 'StatUrg_A'},
+         'quality': True,
+         'selected': False,
+         'timestamp': True}]
 
 
 def test_5(validator):
@@ -292,9 +320,8 @@ def test_5(validator):
     assert len(device_json['datasets']) == 2
     assert len(device_json['rcbs']) == 62
     assert len(device_json['commands']) == 48
-    assert len(device_json['data']) == 935
-    writable_values = [j for i in device_json['data'] for j in i['values']
-                       if j['writable']]
+    assert len(device_json['data']) == 1959
+    writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 77
     assert len(device_json['value_types']) == 1337
 
@@ -312,8 +339,7 @@ def test_6(validator):
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 15
     assert len(device_json['commands']) == 13
-    assert len(device_json['data']) == 314
-    writable_values = [j for i in device_json['data'] for j in i['values']
-                       if j['writable']]
+    assert len(device_json['data']) == 409
+    writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 0
     assert len(device_json['value_types']) == 655

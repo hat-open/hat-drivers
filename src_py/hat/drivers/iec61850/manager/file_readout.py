@@ -1,5 +1,6 @@
 from pathlib import Path
 import argparse
+import functools
 import logging
 import sys
 import typing
@@ -187,7 +188,7 @@ def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
         mlog.debug('value type %s/%s.%s',
                    logical_device, logical_node, do_name)
         try:
-            value_type_fc = _parse_value_type_fc(root_el, do_el)
+            value_type_fc = _get_value_type(root_el, do_el, with_fc=True)
             fcs = set(_get_all_fcs(value_type_fc))
             for fc in fcs:
                 value_type = _get_value_type_for_fc(value_type_fc, fc)
@@ -203,27 +204,32 @@ def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
                          logical_device, logical_node, do_name, e, exc_info=e)
 
 
-def _parse_value_type_fc(root_el, node_el, is_array_element=False):
+def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
     if node_el.tag == 'ProtNs':
         return
 
     fc = node_el.get('fc')
-    basic_value_type = _get_basic_value_type(node_el)
-    if basic_value_type:
-        return {'type': basic_value_type,
-                'fc': fc}
+    value_type = _get_basic_value_type(node_el)
+    if value_type:
+        if with_fc:
+            return {'type': value_type,
+                    'fc': fc}
+        else:
+            return value_type
 
     array_length = node_el.get('count')
     if array_length and not is_array_element:
-        element_type = _parse_value_type_fc(
-            root_el, node_el, is_array_element=True)
+        element_type = _get_value_type(
+            root_el, node_el, is_array_element=True, with_fc=with_fc)
         if element_type is None:
             return
 
-        return {'type': 'ARRAY',
-                'element_type': element_type,
-                'length': array_length,
-                'fc': fc}
+        value_type = {'type': 'ARRAY',
+                      'element_type': element_type,
+                      'length': array_length}
+        if with_fc:
+            value_type['fc'] = fc
+        return value_type
 
     type = node_el.get('type')
     if type is None:
@@ -237,18 +243,21 @@ def _parse_value_type_fc(root_el, node_el, is_array_element=False):
 
     elements = []
     for da_el in node_type_el:
-        el_type = _parse_value_type_fc(root_el, da_el)
+        el_type = _get_value_type(root_el, da_el, with_fc=with_fc)
         if el_type is None:
             continue
 
-        elements.append(
-            {'type': el_type,
-             'name': da_el.get('name'),
-             'fc': da_el.get('fc')})
+        value_type = {'type': el_type,
+                      'name': da_el.get('name')}
+        if with_fc:
+            value_type['fc'] = da_el.get('fc')
+        elements.append(value_type)
 
-    return {'type': 'STRUCT',
-            'elements': elements,
-            'fc': fc}
+    value_type = {'type': 'STRUCT',
+                  'elements': elements}
+    if with_fc:
+        value_type['fc'] = fc
+    return value_type
 
 
 def _get_all_fcs(value_type):
@@ -429,14 +438,9 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         fc = node_el.get('fc') or fc
         cdc = type_el.get('cdc')
         if cdc:
-            data_ref = {'logical_device': logical_device,
-                        'logical_node': logical_node,
-                        'names': names}
-            yield {
-                'ref': data_ref,
-                'cdc': cdc if cdc in _cdc_builtin else None,
-                'values': list(_get_data_values(
-                    root_el, type_el, data_ref, datasets, fc))}
+            yield from _get_data_confs_for_cdc(
+                root_el, type_el, cdc, logical_device, logical_node, fc, names,
+                datasets)
 
         for nd_el in type_el:
             yield from parse_node(nd_el, names, fc)
@@ -450,62 +454,6 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         except Exception as e:
             mlog.warning('data %s/%s.%s ignored: %s',
                          logical_device, logical_node, name, e, exc_info=e)
-
-
-def _get_data_values(root_el, type_el, data_ref, datasets, fc):
-    cdc = type_el.get('cdc')
-    cdc_value_names = set(_get_cdc_value_names(type_el))
-    writable = _get_cdc_writeable(cdc)
-    for node_el in type_el:
-        value_name = node_el.get('name')
-        if value_name not in cdc_value_names:
-            continue
-
-        fc = node_el.get('fc') or fc
-        value_ref = {
-            'logical_device': data_ref['logical_device'],
-            'logical_node': data_ref['logical_node'],
-            'fc': fc,
-            'names': [*data_ref['names'], value_name]}
-        value = {'name': value_name,
-                 'fc': fc,
-                 'datasets': list(_get_value_datasets(value_ref, datasets)),
-                 'writable': writable}
-
-        node_btype = node_el.get('bType')
-        node_type = node_el.get('type')
-        if node_btype == 'Enum':
-            value['enumerated'] = _parse_enumerated(root_el, node_type)
-
-        yield value
-
-
-def _get_value_datasets(value_ref, datasets):
-    for dataset in datasets:
-        for ds_val_ref in dataset['values']:
-            if _value_refs_match(value_ref, ds_val_ref):
-                yield dataset['ref']
-
-
-def _value_refs_match(ref1, ref2):
-    if ref1['logical_device'] != ref2['logical_device']:
-        return False
-
-    if ref1['logical_node'] != ref2['logical_node']:
-        return False
-
-    if ref1['fc'] != ref2['fc']:
-        return False
-
-    if ref1['names'] == ref2['names']:
-        return True
-
-    if len(ref1['names']) < len(ref2['names']):
-        names_min, names_max = ref1['names'], ref2['names']
-    else:
-        names_min, names_max = ref2['names'], ref1['names']
-
-    return names_max[:len(names_min)] == names_min
 
 
 def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
@@ -533,22 +481,29 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
                 continue
 
             oper_el = do_type_el.find("./DA[@name='Oper']")
+            if oper_el is None:
+                raise Exception('no Oper attribute')
+
             oper_type = oper_el.get('type')
             oper_type_el = root_el.find(f"./DataTypeTemplates/*"
                                         f"[@id='{oper_type}']")
             with_operate_time = (
                 oper_type_el.find("./BDA[@name='operTm']") is not None)
+            ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
+
+            value_type = _get_value_type(root_el, ctl_val_el)
+            if value_type is None:
+                raise Exception('no value type')
 
             cmd = {
                 'ref': {
                     'logical_device': logical_device,
                     'logical_node': logical_node,
                     'name': do_name},
+                'value_type': value_type,
                 'model': model,
-                'with_operate_time': with_operate_time,
-                'cdc': cdc}
+                'with_operate_time': with_operate_time}
 
-            ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
             if ctl_val_el.get('bType') == 'Enum':
                 cmd['enumerated'] = _parse_enumerated(
                     root_el, ctl_val_el.get('type'))
@@ -784,302 +739,341 @@ def _create_logical_node(prefix, ln_class, inst):
     return f"{prefix or ''}{ln_class}{inst or ''}"
 
 
-def _get_cdc_value_names(type_el):
-    cdc = type_el.get('cdc')
-    if cdc == 'SPS':
-        yield 'stVal'
+def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
+                   names, datasets, value_name=None, quality_name=None,
+                   timestamp_name=None, selected_name=None, writable=False,
+                   quality_ref=None, timestamp_ref=None, selected_ref=None):
+    da_name_el = {node_el.get('name'): node_el for node_el in type_el}
+    if value_name and value_name not in da_name_el:
         return
 
-    if cdc == 'DPS':
-        yield 'stVal'
-        return
+    for value_da_el in type_el if not value_name else [da_name_el[value_name]]:
+        da_name = value_da_el.get('name')
+        if value_name and value_name != da_name:
+            continue
 
-    if cdc == 'INS':
-        yield 'stVal'
-        return
+        fc = value_da_el.get('fc') or fc
+        btype = value_da_el.get('bType')
+        if not value_name and (fc not in {'MX', 'ST', 'SP'} or
+                               btype in {'Quality', 'Timestamp'}):
+            continue
+        # TODO check fc and value type for cdc?
 
-    if cdc == 'ENS':
-        yield 'stVal'
-        return
+        data_ref = {'logical_device': logical_device,
+                    'logical_node': logical_node,
+                    'fc': fc,
+                    'names': names}
+        value_type = _get_value_type(root_el, value_da_el)
+        if value_type is None:
+            raise Exception('no value type')
 
-    if cdc == 'ACT':
-        yield 'general'
-        yield 'phsA'
-        yield 'phsB'
-        yield 'phsC'
-        yield 'neut'
-        # yield 'originSrc'
-        # yield 'operTmPhsA'
-        # yield 'operTmPhsB'
-        # yield 'operTmPhsC'
-        return
+        value_ref = {**data_ref,
+                     'names': [*data_ref['names'], da_name]}
 
-    if cdc == 'ACD':
-        yield 'general'
-        yield 'dirGeneral'
-        yield 'phsA'
-        yield 'dirPhsA'
-        yield 'phsB'
-        yield 'dirPhsB'
-        yield 'phsC'
-        yield 'dirPhsC'
-        yield 'neut'
-        yield 'dirNeut'
-        return
+        if quality_name:
+            if (quality_name and
+                quality_name in da_name_el and
+                    da_name_el[quality_name].get('bType') == 'Quality'):
+                quality_ref = {**data_ref,
+                               'names': [*data_ref['names'], quality_name]}
 
-    if cdc == 'SEC':
-        yield 'cnt'
-        yield 'sev'
-        yield 'addr'
-        yield 'addInfo'
-        return
+        if timestamp_name:
+            if (timestamp_name and
+                timestamp_name in da_name_el and
+                    da_name_el[timestamp_name].get('bType') == 'Timestamp'):
+                timestamp_ref = {**data_ref,
+                                 'names': [*data_ref['names'], timestamp_name]}
 
-    if cdc == 'BCR':
-        yield 'actVal'
-        yield 'frVal'
-        yield 'frTm'
-        return
+        if selected_name:
+            if (selected_name and
+                selected_name in da_name_el and
+                    da_name_el[selected_name].get('bType') == 'BOOLEAN'):
+                selected_ref = {**data_ref,
+                                'names': [*data_ref['names'], selected_name]}
 
-    if cdc == 'HST':
-        # yield 'hstVal'
-        return
+        data_conf = {
+            'value': value_ref,
+            'value_type': value_type,
+            'datasets': list(_get_value_datasets(
+                datasets, value_ref, quality_ref, timestamp_ref,
+                selected_ref)),
+            'writable': writable}
+        if quality_ref:
+            data_conf['quality'] = quality_ref
 
-    if cdc == 'VSS':
-        yield 'stVal'
-        return
+        if timestamp_ref:
+            data_conf['timestamp'] = timestamp_ref
 
-    if cdc == 'MV':
-        yield 'instMag'
-        yield 'mag'
-        yield 'range'
-        return
+        if selected_ref:
+            data_conf['selected'] = selected_ref
 
-    if cdc == 'CMV':
-        yield 'instCVal'
-        yield 'cVal'
-        yield 'range'
-        yield 'rangeAng'
-        return
+        if value_da_el.get('bType') == 'Enum':
+            data_conf['enumerated'] = _parse_enumerated(
+                root_el, value_da_el.get('type'))
 
-    if cdc == 'SAV':
-        yield 'instMag'
-        return
+        yield data_conf
 
-    if cdc == 'SPC':
-        yield 'stVal'
-        return
+        value_da_type = value_da_el.get('type')
+        if not value_da_type or btype == 'Enum':
+            return
 
-    if cdc == 'DPC':
-        yield 'stVal'
-        return
-
-    if cdc == 'INC':
-        yield 'stVal'
-        return
-
-    if cdc == 'ENC':
-        yield 'stVal'
-        return
-
-    if cdc == 'BSC':
-        yield 'valWTr'
-        return
-
-    if cdc == 'ISC':
-        yield 'valWTr'
-        return
-
-    if cdc == 'APC':
-        yield 'mxVal'
-        return
-
-    if cdc == 'BAC':
-        yield 'mxVal'
-        return
-
-    if cdc == 'SPG':
-        yield 'setVal'
-        return
-
-    if cdc == 'ING':
-        yield 'setVal'
-        return
-
-    if cdc == 'ENG':
-        yield 'setVal'
-        return
-
-    if cdc == 'ORG':
-        # yield 'setSrcRef'
-        # yield 'setTstRef'
-        # yield 'setSrcCB'
-        # yield 'setTstCB'
-        yield 'intAddr'
-        yield 'tstEna'
-        return
-
-    if cdc == 'TSG':
-        yield 'setTm'
-        yield 'setCal'
-        return
-
-    if cdc == 'CUG':
-        # yield 'cur'
-        return
-
-    if cdc == 'VSG':
-        yield 'setVal'
-        return
-
-    if cdc == 'ASG':
-        yield 'setMag'
-        return
-
-    if cdc == 'CURVE':
-        yield 'setCharact'
-        yield 'setParA'
-        yield 'setParB'
-        yield 'setParC'
-        yield 'setParD'
-        yield 'setParE'
-        yield 'setParF'
-        return
-
-    if cdc == 'CSG':
-        yield 'pointZ'
-        yield 'numPts'
-        # yield 'crvPts'
-        return
-
-    if cdc == 'DPL':
-        yield 'vendor'
-        yield 'hwRev'
-        yield 'swRev'
-        yield 'serNum'
-        yield 'model'
-        yield 'location'
-        yield 'name'
-        yield 'owner'
-        yield 'ePSName'
-        yield 'primeOper'
-        yield 'secondOper'
-        yield 'latitude'
-        yield 'longitude'
-        yield 'altitude'
-        yield 'mrID'
-        yield 'd'
-        yield 'dU'
-        yield 'cdcNs'
-        yield 'cdcName'
-        yield 'dataNs'
-        return
-
-    if cdc == 'LPL':
-        yield 'vendor'
-        yield 'swRev'
-        yield 'd'
-        yield 'dU'
-        yield 'configRev'
-        yield 'paramRev'
-        yield 'valRev'
-        yield 'ldNs'
-        yield 'lnNs'
-        yield 'cdcNs'
-        yield 'cdcName'
-        yield 'dataNs'
-        return
-
-    if cdc == 'CSD':
-        yield 'xUnits'
-        yield 'xD'
-        yield 'xDU'
-        yield 'yUnits'
-        yield 'yD'
-        yield 'yDU'
-        yield 'zUnits'
-        yield 'zD'
-        yield 'zDU'
-        yield 'numPts'
-        yield 'crvPts'
-        yield 'd'
-        yield 'dU'
-        yield 'cdcNs'
-        yield 'cdcName'
-        yield 'dataNs'
-        return
-
-    if cdc in {'WYE',
-               'DEL',
-               'SEQ',
-               'HMV',
-               'HWYE',
-               'HDEL'}:
-        return
-
-    for da_el in type_el:
-        fc = da_el.get('fc')
-        btype = da_el.get('bType')
-        if (fc in {'MX',
-                   'ST',
-                   'SP'} and
-                btype not in {'Quality',
-                              'Timestamp'}):
-            yield da_el.get('name')
+        names = [*data_ref['names'], da_name]
+        type_el = root_el.find(f"./DataTypeTemplates/*"
+                               f"[@id='{value_da_type}']")
+        yield from _get_data_conf(
+            root_el, type_el, logical_device, logical_node, fc, names,
+            datasets,
+            writable=writable,
+            quality_ref=quality_ref,
+            timestamp_ref=timestamp_ref,
+            selected_ref=selected_ref,)
 
 
-def _get_cdc_writeable(cdc):
-    if cdc in {'SPG',
-               'ING',
-               'ENG',
-               'ORG',
-               'TSG',
-               'CUG',
-               'VSG',
-               'ASG',
-               'CURVE',
-               'CSG'}:
+def _get_value_datasets(datasets, value_ref, quality_ref, timestamp_ref,
+                        selected_ref):
+    for dataset in datasets:
+        for ds_val_ref in dataset['values']:
+            if _value_refs_match(ds_val_ref, value_ref):
+                yield {
+                    'ref': dataset['ref'],
+                    'quality': (_value_refs_match(ds_val_ref, quality_ref)
+                                if quality_ref else False),
+                    'timestamp': (_value_refs_match(ds_val_ref, timestamp_ref)
+                                  if timestamp_ref else False),
+                    'selected': (_value_refs_match(ds_val_ref, selected_ref)
+                                 if selected_ref else False)}
+
+
+def _value_refs_match(ref_parent, ref_child):
+    if ref_parent['logical_device'] != ref_child['logical_device']:
+        return False
+
+    if ref_parent['logical_node'] != ref_child['logical_node']:
+        return False
+
+    if ref_parent['fc'] != ref_child['fc']:
+        return False
+
+    if ref_parent['names'] == ref_child['names']:
         return True
 
-    return False
+    if len(ref_parent['names']) > len(ref_child['names']):
+        return True
+
+    return ref_child['names'][:len(ref_parent['names'])] == ref_parent['names']
 
 
-_cdc_builtin = {'SPS'
-                'DPS',
-                'INS',
-                'ENS',
-                'ACT',
-                'ACD',
-                'SEC',
-                'BCR',
-                'HST',
-                'VSS',
-                'MV',
-                'CMV',
-                'SAV',
-                'SPC',
-                'DPC',
-                'INC',
-                'ENC',
-                'BSC',
-                'ISC',
-                'APC',
-                'BAC',
-                'SPG',
-                'ING',
-                'ENG',
-                'ORG',
-                'TSG',
-                'CUG',
-                'VSG',
-                'ASG',
-                'CURVE',
-                'CSG',
-                'DPL',
-                'LPL',
-                'CSD',
-                'WYE',
-                'DEL',
-                'SEQ',
-                'HMV',
-                'HWYE',
-                'HDEL'}
+def _get_data_confs_for_cdc(root_el, type_el, cdc,
+                            logical_device, logical_node, fc, names, datasets):
+    get_data_conf = functools.partial(
+        _get_data_conf, root_el, type_el, logical_device, logical_node, fc,
+        names, datasets)
+    if cdc == 'SPS':
+        yield from get_data_conf('stVal', 'q', 't')
+
+    elif cdc == 'DPS':
+        yield from get_data_conf('stVal', 'q', 't')
+
+    elif cdc == 'INS':
+        yield from get_data_conf('stVal', 'q', 't')
+
+    elif cdc == 'ENS':
+        yield from get_data_conf('stVal', 'q', 't')
+
+    elif cdc == 'ACT':
+        yield from get_data_conf('general', 'q', 't')
+        yield from get_data_conf('phsA', 'q', 't')
+        yield from get_data_conf('phsB', 'q', 't')
+        yield from get_data_conf('phsC', 'q', 't')
+        yield from get_data_conf('neut', 'q', 't')
+        # 'originSrc'
+        # 'operTmPhsA'
+        # 'operTmPhsB'
+        # 'operTmPhsC'
+        return
+
+    elif cdc == 'ACD':
+        yield from get_data_conf('general', 'q', 't')
+        yield from get_data_conf('dirGeneral', 'q', 't')
+        yield from get_data_conf('phsA', 'q', 't')
+        yield from get_data_conf('dirPhsA', 'q', 't')
+        yield from get_data_conf('phsB', 'q', 't')
+        yield from get_data_conf('dirPhsB', 'q', 't')
+        yield from get_data_conf('phsC', 'q', 't')
+        yield from get_data_conf('dirPhsC', 'q', 't')
+        yield from get_data_conf('neut', 'q', 't')
+        yield from get_data_conf('dirNeut', 'q', 't')
+        return
+
+    elif cdc == 'SEC':
+        yield from get_data_conf('cnt', timestamp_name='t')
+        yield from get_data_conf('sev')
+        yield from get_data_conf('addr')
+        yield from get_data_conf('addInfo')
+
+    elif cdc == 'BCR':
+        yield from get_data_conf('actVal', 'q', 't')
+        yield from get_data_conf('frVal', 'q', 'frTm')
+
+    elif cdc == 'HST':
+        # 'hstVal'
+        return
+
+    elif cdc == 'VSS':
+        yield from get_data_conf('stVal', 'q', 't')
+
+    elif cdc == 'MV':
+        yield from get_data_conf('instMag', 'q', 't')
+        yield from get_data_conf('mag', 'q', 't')
+        yield from get_data_conf('range', 'q', 't')
+
+    elif cdc == 'CMV':
+        yield from get_data_conf('instCVal', 'q')
+        yield from get_data_conf('cVal', 'q', 't')
+        yield from get_data_conf('range', 'q')
+        yield from get_data_conf('rangeAng', timestamp_name='t')
+
+    elif cdc == 'SAV':
+        yield from get_data_conf('instMag', 'q', 't')
+
+    elif cdc == 'SPC':
+        yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'DPC':
+        yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'INC':
+        yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'ENC':
+        yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'BSC':
+        yield from get_data_conf('valWTr', 'q', 't', 'stSeld')
+
+    elif cdc == 'ISC':
+        yield from get_data_conf('valWTr', 'q', 't', 'stSeld')
+
+    elif cdc == 'APC':
+        yield from get_data_conf('mxVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'BAC':
+        yield from get_data_conf('mxVal', 'q', 't', 'stSeld')
+
+    elif cdc == 'SPG':
+        yield from get_data_conf('setVal', writable=True)
+
+    elif cdc == 'ING':
+        yield from get_data_conf('setVal', writable=True)
+
+    elif cdc == 'ENG':
+        yield from get_data_conf('setVal', writable=True)
+
+    elif cdc == 'ORG':
+        yield from get_data_conf('intAddr', writable=True)
+        yield from get_data_conf('tstEna', writable=True)
+        # 'setSrcRef'
+        # 'setTstRef'
+        # 'setSrcCB'
+        # 'setTstCB'
+
+    elif cdc == 'TSG':
+        yield from get_data_conf('setTm', writable=True)
+        yield from get_data_conf('setCal', writable=True)
+
+    elif cdc == 'CUG':
+        # 'cur'
+        return
+
+    elif cdc == 'VSG':
+        yield from get_data_conf('setVal', writable=True)
+
+    elif cdc == 'ASG':
+        yield from get_data_conf('setMag', writable=True)
+
+    elif cdc == 'CURVE':
+        yield from get_data_conf('setCharact', writable=True)
+        yield from get_data_conf('setParA', writable=True)
+        yield from get_data_conf('setParB', writable=True)
+        yield from get_data_conf('setParC', writable=True)
+        yield from get_data_conf('setParD', writable=True)
+        yield from get_data_conf('setParE', writable=True)
+        yield from get_data_conf('setParF', writable=True)
+
+    elif cdc == 'CSG':
+        yield from get_data_conf('pointZ', writable=True)
+        yield from get_data_conf('numPts', writable=True)
+        # yield 'crvPts'
+
+    elif cdc == 'DPL':
+        yield from get_data_conf('vendor')
+        yield from get_data_conf('hwRev')
+        yield from get_data_conf('swRev')
+        yield from get_data_conf('serNum')
+        yield from get_data_conf('model')
+        yield from get_data_conf('location')
+        yield from get_data_conf('name')
+        yield from get_data_conf('owner')
+        yield from get_data_conf('ePSName')
+        yield from get_data_conf('primeOper')
+        yield from get_data_conf('secondOper')
+        yield from get_data_conf('latitude')
+        yield from get_data_conf('longitude')
+        yield from get_data_conf('altitude')
+        yield from get_data_conf('mrID')
+        yield from get_data_conf('d')
+        yield from get_data_conf('dU')
+        yield from get_data_conf('cdcNs')
+        yield from get_data_conf('cdcName')
+        yield from get_data_conf('dataNs')
+
+    elif cdc == 'LPL':
+        yield from get_data_conf('vendor')
+        yield from get_data_conf('swRev')
+        yield from get_data_conf('d')
+        yield from get_data_conf('dU')
+        yield from get_data_conf('configRev')
+        yield from get_data_conf('paramRev')
+        yield from get_data_conf('valRev')
+        yield from get_data_conf('ldNs')
+        yield from get_data_conf('lnNs')
+        yield from get_data_conf('cdcNs')
+        yield from get_data_conf('cdcName')
+        yield from get_data_conf('dataNs')
+
+    elif cdc == 'CSD':
+        yield from get_data_conf('xUnits')
+        yield from get_data_conf('xD')
+        yield from get_data_conf('xDU')
+        yield from get_data_conf('yUnits')
+        yield from get_data_conf('yD')
+        yield from get_data_conf('yDU')
+        yield from get_data_conf('zUnits')
+        yield from get_data_conf('zD')
+        yield from get_data_conf('zDU')
+        yield from get_data_conf('numPts')
+        yield from get_data_conf('crvPts')
+        yield from get_data_conf('d')
+        yield from get_data_conf('dU')
+        yield from get_data_conf('cdcNs')
+        yield from get_data_conf('cdcName')
+        yield from get_data_conf('dataNs')
+
+    elif cdc in {'WYE',
+                 'DEL',
+                 'SEQ',
+                 'HMV',
+                 'HWYE',
+                 'HDEL'}:
+        return
+
+    else:
+        for da_el in type_el:
+            fc = da_el.get('fc')
+            btype = da_el.get('bType')
+            if (fc in {'MX',
+                       'ST',
+                       'SP'} and
+                    btype not in {'Quality',
+                                  'Timestamp'}):
+                yield from get_data_conf(da_el.get('name'), 'q', 't', 'stSeld')
