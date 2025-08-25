@@ -8,6 +8,7 @@ import typing
 from hat.drivers import iec101
 from hat.drivers.iec101.encoder import Encoder as Iec101Encoder
 from hat.drivers.iec60870.link.encoder import Encoder as LinkEncoder
+from hat.drivers.iec60870.link.common import ShortFrame
 
 
 class Direction(enum.Enum):
@@ -97,7 +98,7 @@ class Iec101Stream:
             frame = self._link_encoder.decode(data)
             self._write_frame(frame)
 
-            if not frame.data:
+            if isinstance(frame, ShortFrame) or not frame.data:
                 continue
 
             msgs = self._iec101_encoder.decode(frame.data)
