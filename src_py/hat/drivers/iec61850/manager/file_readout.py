@@ -76,6 +76,30 @@ def _parse_ieds(root_el):
                                           uneditable_rcb=uneditable_rcb)
 
 
+def _parse_uneditable_rcb(ied_el):
+    report_settings_el = ied_el.find('./Services/ReportSettings')
+
+    if report_settings_el is None or report_settings_el.get('rptID') != 'Dyn':
+        yield 'REPORT_ID'
+
+    if report_settings_el is None or report_settings_el.get('datSet') != 'Dyn':
+        yield 'DATASET'
+
+    if (report_settings_el is None or
+            report_settings_el.get('optFields') != 'Dyn'):
+        yield 'OPTIONAL_FIELDS'
+
+    if (report_settings_el is None or
+            report_settings_el.get('bufTime') != 'Dyn'):
+        yield 'BUFFER_TIME'
+
+    if report_settings_el is None or report_settings_el.get('trgOps') != 'Dyn':
+        yield 'TRIGGER_OPTIONS'
+
+    if report_settings_el is None or report_settings_el.get('intgPd') != 'Dyn':
+        yield 'INTEGRITY_PERIOD'
+
+
 def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
     ap_name = ap_el.get('name')
     datasets = []
@@ -127,28 +151,209 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
         'commands': commands}
 
 
-def _parse_uneditable_rcb(ied_el):
-    report_settings_el = ied_el.find('./Services/ReportSettings')
+def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
+    for do_el in ln_type_el:
+        do_name = do_el.get('name')
+        mlog.debug('value type %s/%s.%s',
+                   logical_device, logical_node, do_name)
+        try:
+            value_type_fc = _get_value_type(root_el, do_el, with_fc=True)
+            fcs = set(_get_all_fcs(value_type_fc))
+            for fc in fcs:
+                value_type = _get_value_type_for_fc(value_type_fc, fc)
+                if value_type:
+                    yield {'logical_device': logical_device,
+                           'logical_node': logical_node,
+                           'fc': fc,
+                           'name': do_el.get('name'),
+                           'type': value_type}
 
-    if report_settings_el is None or report_settings_el.get('rptID') != 'Dyn':
-        yield 'REPORT_ID'
+        except Exception as e:
+            mlog.warning('value type %s/%s.%s ignored: %s',
+                         logical_device, logical_node, do_name, e, exc_info=e)
 
-    if report_settings_el is None or report_settings_el.get('datSet') != 'Dyn':
-        yield 'DATASET'
 
-    if (report_settings_el is None or
-            report_settings_el.get('optFields') != 'Dyn'):
-        yield 'OPTIONAL_FIELDS'
+def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
+    for dataset_el in ln_el.findall('./DataSet'):
+        name = dataset_el.get('name')
+        mlog.info("dataset %s/%s.%s", logical_device, logical_node, name)
+        try:
+            yield {
+                'ref': {'logical_device': logical_device,
+                        'logical_node': logical_node,
+                        'name': name},
+                'values': list(_parse_dataset_values(dataset_el, ied_name))}
 
-    if (report_settings_el is None or
-            report_settings_el.get('bufTime') != 'Dyn'):
-        yield 'BUFFER_TIME'
+        except Exception as e:
+            mlog.warning('dataset %s ignored: %s', name, e, exc_info=e)
 
-    if report_settings_el is None or report_settings_el.get('trgOps') != 'Dyn':
-        yield 'TRIGGER_OPTIONS'
 
-    if report_settings_el is None or report_settings_el.get('intgPd') != 'Dyn':
-        yield 'INTEGRITY_PERIOD'
+def _parse_dataset_values(dataset_el, ied_name):
+    ds_name = dataset_el.get('name')
+    for i, fcda_el in enumerate(dataset_el):
+        if fcda_el.tag != 'FCDA':
+            continue
+
+        try:
+            fc = fcda_el.get('fc')
+            do_name = fcda_el.get('doName')
+            da_name = fcda_el.get('daName')
+            names = []
+            if do_name:
+                names.extend(_names_from_fcda_name(do_name))
+            if da_name:
+                names.extend(_names_from_fcda_name(da_name))
+            yield {
+                'logical_device': _create_logical_device(
+                    ied_name, fcda_el.get('ldInst')),
+                'logical_node': _create_logical_node(fcda_el.get('prefix'),
+                                                     fcda_el.get('lnClass'),
+                                                     fcda_el.get('lnInst')),
+                'fc': fc,
+                'names': names}
+
+        except Exception as e:
+            mlog.warning('dataset %s value at index %s ignored: %s',
+                         ds_name, i, e, exc_info=e)
+
+
+def _parse_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
+    for rc_el in ln_el.findall('./ReportControl'):
+        name = rc_el.get('name')
+        try:
+            yield from _parse_rcb(rc_el=rc_el,
+                                  logical_device=logical_device,
+                                  logical_node=logical_node,
+                                  uneditable_rcb=uneditable_rcb)
+
+        except Exception as e:
+            mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
+
+
+def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
+    name = rc_el.get('name')
+    report_id = rc_el.get('rptID')
+    dataset = rc_el.get('datSet')
+    rcb_type = 'BUFFERED' if rc_el.get('buffered') == 'true' else 'UNBUFFERED'
+    rcb_type_short = {'BUFFERED': 'BR',
+                      'UNBUFFERED': 'RP'}[rcb_type]
+    if not report_id:
+        report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
+    mlog.info('rcb %s/%s.%s.%s',
+              logical_device, logical_node, rcb_type_short, name)
+    for rcb_name in _parse_rcb_names(rc_el):
+        yield {
+            'ref': {'logical_device': logical_device,
+                    'logical_node': logical_node,
+                    'type': rcb_type,
+                    'name': rcb_name},
+            'report_id': report_id,
+            'dataset': {'logical_device': logical_device,
+                        'logical_node': logical_node,
+                        'name': dataset} if dataset else None,
+            'conf_revision': int(rc_el.get('confRev')),
+            'optional_fields': list(_parse_rcb_opt_flds(rc_el)),
+            'buffer_time': int(rc_el.get('bufTime', '0')),
+            'trigger_options': list(_parse_rcb_trg_ops(rc_el)),
+            'integrity_period': int(rc_el.get('intgPd', '0')),
+            'uneditable': uneditable_rcb}
+
+
+def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
+                logical_node, datasets):
+
+    def parse_node(node_el, names, fc):
+        if not node_el.get('name'):
+            return
+
+        node_type = node_el.get('type')
+        if not node_type:
+            return
+
+        names = [*names, node_el.get('name')]
+        type_el = root_el.find(f"./DataTypeTemplates/*"
+                               f"[@id='{node_type}']")
+        if type_el is None:
+            return
+
+        fc = node_el.get('fc') or fc
+        cdc = type_el.get('cdc')
+        if cdc:
+            yield from _get_data_confs_for_cdc(
+                root_el, type_el, cdc, logical_device, logical_node, fc, names,
+                datasets)
+
+        for nd_el in type_el:
+            yield from parse_node(nd_el, names, fc)
+
+    for node_el in ln_type_el:
+        name = node_el.get('name')
+        mlog.info('data %s/%s.%s', logical_device, logical_node, name)
+        try:
+            yield from parse_node(node_el, [], None)
+
+        except Exception as e:
+            mlog.warning('data %s/%s.%s ignored: %s',
+                         logical_device, logical_node, name, e, exc_info=e)
+
+
+def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
+    for do_el in ln_type_el:
+        do_name = do_el.get('name')
+        do_type = do_el.get('type')
+
+        do_type_el = root_el.find(f"./DataTypeTemplates/*"
+                                  f"[@id='{do_type}']")
+        cdc = do_type_el.get('cdc')
+        if cdc not in {'SPC',
+                       'DPC',
+                       'INC',
+                       'ENC',
+                       'BSC',
+                       'ISC',
+                       'APC',
+                       'BAC'}:
+            continue
+
+        mlog.info('command %s/%s.%s', logical_device, logical_node, do_name)
+        try:
+            model = _parse_command_model(ln_el, do_el, do_type_el)
+            if model is None:
+                continue
+
+            oper_el = do_type_el.find("./DA[@name='Oper']")
+            if oper_el is None:
+                raise Exception('no Oper attribute')
+
+            oper_type = oper_el.get('type')
+            oper_type_el = root_el.find(f"./DataTypeTemplates/*"
+                                        f"[@id='{oper_type}']")
+            with_operate_time = (
+                oper_type_el.find("./BDA[@name='operTm']") is not None)
+            ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
+
+            value_type = _get_value_type(root_el, ctl_val_el)
+            if value_type is None:
+                raise Exception('no value type')
+
+            cmd = {
+                'ref': {
+                    'logical_device': logical_device,
+                    'logical_node': logical_node,
+                    'name': do_name},
+                'value_type': value_type,
+                'model': model,
+                'with_operate_time': with_operate_time}
+
+            if ctl_val_el.get('bType') == 'Enum':
+                cmd['enumerated'] = _parse_enumerated(
+                    root_el, ctl_val_el.get('type'))
+
+            yield cmd
+
+        except Exception as e:
+            mlog.warning('command %s/%s.%s ignored: %s',
+                         logical_device, logical_node, do_name, e, exc_info=e)
 
 
 def _parse_connection(root_el, ied_name, ap_name):
@@ -179,28 +384,6 @@ def _parse_connection(root_el, ied_name, ap_name):
             conn_conf['ae_qualifier'] = int(addr_p_el.text)
 
     return conn_conf
-
-
-def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
-    for do_el in ln_type_el:
-        do_name = do_el.get('name')
-        mlog.debug('value type %s/%s.%s',
-                   logical_device, logical_node, do_name)
-        try:
-            value_type_fc = _get_value_type(root_el, do_el, with_fc=True)
-            fcs = set(_get_all_fcs(value_type_fc))
-            for fc in fcs:
-                value_type = _get_value_type_for_fc(value_type_fc, fc)
-                if value_type:
-                    yield {'logical_device': logical_device,
-                           'logical_node': logical_node,
-                           'fc': fc,
-                           'name': do_el.get('name'),
-                           'type': value_type}
-
-        except Exception as e:
-            mlog.warning('value type %s/%s.%s ignored: %s',
-                         logical_device, logical_node, do_name, e, exc_info=e)
 
 
 def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
@@ -305,50 +488,6 @@ def _get_value_type_for_fc(value_type, fc):
         return value_type['type']
 
 
-def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
-    for dataset_el in ln_el.findall('./DataSet'):
-        name = dataset_el.get('name')
-        mlog.info("dataset %s/%s.%s", logical_device, logical_node, name)
-        try:
-            yield {
-                'ref': {'logical_device': logical_device,
-                        'logical_node': logical_node,
-                        'name': name},
-                'values': list(_parse_dataset_values(dataset_el, ied_name))}
-
-        except Exception as e:
-            mlog.warning('dataset %s ignored: %s', name, e, exc_info=e)
-
-
-def _parse_dataset_values(dataset_el, ied_name):
-    ds_name = dataset_el.get('name')
-    for i, fcda_el in enumerate(dataset_el):
-        if fcda_el.tag != 'FCDA':
-            continue
-
-        try:
-            fc = fcda_el.get('fc')
-            do_name = fcda_el.get('doName')
-            da_name = fcda_el.get('daName')
-            names = []
-            if do_name:
-                names.extend(_names_from_fcda_name(do_name))
-            if da_name:
-                names.extend(_names_from_fcda_name(da_name))
-            yield {
-                'logical_device': _create_logical_device(
-                    ied_name, fcda_el.get('ldInst')),
-                'logical_node': _create_logical_node(fcda_el.get('prefix'),
-                                                     fcda_el.get('lnClass'),
-                                                     fcda_el.get('lnInst')),
-                'fc': fc,
-                'names': names}
-
-        except Exception as e:
-            mlog.warning('dataset %s value at index %s ignored: %s',
-                         ds_name, i, e, exc_info=e)
-
-
 def _names_from_fcda_name(name):
     for i in name.split('.'):
         _, _, after = i.partition('(')
@@ -358,48 +497,6 @@ def _names_from_fcda_name(name):
 
         else:
             yield i
-
-
-def _parse_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
-    for rc_el in ln_el.findall('./ReportControl'):
-        name = rc_el.get('name')
-        try:
-            yield from _parse_rcb(rc_el=rc_el,
-                                  logical_device=logical_device,
-                                  logical_node=logical_node,
-                                  uneditable_rcb=uneditable_rcb)
-
-        except Exception as e:
-            mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
-
-
-def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
-    name = rc_el.get('name')
-    report_id = rc_el.get('rptID')
-    dataset = rc_el.get('datSet')
-    rcb_type = 'BUFFERED' if rc_el.get('buffered') == 'true' else 'UNBUFFERED'
-    rcb_type_short = {'BUFFERED': 'BR',
-                      'UNBUFFERED': 'RP'}[rcb_type]
-    if not report_id:
-        report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
-    mlog.info('rcb %s/%s.%s.%s',
-              logical_device, logical_node, rcb_type_short, name)
-    for rcb_name in _parse_rcb_names(rc_el):
-        yield {
-            'ref': {'logical_device': logical_device,
-                    'logical_node': logical_node,
-                    'type': rcb_type,
-                    'name': rcb_name},
-            'report_id': report_id,
-            'dataset': {'logical_device': logical_device,
-                        'logical_node': logical_node,
-                        'name': dataset} if dataset else None,
-            'conf_revision': int(rc_el.get('confRev')),
-            'optional_fields': list(_parse_rcb_opt_flds(rc_el)),
-            'buffer_time': int(rc_el.get('bufTime', '0')),
-            'trigger_options': list(_parse_rcb_trg_ops(rc_el)),
-            'integrity_period': int(rc_el.get('intgPd', '0')),
-            'uneditable': uneditable_rcb}
 
 
 def _parse_rcb_names(rc_el):
@@ -417,134 +514,6 @@ def _parse_rcb_names(rc_el):
 
     else:
         yield name
-
-
-def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
-                logical_node, datasets):
-
-    def parse_node(node_el, names, fc):
-        if not node_el.get('name'):
-            return
-
-        node_type = node_el.get('type')
-        if not node_type:
-            return
-
-        names = [*names, node_el.get('name')]
-        type_el = root_el.find(f"./DataTypeTemplates/*"
-                               f"[@id='{node_type}']")
-        if type_el is None:
-            return
-
-        fc = node_el.get('fc') or fc
-        cdc = type_el.get('cdc')
-        if cdc:
-            yield from _get_data_confs_for_cdc(
-                root_el, type_el, cdc, logical_device, logical_node, fc, names,
-                datasets)
-
-        for nd_el in type_el:
-            yield from parse_node(nd_el, names, fc)
-
-    for node_el in ln_type_el:
-        name = node_el.get('name')
-        mlog.info('data %s/%s.%s', logical_device, logical_node, name)
-        try:
-            yield from parse_node(node_el, [], None)
-
-        except Exception as e:
-            mlog.warning('data %s/%s.%s ignored: %s',
-                         logical_device, logical_node, name, e, exc_info=e)
-
-
-def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
-    for do_el in ln_type_el:
-        do_name = do_el.get('name')
-        do_type = do_el.get('type')
-
-        do_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                  f"[@id='{do_type}']")
-        cdc = do_type_el.get('cdc')
-        if cdc not in {'SPC',
-                       'DPC',
-                       'INC',
-                       'ENC',
-                       'BSC',
-                       'ISC',
-                       'APC',
-                       'BAC'}:
-            continue
-
-        mlog.info('command %s/%s.%s', logical_device, logical_node, do_name)
-        try:
-            model = _parse_command_model(ln_el, do_el, do_type_el)
-            if model is None:
-                continue
-
-            oper_el = do_type_el.find("./DA[@name='Oper']")
-            if oper_el is None:
-                raise Exception('no Oper attribute')
-
-            oper_type = oper_el.get('type')
-            oper_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                        f"[@id='{oper_type}']")
-            with_operate_time = (
-                oper_type_el.find("./BDA[@name='operTm']") is not None)
-            ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
-
-            value_type = _get_value_type(root_el, ctl_val_el)
-            if value_type is None:
-                raise Exception('no value type')
-
-            cmd = {
-                'ref': {
-                    'logical_device': logical_device,
-                    'logical_node': logical_node,
-                    'name': do_name},
-                'value_type': value_type,
-                'model': model,
-                'with_operate_time': with_operate_time}
-
-            if ctl_val_el.get('bType') == 'Enum':
-                cmd['enumerated'] = _parse_enumerated(
-                    root_el, ctl_val_el.get('type'))
-
-            yield cmd
-
-        except Exception as e:
-            mlog.warning('command %s/%s.%s ignored: %s',
-                         logical_device, logical_node, do_name, e, exc_info=e)
-
-
-def _parse_command_model(ln_el, do_el, do_type_el):
-    do_name = do_el.get('name')
-    ctl_model_el = do_type_el.find("./DA[@name='ctlModel']")
-    if ctl_model_el is None:
-        return
-
-    val_el = ln_el.find(f"./DOI[@name='{do_name}']"
-                        f"/DAI[@name='ctlModel']"
-                        f"/Val")
-    if val_el is None:
-        val_el = ctl_model_el.find('.Val')
-    if val_el is None:
-        return
-
-    ctl_model = val_el.text
-    if ctl_model is None or ctl_model == 'status-only':
-        return
-
-    model = {
-        'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
-        'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
-        'direct-with-enhanced-security':
-            'DIRECT_WITH_ENHANCED_SECURITY',
-        'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
-        }.get(ctl_model)
-    if model is None:
-        raise Exception(f'unknown control model {ctl_model}')
-
-    return model
 
 
 def _parse_rcb_opt_flds(rc_el):
@@ -597,6 +566,37 @@ def _parse_rcb_trg_ops(rc_el):
 
     if trg_ops_el.get('period') == 'true':
         yield 'INTEGRITY'
+
+
+def _parse_command_model(ln_el, do_el, do_type_el):
+    do_name = do_el.get('name')
+    ctl_model_el = do_type_el.find("./DA[@name='ctlModel']")
+    if ctl_model_el is None:
+        return
+
+    val_el = ln_el.find(f"./DOI[@name='{do_name}']"
+                        f"/DAI[@name='ctlModel']"
+                        f"/Val")
+    if val_el is None:
+        val_el = ctl_model_el.find('.Val')
+    if val_el is None:
+        return
+
+    ctl_model = val_el.text
+    if ctl_model is None or ctl_model == 'status-only':
+        return
+
+    model = {
+        'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
+        'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
+        'direct-with-enhanced-security':
+            'DIRECT_WITH_ENHANCED_SECURITY',
+        'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
+        }.get(ctl_model)
+    if model is None:
+        raise Exception(f'unknown control model {ctl_model}')
+
+    return model
 
 
 def _get_basic_value_type(node):
