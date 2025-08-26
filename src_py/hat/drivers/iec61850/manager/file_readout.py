@@ -97,8 +97,7 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
             ln_type_el = root_el.find(f"./DataTypeTemplates/LNodeType"
                                       f"[@id='{ln_type}']")
 
-            mlog.info('value types for %s/%s ...',
-                      logical_device, logical_node)
+            mlog.info('value types for %s/%s', logical_device, logical_node)
             value_types.extend(_parse_value_types(
                 root_el, ln_type_el, logical_device, logical_node))
 
@@ -231,14 +230,16 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
             value_type['fc'] = fc
         return value_type
 
-    type = node_el.get('type')
-    if type is None:
+    node_type = node_el.get('type')
+    node_btype = node_el.get('bType')
+    if node_type is None:
+        mlog.warning("attr 'type' does not exist for bType %s", node_btype)
         return
 
     node_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                f"[@id='{type}']")
+                                f"[@id='{node_type}']")
     if node_type_el is None:
-        mlog.warning('type %s ignored: not defined', type)
+        mlog.warning("type %s not defined", )
         return
 
     elements = []
@@ -833,34 +834,34 @@ def _get_value_datasets(datasets, value_ref, quality_ref, timestamp_ref,
                         selected_ref):
     for dataset in datasets:
         for ds_val_ref in dataset['values']:
-            if _value_refs_match(ds_val_ref, value_ref):
+            if _is_ref_in_dataset(ds_val_ref, value_ref):
                 yield {
                     'ref': dataset['ref'],
-                    'quality': (_value_refs_match(ds_val_ref, quality_ref)
+                    'quality': (_is_ref_in_dataset(ds_val_ref, quality_ref)
                                 if quality_ref else False),
-                    'timestamp': (_value_refs_match(ds_val_ref, timestamp_ref)
+                    'timestamp': (_is_ref_in_dataset(ds_val_ref, timestamp_ref)
                                   if timestamp_ref else False),
-                    'selected': (_value_refs_match(ds_val_ref, selected_ref)
+                    'selected': (_is_ref_in_dataset(ds_val_ref, selected_ref)
                                  if selected_ref else False)}
 
 
-def _value_refs_match(ref_parent, ref_child):
-    if ref_parent['logical_device'] != ref_child['logical_device']:
+def _is_ref_in_dataset(ds_value_ref, ref):
+    if ds_value_ref['logical_device'] != ref['logical_device']:
         return False
 
-    if ref_parent['logical_node'] != ref_child['logical_node']:
+    if ds_value_ref['logical_node'] != ref['logical_node']:
         return False
 
-    if ref_parent['fc'] != ref_child['fc']:
+    if ds_value_ref['fc'] != ref['fc']:
         return False
 
-    if ref_parent['names'] == ref_child['names']:
+    if ds_value_ref['names'] == ref['names']:
         return True
 
-    if len(ref_parent['names']) > len(ref_child['names']):
+    if len(ds_value_ref['names']) > len(ref['names']):
         return True
 
-    return ref_child['names'][:len(ref_parent['names'])] == ref_parent['names']
+    return ref['names'][:len(ds_value_ref['names'])] == ds_value_ref['names']
 
 
 def _get_data_confs_for_cdc(root_el, type_el, cdc,
@@ -870,15 +871,19 @@ def _get_data_confs_for_cdc(root_el, type_el, cdc,
         names, datasets)
     if cdc == 'SPS':
         yield from get_data_conf('stVal', 'q', 't')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'DPS':
         yield from get_data_conf('stVal', 'q', 't')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'INS':
         yield from get_data_conf('stVal', 'q', 't')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'ENS':
         yield from get_data_conf('stVal', 'q', 't')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'ACT':
         yield from get_data_conf('general', 'q', 't')
@@ -926,9 +931,11 @@ def _get_data_confs_for_cdc(root_el, type_el, cdc,
         yield from get_data_conf('instMag', 'q', 't')
         yield from get_data_conf('mag', 'q', 't')
         yield from get_data_conf('range', 'q', 't')
+        yield from get_data_conf('subMag', 'subQ')
 
     elif cdc == 'CMV':
         yield from get_data_conf('instCVal', 'q')
+        yield from get_data_conf('subCVal', 'subQ')
         yield from get_data_conf('cVal', 'q', 't')
         yield from get_data_conf('range', 'q')
         yield from get_data_conf('rangeAng', timestamp_name='t')
@@ -938,27 +945,43 @@ def _get_data_confs_for_cdc(root_el, type_el, cdc,
 
     elif cdc == 'SPC':
         yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'DPC':
         yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'INC':
         yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'ENC':
         yield from get_data_conf('stVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'BSC':
         yield from get_data_conf('valWTr', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'ISC':
         yield from get_data_conf('valWTr', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'APC':
         yield from get_data_conf('mxVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'BAC':
         yield from get_data_conf('mxVal', 'q', 't', 'stSeld')
+        yield from get_data_conf('opOk', timestamp_name='tOpOk')
+        yield from get_data_conf('subVal', 'subQ')
 
     elif cdc == 'SPG':
         yield from get_data_conf('setVal', writable=True)

@@ -236,7 +236,7 @@ def test_4(validator):
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 42
     assert len(device_json['commands']) == 99
-    assert len(device_json['data']) == 3463
+    assert len(device_json['data']) == 3632
     assert len(device_json['value_types']) == 4079
 
     # indexed rcbs
@@ -246,12 +246,26 @@ def test_4(validator):
     assert [i['ref']['name'] for i in rcbs] == [
         f'Report10{i}' for i in range(1, 7)]
 
+    # subVal data value with subQ quality
+    data_conf = util.first(
+        device_json['data'],
+        lambda i: i["value"] == {
+                    "logical_device": "E1_7SALn1_ProcessMonitor",
+                    "logical_node": "PROM_RSSR1",
+                    "fc": "SV",
+                    "names": ["DisCntrOpn",
+                              "subVal"]})
+    assert data_conf
+    assert data_conf['quality'] == {
+        **data_conf['value'],
+        'names': [*data_conf['value']['names'][:-1], 'subQ']}
+
     assert 'E1_REL' in res
     device_json = res['E1_REL']
     assert len(device_json['datasets']) == 5
     assert len(device_json['rcbs']) == 32
     assert len(device_json['commands']) == 92
-    assert len(device_json['data']) == 1309
+    assert len(device_json['data']) == 1342
     assert len(device_json['value_types']) == 1334
 
     # command, data and control model on the same address
@@ -320,7 +334,7 @@ def test_5(validator):
     assert len(device_json['datasets']) == 2
     assert len(device_json['rcbs']) == 62
     assert len(device_json['commands']) == 48
-    assert len(device_json['data']) == 1959
+    assert len(device_json['data']) == 1990
     writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 77
     assert len(device_json['value_types']) == 1337
@@ -343,3 +357,72 @@ def test_6(validator):
     writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 0
     assert len(device_json['value_types']) == 655
+
+
+def test_7(validator):
+    with importlib.resources.open_text(__package__, 'test7.icd') as f:
+        res = readout(f)
+
+    assert len(res) == 1
+    for device_name, device_json in res.items():
+        validator.validate(json_schema_id, device_json)
+
+    device_json = res['E3_TAPCON']
+
+    # assert value types with different fc
+    value_types = [i for i in device_json['value_types']
+                   if i['logical_device'] == 'E3_TAPCONE3_TAP' and
+                   i['logical_node'] == 'LLN0' and
+                   i['name'] == 'Mod']
+    assert len(value_types) == 3
+    assert util.first(value_types, lambda i: i['fc'] == 'ST')
+    assert util.first(value_types, lambda i: i['fc'] == 'CF')
+    assert util.first(value_types, lambda i: i['fc'] == 'DC')
+
+    # assert value type valWTr of type STEP_POSITION
+    value_type_tap_changer = util.first(
+        device_json['value_types'],
+        lambda i: i['logical_device'] == 'E3_TAPCONE3_TAP' and
+        i['logical_node'] == 'ATCC1' and
+        i['fc'] == 'ST' and
+        i['name'] == 'TapChg')
+    assert value_type_tap_changer
+    assert value_type_tap_changer['type']['type'] == 'STRUCT'
+    assert value_type_tap_changer['type']['elements'][0] == {
+        "name": "valWTr",
+        "type": "STEP_POSITION"}
+    value_type_tap_changer = util.first(
+        device_json['value_types'],
+        lambda i: i['logical_device'] == 'E3_TAPCONE3_TAP' and
+        i['logical_node'] == 'ATCC1' and
+        i['fc'] == 'CF' and
+        i['name'] == 'TapChg')
+    assert value_type_tap_changer
+
+    # assert corresponding data valWTr of type STEP_POSITION
+    data_conf = util.first(
+        device_json['data'],
+        lambda i: i["value"] == {
+            "logical_device": "E3_TAPCONE3_TAP",
+            "logical_node": "ATCC1",
+            "fc": "ST",
+            "names": ["TapChg",
+                      "valWTr"]})
+    assert data_conf
+    assert data_conf['value_type'] == 'STEP_POSITION'
+    assert data_conf['datasets']
+    assert data_conf['quality']
+    assert data_conf['timestamp']
+
+    # assert sub-data for STEP_POSITION
+    data_conf = util.first(
+        device_json['data'],
+        lambda i: i["value"] == {
+            "logical_device": "E3_TAPCONE3_TAP",
+            "logical_node": "ATCC1",
+            "fc": "ST",
+            "names": ["TapChg",
+                      "valWTr",
+                      "posVal"]})
+    assert data_conf
+    assert data_conf['value_type'] == 'INTEGER'

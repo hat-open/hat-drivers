@@ -1,0 +1,2640 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL SCL.xsd">
+    <Header id="ISM" nameStructure="IEDName"/>
+    <Communication>
+        <SubNetwork name="Subnet" type="8-MMS">
+            <Text/>
+            <BitRate unit="b/s" multiplier="M">100</BitRate>
+            <ConnectedAP iedName="E3_TAPCON" apName="AP">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.1.45</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.1.1</P>
+                    <P type="OSI-PSEL">00000001</P>
+                    <P type="OSI-SSEL">0001</P>
+                    <P type="OSI-TSEL">0001</P>
+                </Address>
+            </ConnectedAP>
+        </SubNetwork>
+    </Communication>
+    <IED name="E3_TAPCON" type="AVR" manufacturer="Maschinenfabrik Reinhausen GmbH">
+        <Private type="MR-MAX-GOOSE-PUBLISH-FCDA">15</Private>
+        <Private type="MR-MINTIME-GOOSE">100</Private>
+        <Private type="MR-MAX-GOOSE-SUBSCRIBER-FCDA">15</Private>
+        <Private type="MR-MAX-OVERALL-GOOSE-PUBLISH-FCDA">6600</Private>
+        <Private type="MR-MAX-GOOSE-PUBLISH-IED">45</Private>
+        <Services>
+            <DynAssociation/>
+            <GetDirectory/>
+            <GetDataObjectDefinition/>
+            <DataObjectDirectory/>
+            <GetDataSetValue/>
+            <DataSetDirectory/>
+            <ConfDataSet max="35" maxAttributes="200"/>
+            <DynDataSet max="35" maxAttributes="200"/>
+            <ReadWrite/>
+            <ConfReportControl max="25"/>
+            <GetCBValues/>
+            <ReportSettings trgOps="Dyn" intgPd="Dyn" datSet="Dyn" bufTime="Dyn" rptID="Dyn" optFields="Dyn" cbName="Conf"/>
+            <GSESettings cbName="Conf" datSet="Conf" appID="Conf"/>
+            <GOOSE max="10"/>
+        </Services>
+        <AccessPoint name="AP">
+            <Server>
+                <Authentication/>
+                <LDevice inst="E3_TAP">
+                    <LN0 inst="" lnClass="LLN0" lnType="LN0">
+                        <DataSet name="DataSetST01">
+                            <FCDA ldInst="E3_TAP" lnClass="LLN0" doName="Mod" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LLN0" doName="Beh" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LLN0" doName="Health" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LLN0" doName="Loc" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LPHD" lnInst="1" doName="PhyHealth" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LPHD" lnInst="1" doName="Proxy" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="LTMS" lnInst="1" doName="TmChSt1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="TapChg" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="ParOp" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="LTCBlkVLo" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="LTCBlkVHi" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="LTCBlkAHi" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="OpCntRs" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="LTCBlk" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="Auto" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="FuncMon" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="TapOpErr" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="MotDrv" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="MasterSel" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="FollowSel" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="CircASel" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="CircAPFSel" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="ErrPar" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="BndCtrAct1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="BndCtrAct2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="BndCtrAct3" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="BndCtrAct4" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="BndCtrAct5" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="ParGr1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="ParGr2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="PwrFlwRv" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvVEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnVEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvAEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnAEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvVAEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvVA2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnVAEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnVA2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvWEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvW2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnWEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnW2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvVArEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvVAr2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnVArEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnVAr2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnPFEx" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnPF2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvV2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnV2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="OvA2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="UnA2Ex" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="YPTR" lnInst="1" doName="VInFail" fc="ST"/>
+                        </DataSet>
+                        <DataSet name="DataSetST03">
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind3" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind4" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind5" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind6" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind7" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind8" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind9" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind10" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind11" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind12" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind13" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind14" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind15" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind16" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind17" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind18" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind19" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind20" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind21" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind22" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind23" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind24" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind25" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind26" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind27" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="1" doName="Ind28" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind3" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind4" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind5" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind6" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind7" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind8" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind9" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="3" doName="Ind10" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind3" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind4" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind5" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind6" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind7" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind8" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind9" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind10" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind11" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind12" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind13" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind14" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind15" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind16" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind17" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind18" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind19" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind20" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind21" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind22" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind23" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind24" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="Ind25" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO1" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO2" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO3" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO4" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO5" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO6" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO7" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO8" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO9" fc="ST"/>
+                            <FCDA ldInst="E3_TAP" lnClass="GGIO" lnInst="2" doName="SPCSO10" fc="ST"/>
+                        </DataSet>
+                        <DataSet name="DataSetMX01">
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="CtlV" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="LodA" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="CtlDv" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="PhAng" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="ATCC" lnInst="1" doName="CircA" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="PPV" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="PNV" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="A" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="TotW" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="TotVAr" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="TotVA" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="TotPF" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="Hz" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="W" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="VAr" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="VA" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="PF" fc="MX"/>
+                            <FCDA ldInst="E3_TAP" lnClass="MMXU" lnInst="1" doName="PhAngTP" fc="MX"/>
+                        </DataSet>
+                        <ReportControl name="brcbST01" datSet="DataSetST01" rptID="LN0$ST01$Buffered" confRev="1" buffered="true" bufTime="100" intgPd="0">
+                            <TrgOps dchg="true" qchg="true" period="true" dupd="false"/>
+                            <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" entryID="true"/>
+                            <RptEnabled max="5"/>
+                        </ReportControl>
+                        <ReportControl name="brcbST03" datSet="DataSetST03" rptID="LN0$ST03$Buffered" confRev="1" buffered="true" bufTime="100" intgPd="0">
+                            <TrgOps dchg="true" qchg="true" period="true" dupd="false"/>
+                            <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" entryID="true"/>
+                            <RptEnabled max="5"/>
+                        </ReportControl>
+                        <ReportControl name="urcbMX01" datSet="DataSetMX01" rptID="LN0$MX01$Unbuffered" confRev="1" buffered="false" bufTime="500" intgPd="0">
+                            <TrgOps dchg="true" qchg="true" period="true" dupd="false"/>
+                            <OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true"/>
+                            <RptEnabled max="5"/>
+                        </ReportControl>
+                        <DOI name="Mod" desc="Mode (No value change)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode (No value change)</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour (No value change)">
+                            <DAI name="d">
+                                <Val>Behaviour (No value change)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health (For all LNs the same value)">
+                            <DAI name="d">
+                                <Val>Health (For all LNs the same value)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                            <DAI name="ldNs">
+                                <Val>IEC 61850-7-4:2003</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Loc" desc="Local operation (For all LNs the same value)">
+                            <DAI name="d">
+                                <Val>Local operation (For all LNs the same value)</Val>
+                            </DAI>
+                        </DOI>
+                    </LN0>
+                    <LN inst="1" desc="LPHD" lnClass="LPHD" lnType="LPHD1">
+                        <DOI name="PhyNam" desc="name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="hwRev">
+                                <Val>1.0</Val>
+                            </DAI>
+                            <DAI name="model">
+                                <Val>ISM</Val>
+                            </DAI>
+                            <DAI name="location">
+                                <Val>GERMANY, 93059 Regensburg, Falkensteinstr. 8</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="PhyHealth" desc="Physical device health">
+                            <DAI name="d">
+                                <Val>Physical device health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Proxy" desc="Indicates if this LN is a proxy">
+                            <DAI name="d">
+                                <Val>Indicates if this LN is a proxy</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="LTMS1" lnClass="LTMS" lnType="LTMS1">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                            <DAI name="lnNs" valKind="Set">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="TmSrc" desc="Current time source">
+                            <DAI name="d">
+                                <Val>Current time source</Val>
+                            </DAI>
+                            <DAI name="cdcNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <DAI name="cdcName">
+                                <Val>VSS</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="TmChSt1" desc="Time channel status">
+                            <DAI name="d">
+                                <Val>Time channel status</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="AVR1" lnClass="ATCC" lnType="ATCC1">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Loc" desc="Local operation">
+                            <DAI name="d">
+                                <Val>Local operation</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="TapChg" desc="Tap position (change and value)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Tap position (change and value)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="ParOp" desc="Parallel/Independent">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Parallel/Independent</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="CtlV" desc="Control Voltage">
+                            <DAI name="d">
+                                <Val>Control Voltage</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="FuncMon" desc="Function monitoring">
+                            <DAI name="d">
+                                <Val>Function monitoring</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Auto" desc="Automatic/Manual operation">
+                            <DAI name="d">
+                                <Val>Automatic/Manual operation</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LTCBlk" desc="Block Automatic Control">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Block Automatic Control</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LimLodA" desc="Limit Load Current (LTC Block Load Current, percentage)">
+                            <DAI name="d">
+                                <Val>Limit Load Current (LTC Block Load Current, percentage)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val>c</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndCtr" desc="Band center voltage (actual reference - can not be set)">
+                            <DAI name="d">
+                                <Val>Band center voltage (actual reference - can not be set)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="LodA" desc="Load Current (transformer secondary current)">
+                            <DAI name="d">
+                                <Val>Load Current (transformer secondary current)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>A</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="CtlDv" desc="Control Voltage Deviation (in percent of BndCtr)">
+                            <DAI name="d">
+                                <Val>Control Voltage Deviation (in percent of BndCtr)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val>c</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="LTCBlkVLo" desc="LTC inhibit due to under voltage">
+                            <DAI name="d">
+                                <Val>LTC inhibit due to under voltage</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LTCBlkVHi" desc="LTC inhibit due to over voltage">
+                            <DAI name="d">
+                                <Val>LTC inhibit due to over voltage</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LTCBlkAHi" desc="LTC inhibit due to over current">
+                            <DAI name="d">
+                                <Val>LTC inhibit due to over current</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="PhAng" desc="Phase Angle of LodA relative to CtlV">
+                            <DAI name="d">
+                                <Val>Phase Angle of LodA relative to CtlV</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>deg</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="OpCntRs" desc="Resettable operation counter">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Resettable operation counter</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndWid" desc="Band width voltage (as percent of nominal voltage)">
+                            <DAI name="d">
+                                <Val>Band width voltage (as percent of nominal voltage)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val>c</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndWidAbs" desc="Band width voltage transformer (as absolute value)">
+                            <DAI name="d">
+                                <Val>Band width voltage transformer (as absolute value)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndWidMod" desc="Switch between absolute and percentage bandwidth voltage">
+                            <DAI name="d">
+                                <Val>Switch between absolute and percentage bandwidth voltage</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="CtlDlTms" desc="Control intentional time delay T1 (in seconds)">
+                            <DAI name="d">
+                                <Val>Control intentional time delay T1 (in seconds)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>s</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TmDlChr" desc="Time delay linear or integral characteristic (0=lin., 1=int.)">
+                            <DAI name="d">
+                                <Val>Time delay linear or integral characteristic (0=lin., 1=int.)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="MasterSel" desc="Master mode selection activation(parallel control)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Master mode selection activation(parallel control)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="FollowSel" desc="Follower mode selection activation(parallel control)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Follower mode selection activation(parallel control)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="CircA" desc="Circulating Current (reactive)">
+                            <DAI name="d">
+                                <Val>Circulating Current (reactive)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>A</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="CircASel" desc="Circulating current selection activation (parallel control)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Circulating current selection activation (parallel control)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="CircAPFSel" desc="Desired power factor selection activation (parallel control)">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Desired power factor selection activation (parallel control)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="RefPF" desc="Desired power factor">
+                            <DAI name="d">
+                                <Val>Desired power factor</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="RefLodTyp" desc="Desired load type selection (0=ind., 1=cap.)">
+                            <DAI name="d">
+                                <Val>Desired load type selection (0=ind., 1=cap.)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="ErrPar" desc="Error of parallel operation">
+                            <DAI name="d">
+                                <Val>Error of parallel operation</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrV1" desc="Band center voltage 1">
+                            <DAI name="d">
+                                <Val>Band center voltage 1</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndCtrAct1" desc="Band center voltage (desired value) 1 active">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Band center voltage (desired value) 1 active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrAct2" desc="Band center voltage (desired value) 2 active">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Band center voltage (desired value) 2 active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrAct3" desc="Band center voltage (desired value) 3 active">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Band center voltage (desired value) 3 active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrAct4" desc="Band center voltage (desired value) 4 active">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Band center voltage (desired value) 4 active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrAct5" desc="Band center voltage (desired value) 5 active">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Band center voltage (desired value) 5 active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="BndCtrV2" desc="Band center voltage 2">
+                            <DAI name="d">
+                                <Val>Band center voltage 2</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndCtrV3" desc="Band center voltage 3">
+                            <DAI name="d">
+                                <Val>Band center voltage 3</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndCtrV4" desc="Band center voltage 4">
+                            <DAI name="d">
+                                <Val>Band center voltage 4</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BndCtrV5" desc="Band center voltage 5">
+                            <DAI name="d">
+                                <Val>Band center voltage 5</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>V</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TapOpErr" desc="Tap inidication error (e.g. wrong BCD code)">
+                            <DAI name="d">
+                                <Val>Tap inidication error (e.g. wrong BCD code)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="MotDrv" desc="Motor drive running">
+                            <DAI name="d">
+                                <Val>Motor drive running</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LDCR" desc="Line drop voltage due to line resistance component (ohmic behaviour of the cable)">
+                            <DAI name="d">
+                                <Val>Line drop voltage due to line resistance component (ohmic behaviour of the cable)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="LDCX" desc="Line drop voltage due to line reactance component (inductive behaviour of the cable)">
+                            <DAI name="d">
+                                <Val>Line drop voltage due to line reactance component (inductive behaviour of the cable)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="LDC" desc="Line drop compensation. LDC is R and X or Z model TRUE = R and X, FALSE = Z. If compensation is deactivated, value is set to TRUE">
+                            <DAI name="d">
+                                <Val>Line drop compensation. LDC is R and X or Z model TRUE = R and X, FALSE = Z. If compensation is deactivated, value is set to TRUE</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="LDCZ" desc="Line drop voltage due to line total impedance (percentage of nominal voltage)">
+                            <DAI name="d">
+                                <Val>Line drop voltage due to line total impedance (percentage of nominal voltage)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val>c</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="BlkLV" desc="Control voltage below which auto Lower commands blocked (relative)">
+                            <DAI name="d">
+                                <Val>Control voltage below which auto Lower commands blocked (relative)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val>c</Val>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TgtTapPos" desc="Target tap position">
+                            <DAI name="d">
+                                <Val>Target tap position</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="ParGr1" desc="If true, device is assigned to parallel group 1">
+                            <DAI name="d">
+                                <Val>If true, device is assigned to parallel group 1</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="ParGr2" desc="If true, device is assigned to parallel group 2">
+                            <DAI name="d">
+                                <Val>If true, device is assigned to parallel group 2</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="PwrFlwRv" desc="If true, reversal of power flow is active">
+                            <DAI name="d">
+                                <Val>If true, reversal of power flow is active</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="AVR2" lnClass="AVCO" lnType="AVCO1">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Loc" desc="Local operation">
+                            <DAI name="d">
+                                <Val>Local operation</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="TapChg" desc="Change Voltage">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Change Voltage</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="DIO" lnClass="GGIO" lnType="GGIODIO">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind1" desc="DI 1 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 1 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind2" desc="DI 2 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 2 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind3" desc="DI 3 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 3 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind4" desc="DI 4 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 4 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind5" desc="DI 5 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 5 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind6" desc="DI 6 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 6 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind7" desc="DI 7 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 7 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind8" desc="DI 9 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 9 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind9" desc="DI 10 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 10 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind10" desc="DI 11 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 11 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind11" desc="DI 12 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 12 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind12" desc="DI 13 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 13 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind13" desc="DI 14 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 14 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind14" desc="DI 15 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 15 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind15" desc="DI 17 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 17 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind16" desc="DI 18 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 18 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind17" desc="DI 19 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 19 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind18" desc="DI 20 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 20 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind19" desc="DI 21 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 21 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind20" desc="DI 22 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 22 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind21" desc="DI 23 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 23 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind22" desc="DI 25 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 25 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind23" desc="DI 26 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 26 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind24" desc="DI 27 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 27 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind25" desc="DI 28 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 28 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind26" desc="DI 29 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 29 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind27" desc="DI 30 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 30 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind28" desc="DI 31 (DIO 28-15)">
+                            <DAI name="d">
+                                <Val>DI 31 (DIO 28-15)</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="MMXU1" lnClass="MMXU" lnType="MMXU1">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="PPV" desc="Phase to phase voltages (VL1VL2, ...)">
+                            <DAI name="d">
+                                <Val>Phase to phase voltages (VL1VL2, ...)</Val>
+                            </DAI>
+                            <SDI name="phsAB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsBC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsCA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="PNV" desc="Phase to neutral voltage">
+                            <DAI name="d">
+                                <Val>Phase to neutral voltage</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>V</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="A" desc="Phase currents (IL1, IL2, IL3)">
+                            <DAI name="d">
+                                <Val>Phase currents (IL1, IL2, IL3)</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>A</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>A</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>A</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="neut">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>A</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TotW" desc="Total active power (total P)">
+                            <DAI name="d">
+                                <Val>Total active power (total P)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>Watts</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TotVAr" desc="Total reactive power (total Q)">
+                            <DAI name="d">
+                                <Val>Total reactive power (total Q)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>VAr</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TotVA" desc="Total apparent power (total S)">
+                            <DAI name="d">
+                                <Val>Total apparent power (total S)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>VA</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="TotPF" desc="Average power factor (total PF)">
+                            <DAI name="d">
+                                <Val>Average power factor (total PF)</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="Hz" desc="Frequency">
+                            <DAI name="d">
+                                <Val>Frequency</Val>
+                            </DAI>
+                            <SDI name="units">
+                                <DAI name="SIUnit" valKind="RO">
+                                    <Val>Hz</Val>
+                                </DAI>
+                                <DAI name="multiplier" valKind="RO">
+                                    <Val/>
+                                </DAI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="W" desc="Phase active power (P)">
+                            <DAI name="d">
+                                <Val>Phase active power (P)</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>Watts</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>Watts</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>Watts</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="VAr" desc="Phase reactive power (Q)">
+                            <DAI name="d">
+                                <Val>Phase reactive power (Q)</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VAr</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VAr</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VAr</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="VA" desc="Phase apparent power (S)">
+                            <DAI name="d">
+                                <Val>Phase apparent power (S)</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VA</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VA</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>VA</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="PF" desc="Phase power factor">
+                            <DAI name="d">
+                                <Val>Phase power factor</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val/>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val/>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val/>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                        <DOI name="PhAngTP" desc="Phase Angle three pole">
+                            <DAI name="d">
+                                <Val>Phase Angle three pole</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                            <SDI name="phsA">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>deg</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsB">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>deg</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                            <SDI name="phsC">
+                                <SDI name="units">
+                                    <DAI name="SIUnit" valKind="RO">
+                                        <Val>deg</Val>
+                                    </DAI>
+                                </SDI>
+                            </SDI>
+                        </DOI>
+                    </LN>
+                    <LN inst="2" desc="UIO" lnClass="GGIO" lnType="GGIOUIO">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind1" desc="Generic indication 1">
+                            <DAI name="d">
+                                <Val>Generic indication 1</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind2" desc="Generic indication 2">
+                            <DAI name="d">
+                                <Val>Generic indication 2</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind3" desc="Generic indication 3">
+                            <DAI name="d">
+                                <Val>Generic indication 3</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind4" desc="Generic indication 4">
+                            <DAI name="d">
+                                <Val>Generic indication 4</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind5" desc="Generic indication 5">
+                            <DAI name="d">
+                                <Val>Generic indication 5</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind6" desc="Generic indication 6">
+                            <DAI name="d">
+                                <Val>Generic indication 6</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind7" desc="Generic indication 7">
+                            <DAI name="d">
+                                <Val>Generic indication 7</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind8" desc="Generic indication 8">
+                            <DAI name="d">
+                                <Val>Generic indication 8</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind9" desc="Generic indication 9">
+                            <DAI name="d">
+                                <Val>Generic indication 9</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind10" desc="Generic indication 10">
+                            <DAI name="d">
+                                <Val>Generic indication 10</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind11" desc="Generic indication 11">
+                            <DAI name="d">
+                                <Val>Generic indication 11</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind12" desc="Generic indication 12">
+                            <DAI name="d">
+                                <Val>Generic indication 12</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind13" desc="Generic indication 13">
+                            <DAI name="d">
+                                <Val>Generic indication 13</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind14" desc="Generic indication 14">
+                            <DAI name="d">
+                                <Val>Generic indication 14</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind15" desc="Generic indication 15">
+                            <DAI name="d">
+                                <Val>Generic indication 15</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind16" desc="Generic indication 16">
+                            <DAI name="d">
+                                <Val>Generic indication 16</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind17" desc="Generic indication 17">
+                            <DAI name="d">
+                                <Val>Generic indication 17</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind18" desc="Generic indication 18">
+                            <DAI name="d">
+                                <Val>Generic indication 18</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind19" desc="Generic indication 19">
+                            <DAI name="d">
+                                <Val>Generic indication 19</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind20" desc="Generic indication 20">
+                            <DAI name="d">
+                                <Val>Generic indication 20</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind21" desc="Generic indication 21">
+                            <DAI name="d">
+                                <Val>Generic indication 21</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind22" desc="Generic indication 22">
+                            <DAI name="d">
+                                <Val>Generic indication 22</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind23" desc="Generic indication 23">
+                            <DAI name="d">
+                                <Val>Generic indication 23</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind24" desc="Generic indication 24">
+                            <DAI name="d">
+                                <Val>Generic indication 24</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind25" desc="Generic indication 25">
+                            <DAI name="d">
+                                <Val>Generic indication 25</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO1" desc="Generic command 1">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 1</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO2" desc="Generic command 2">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 2</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO3" desc="Generic command 3">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 3</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO4" desc="Generic command 4">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 4</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO5" desc="Generic command 5">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 5</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO6" desc="Generic command 6">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 6</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO7" desc="Generic command 7">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 7</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO8" desc="Generic command 8">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 8</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO9" desc="Generic command 9">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 9</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="SPCSO10" desc="Generic command 10">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>direct-with-normal-security</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Generic command 10</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="3" desc="CIO" lnClass="GGIO" lnType="GGIOCIO">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind1" desc="Generic indication 1">
+                            <DAI name="d">
+                                <Val>Generic indication 1</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind2" desc="Generic indication 2">
+                            <DAI name="d">
+                                <Val>Generic indication 2</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind3" desc="Generic indication 3">
+                            <DAI name="d">
+                                <Val>Generic indication 3</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind4" desc="Generic indication 4">
+                            <DAI name="d">
+                                <Val>Generic indication 4</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind5" desc="Generic indication 5">
+                            <DAI name="d">
+                                <Val>Generic indication 5</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind6" desc="Generic indication 6">
+                            <DAI name="d">
+                                <Val>Generic indication 6</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind7" desc="Generic indication 7">
+                            <DAI name="d">
+                                <Val>Generic indication 7</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind8" desc="Generic indication 8">
+                            <DAI name="d">
+                                <Val>Generic indication 8</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind9" desc="Generic indication 9">
+                            <DAI name="d">
+                                <Val>Generic indication 9</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Ind10" desc="Generic indication 10">
+                            <DAI name="d">
+                                <Val>Generic indication 10</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN inst="1" desc="YPTR1" lnClass="YPTR" lnType="YPTR1">
+                        <DOI name="Mod" desc="Mode">
+                            <DAI name="ctlModel" valKind="RO">
+                                <Val>status-only</Val>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Mode</Val>
+                            </DAI>
+                            <DAI name="stVal" valKind="Set">
+                                <Val>on</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Beh" desc="Behaviour">
+                            <DAI name="d">
+                                <Val>Behaviour</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="Health" desc="Health">
+                            <DAI name="d">
+                                <Val>Health</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="NamPlt" desc="Name plate">
+                            <DAI name="vendor">
+                                <Val>Maschinenfabrik Reinhausen</Val>
+                            </DAI>
+                            <DAI name="swRev">
+                                <Val/>
+                            </DAI>
+                            <DAI name="d">
+                                <Val>Name plate</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvVEx" desc="Voltage high limit exceeded">
+                            <DAI name="d">
+                                <Val>Voltage high limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnVEx" desc="Voltage low limit exceeded">
+                            <DAI name="d">
+                                <Val>Voltage low limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvAEx" desc="Current overload">
+                            <DAI name="d">
+                                <Val>Current overload</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnAEx" desc="Current underload">
+                            <DAI name="d">
+                                <Val>Current underload</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvVAEx" desc="Apparent power high limit exceeded">
+                            <DAI name="d">
+                                <Val>Apparent power high limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvVA2Ex" desc="Apparent power high limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Apparent power high limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnVAEx" desc="Apparent power low limit exceeded">
+                            <DAI name="d">
+                                <Val>Apparent power low limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnVA2Ex" desc="Apparent power low limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Apparent power low limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvWEx" desc="Active power high limit exceeded">
+                            <DAI name="d">
+                                <Val>Active power high limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvW2Ex" desc="Active power high limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Active power high limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnWEx" desc="Active power low limit exceeded">
+                            <DAI name="d">
+                                <Val>Active power low limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnW2Ex" desc="Active power low limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Active power low limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvVArEx" desc="Reactive power high limit exceeded">
+                            <DAI name="d">
+                                <Val>Reactive power high limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvVAr2Ex" desc="Reactive power high limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Reactive power high limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnVArEx" desc="Reactive power low limit exceeded">
+                            <DAI name="d">
+                                <Val>Reactive power low limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnVAr2Ex" desc="Reactive power low limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Reactive power low limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnPFEx" desc="Power Factor (Cosinus phi) low limit exceeded">
+                            <DAI name="d">
+                                <Val>Power Factor (Cosinus phi) low limit exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnPF2Ex" desc="Power Factor (Cosinus phi) low limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Power Factor (Cosinus phi) low limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvV2Ex" desc="Voltage high limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Voltage high limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnV2Ex" desc="Voltage low limit 2 exceeded">
+                            <DAI name="d">
+                                <Val>Voltage low limit 2 exceeded</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="OvA2Ex" desc="Current overload 2">
+                            <DAI name="d">
+                                <Val>Current overload 2</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="UnA2Ex" desc="Current underload 2">
+                            <DAI name="d">
+                                <Val>Current underload 2</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                        <DOI name="VInFail" desc="Voltage input failure (e.g. missing connection)">
+                            <DAI name="d">
+                                <Val>Voltage input failure (e.g. missing connection)</Val>
+                            </DAI>
+                            <DAI name="dataNs">
+                                <Val>MR_DataSpace:2013A</Val>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                </LDevice>
+            </Server>
+        </AccessPoint>
+    </IED>
+    <DataTypeTemplates>
+        <LNodeType id="LN0" lnClass="LLN0">
+            <DO name="Mod" desc="Mode (No value change)" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour (No value change)" type="MR_BEH"/>
+            <DO name="Health" desc="Health (For all LNs the same value)" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LLN0_LPL"/>
+            <DO name="Loc" desc="Local operation (For all LNs the same value)" type="MR_SPS"/>
+        </LNodeType>
+        <LNodeType id="LPHD1" lnClass="LPHD">
+            <DO name="PhyNam" desc="name plate" type="MR_DPL"/>
+            <DO name="PhyHealth" desc="Physical device health" type="MR_INS_PHYHEALTH"/>
+            <DO name="Proxy" desc="Indicates if this LN is a proxy" type="MR_SPS"/>
+        </LNodeType>
+        <LNodeType id="LTMS1" lnClass="LTMS">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL_lnNs"/>
+            <DO name="TmSrc" desc="Current time source" type="MR_VSS_ADD"/>
+            <DO name="TmChSt1" desc="Time channel status" type="MR_SPS_ADD"/>
+        </LNodeType>
+        <LNodeType id="ATCC1" lnClass="ATCC">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="Loc" desc="Local operation" type="MR_SPS"/>
+            <DO name="OpCntRs" desc="Resettable operation counter" type="MR_INC"/>
+            <DO name="TapChg" desc="Tap position (change and value)" type="MR_BSC"/>
+            <DO name="ParOp" desc="Parallel/Independent" type="MR_SPC"/>
+            <DO name="LTCBlk" desc="Block Automatic Control" type="MR_SPC"/>
+            <DO name="CtlV" desc="Control Voltage" type="MR_MV"/>
+            <DO name="LodA" desc="Load Current (transformer secondary current)" type="MR_MV"/>
+            <DO name="MasterSel" desc="Master mode selection activation(parallel control)" type="MR_SPC_ADD"/>
+            <DO name="FollowSel" desc="Follower mode selection activation(parallel control)" type="MR_SPC_ADD"/>
+            <DO name="CircA" desc="Circulating Current (reactive)" type="MR_MV"/>
+            <DO name="CircASel" desc="Circulating current selection activation (parallel control)" type="MR_SPC_ADD"/>
+            <DO name="CircAPFSel" desc="Desired power factor selection activation (parallel control)" type="MR_SPC_ADD"/>
+            <DO name="RefPF" desc="Desired power factor" type="MR_ASG_ADD"/>
+            <DO name="RefLodTyp" desc="Desired load type selection (0=ind., 1=cap.)" type="MR_SPG_ADD"/>
+            <DO name="PhAng" desc="Phase Angle of LodA relative to CtlV" type="MR_MV"/>
+            <DO name="FuncMon" desc="Function monitoring" type="MR_SPS_ADD"/>
+            <DO name="Auto" desc="Automatic/Manual operation" type="MR_SPS"/>
+            <DO name="BndCtr" desc="Band center voltage (actual reference - can not be set)" type="MR_ASG"/>
+            <DO name="BndWid" desc="Band width voltage (as percent of nominal voltage)" type="MR_ASG"/>
+            <DO name="BndWidAbs" desc="Band width voltage transformer (as absolute value)" type="MR_ASG_ADD"/>
+            <DO name="BndWidMod" desc="Switch between absolute and percentage bandwidth voltage" type="MR_SPG_ADD"/>
+            <DO name="CtlDlTms" desc="Control intentional time delay T1 (in seconds)" type="MR_ASG_ADD"/>
+            <DO name="LDCR" desc="Line drop voltage due to line resistance component (ohmic behaviour of the cable)" type="MR_ASG"/>
+            <DO name="LDCX" desc="Line drop voltage due to line reactance component (inductive behaviour of the cable)" type="MR_ASG"/>
+            <DO name="BlkLV" desc="Control voltage below which auto Lower commands blocked (relative)" type="MR_ASG"/>
+            <DO name="LimLodA" desc="Limit Load Current (LTC Block Load Current, percentage)" type="MR_ASG"/>
+            <DO name="CtlDv" desc="Control Voltage Deviation (in percent of BndCtr)" type="MR_MV_ADD"/>
+            <DO name="LTCBlkVLo" desc="LTC inhibit due to under voltage" type="MR_SPS_ADD"/>
+            <DO name="LTCBlkVHi" desc="LTC inhibit due to over voltage" type="MR_SPS_ADD"/>
+            <DO name="LTCBlkAHi" desc="LTC inhibit due to over current" type="MR_SPS_ADD"/>
+            <DO name="LDC" desc="Line drop compensation. LDC is R and X or Z model TRUE = R and X, FALSE = Z. If compensation is deactivated, value is set to TRUE" type="MR_SPG"/>
+            <DO name="TmDlChr" desc="Time delay linear or integral characteristic (0=lin., 1=int.)" type="MR_SPG"/>
+            <DO name="LDCZ" desc="Line drop voltage due to line total impedance (percentage of nominal voltage)" type="MR_ASG"/>
+            <DO name="ErrPar" desc="Error of parallel operation" type="MR_SPS_ADD"/>
+            <DO name="BndCtrV1" desc="Band center voltage 1" type="MR_ASG_ADD"/>
+            <DO name="BndCtrAct1" desc="Band center voltage (desired value) 1 active" type="MR_SPC_ADD"/>
+            <DO name="BndCtrAct2" desc="Band center voltage (desired value) 2 active" type="MR_SPC_ADD"/>
+            <DO name="BndCtrAct3" desc="Band center voltage (desired value) 3 active" type="MR_SPC_ADD"/>
+            <DO name="BndCtrAct4" desc="Band center voltage (desired value) 4 active" type="MR_SPC_ADD"/>
+            <DO name="BndCtrAct5" desc="Band center voltage (desired value) 5 active" type="MR_SPC_ADD"/>
+            <DO name="BndCtrV2" desc="Band center voltage 2" type="MR_ASG_ADD"/>
+            <DO name="BndCtrV3" desc="Band center voltage 3" type="MR_ASG_ADD"/>
+            <DO name="BndCtrV4" desc="Band center voltage 4" type="MR_ASG_ADD"/>
+            <DO name="BndCtrV5" desc="Band center voltage 5" type="MR_ASG_ADD"/>
+            <DO name="TapOpErr" desc="Tap inidication error (e.g. wrong BCD code)" type="MR_SPS_ADD"/>
+            <DO name="MotDrv" desc="Motor drive running" type="MR_SPS_ADD"/>
+            <DO name="TgtTapPos" desc="Target tap position" type="MR_ING_ADD"/>
+            <DO name="ParGr1" desc="If true, device is assigned to parallel group 1" type="MR_SPS_ADD"/>
+            <DO name="ParGr2" desc="If true, device is assigned to parallel group 2" type="MR_SPS_ADD"/>
+            <DO name="PwrFlwRv" desc="If true, reversal of power flow is active" type="MR_SPS_ADD"/>
+        </LNodeType>
+        <LNodeType id="AVCO1" lnClass="AVCO">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="Loc" desc="Local operation" type="MR_SPS"/>
+            <DO name="TapChg" desc="Change Voltage" type="MR_BSC"/>
+        </LNodeType>
+        <LNodeType id="GGIODIO" lnClass="GGIO">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="Ind1" desc="DI 1 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind2" desc="DI 2 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind3" desc="DI 3 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind4" desc="DI 4 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind5" desc="DI 5 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind6" desc="DI 6 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind7" desc="DI 7 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind8" desc="DI 9 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind9" desc="DI 10 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind10" desc="DI 11 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind11" desc="DI 12 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind12" desc="DI 13 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind13" desc="DI 14 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind14" desc="DI 15 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind15" desc="DI 17 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind16" desc="DI 18 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind17" desc="DI 19 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind18" desc="DI 20 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind19" desc="DI 21 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind20" desc="DI 22 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind21" desc="DI 23 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind22" desc="DI 25 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind23" desc="DI 26 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind24" desc="DI 27 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind25" desc="DI 28 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind26" desc="DI 29 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind27" desc="DI 30 (DIO 28-15)" type="MR_SPS"/>
+            <DO name="Ind28" desc="DI 31 (DIO 28-15)" type="MR_SPS"/>
+        </LNodeType>
+        <LNodeType id="MMXU1" lnClass="MMXU">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="TotW" desc="Total active power (total P)" type="MR_MV"/>
+            <DO name="TotVAr" desc="Total reactive power (total Q)" type="MR_MV"/>
+            <DO name="TotVA" desc="Total apparent power (total S)" type="MR_MV"/>
+            <DO name="TotPF" desc="Average power factor (total PF)" type="MR_MV"/>
+            <DO name="Hz" desc="Frequency" type="MR_MV"/>
+            <DO name="PPV" desc="Phase to phase voltages (VL1VL2, ...)" type="MR_DEL"/>
+            <DO name="PNV" desc="Phase to neutral voltage" type="MR_WYE_ADD"/>
+            <DO name="A" desc="Phase currents (IL1, IL2, IL3)" type="MR_WYE_AMP"/>
+            <DO name="W" desc="Phase active power (P)" type="MR_WYE"/>
+            <DO name="VAr" desc="Phase reactive power (Q)" type="MR_WYE"/>
+            <DO name="VA" desc="Phase apparent power (S)" type="MR_WYE"/>
+            <DO name="PF" desc="Phase power factor" type="MR_WYE"/>
+            <DO name="PhAngTP" desc="Phase Angle three pole" type="MR_WYE_ADD"/>
+        </LNodeType>
+        <LNodeType id="GGIOUIO" lnClass="GGIO">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="SPCSO1" desc="Generic command 1" type="MR_SPC"/>
+            <DO name="SPCSO2" desc="Generic command 2" type="MR_SPC"/>
+            <DO name="SPCSO3" desc="Generic command 3" type="MR_SPC"/>
+            <DO name="SPCSO4" desc="Generic command 4" type="MR_SPC"/>
+            <DO name="SPCSO5" desc="Generic command 5" type="MR_SPC"/>
+            <DO name="SPCSO6" desc="Generic command 6" type="MR_SPC"/>
+            <DO name="SPCSO7" desc="Generic command 7" type="MR_SPC"/>
+            <DO name="SPCSO8" desc="Generic command 8" type="MR_SPC"/>
+            <DO name="SPCSO9" desc="Generic command 9" type="MR_SPC"/>
+            <DO name="SPCSO10" desc="Generic command 10" type="MR_SPC"/>
+            <DO name="Ind1" desc="Generic indication 1" type="MR_SPS"/>
+            <DO name="Ind2" desc="Generic indication 2" type="MR_SPS"/>
+            <DO name="Ind3" desc="Generic indication 3" type="MR_SPS"/>
+            <DO name="Ind4" desc="Generic indication 4" type="MR_SPS"/>
+            <DO name="Ind5" desc="Generic indication 5" type="MR_SPS"/>
+            <DO name="Ind6" desc="Generic indication 6" type="MR_SPS"/>
+            <DO name="Ind7" desc="Generic indication 7" type="MR_SPS"/>
+            <DO name="Ind8" desc="Generic indication 8" type="MR_SPS"/>
+            <DO name="Ind9" desc="Generic indication 9" type="MR_SPS"/>
+            <DO name="Ind10" desc="Generic indication 10" type="MR_SPS"/>
+            <DO name="Ind11" desc="Generic indication 11" type="MR_SPS"/>
+            <DO name="Ind12" desc="Generic indication 12" type="MR_SPS"/>
+            <DO name="Ind13" desc="Generic indication 13" type="MR_SPS"/>
+            <DO name="Ind14" desc="Generic indication 14" type="MR_SPS"/>
+            <DO name="Ind15" desc="Generic indication 15" type="MR_SPS"/>
+            <DO name="Ind16" desc="Generic indication 16" type="MR_SPS"/>
+            <DO name="Ind17" desc="Generic indication 17" type="MR_SPS"/>
+            <DO name="Ind18" desc="Generic indication 18" type="MR_SPS"/>
+            <DO name="Ind19" desc="Generic indication 19" type="MR_SPS"/>
+            <DO name="Ind20" desc="Generic indication 20" type="MR_SPS"/>
+            <DO name="Ind21" desc="Generic indication 21" type="MR_SPS"/>
+            <DO name="Ind22" desc="Generic indication 22" type="MR_SPS"/>
+            <DO name="Ind23" desc="Generic indication 23" type="MR_SPS"/>
+            <DO name="Ind24" desc="Generic indication 24" type="MR_SPS"/>
+            <DO name="Ind25" desc="Generic indication 25" type="MR_SPS"/>
+        </LNodeType>
+        <LNodeType id="GGIOCIO" lnClass="GGIO">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="Ind1" desc="Generic indication 1" type="MR_SPS"/>
+            <DO name="Ind2" desc="Generic indication 2" type="MR_SPS"/>
+            <DO name="Ind3" desc="Generic indication 3" type="MR_SPS"/>
+            <DO name="Ind4" desc="Generic indication 4" type="MR_SPS"/>
+            <DO name="Ind5" desc="Generic indication 5" type="MR_SPS"/>
+            <DO name="Ind6" desc="Generic indication 6" type="MR_SPS"/>
+            <DO name="Ind7" desc="Generic indication 7" type="MR_SPS"/>
+            <DO name="Ind8" desc="Generic indication 8" type="MR_SPS"/>
+            <DO name="Ind9" desc="Generic indication 9" type="MR_SPS"/>
+            <DO name="Ind10" desc="Generic indication 10" type="MR_SPS"/>
+        </LNodeType>
+        <LNodeType id="YPTR1" lnClass="YPTR">
+            <DO name="Mod" desc="Mode" type="MR_INC_MOD"/>
+            <DO name="Beh" desc="Behaviour" type="MR_BEH"/>
+            <DO name="Health" desc="Health" type="MR_INS_HEALTH"/>
+            <DO name="NamPlt" desc="Name plate" type="MR_LPL"/>
+            <DO name="OvVEx" desc="Voltage high limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnVEx" desc="Voltage low limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvAEx" desc="Current overload" type="MR_SPS_ADD"/>
+            <DO name="UnAEx" desc="Current underload" type="MR_SPS_ADD"/>
+            <DO name="OvVAEx" desc="Apparent power high limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvVA2Ex" desc="Apparent power high limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnVAEx" desc="Apparent power low limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnVA2Ex" desc="Apparent power low limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvWEx" desc="Active power high limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvW2Ex" desc="Active power high limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnWEx" desc="Active power low limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnW2Ex" desc="Active power low limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvVArEx" desc="Reactive power high limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvVAr2Ex" desc="Reactive power high limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnVArEx" desc="Reactive power low limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnVAr2Ex" desc="Reactive power low limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnPFEx" desc="Power Factor (Cosinus phi) low limit exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnPF2Ex" desc="Power Factor (Cosinus phi) low limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvV2Ex" desc="Voltage high limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="UnV2Ex" desc="Voltage low limit 2 exceeded" type="MR_SPS_ADD"/>
+            <DO name="OvA2Ex" desc="Current overload 2" type="MR_SPS_ADD"/>
+            <DO name="UnA2Ex" desc="Current underload 2" type="MR_SPS_ADD"/>
+            <DO name="VInFail" desc="Voltage input failure (e.g. missing connection)" type="MR_SPS_ADD"/>
+        </LNodeType>
+        <DOType id="MR_INC" cdc="INC">
+            <DA name="Oper" fc="CO" bType="Struct" type="INCOperate"/>
+            <DA name="stVal" fc="ST" dchg="true" bType="INT32"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_INC_MOD" cdc="INC">
+            <DA name="stVal" fc="ST" dchg="true" bType="Enum" type="Mod"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_INS_HEALTH" cdc="INS">
+            <DA name="stVal" fc="ST" dchg="true" bType="Enum" type="Health" dupd="false"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_INS_PHYHEALTH" cdc="INS">
+            <DA name="stVal" fc="ST" dchg="true" bType="Enum" type="PhyHealth" dupd="false"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_BEH" cdc="INS">
+            <DA name="stVal" fc="ST" dchg="true" bType="Enum" type="Beh" dupd="false"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_INS" cdc="INS">
+            <DA name="stVal" fc="ST" dchg="true" bType="INT32" dupd="false"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_INS_ADD" cdc="INS">
+            <DA name="stVal" fc="ST" dchg="true" bType="INT32" dupd="false"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_LLN0_LPL" cdc="LPL">
+            <DA name="vendor" fc="DC" bType="VisString255"/>
+            <DA name="swRev" fc="DC" bType="VisString255"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="configRev" fc="DC" bType="VisString255"/>
+            <DA name="ldNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_LPL" cdc="LPL">
+            <DA name="vendor" fc="DC" bType="VisString255"/>
+            <DA name="swRev" fc="DC" bType="VisString255"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_LPL_lnNs" cdc="LPL">
+            <DA name="vendor" fc="DC" bType="VisString255"/>
+            <DA name="swRev" fc="DC" bType="VisString255"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="configRev" fc="DC" bType="VisString255"/>
+            <DA name="lnNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_DPL" cdc="DPL">
+            <DA name="vendor" fc="DC" bType="VisString255"/>
+            <DA name="hwRev" fc="DC" bType="VisString255"/>
+            <DA name="swRev" fc="DC" bType="VisString255"/>
+            <DA name="serNum" fc="DC" bType="VisString255"/>
+            <DA name="model" fc="DC" bType="VisString255"/>
+            <DA name="location" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPS" cdc="SPS">
+            <DA name="stVal" fc="ST" dchg="true" bType="BOOLEAN"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPS_ADD" cdc="SPS">
+            <DA name="stVal" fc="ST" dchg="true" bType="BOOLEAN"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_MV" cdc="MV">
+            <DA name="mag" fc="MX" dchg="true" bType="Struct" type="myAnalogValue" dupd="false"/>
+            <DA name="q" fc="MX" qchg="true" bType="Quality"/>
+            <DA name="t" fc="MX" bType="Timestamp"/>
+            <DA name="units" fc="CF" bType="Struct" type="Unit"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_MV_ADD" cdc="MV">
+            <DA name="mag" fc="MX" dchg="true" bType="Struct" type="myAnalogValue" dupd="false"/>
+            <DA name="q" fc="MX" qchg="true" bType="Quality"/>
+            <DA name="t" fc="MX" bType="Timestamp"/>
+            <DA name="units" fc="CF" bType="Struct" type="Unit"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_BSC" cdc="BSC">
+            <DA name="Oper" fc="CO" bType="Struct" type="BSCOperate"/>
+            <DA name="valWTr" fc="ST" dchg="true" bType="Struct" type="ValWithTrans"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="persistent" fc="CF" bType="BOOLEAN"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_BSC_ADD" cdc="BSC">
+            <DA name="Oper" fc="CO" bType="Struct" type="BSCOperate"/>
+            <DA name="valWTr" fc="ST" dchg="true" bType="Struct" type="ValWithTrans"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="persistent" fc="CF" bType="BOOLEAN"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_DPC" cdc="DPC">
+            <DA name="Oper" fc="CO" bType="Struct" type="DPCOperate"/>
+            <DA name="stVal" fc="ST" dchg="true" bType="Dbpos"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_DPC_ADD" cdc="DPC">
+            <DA name="Oper" fc="CO" bType="Struct" type="DPCOperate"/>
+            <DA name="stVal" fc="ST" dchg="true" bType="Dbpos"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPC" cdc="SPC">
+            <DA name="Oper" fc="CO" bType="Struct" type="SPCOperate"/>
+            <DA name="stVal" fc="ST" dchg="true" bType="BOOLEAN"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPC_ADD" cdc="SPC">
+            <DA name="Oper" fc="CO" bType="Struct" type="SPCOperate"/>
+            <DA name="stVal" fc="ST" dchg="true" bType="BOOLEAN"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="ctlModel" fc="CF" bType="Enum" type="CtlModelKind"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_ASG" cdc="ASG">
+            <DA name="setMag" fc="SP" dchg="true" bType="Struct" type="myAnalogValue"/>
+            <DA name="units" fc="CF" bType="Struct" type="Unit"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_ASG_ADD" cdc="ASG">
+            <DA name="setMag" fc="SP" dchg="true" bType="Struct" type="myAnalogValue"/>
+            <DA name="units" fc="CF" bType="Struct" type="Unit"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_ING" cdc="ING">
+            <DA name="setVal" fc="SP" dchg="true" bType="INT32"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_ING_ADD" cdc="ING">
+            <DA name="setVal" fc="SP" dchg="true" bType="INT32"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPG" cdc="SPG">
+            <DA name="setVal" fc="SP" dchg="true" bType="BOOLEAN"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_SPG_ADD" cdc="SPG">
+            <DA name="setVal" fc="SP" dchg="true" bType="BOOLEAN"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_DEL" cdc="DEL">
+            <SDO name="phsAB" type="MR_CMV"/>
+            <SDO name="phsBC" type="MR_CMV"/>
+            <SDO name="phsCA" type="MR_CMV"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_WYE" cdc="WYE">
+            <SDO name="phsA" type="MR_CMV"/>
+            <SDO name="phsB" type="MR_CMV"/>
+            <SDO name="phsC" type="MR_CMV"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_WYE_AMP" cdc="WYE">
+            <SDO name="phsA" type="MR_CMV"/>
+            <SDO name="phsB" type="MR_CMV"/>
+            <SDO name="phsC" type="MR_CMV"/>
+            <SDO name="neut" type="MR_CMV"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_WYE_ADD" cdc="WYE">
+            <SDO name="phsA" type="MR_CMV"/>
+            <SDO name="phsB" type="MR_CMV"/>
+            <SDO name="phsC" type="MR_CMV"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_CMV" cdc="CMV">
+            <DA name="cVal" fc="MX" type="cValType" bType="Struct" dchg="true" dupd="false"/>
+            <DA name="q" fc="MX" bType="Quality" qchg="true"/>
+            <DA name="t" fc="MX" bType="Timestamp"/>
+            <DA name="units" fc="CF" type="Unit" bType="Struct"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_CMV_ADD" cdc="CMV">
+            <DA name="cVal" fc="MX" type="cValType" bType="Struct" dchg="true" dupd="false"/>
+            <DA name="q" fc="MX" bType="Quality" qchg="true"/>
+            <DA name="t" fc="MX" bType="Timestamp"/>
+            <DA name="units" fc="CF" type="Unit" bType="Struct"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_VSS" cdc="VSS">
+            <DA name="stVal" fc="ST" dchg="true" bType="VisString255"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="cdcNs" fc="EX" bType="VisString255"/>
+            <DA name="cdcName" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DOType id="MR_VSS_ADD" cdc="VSS">
+            <DA name="stVal" fc="ST" dchg="true" bType="VisString255"/>
+            <DA name="q" fc="ST" qchg="true" bType="Quality"/>
+            <DA name="t" fc="ST" bType="Timestamp"/>
+            <DA name="d" fc="DC" bType="VisString255"/>
+            <DA name="cdcNs" fc="EX" bType="VisString255"/>
+            <DA name="cdcName" fc="EX" bType="VisString255"/>
+            <DA name="dataNs" fc="EX" bType="VisString255"/>
+        </DOType>
+        <DAType id="myAnalogValue">
+            <BDA name="f" bType="FLOAT32"/>
+        </DAType>
+        <DAType id="ScaledValueConfig">
+            <BDA name="scaleFactor" bType="FLOAT32"/>
+            <BDA name="offset" bType="FLOAT32"/>
+        </DAType>
+        <DAType id="ValWithTrans">
+            <BDA name="posVal" bType="INT8"/>
+        </DAType>
+        <DAType id="Unit">
+            <BDA name="SIUnit" bType="Enum" type="SIUnit"/>
+            <BDA name="multiplier" bType="Enum" type="multiplier"/>
+        </DAType>
+        <DAType id="INCOperate">
+            <BDA name="ctlVal" bType="INT32"/>
+            <BDA name="origin" bType="Struct" type="Originator"/>
+            <BDA name="ctlNum" bType="INT8U"/>
+            <BDA name="T" bType="Timestamp"/>
+            <BDA name="Test" bType="BOOLEAN"/>
+            <BDA name="Check" bType="Check"/>
+        </DAType>
+        <DAType id="INCOperate_Mod">
+            <BDA name="ctlVal" bType="Enum" type="Mod"/>
+            <BDA name="origin" bType="Struct" type="Originator"/>
+            <BDA name="ctlNum" bType="INT8U"/>
+            <BDA name="T" bType="Timestamp"/>
+            <BDA name="Test" bType="BOOLEAN"/>
+            <BDA name="Check" bType="Check"/>
+        </DAType>
+        <DAType id="BSCOperate">
+            <BDA name="ctlVal" bType="Tcmd"/>
+            <BDA name="origin" bType="Struct" type="Originator"/>
+            <BDA name="ctlNum" bType="INT8U"/>
+            <BDA name="T" bType="Timestamp"/>
+            <BDA name="Test" bType="BOOLEAN"/>
+            <BDA name="Check" bType="Check"/>
+        </DAType>
+        <DAType id="DPCOperate">
+            <BDA name="ctlVal" bType="BOOLEAN"/>
+            <BDA name="origin" bType="Struct" type="Originator"/>
+            <BDA name="ctlNum" bType="INT8U"/>
+            <BDA name="T" bType="Timestamp"/>
+            <BDA name="Test" bType="BOOLEAN"/>
+            <BDA name="Check" bType="Check"/>
+        </DAType>
+        <DAType id="SPCOperate">
+            <BDA name="ctlVal" bType="BOOLEAN"/>
+            <BDA name="origin" bType="Struct" type="Originator"/>
+            <BDA name="ctlNum" bType="INT8U"/>
+            <BDA name="T" bType="Timestamp"/>
+            <BDA name="Test" bType="BOOLEAN"/>
+            <BDA name="Check" bType="Check"/>
+        </DAType>
+        <DAType id="Originator">
+            <BDA name="orCat" bType="Enum" type="orCategory"/>
+            <BDA name="orIdent" bType="Octet64"/>
+        </DAType>
+        <DAType id="cValType">
+            <BDA name="mag" bType="Struct" type="myAnalogValue"/>
+        </DAType>
+        <EnumType id="Beh">
+            <EnumVal ord="1">on</EnumVal>
+            <EnumVal ord="2">blocked</EnumVal>
+            <EnumVal ord="3">test</EnumVal>
+            <EnumVal ord="4">test/blocked</EnumVal>
+            <EnumVal ord="5">off</EnumVal>
+        </EnumType>
+        <EnumType id="Mod">
+            <EnumVal ord="1">on</EnumVal>
+            <EnumVal ord="2">blocked</EnumVal>
+            <EnumVal ord="3">test</EnumVal>
+            <EnumVal ord="4">test/blocked</EnumVal>
+            <EnumVal ord="5">off</EnumVal>
+        </EnumType>
+        <EnumType id="Health">
+            <EnumVal ord="1">Ok</EnumVal>
+            <EnumVal ord="2">Warning</EnumVal>
+            <EnumVal ord="3">Alarm</EnumVal>
+        </EnumType>
+        <EnumType id="PhyHealth">
+            <EnumVal ord="1">Ok</EnumVal>
+            <EnumVal ord="2">Warning</EnumVal>
+            <EnumVal ord="3">Alarm</EnumVal>
+        </EnumType>
+        <EnumType id="SIUnit">
+            <EnumVal ord="1"/>
+            <EnumVal ord="2">m</EnumVal>
+            <EnumVal ord="3">kg</EnumVal>
+            <EnumVal ord="4">s</EnumVal>
+            <EnumVal ord="5">A</EnumVal>
+            <EnumVal ord="6">K</EnumVal>
+            <EnumVal ord="7">mol</EnumVal>
+            <EnumVal ord="8">cd</EnumVal>
+            <EnumVal ord="9">deg</EnumVal>
+            <EnumVal ord="10">rad</EnumVal>
+            <EnumVal ord="11">sr</EnumVal>
+            <EnumVal ord="21">Gy</EnumVal>
+            <EnumVal ord="23">°C</EnumVal>
+            <EnumVal ord="24">Sv</EnumVal>
+            <EnumVal ord="25">F</EnumVal>
+            <EnumVal ord="26">C</EnumVal>
+            <EnumVal ord="27">S</EnumVal>
+            <EnumVal ord="28">H</EnumVal>
+            <EnumVal ord="29">V</EnumVal>
+            <EnumVal ord="30">ohm</EnumVal>
+            <EnumVal ord="31">J</EnumVal>
+            <EnumVal ord="32">N</EnumVal>
+            <EnumVal ord="33">Hz</EnumVal>
+            <EnumVal ord="34">lx</EnumVal>
+            <EnumVal ord="35">Lm</EnumVal>
+            <EnumVal ord="36">Wb</EnumVal>
+            <EnumVal ord="37">T</EnumVal>
+            <EnumVal ord="38">W</EnumVal>
+            <EnumVal ord="39">Pa</EnumVal>
+            <EnumVal ord="41">m²</EnumVal>
+            <EnumVal ord="42">m³</EnumVal>
+            <EnumVal ord="43">m/s</EnumVal>
+            <EnumVal ord="44">m/s²</EnumVal>
+            <EnumVal ord="45">m³/s</EnumVal>
+            <EnumVal ord="46">m/m³</EnumVal>
+            <EnumVal ord="47">M</EnumVal>
+            <EnumVal ord="48">kg/m³</EnumVal>
+            <EnumVal ord="49">m²/s</EnumVal>
+            <EnumVal ord="50">W/m K</EnumVal>
+            <EnumVal ord="51">J/K</EnumVal>
+            <EnumVal ord="52">ppm</EnumVal>
+            <EnumVal ord="53">1/s</EnumVal>
+            <EnumVal ord="54">rad/s</EnumVal>
+            <EnumVal ord="61">VA</EnumVal>
+            <EnumVal ord="62">Watts</EnumVal>
+            <EnumVal ord="63">VAr</EnumVal>
+            <EnumVal ord="64">phi</EnumVal>
+            <EnumVal ord="65">cos(phi)</EnumVal>
+            <EnumVal ord="66">Vs</EnumVal>
+            <EnumVal ord="67">V²</EnumVal>
+            <EnumVal ord="68">As</EnumVal>
+            <EnumVal ord="69">A²</EnumVal>
+            <EnumVal ord="70">A²t</EnumVal>
+            <EnumVal ord="71">VAh</EnumVal>
+            <EnumVal ord="72">Wh</EnumVal>
+            <EnumVal ord="73">VArh</EnumVal>
+            <EnumVal ord="74">V/Hz</EnumVal>
+        </EnumType>
+        <EnumType id="CtlModelKind">
+            <EnumVal ord="0">status-only</EnumVal>
+            <EnumVal ord="1">direct-with-normal-security</EnumVal>
+            <EnumVal ord="2">sbo-with-normal-security</EnumVal>
+            <EnumVal ord="3">direct-with-enhanced-security</EnumVal>
+            <EnumVal ord="4">sbo-with-enhanced-security</EnumVal>
+        </EnumType>
+        <EnumType id="multiplier">
+            <EnumVal ord="-24">y</EnumVal>
+            <EnumVal ord="-21">z</EnumVal>
+            <EnumVal ord="-18">a</EnumVal>
+            <EnumVal ord="-15">f</EnumVal>
+            <EnumVal ord="-12">p</EnumVal>
+            <EnumVal ord="-9">n</EnumVal>
+            <EnumVal ord="-6">µ</EnumVal>
+            <EnumVal ord="-3">m</EnumVal>
+            <EnumVal ord="-2">c</EnumVal>
+            <EnumVal ord="-1">d</EnumVal>
+            <EnumVal ord="0"/>
+            <EnumVal ord="1">da</EnumVal>
+            <EnumVal ord="2">h</EnumVal>
+            <EnumVal ord="3">k</EnumVal>
+            <EnumVal ord="6">M</EnumVal>
+            <EnumVal ord="9">G</EnumVal>
+            <EnumVal ord="12">T</EnumVal>
+            <EnumVal ord="15">P</EnumVal>
+            <EnumVal ord="18">E</EnumVal>
+            <EnumVal ord="21">Z</EnumVal>
+            <EnumVal ord="24">Y</EnumVal>
+        </EnumType>
+        <EnumType id="orCategory">
+            <EnumVal ord="0">not-supported</EnumVal>
+            <EnumVal ord="1">bay-control</EnumVal>
+            <EnumVal ord="2">station-control</EnumVal>
+            <EnumVal ord="3">remote-control</EnumVal>
+            <EnumVal ord="4">automatic-bay</EnumVal>
+            <EnumVal ord="5">automatic-station</EnumVal>
+            <EnumVal ord="6">automatic-remote</EnumVal>
+            <EnumVal ord="7">maintenance</EnumVal>
+            <EnumVal ord="8">process</EnumVal>
+        </EnumType>
+    </DataTypeTemplates>
+</SCL>
