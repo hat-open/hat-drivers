@@ -96,8 +96,7 @@ from hat.drivers.iec101.common import (AsduTypeError,
                                        Msg,
                                        time_from_datetime,
                                        time_to_datetime)
-from hat.drivers.iec101.master import MasterConnection
-from hat.drivers.iec101.slave import SlaveConnection
+from hat.drivers.iec101.connection import Connection
 
 
 __all__ = ['AsduTypeError',
@@ -196,5 +195,4 @@ __all__ = ['AsduTypeError',
            'Msg',
            'time_from_datetime',
            'time_to_datetime',
-           'MasterConnection',
-           'SlaveConnection']
+           'Connection']

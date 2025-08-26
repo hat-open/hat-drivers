@@ -5,7 +5,6 @@ import functools
 import logging
 
 from hat import aio
-from hat import util
 
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
@@ -14,19 +13,16 @@ from hat.drivers.iec60870.link import endpoint
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-async def create_link(port: str,
-                      *,
-                      address_size: common.AddressSize = common.AddressSize.ONE,  # NOQA
-                      silent_interval: float = 0.005,
-                      send_queue_size: int = 1024,
-                      **kwargs
-                      ) -> 'Link':
-    if address_size == common.AddressSize.ZERO:
-        raise ValueError('unsupported address size')
-
-    link = Link()
+async def create_balanced_link(port: str,
+                               address_size: common.AddressSize,
+                               *,
+                               silent_interval: float = 0.005,
+                               send_queue_size: int = 1024,
+                               **kwargs
+                               ) -> 'BalancedLink':
+    link = BalancedLink()
+    link._address_size = address_size
     link._loop = asyncio.get_running_loop()
-    link._broadcast_address = common.get_broadcast_address(address_size)
     link._conns = {}
     link._res_future = None
     link._send_queue = aio.Queue(send_queue_size)
@@ -38,11 +34,12 @@ async def create_link(port: str,
                                            **kwargs)
 
     link.async_group.spawn(link._send_loop)
+    link.async_group.spawn(link._receive_loop)
 
     return link
 
 
-class Link(aio.Resource):
+class BalancedLink(aio.Resource):
 
     @property
     def async_group(self):
@@ -51,23 +48,25 @@ class Link(aio.Resource):
     async def open_connection(self,
                               direction: common.Direction,
                               addr: common.Address,
+                              *,
                               response_timeout: float = 15,
                               send_retry_count: int = 3,
-                              test_delay: float | None = 30,
+                              test_delay: float = 5,
                               receive_queue_size: int = 1024,
-                              send_queue_size: int = 1024,
-                              ) -> 'Connection':
-        if addr >= self._broadcast_address:
+                              send_queue_size: int = 1024
+                              ) -> common.Connection:
+        if addr >= (1 << self._address_size.value):
             raise ValueError('unsupported address')
 
         conn_key = direction, addr
         if conn_key in self._conns:
             raise Exception('connection already exists')
 
-        conn = Connection()
+        conn = _BalancedConnection()
         conn._direction = direction
         conn._addr = addr
         conn._send_retry_count = send_retry_count
+        conn._loop = self._loop
         conn._send_event = asyncio.Event()
         conn._receive_queue = aio.Queue(receive_queue_size)
         conn._send_queue = aio.Queue(send_queue_size)
@@ -82,12 +81,37 @@ class Link(aio.Resource):
         send = functools.partial(self._send, response_timeout)
 
         try:
-            await conn._reset_link(send)
+            while True:
+                with contextlib.suppress(asyncio.TimeoutError):
+                    # req = common.ReqFrame(
+                    #     direction=self._direction,
+                    #     frame_count_bit=False,
+                    #     frame_count_valid=False,
+                    #     function=common.ReqFunction.REQ_STATUS,
+                    #     address=self._addr,
+                    #     data=b'')
+                    # res = await self._send(req)
+
+                    # if res.function not in [common.ResFunction.ACK,
+                    #                         common.ResFunction.RES_STATUS]:
+                    #     continue
+
+                    req = common.ReqFrame(
+                        direction=self._direction,
+                        frame_count_bit=False,
+                        frame_count_valid=False,
+                        function=common.ReqFunction.RESET_LINK,
+                        address=self._addr,
+                        data=b'')
+                    res = await send(req)
+
+                    if (isinstance(res, common.ShortFrame) or
+                            (isinstance(res, common.ResFrame) and
+                             res.function == common.ResFunction.ACK)):
+                        break
 
             conn.async_group.spawn(conn._send_loop, send)
-
-            if test_delay:
-                conn.async_group.spawn(conn._test_loop, test_delay)
+            conn.async_group.spawn(conn._test_loop, test_delay)
 
         except BaseException:
             await aio.uncancellable(conn.async_close())
@@ -98,7 +122,7 @@ class Link(aio.Resource):
     async def _send(self, response_timeout, req):
         future = self._loop.create_future()
         try:
-            self._send_request_queue.put_nowait(
+            await self._send_request_queue.put(
                 (future, response_timeout, req))
             return await future
 
@@ -107,28 +131,16 @@ class Link(aio.Resource):
 
     async def _process(self, req):
         conn_key = _invert_direction(req.direction), req.address
-
-        if req.address == self._broadcast_address:
-            conns = [conn for (direction, _), conn in self._conns.items()
-                     if direction == conn_key[0]]
-
-        elif conn_key in self._conns:
-            conns = [self._conns[conn_key]]
-
-        else:
+        conn = self._conns.get(conn_key)
+        if not conn or not conn.is_open:
             return
 
-        for conn in conns:
-            if not conn.is_open:
-                continue
+        res = await conn._process(req)
 
-            res = await conn._process(req)
+        if req.function == common.ReqFunction.DATA_NO_RES:
+            return
 
-            if (req.address == self._broadcast_address or
-                    req.function == common.ReqFunction.DATA_NO_RES):
-                continue
-
-            await self._endpoint.send(res)
+        await self._endpoint.send(res)
 
     async def _receive_loop(self):
         try:
@@ -207,30 +219,33 @@ class Link(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class Connection(aio.Resource):
+class _BalancedConnection(common.Connection):
 
     @property
     def async_group(self):
         return self._async_group
 
     @property
-    def address(self) -> common.Address:
+    def address(self):
         return self._addr
 
-    async def send(self, data: util.Bytes):
+    async def send(self, data, sent_cb=None):
         if not data:
             return
 
         future = self._loop.create_future()
         try:
-            self._send_queue.put_nowait(
+            await self._send_queue.put(
                 (future, common.ReqFunction.DATA, data))
             await future
+
+            if sent_cb:
+                await aio.call(sent_cb)
 
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def receive(self) -> util.Bytes:
+    async def receive(self):
         try:
             return await self._receive_queue.get()
 
@@ -250,9 +265,6 @@ class Connection(aio.Resource):
 
                 else:
                     future, function, data = await self._send_queue.get()
-
-                if future.done():
-                    continue
 
                 if data_flow_control and function == common.ReqFunction.DATA:
                     data_flow_queue.append((future, function, data))
@@ -340,7 +352,7 @@ class Connection(aio.Resource):
                     await aio.wait_for(self._send_event.wait(), delay)
 
                 future = self._loop.create_future()
-                self._send_queue.put_nowait(
+                await self._send_queue.put(
                     (future, common.ReqFunction.TEST, b''))
                 await future
 
@@ -405,34 +417,6 @@ class Connection(aio.Resource):
         self._res = res
 
         return res
-
-    async def _reset_link(self, send):
-        while True:
-            with contextlib.suppress(asyncio.TimeoutError):
-                # req = common.ReqFrame(direction=self._direction,
-                #                       frame_count_bit=False,
-                #                       frame_count_valid=False,
-                #                       function=common.ReqFunction.REQ_STATUS,
-                #                       address=self._addr,
-                #                       data=b'')
-                # res = await self._send(req)
-
-                # if res.function not in [common.ResFunction.ACK,
-                #                         common.ResFunction.RES_STATUS]:
-                #     continue
-
-                req = common.ReqFrame(direction=self._direction,
-                                      frame_count_bit=False,
-                                      frame_count_valid=False,
-                                      function=common.ReqFunction.RESET_LINK,
-                                      address=self._addr,
-                                      data=b'')
-                res = await send(req)
-
-                if (isinstance(res, common.ShortFrame) or
-                        (isinstance(res, common.ResFrame) and
-                         res.function == common.ResFunction.ACK)):
-                    break
 
 
 def _invert_direction(direction):

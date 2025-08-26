@@ -67,7 +67,7 @@ class Encoder:
                      if self._direction_valid else None)
         address = (int.from_bytes(address_bytes, byteorder='little')
                    if self._address_size != common.AddressSize.ZERO
-                   else None)
+                   else 0)
 
         if control_field & 0x40:
             frame_count_bit = bool(control_field & 0x20)

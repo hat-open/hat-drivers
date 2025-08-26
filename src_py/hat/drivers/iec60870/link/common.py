@@ -1,11 +1,13 @@
+import abc
 import enum
 import typing
 
+from hat import aio
 from hat import util
 
 
-Address: typing.TypeAlias = int | None
-"""addres is ``None`` or in range [0, 255] or in range [0, 65535]"""
+Address: typing.TypeAlias = int
+"""addres is 0 or in range [0, 255] or in range [0, 65535]"""
 
 
 class Direction(enum.Enum):
@@ -74,3 +76,21 @@ def get_broadcast_address(address_size: AddressSize):
         return 0xFFFF
 
     raise ValueError('unsupported address size')
+
+
+class Connection(aio.Resource):
+
+    @property
+    @abc.abstractmethod
+    def address(self) -> Address:
+        pass
+
+    @abc.abstractmethod
+    async def send(self,
+                   data: util.Bytes,
+                   sent_cb: aio.AsyncCallable[[], None] | None = None):
+        pass
+
+    @abc.abstractmethod
+    async def receive(self) -> util.Bytes:
+        pass
