@@ -407,7 +407,8 @@ def _is_ref_in_dataset(ref: common.DataRef,
                 ref.fc != data_refs.fc):
             continue
 
-        if any(i != j for i, j in zip(ref.names, data_ref.names)):
+        if (len(ref.names) < len(data_ref.names) or
+                any(i != j for i, j in zip(ref.names, data_ref.names))):
             continue
 
         return True
