@@ -44,7 +44,7 @@ def readout(source: typing.TextIO | Path
             ) -> dict[common.IedName, common.DeviceConf]:
     root_el = _read_xml(source)
     return {ied_name: device_conf
-            for ied_name, device_conf in _parse_ieds(root_el)}
+            for ied_name, device_conf in _get_ieds(root_el)}
 
 
 def _read_xml(source):
@@ -56,27 +56,27 @@ def _read_xml(source):
     return it.root
 
 
-def _parse_ieds(root_el):
+def _get_ieds(root_el):
     for ied_el in root_el.findall("./IED"):
         ied_name = ied_el.get('name')
         if ied_name == 'TEMPLATE':
             mlog.warning(
                 "ied name is 'TEMPLATE': possible insufficient structure")
 
-        uneditable_rcb = list(_parse_uneditable_rcb(ied_el))
+        uneditable_rcb = list(_get_uneditable_rcb(ied_el))
 
         for ap_el in ied_el.findall("./AccessPoint"):
             if ap_el.find("./Server/LDevice") is None:
                 continue
 
             mlog.info('IED %s', ied_name)
-            yield ied_name, _parse_device(root_el=root_el,
-                                          ap_el=ap_el,
-                                          ied_name=ied_name,
-                                          uneditable_rcb=uneditable_rcb)
+            yield ied_name, _get_device(root_el=root_el,
+                                        ap_el=ap_el,
+                                        ied_name=ied_name,
+                                        uneditable_rcb=uneditable_rcb)
 
 
-def _parse_uneditable_rcb(ied_el):
+def _get_uneditable_rcb(ied_el):
     report_settings_el = ied_el.find('./Services/ReportSettings')
 
     if report_settings_el is None or report_settings_el.get('rptID') != 'Dyn':
@@ -100,7 +100,7 @@ def _parse_uneditable_rcb(ied_el):
         yield 'INTEGRITY_PERIOD'
 
 
-def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
+def _get_device(root_el, ap_el, ied_name, uneditable_rcb):
     ap_name = ap_el.get('name')
     datasets = []
     rcbs = []
@@ -122,22 +122,22 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
                                       f"[@id='{ln_type}']")
 
             mlog.info('value types for %s/%s', logical_device, logical_node)
-            value_types.extend(_parse_value_types(
+            value_types.extend(_get_value_types(
                 root_el, ln_type_el, logical_device, logical_node))
 
-            datasets.extend(_parse_datasets(
+            datasets.extend(_get_datasets(
                 ied_name, logical_device, logical_node, ln_el))
 
-            rcbs.extend(_parse_rcbs(
+            rcbs.extend(_get_rcbs(
                 logical_device, logical_node, ln_el, uneditable_rcb))
 
-            data.extend(_parse_data(root_el=root_el,
-                                    ln_type_el=ln_type_el,
-                                    ied_name=ied_name,
-                                    ap_name=ap_name,
-                                    logical_device=logical_device,
-                                    logical_node=logical_node,
-                                    datasets=datasets))
+            data.extend(_get_data(root_el=root_el,
+                                  ln_type_el=ln_type_el,
+                                  ied_name=ied_name,
+                                  ap_name=ap_name,
+                                  logical_device=logical_device,
+                                  logical_node=logical_node,
+                                  datasets=datasets))
 
             commands.extend(_parse_commands(
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
@@ -151,7 +151,7 @@ def _parse_device(root_el, ap_el, ied_name, uneditable_rcb):
         'commands': commands}
 
 
-def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
+def _get_value_types(root_el, ln_type_el, logical_device, logical_node):
     for do_el in ln_type_el:
         do_name = do_el.get('name')
         mlog.debug('value type %s/%s.%s',
@@ -173,7 +173,7 @@ def _parse_value_types(root_el, ln_type_el, logical_device, logical_node):
                          logical_device, logical_node, do_name, e, exc_info=e)
 
 
-def _parse_datasets(ied_name, logical_device, logical_node, ln_el):
+def _get_datasets(ied_name, logical_device, logical_node, ln_el):
     for dataset_el in ln_el.findall('./DataSet'):
         name = dataset_el.get('name')
         mlog.info("dataset %s/%s.%s", logical_device, logical_node, name)
@@ -217,7 +217,7 @@ def _parse_dataset_values(dataset_el, ied_name):
                          ds_name, i, e, exc_info=e)
 
 
-def _parse_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
+def _get_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
     for rc_el in ln_el.findall('./ReportControl'):
         name = rc_el.get('name')
         try:
@@ -259,8 +259,8 @@ def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
             'uneditable': uneditable_rcb}
 
 
-def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
-                logical_node, datasets):
+def _get_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
+              logical_node, datasets):
 
     def parse_node(node_el, names, fc):
         if not node_el.get('name'):
