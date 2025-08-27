@@ -296,7 +296,7 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
     for do_el in ln_type_el:
         do_name = do_el.get('name')
         do_type_el = _get_node_type_el(root_el, do_el)
-        if not do_type_el:
+        if do_type_el is None:
             continue
 
         # cdc = do_type_el.get('cdc')
