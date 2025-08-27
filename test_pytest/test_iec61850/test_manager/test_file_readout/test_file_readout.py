@@ -235,7 +235,7 @@ def test_4(validator):
     device_json = res['E1_7SA']
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 42
-    assert len(device_json['commands']) == 99
+    assert len(device_json['commands']) == 100
     assert len(device_json['data']) == 3632
     assert len(device_json['value_types']) == 4079
 

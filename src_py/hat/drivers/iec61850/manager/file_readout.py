@@ -266,16 +266,11 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         if not node_el.get('name'):
             return
 
-        node_type = node_el.get('type')
-        if not node_type:
-            return
-
-        names = [*names, node_el.get('name')]
-        type_el = root_el.find(f"./DataTypeTemplates/*"
-                               f"[@id='{node_type}']")
+        type_el = _get_node_type_el(root_el, node_el)
         if type_el is None:
             return
 
+        names = [*names, node_el.get('name')]
         fc = node_el.get('fc') or fc
         cdc = type_el.get('cdc')
         if cdc:
@@ -300,37 +295,42 @@ def _parse_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
 def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
     for do_el in ln_type_el:
         do_name = do_el.get('name')
-        do_type = do_el.get('type')
-
-        do_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                  f"[@id='{do_type}']")
-        cdc = do_type_el.get('cdc')
-        if cdc not in {'SPC',
-                       'DPC',
-                       'INC',
-                       'ENC',
-                       'BSC',
-                       'ISC',
-                       'APC',
-                       'BAC'}:
+        do_type_el = _get_node_type_el(root_el, do_el)
+        if not do_type_el:
             continue
 
-        mlog.info('command %s/%s.%s', logical_device, logical_node, do_name)
+        # cdc = do_type_el.get('cdc')
+        # if cdc not in {'SPC',
+        #                'DPC',
+        #                'INC',
+        #                'ENC',
+        #                'BSC',
+        #                'ISC',
+        #                'APC',
+        #                'BAC'}:
+        #     continue
+        # commands filtered by Oper attribute and model, instead of cdc
+        oper_el = do_type_el.find("./DA[@name='Oper']")
+        if oper_el is None or oper_el.get('fc') != 'CO':
+            continue
+
+        mlog.info('command %s/%s.%s',
+                  logical_device, logical_node, do_name)
         try:
             model = _parse_command_model(ln_el, do_el, do_type_el)
             if model is None:
+                # TODO: log for status-only command model?
                 continue
 
-            oper_el = do_type_el.find("./DA[@name='Oper']")
-            if oper_el is None:
-                raise Exception('no Oper attribute')
+            oper_type_el = _get_node_type_el(root_el, oper_el)
+            if oper_type_el is None:
+                raise Exception('Oper type undefined')
 
-            oper_type = oper_el.get('type')
-            oper_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                        f"[@id='{oper_type}']")
             with_operate_time = (
                 oper_type_el.find("./BDA[@name='operTm']") is not None)
             ctl_val_el = oper_type_el.find("./BDA[@name='ctlVal']")
+            if ctl_val_el is None:
+                raise Exception('no ctlVal attribute')
 
             value_type = _get_value_type(root_el, ctl_val_el)
             if value_type is None:
@@ -369,13 +369,13 @@ def _parse_connection(root_el, ied_name, ap_name):
             conn_conf['host'] = addr_p_el.text
 
         if addr_p_el.get('type') == 'OSI-TSEL':
-            conn_conf['tsel'] = int(addr_p_el.text)
+            conn_conf['tsel'] = int(addr_p_el.text, 16)
 
         if addr_p_el.get('type') == 'OSI-SSEL':
-            conn_conf['ssel'] = int(addr_p_el.text)
+            conn_conf['ssel'] = int(addr_p_el.text, 16)
 
         if addr_p_el.get('type') == 'OSI-PSEL':
-            conn_conf['psel'] = int(addr_p_el.text)
+            conn_conf['psel'] = int(addr_p_el.text, 16)
 
         if addr_p_el.get('type') == 'OSI-AP-Title':
             conn_conf['ap_title'] = [int(i) for i in addr_p_el.text.split(',')]
@@ -419,8 +419,7 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
         mlog.warning("attr 'type' does not exist for bType %s", node_btype)
         return
 
-    node_type_el = root_el.find(f"./DataTypeTemplates/*"
-                                f"[@id='{node_type}']")
+    node_type_el = _get_node_type_el(root_el, node_el)
     if node_type_el is None:
         mlog.warning("type %s not defined", )
         return
@@ -486,6 +485,22 @@ def _get_value_type_for_fc(value_type, fc):
 
     elif isinstance(value_type['type'], str):
         return value_type['type']
+
+
+def _get_node_type_el(root_el, node_el):
+    node_type = node_el.get('type')
+    if not node_type:
+        return
+
+    if node_el.tag in {'DO', 'SDO'}:
+        type_tag = 'DOType'
+    elif node_el.tag in {'DA', 'BDA'}:
+        type_tag = 'DAType'
+    else:
+        mlog.warning('unexpected TAG %s', node_el.tag)
+        type_tag = '*'
+    return root_el.find(f"./DataTypeTemplates/{type_tag}"
+                        f"[@id='{node_type}']")
 
 
 def _names_from_fcda_name(name):
@@ -574,10 +589,16 @@ def _parse_command_model(ln_el, do_el, do_type_el):
     if ctl_model_el is None:
         return
 
+    model_map = {
+        'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
+        'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
+        'direct-with-enhanced-security': 'DIRECT_WITH_ENHANCED_SECURITY',
+        'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY',
+        'status-only': None}
     val_el = ln_el.find(f"./DOI[@name='{do_name}']"
                         f"/DAI[@name='ctlModel']"
                         f"/Val")
-    if val_el is None:
+    if val_el is None or val_el.text not in model_map:
         val_el = ctl_model_el.find('.Val')
     if val_el is None:
         return
@@ -586,14 +607,9 @@ def _parse_command_model(ln_el, do_el, do_type_el):
     if ctl_model is None or ctl_model == 'status-only':
         return
 
-    model = {
-        'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
-        'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
-        'direct-with-enhanced-security': 'DIRECT_WITH_ENHANCED_SECURITY',
-        'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
-        }.get(ctl_model)
+    model = model_map.get(ctl_model)
     if model is None:
-        raise Exception(f'unknown control model {ctl_model}')
+        raise Exception('unexpected control model')
 
     return model
 
@@ -666,6 +682,9 @@ def _get_basic_value_type(node):
         return "VISIBLE_STRING"
 
     if btype == "VisString64":
+        return "VISIBLE_STRING"
+
+    if btype == "VisString65":
         return "VISIBLE_STRING"
 
     if btype == "VisString129":
@@ -814,12 +833,14 @@ def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
         yield data_conf
 
         value_da_type = value_da_el.get('type')
-        if not value_da_type or btype == 'Enum':
+        if not value_da_type or btype != 'Struct':
             return
 
+        type_el = _get_node_type_el(root_el, value_da_el)
+        if type_el is None:
+            raise Exception('type undefined')
+
         names = [*data_ref['names'], da_name]
-        type_el = root_el.find(f"./DataTypeTemplates/*"
-                               f"[@id='{value_da_type}']")
         yield from _get_data_conf(
             root_el, type_el, logical_device, logical_node, fc, names,
             datasets,
