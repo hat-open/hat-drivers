@@ -589,8 +589,7 @@ def _parse_command_model(ln_el, do_el, do_type_el):
     model = {
         'direct-with-normal-security': 'DIRECT_WITH_NORMAL_SECURITY',
         'sbo-with-normal-security': 'SBO_WITH_NORMAL_SECURITY',
-        'direct-with-enhanced-security':
-            'DIRECT_WITH_ENHANCED_SECURITY',
+        'direct-with-enhanced-security': 'DIRECT_WITH_ENHANCED_SECURITY',
         'sbo-with-enhanced-security': 'SBO_WITH_ENHANCED_SECURITY'
         }.get(ctl_model)
     if model is None:
