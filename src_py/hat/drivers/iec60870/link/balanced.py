@@ -51,7 +51,7 @@ class BalancedLink(aio.Resource):
                               *,
                               response_timeout: float = 15,
                               send_retry_count: int = 3,
-                              test_delay: float = 5,
+                              status_delay: float = 5,
                               receive_queue_size: int = 1024,
                               send_queue_size: int = 1024
                               ) -> common.Connection:
@@ -111,7 +111,7 @@ class BalancedLink(aio.Resource):
                         break
 
             conn.async_group.spawn(conn._send_loop, send)
-            conn.async_group.spawn(conn._test_loop, test_delay)
+            conn.async_group.spawn(conn._status_loop, status_delay)
 
         except BaseException:
             await aio.uncancellable(conn.async_close())
@@ -181,8 +181,7 @@ class BalancedLink(aio.Resource):
                 await self._endpoint.send(req)
                 await self._endpoint.drain()
 
-                if (req.address == self._broadcast_address or
-                        req.function == common.ReqFunction.DATA_NO_RES):
+                if req.function == common.ReqFunction.DATA_NO_RES:
                     res = None
 
                 else:
@@ -343,7 +342,7 @@ class _BalancedConnection(common.Connection):
                 if not future.done():
                     future.set_exception(ConnectionError())
 
-    async def _test_loop(self, delay):
+    async def _status_loop(self, delay):
         try:
             while True:
                 self._send_event.clear()
@@ -353,14 +352,14 @@ class _BalancedConnection(common.Connection):
 
                 future = self._loop.create_future()
                 await self._send_queue.put(
-                    (future, common.ReqFunction.TEST, b''))
+                    (future, common.ReqFunction.REQ_STATUS, b''))
                 await future
 
         except (ConnectionError, aio.QueueClosedError):
             pass
 
         except Exception as e:
-            mlog.error("test loop error: %s", e, exc_info=e)
+            mlog.error("status loop error: %s", e, exc_info=e)
 
         finally:
             self.close()

@@ -92,7 +92,7 @@ class MasterLink(aio.Resource):
 
                     # if res.function not in [common.ResFunction.ACK,
                     #                         common.ResFunction.RES_STATUS]:
-                    #     raise Exception('invalid status response')
+                    #     continue
 
                     req = common.ReqFrame(
                         direction=None,
@@ -106,6 +106,7 @@ class MasterLink(aio.Resource):
                     if (isinstance(res, common.ShortFrame) or
                             (isinstance(res, common.ResFrame) and
                              res.function == common.ResFunction.ACK)):
+                        # TODO maybe delay?
                         break
 
             conn.async_group.spawn(conn._send_loop, send)
