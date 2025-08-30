@@ -221,7 +221,7 @@ def _get_struct_data_confs(data_ref: common.DataRef,
                         timestamp_ref = data_ref._replace(
                             names=(*data_ref.names, 't'))
 
-                    if value_types.get('stSeld') == common.AcsiValueType.BOOLEAN:  # NOQA
+                    if value_types.get('stSeld') == common.BasicValueType.BOOLEAN:  # NOQA
                         selected_ref = data_ref._replace(
                             names=(*data_ref.names, 'stSeld'))
 
@@ -287,7 +287,7 @@ def _get_struct_data_confs(data_ref: common.DataRef,
                         timestamp_ref = data_ref._replace(
                             names=(*data_ref.names, 't'))
 
-                    if value_types.get('stSeld') == common.AcsiValueType.BOOLEAN:  # NOQA
+                    if value_types.get('stSeld') == common.BasicValueType.BOOLEAN:  # NOQA
                         selected_ref = data_ref._replace(
                             names=(*data_ref.names, 'stSeld'))
 
@@ -332,7 +332,7 @@ def _get_struct_data_confs(data_ref: common.DataRef,
 
             for sub_names, sub_value_type in sub_names_value_types:
                 sub_value_ref = value_ref._replace(
-                    names=(*value_ref.names, sub_names))
+                    names=(*value_ref.names, *sub_names))
 
                 if _get_value_type(sub_value_ref, raw_value_types) is None:
                     continue
@@ -402,9 +402,9 @@ def _is_ref_in_dataset(ref: common.DataRef,
                        data_refs: Collection[common.DataRef]
                        ) -> bool:
     for data_ref in data_refs:
-        if (ref.logical_device != data_refs.logical_device or
-                ref.logical_node != data_refs.logical_node or
-                ref.fc != data_refs.fc):
+        if (ref.logical_device != data_ref.logical_device or
+                ref.logical_node != data_ref.logical_node or
+                ref.fc != data_ref.fc):
             continue
 
         if (len(ref.names) < len(data_ref.names) or
