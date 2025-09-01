@@ -86,7 +86,7 @@ class SlaveLink(aio.Resource):
                                None)
         self._conns[addr] = conn
 
-        conn.async_group.spawn(self._keep_alive_loop, keep_alive_timeout)
+        conn.async_group.spawn(conn._keep_alive_loop, keep_alive_timeout)
 
         try:
             await conn._active_future
@@ -147,7 +147,7 @@ class SlaveLink(aio.Resource):
             self.close()
 
 
-class _SlaveConnection(aio.Resource):
+class _SlaveConnection(common.Connection):
 
     @property
     def async_group(self):
@@ -157,7 +157,7 @@ class _SlaveConnection(aio.Resource):
     def address(self):
         return self._addr
 
-    def send(self, data, sent_cb=None):
+    async def send(self, data, sent_cb=None):
         if not data:
             return
 

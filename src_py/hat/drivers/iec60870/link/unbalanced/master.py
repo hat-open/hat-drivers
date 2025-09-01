@@ -218,7 +218,7 @@ class MasterLink(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class _MasterConnection(aio.Resource):
+class _MasterConnection(common.Connection):
 
     @property
     def async_group(self):
