@@ -84,11 +84,11 @@ class BalancedLink(aio.Resource):
             while True:
                 with contextlib.suppress(asyncio.TimeoutError):
                     # req = common.ReqFrame(
-                    #     direction=self._direction,
+                    #     direction=direction,
                     #     frame_count_bit=False,
                     #     frame_count_valid=False,
                     #     function=common.ReqFunction.REQ_STATUS,
-                    #     address=self._addr,
+                    #     address=addr,
                     #     data=b'')
                     # res = await self._send(req)
 
@@ -97,11 +97,11 @@ class BalancedLink(aio.Resource):
                     #     continue
 
                     req = common.ReqFrame(
-                        direction=self._direction,
+                        direction=direction,
                         frame_count_bit=False,
                         frame_count_valid=False,
                         function=common.ReqFunction.RESET_LINK,
-                        address=self._addr,
+                        address=addr,
                         data=b'')
                     res = await send(req)
 
@@ -122,8 +122,7 @@ class BalancedLink(aio.Resource):
     async def _send(self, response_timeout, req):
         future = self._loop.create_future()
         try:
-            await self._send_request_queue.put(
-                (future, response_timeout, req))
+            await self._send_queue.put((future, response_timeout, req))
             return await future
 
         except aio.QueueClosedError:
@@ -307,7 +306,8 @@ class _BalancedConnection(common.Connection):
                     future.set_result(None)
 
                 elif isinstance(res, common.ResFrame):
-                    if res.function == common.ResFunction.ACK:
+                    if res.function in (common.ResFunction.ACK,
+                                        common.ResFunction.RES_STATUS):
                         future.set_result(None)
 
                     else:
