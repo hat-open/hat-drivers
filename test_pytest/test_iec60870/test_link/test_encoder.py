@@ -42,7 +42,7 @@ def test_get_next_frame_size_error(address_size, direction_valid, data):
                                   b'\xab\xff',
                                   b'\x12\xcd' * 10])
 @pytest.mark.parametrize('address, address_size', [
-    (None, common.AddressSize.ZERO),
+    (0, common.AddressSize.ZERO),
     (112, common.AddressSize.ONE),
     (456, common.AddressSize.TWO)])
 def test_encode_decode_req(direction, fcb, fcv, function, data, address,
@@ -68,7 +68,7 @@ def test_encode_decode_req(direction, fcb, fcv, function, data, address,
                                   b'\xab\xff',
                                   b'\x12\xcd' * 10])
 @pytest.mark.parametrize('address, address_size', [
-    (None, common.AddressSize.ZERO),
+    (0, common.AddressSize.ZERO),
     (112, common.AddressSize.ONE),
     (456, common.AddressSize.TWO)])
 def test_encode_decode_res(direction, function, data, ac, dfc, address,
@@ -152,6 +152,6 @@ def test_address_size(address, address_size):
     frame_decoded = encoder.decode(encoded)
 
     if address_size == common.AddressSize.ZERO:
-        assert frame_decoded.address is None
+        assert frame_decoded.address == 0
     else:
         assert frame.address == frame_decoded.address

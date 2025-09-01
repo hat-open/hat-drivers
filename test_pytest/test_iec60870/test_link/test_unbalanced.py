@@ -60,37 +60,44 @@ class _MockSerialConnection(aio.Resource):
 
 
 async def test_create(mock_serial):
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1', addrs=[1])
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+
     assert master.is_open
     assert slave.is_open
+
     await master.async_close()
     await slave.async_close()
 
 
 async def test_connect(mock_serial):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1],
-                                                connection_cb=queue.put_nowait)
-    master_conn = await master.connect(addr=1)
-    slave_conn = await queue.get()
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection, addr=1)
+    slave_conn = await slave.open_connection(addr=1)
+
+    master_conn = await master_conn_fut
 
     assert master_conn.is_open
     assert slave_conn.is_open
+
     await master.async_close()
     await slave.async_close()
 
 
 async def test_response_ack(mock_serial):
-    master = await unbalanced.master.create_master(port='1')
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
 
     ep = await endpoint.create(port='1',
                                address_size=common.AddressSize.ONE,
                                direction_valid=False)
 
-    master_conn_fut = master.async_group.spawn(master.connect, 1)
+    master_conn_fut = master.async_group.spawn(master.open_connection, addr=1)
     req = await ep.receive()
     assert isinstance(req, common.ReqFrame)
     assert req.function == common.ReqFunction.RESET_LINK
@@ -109,19 +116,20 @@ async def test_response_ack(mock_serial):
 
 
 async def test_send_receive(mock_serial):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1],
-                                                connection_cb=queue.put_nowait)
-    master_conn = await master.connect(addr=1, poll_class1_delay=0.01)
-    slave_conn = await queue.get()
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(
+        master.open_connection, addr=1, poll_class1_delay=0.01)
+    slave_conn = await slave.open_connection(addr=1)
+    master_conn = await master_conn_fut
 
     await master_conn.send(b'hello')
     received = await slave_conn.receive()
     assert received == b'hello'
 
-    slave_conn.send(b'hi')
+    await slave_conn.send(b'hi')
     received = await master_conn.receive()
     assert received == b'hi'
 
@@ -129,39 +137,8 @@ async def test_send_receive(mock_serial):
     received = await slave_conn.receive()
     assert received == b'sup'
 
-    slave_conn.send(b'nth')
+    await slave_conn.send(b'nth')
     received = await master_conn.receive()
-    assert received == b'nth'
-
-    await master.async_close()
-    await slave.async_close()
-
-
-async def test_slave_range(mock_serial):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1, 2],
-                                                connection_cb=queue.put_nowait)
-    master_conn_1 = await master.connect(addr=1, poll_class1_delay=0.01)
-    slave_conn_1 = await queue.get()
-    master_conn_2 = await master.connect(addr=2, poll_class1_delay=0.01)
-    slave_conn_2 = await queue.get()
-
-    await master_conn_1.send(b'hello')
-    received = await slave_conn_1.receive()
-    assert received == b'hello'
-
-    slave_conn_1.send(b'hi')
-    received = await master_conn_1.receive()
-    assert received == b'hi'
-
-    await master_conn_2.send(b'sup')
-    received = await slave_conn_2.receive()
-    assert received == b'sup'
-
-    slave_conn_2.send(b'nth')
-    received = await master_conn_2.receive()
     assert received == b'nth'
 
     await master.async_close()
@@ -173,72 +150,135 @@ async def test_slave_range(mock_serial):
     (2, 0.01),
     (5, 0.05)
 ])
-async def test_multiple_slaves(mock_serial, slave_count, poll_delay):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slaves = []
+async def test_multiple(mock_serial, slave_count, poll_delay):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+
     master_conns = []
     slave_conns = []
     for i in range(slave_count):
-        slave = await unbalanced.slave.create_slave(
-            port='1',
-            addrs=[i],
-            connection_cb=queue.put_nowait)
-        master_conn = await master.connect(addr=i,
-                                           poll_class1_delay=poll_delay)
-        slave_conn = await queue.get()
-        slaves.append(slave)
+        master_conn_fut = master.async_group.spawn(
+            master.open_connection, addr=i, poll_class1_delay=poll_delay)
+        slave_conn = await slave.open_connection(addr=i)
+        master_conn = await master_conn_fut
         master_conns.append(master_conn)
         slave_conns.append(slave_conn)
+
     for i in range(slave_count):
         await master_conns[i].send(f'mtos {i}'.encode('utf-8'))
         received = await slave_conns[i].receive()
         assert received == f'mtos {i}'.encode('utf-8')
 
-        slave_conns[i].send(f'stom {i}'.encode('utf-8'))
+        await slave_conns[i].send(f'stom {i}'.encode('utf-8'))
         received = await master_conns[i].receive()
         assert received == f'stom {i}'.encode('utf-8')
-    for i in range(slave_count):
-        await slaves[i].async_close()
+
+    await slave.async_close()
     await master.async_close()
 
 
-async def test_disconnect_slave(mock_serial):
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1])
-    master_conn = await master.connect(addr=1,
-                                       response_timeout=0.01,
-                                       send_retry_count=1)
+async def test_slave_close(mock_serial):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection,
+                                               addr=1,
+                                               response_timeout=0.01,
+                                               send_retry_count=1)
+    await slave.open_connection(addr=1)
+    master_conn = await master_conn_fut
+
     assert master_conn.is_open
     await slave.async_close()
     await master_conn.wait_closed()
+    assert master.is_open
     with pytest.raises(ConnectionError):
         await master_conn.send(b'hi')
     with pytest.raises(ConnectionError):
         await master_conn.receive()
+
     await master.async_close()
 
 
-async def test_disconnect_master(mock_serial):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1],
-                                                connection_cb=queue.put_nowait,
-                                                keep_alive_timeout=0.1)
-    await master.connect(addr=1,
-                         response_timeout=0.01,
-                         send_retry_count=1)
-    slave_conn = await queue.get()
+async def test_slave_connection_close(mock_serial):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection,
+                                               addr=1,
+                                               response_timeout=0.01,
+                                               send_retry_count=1)
+    slave_conn = await slave.open_connection(addr=1)
+    master_conn = await master_conn_fut
+
+    assert master_conn.is_open
+    await slave_conn.async_close()
+    await master_conn.wait_closed()
+    assert master.is_open
+    assert slave.is_open
+    with pytest.raises(ConnectionError):
+        await master_conn.send(b'hi')
+    with pytest.raises(ConnectionError):
+        await master_conn.receive()
+
+    await slave.async_close()
+    await master.async_close()
+
+
+async def test_master_close(mock_serial):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection,
+                                               addr=1,
+                                               response_timeout=0.01,
+                                               send_retry_count=1)
+    slave_conn = await slave.open_connection(addr=1,
+                                             keep_alive_timeout=0.1)
+    await master_conn_fut
+
     assert slave_conn.is_open
     await master.async_close()
     await slave_conn.wait_closed()
+    assert slave.is_open
     with pytest.raises(ConnectionError):
-        slave_conn.send(b'hi')
+        await slave_conn.send(b'hi')
     with pytest.raises(ConnectionError):
         await slave_conn.receive()
+
     await slave.async_close()
+
+
+async def test_master_connection_close(mock_serial):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection,
+                                               addr=1,
+                                               response_timeout=0.01,
+                                               send_retry_count=1)
+    slave_conn = await slave.open_connection(addr=1,
+                                             keep_alive_timeout=0.1)
+    master_conn = await master_conn_fut
+
+    assert slave_conn.is_open
+    await master_conn.async_close()
+    await slave_conn.wait_closed()
+    assert slave.is_open
+    assert master.is_open
+    with pytest.raises(ConnectionError):
+        await slave_conn.send(b'hi')
+    with pytest.raises(ConnectionError):
+        await slave_conn.receive()
+
+    await slave.async_close()
+    await master.async_close()
 
 
 @pytest.mark.parametrize("noise", [
@@ -260,16 +300,17 @@ async def test_disconnect_master(mock_serial):
     b'\x68\x03\x03\x68\x40\x01\x00\x00\x41\x16',  # req too long variable
     ])
 async def test_channel_noise(mock_serial, noise):
-    queue = asyncio.Queue()
-    master = await unbalanced.master.create_master(port='1')
-    slave = await unbalanced.slave.create_slave(port='1',
-                                                addrs=[1],
-                                                connection_cb=queue.put_nowait,
-                                                keep_alive_timeout=0.1)
-    master_conn = await master.connect(addr=1,
-                                       response_timeout=0.01,
-                                       poll_class1_delay=0.01)
-    slave_conn = await queue.get()
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(master.open_connection,
+                                               addr=1,
+                                               response_timeout=0.01,
+                                               poll_class1_delay=0.01)
+    slave_conn = await slave.open_connection(addr=1,
+                                             keep_alive_timeout=0.1)
+    master_conn = await master_conn_fut
 
     # TODO should not use private
     await slave._endpoint._endpoint.extend_data(noise)
@@ -281,7 +322,7 @@ async def test_channel_noise(mock_serial, noise):
     # TODO should not use private
     await master._endpoint._endpoint.extend_data(noise)
 
-    slave_conn.send(b'hi')
+    await slave_conn.send(b'hi')
     received = await master_conn.receive()
     assert received == b'hi'
 
