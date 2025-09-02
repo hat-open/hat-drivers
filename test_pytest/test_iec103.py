@@ -52,8 +52,10 @@ def create_connection_slave_pair():
         def address(self):
             return 0
 
-        async def send(self, data):
+        async def send(self, data, sent_cb=None):
             send_queue.put_nowait(data)
+            if sent_cb:
+                await aio.call(sent_cb)
 
         async def receive(self):
             return await receive_queue.get()

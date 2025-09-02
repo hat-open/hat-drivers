@@ -24,8 +24,10 @@ class MockMasterConnection(aio.Resource):
     def address(self):
         return 0
 
-    async def send(self, data):
+    async def send(self, data, sent_cb=None):
         self._data_queue.put_nowait(data)
+        if sent_cb:
+            await aio.call(sent_cb)
 
     async def receive(self):
         return await self._data_queue.get()
@@ -121,7 +123,7 @@ def assert_msg_param_float(msg1, msg2):
 async def assert_send_receive(msgs, cause_size, asdu_size, io_size,
                               assert_msg=assert_msg_default):
     conn_link = MockMasterConnection()
-    conn = iec101.MasterConnection(
+    conn = iec101.Connection(
         conn=conn_link,
         cause_size=cause_size,
         asdu_address_size=asdu_size,
@@ -136,7 +138,7 @@ async def assert_send_receive(msgs, cause_size, asdu_size, io_size,
 
 async def test_connection():
     conn_link = MockMasterConnection()
-    conn = iec101.MasterConnection(
+    conn = iec101.Connection(
         conn=conn_link,
         cause_size=iec101.CauseSize.TWO,
         asdu_address_size=iec101.AsduAddressSize.TWO,
@@ -149,7 +151,7 @@ async def test_connection():
     assert conn.is_closed
 
     conn_link = MockMasterConnection()
-    conn = iec101.MasterConnection(
+    conn = iec101.Connection(
         conn=conn_link,
         cause_size=iec101.CauseSize.TWO,
         asdu_address_size=iec101.AsduAddressSize.TWO,
@@ -763,7 +765,7 @@ def asdu_other_cause():
 @pytest.mark.parametrize("asdu", asdu_other_cause())
 async def test_other_cause(asdu):
     conn_link = MockMasterConnection()
-    conn = iec101.MasterConnection(
+    conn = iec101.Connection(
         conn=conn_link,
         cause_size=iec101.CauseSize.TWO,
         asdu_address_size=iec101.AsduAddressSize.TWO,
@@ -784,7 +786,7 @@ async def test_other_cause(asdu):
 
 async def test_sequence_of_ioes():
     conn_link = MockMasterConnection()
-    conn = iec101.MasterConnection(
+    conn = iec101.Connection(
         conn=conn_link,
         cause_size=iec101.CauseSize.TWO,
         asdu_address_size=iec101.AsduAddressSize.TWO,
