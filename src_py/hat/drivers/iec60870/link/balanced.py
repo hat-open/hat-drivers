@@ -55,7 +55,7 @@ class BalancedLink(aio.Resource):
                               receive_queue_size: int = 1024,
                               send_queue_size: int = 1024
                               ) -> common.Connection:
-        if addr >= (1 << self._address_size.value):
+        if addr >= (1 << (self._address_size.value * 8)):
             raise ValueError('unsupported address')
 
         conn_key = direction, addr
