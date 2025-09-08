@@ -349,6 +349,7 @@ class _BalancedConnection(common.Connection):
 
                 with contextlib.suppress(asyncio.TimeoutError):
                     await aio.wait_for(self._send_event.wait(), delay)
+                    continue
 
                 future = self._loop.create_future()
                 await self._send_queue.put(
