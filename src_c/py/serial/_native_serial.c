@@ -35,7 +35,9 @@ static void on_serial_close(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_CallNoArgs(close_cb));
+    close_cb = atomic_load(&(self->close_cb));
+    if (close_cb && close_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(close_cb));
 
     PyGILState_Release(gstate);
 }
@@ -51,7 +53,9 @@ static void on_serial_in_change(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_CallNoArgs(in_change_cb));
+    in_change_cb = atomic_load(&(self->in_change_cb));
+    if (in_change_cb && in_change_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(in_change_cb));
 
     PyGILState_Release(gstate);
 }
@@ -67,7 +71,9 @@ static void on_serial_out_change(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_CallNoArgs(out_change_cb));
+    out_change_cb = atomic_load(&(self->out_change_cb));
+    if (out_change_cb && out_change_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(out_change_cb));
 
     PyGILState_Release(gstate);
 }
@@ -83,7 +89,9 @@ static void on_serial_drain(hat_serial_t *s) {
 
     PyGILState_STATE gstate = PyGILState_Ensure();
 
-    Py_XDECREF(PyObject_CallNoArgs(drain_cb));
+    drain_cb = atomic_load(&(self->drain_cb));
+    if (drain_cb && drain_cb != Py_None)
+        Py_XDECREF(PyObject_CallNoArgs(drain_cb));
 
     PyGILState_Release(gstate);
 }
