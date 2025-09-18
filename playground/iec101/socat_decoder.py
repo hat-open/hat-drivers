@@ -72,6 +72,7 @@ class Iec101Stream:
 
     def __init__(self,
                  stream: io.TextIOBase,
+                 balanced: bool,
                  address_size: iec101.AddressSize,
                  cause_size: iec101.CauseSize,
                  asdu_address_size: iec101.AsduAddressSize,
@@ -79,7 +80,7 @@ class Iec101Stream:
         self._stream = stream
         self._data = b''
         self._link_encoder = LinkEncoder(address_size=address_size,
-                                         direction_valid=False)
+                                         direction_valid=balanced)
         self._iec101_encoder = Iec101Encoder(
             cause_size=cause_size,
             asdu_address_size=asdu_address_size,
@@ -176,6 +177,7 @@ class Iec101Stream:
 def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--with-text', action='store_true')
+    parser.add_argument('--balanced', action='store_true')
     parser.add_argument('--address-size', metavar='N', type=int, default=2)
     parser.add_argument('--cause-size', metavar='N', type=int, default=2)
     parser.add_argument('--asdu-address-size', metavar='N', type=int,
@@ -196,6 +198,7 @@ def main():
     iec101_streams = {
         direction: Iec101Stream(
             stream=out_stream,
+            balanced=args.balanced,
             address_size=iec101.AddressSize(args.address_size),
             cause_size=iec101.CauseSize(args.cause_size),
             asdu_address_size=iec101.AsduAddressSize(args.asdu_address_size),
