@@ -155,8 +155,14 @@ def _get_command_confs(value_types: dict[common.RootDataRef,
             logical_node=root_data_ref.logical_node,
             name=root_data_ref.name)
 
+        oper_value_type = next(
+            (i for name, i in value_type.elements if name == 'Oper'),
+            None)
+        if not isinstance(oper_value_type, common.StructValueType):
+            continue
+
         ctl_val_value_type = next(
-            (i for name, i in value_type.elements if name == 'ctlVal'),
+            (i for name, i in oper_value_type.elements if name == 'ctlVal'),
             None)
         if not ctl_val_value_type:
             continue
@@ -166,7 +172,7 @@ def _get_command_confs(value_types: dict[common.RootDataRef,
             continue
 
         with_operate_time = any(
-            name == 'operTm' for name, _ in value_type.elements)
+            name == 'operTm' for name, _ in oper_value_type.elements)
 
         yield {'ref': common.command_ref_to_json(cmd_ref),
                'value_type': common.value_type_to_json(ctl_val_value_type),
