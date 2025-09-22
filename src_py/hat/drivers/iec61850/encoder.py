@@ -1,5 +1,6 @@
 from collections.abc import Collection
 import collections
+import itertools
 import typing
 
 from hat import util
@@ -828,12 +829,13 @@ def report_from_mms_data(mms_data: Collection[mms.Data],
 
             reason_bits = value_from_mms_data(
                 next(elements), common.BasicValueType.BIT_STRING)
-            if len(reason_bits) != 7:
+            if len(reason_bits) < 7:
                 raise Exception('invalid reason bits size')
 
-            reasons.append({common.Reason(index)
-                            for index, i in enumerate(reason_bits)
-                            if i})
+            reasons.append({
+                common.Reason(index)
+                for index, i in enumerate(itertools.islice(reason_bits, 7))
+                if i})
 
     else:
         reasons = None
