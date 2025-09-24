@@ -9,6 +9,10 @@ required:
     - data
     - commands
 properties:
+    type:
+        const: iec61850-device
+    version:
+        const: '1'
     connection:
         type: object
         properties:

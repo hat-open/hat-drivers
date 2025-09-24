@@ -167,6 +167,8 @@ def _get_device(root_el, ied_el, ap_el, ied_name):
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
 
     device_conf = {
+        'type': 'iec61850-device',
+        'version': '1',
         'connection': _get_connection(root_el, ied_name, ap_name),
         'value_types': value_types,
         'datasets': datasets,
