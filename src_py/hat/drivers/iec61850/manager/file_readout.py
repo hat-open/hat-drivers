@@ -63,44 +63,69 @@ def _get_ieds(root_el):
             mlog.warning(
                 "ied name is 'TEMPLATE': possible insufficient structure")
 
-        uneditable_rcb = list(_get_uneditable_rcb(ied_el))
-
         for ap_el in ied_el.findall("./AccessPoint"):
             if ap_el.find("./Server/LDevice") is None:
                 continue
 
             mlog.info('IED %s', ied_name)
             yield ied_name, _get_device(root_el=root_el,
+                                        ied_el=ied_el,
                                         ap_el=ap_el,
-                                        ied_name=ied_name,
-                                        uneditable_rcb=uneditable_rcb)
+                                        ied_name=ied_name)
 
 
-def _get_uneditable_rcb(ied_el):
+def _get_dynamic(ied_el):
+    ret = {}
+
+    rcb_editable = _get_dynamic_rcb_editable(ied_el)
+    if rcb_editable:
+        ret['rcb_editable'] = rcb_editable
+
+    max_datasets = _get_dynamic_max_datasets(ied_el)
+    if max_datasets is not None:
+        ret['max_datasets'] = max_datasets
+
+    return ret
+
+
+def _get_dynamic_rcb_editable(ied_el):
     report_settings_el = ied_el.find('./Services/ReportSettings')
+    if report_settings_el is None:
+        return
 
-    if report_settings_el is None or report_settings_el.get('rptID') != 'Dyn':
-        yield 'REPORT_ID'
+    ret = {}
+    if report_settings_el.get('rptID') == 'Dyn':
+        ret['report_id'] = True
 
-    if report_settings_el is None or report_settings_el.get('datSet') != 'Dyn':
-        yield 'DATASET'
+    if report_settings_el.get('datSet') == 'Dyn':
+        ret['dataset'] = True
 
-    if (report_settings_el is None or
-            report_settings_el.get('optFields') != 'Dyn'):
-        yield 'OPTIONAL_FIELDS'
+    if report_settings_el.get('optFields') == 'Dyn':
+        ret['optional_fields'] = True
 
-    if (report_settings_el is None or
-            report_settings_el.get('bufTime') != 'Dyn'):
-        yield 'BUFFER_TIME'
+    if report_settings_el.get('bufTime') == 'Dyn':
+        ret['buffer_time'] = True
 
-    if report_settings_el is None or report_settings_el.get('trgOps') != 'Dyn':
-        yield 'TRIGGER_OPTIONS'
+    if report_settings_el.get('trgOps') == 'Dyn':
+        ret['trigger_options'] = True
 
-    if report_settings_el is None or report_settings_el.get('intgPd') != 'Dyn':
-        yield 'INTEGRITY_PERIOD'
+    if report_settings_el.get('intgPd') == 'Dyn':
+        ret['integrity_period'] = True
+
+    return ret
 
 
-def _get_device(root_el, ap_el, ied_name, uneditable_rcb):
+def _get_dynamic_max_datasets(ied_el):
+    dyn_data_set_el = ied_el.find('./Services/DynDataSet')
+    if dyn_data_set_el is None:
+        return
+
+    max_datasets = dyn_data_set_el.get('max')
+    if max_datasets is not None:
+        return int(max_datasets)
+
+
+def _get_device(root_el, ied_el, ap_el, ied_name):
     ap_name = ap_el.get('name')
     datasets = []
     rcbs = []
@@ -128,8 +153,7 @@ def _get_device(root_el, ap_el, ied_name, uneditable_rcb):
             datasets.extend(_get_datasets(
                 ied_name, logical_device, logical_node, ln_el))
 
-            rcbs.extend(_get_rcbs(
-                logical_device, logical_node, ln_el, uneditable_rcb))
+            rcbs.extend(_get_rcbs(logical_device, logical_node, ln_el))
 
             data.extend(_get_data(root_el=root_el,
                                   ln_type_el=ln_type_el,
@@ -142,13 +166,19 @@ def _get_device(root_el, ap_el, ied_name, uneditable_rcb):
             commands.extend(_parse_commands(
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
 
-    return {
+    device_conf = {
         'connection': _parse_connection(root_el, ied_name, ap_name),
         'value_types': value_types,
         'datasets': datasets,
         'rcbs': rcbs,
         'data': data,
         'commands': commands}
+
+    dynamic = _get_dynamic(ied_el)
+    if dynamic:
+        device_conf['dynamic'] = dynamic
+
+    return device_conf
 
 
 def _get_value_types(root_el, ln_type_el, logical_device, logical_node):
@@ -217,20 +247,19 @@ def _parse_dataset_values(dataset_el, ied_name):
                          ds_name, i, e, exc_info=e)
 
 
-def _get_rcbs(logical_device, logical_node, ln_el, uneditable_rcb):
+def _get_rcbs(logical_device, logical_node, ln_el):
     for rc_el in ln_el.findall('./ReportControl'):
         name = rc_el.get('name')
         try:
             yield from _parse_rcb(rc_el=rc_el,
                                   logical_device=logical_device,
-                                  logical_node=logical_node,
-                                  uneditable_rcb=uneditable_rcb)
+                                  logical_node=logical_node)
 
         except Exception as e:
             mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
 
 
-def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
+def _parse_rcb(rc_el, logical_device, logical_node):
     name = rc_el.get('name')
     report_id = rc_el.get('rptID')
     dataset = rc_el.get('datSet')
@@ -255,8 +284,7 @@ def _parse_rcb(rc_el, logical_device, logical_node, uneditable_rcb):
             'optional_fields': list(_parse_rcb_opt_flds(rc_el)),
             'buffer_time': int(rc_el.get('bufTime', '0')),
             'trigger_options': list(_parse_rcb_trg_ops(rc_el)),
-            'integrity_period': int(rc_el.get('intgPd', '0')),
-            'uneditable': uneditable_rcb}
+            'integrity_period': int(rc_el.get('intgPd', '0'))}
 
 
 def _get_data(root_el, ln_type_el, ied_name, ap_name, logical_device,

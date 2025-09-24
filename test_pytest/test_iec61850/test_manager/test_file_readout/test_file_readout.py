@@ -128,6 +128,9 @@ def test_1(validator):
     assert rcbs[0]['report_id'] == 'DemoMeasurement/LLN0.BR.brcb1'
     assert rcbs[1]['report_id'] == 'DemoMeasurement/LLN0.RP.urcb1'
 
+    # no dynamic rcb editable attributes
+    assert 'dynamic' not in device_json
+
 
 def test_2(validator):
     with importlib.resources.open_text(__package__, 'test2.cid') as f:
@@ -207,6 +210,30 @@ def test_3(validator):
     assert len(res['E1_REL']['value_types']) == 1334
     assert len(res['LKKU']['value_types']) == 3
 
+    # dynamic
+    assert res['E1_7SA']['dynamic']['rcb_editable']['report_id']
+    assert res['E1_7SA']['dynamic']['rcb_editable']['dataset']
+    assert res['E1_7SA']['dynamic']['rcb_editable']['optional_fields']
+    assert res['E1_7SA']['dynamic']['rcb_editable']['buffer_time']
+    assert res['E1_7SA']['dynamic']['rcb_editable']['trigger_options']
+    assert res['E1_7SA']['dynamic']['rcb_editable']['integrity_period']
+    assert res['E1_7SA']['dynamic']['max_datasets'] == 30
+
+    assert res['E1_REL']['dynamic']['rcb_editable']['report_id']
+    assert res['E1_REL']['dynamic']['rcb_editable']['optional_fields']
+    assert res['E1_REL']['dynamic']['rcb_editable']['buffer_time']
+    assert res['E1_REL']['dynamic']['rcb_editable']['trigger_options']
+    assert res['E1_REL']['dynamic']['rcb_editable']['integrity_period']
+    assert 'max_datasets' not in res['E1_REL']['dynamic']
+
+    assert res['LKKU']['dynamic']['rcb_editable']['report_id']
+    assert res['LKKU']['dynamic']['rcb_editable']['dataset']
+    assert res['LKKU']['dynamic']['rcb_editable']['optional_fields']
+    assert res['LKKU']['dynamic']['rcb_editable']['buffer_time']
+    assert res['LKKU']['dynamic']['rcb_editable']['trigger_options']
+    assert res['LKKU']['dynamic']['rcb_editable']['integrity_period']
+    assert 'max_datasets' not in res['LKKU']['dynamic']
+
     # verify a E1_REL dataset values
     assert len(res['E1_REL']['datasets']) == 5
     ds_staturg = util.first(res['E1_REL']['datasets'],
@@ -238,6 +265,14 @@ def test_4(validator):
     assert len(device_json['commands']) == 100
     assert len(device_json['data']) == 3632
     assert len(device_json['value_types']) == 4079
+
+    assert device_json['dynamic']['max_datasets'] == 30
+    assert device_json['dynamic']['rcb_editable']['report_id']
+    assert device_json['dynamic']['rcb_editable']['dataset']
+    assert device_json['dynamic']['rcb_editable']['optional_fields']
+    assert device_json['dynamic']['rcb_editable']['buffer_time']
+    assert device_json['dynamic']['rcb_editable']['trigger_options']
+    assert device_json['dynamic']['rcb_editable']['integrity_period']
 
     # indexed rcbs
     rcbs = [rcb_conf for rcb_conf in device_json['rcbs']
@@ -350,6 +385,9 @@ def test_6(validator):
 
     assert 'X1_SACO' in res
     device_json = res['X1_SACO']
+
+    assert 'max_datasets' not in device_json['dynamic']
+
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 15
     assert len(device_json['commands']) == 13
@@ -368,6 +406,14 @@ def test_7(validator):
         validator.validate(json_schema_id, device_json)
 
     device_json = res['E3_TAPCON']
+
+    assert device_json['dynamic']['max_datasets'] == 35
+    assert device_json['dynamic']['rcb_editable']['report_id']
+    assert device_json['dynamic']['rcb_editable']['dataset']
+    assert device_json['dynamic']['rcb_editable']['optional_fields']
+    assert device_json['dynamic']['rcb_editable']['buffer_time']
+    assert device_json['dynamic']['rcb_editable']['trigger_options']
+    assert device_json['dynamic']['rcb_editable']['integrity_period']
 
     # assert value types with different fc
     value_types = [i for i in device_json['value_types']
