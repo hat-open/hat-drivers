@@ -163,11 +163,11 @@ def _get_device(root_el, ied_el, ap_el, ied_name):
                                   logical_node=logical_node,
                                   datasets=datasets))
 
-            commands.extend(_parse_commands(
+            commands.extend(_get_commands(
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
 
     device_conf = {
-        'connection': _parse_connection(root_el, ied_name, ap_name),
+        'connection': _get_connection(root_el, ied_name, ap_name),
         'value_types': value_types,
         'datasets': datasets,
         'rcbs': rcbs,
@@ -212,13 +212,13 @@ def _get_datasets(ied_name, logical_device, logical_node, ln_el):
                 'ref': {'logical_device': logical_device,
                         'logical_node': logical_node,
                         'name': name},
-                'values': list(_parse_dataset_values(dataset_el, ied_name))}
+                'values': list(_get_dataset_values(dataset_el, ied_name))}
 
         except Exception as e:
             mlog.warning('dataset %s ignored: %s', name, e, exc_info=e)
 
 
-def _parse_dataset_values(dataset_el, ied_name):
+def _get_dataset_values(dataset_el, ied_name):
     ds_name = dataset_el.get('name')
     for i, fcda_el in enumerate(dataset_el):
         if fcda_el.tag != 'FCDA':
@@ -251,15 +251,15 @@ def _get_rcbs(logical_device, logical_node, ln_el):
     for rc_el in ln_el.findall('./ReportControl'):
         name = rc_el.get('name')
         try:
-            yield from _parse_rcb(rc_el=rc_el,
-                                  logical_device=logical_device,
-                                  logical_node=logical_node)
+            yield from _get_rcb(rc_el=rc_el,
+                                logical_device=logical_device,
+                                logical_node=logical_node)
 
         except Exception as e:
             mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
 
 
-def _parse_rcb(rc_el, logical_device, logical_node):
+def _get_rcb(rc_el, logical_device, logical_node):
     name = rc_el.get('name')
     report_id = rc_el.get('rptID')
     dataset = rc_el.get('datSet')
@@ -270,7 +270,7 @@ def _parse_rcb(rc_el, logical_device, logical_node):
         report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
     mlog.info('rcb %s/%s.%s.%s',
               logical_device, logical_node, rcb_type_short, name)
-    for rcb_name in _parse_rcb_names(rc_el):
+    for rcb_name in _get_rcb_names(rc_el):
         yield {
             'ref': {'logical_device': logical_device,
                     'logical_node': logical_node,
@@ -281,9 +281,9 @@ def _parse_rcb(rc_el, logical_device, logical_node):
                         'logical_node': logical_node,
                         'name': dataset} if dataset else None,
             'conf_revision': int(rc_el.get('confRev')),
-            'optional_fields': list(_parse_rcb_opt_flds(rc_el)),
+            'optional_fields': list(_get_rcb_opt_flds(rc_el)),
             'buffer_time': int(rc_el.get('bufTime', '0')),
-            'trigger_options': list(_parse_rcb_trg_ops(rc_el)),
+            'trigger_options': list(_get_rcb_trg_ops(rc_el)),
             'integrity_period': int(rc_el.get('intgPd', '0'))}
 
 
@@ -320,7 +320,7 @@ def _get_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
                          logical_device, logical_node, name, e, exc_info=e)
 
 
-def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
+def _get_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
     for do_el in ln_type_el:
         do_name = do_el.get('name')
         do_type_el = _get_node_type_el(root_el, do_el)
@@ -345,7 +345,7 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
         mlog.info('command %s/%s.%s',
                   logical_device, logical_node, do_name)
         try:
-            model = _parse_command_model(ln_el, do_el, do_type_el)
+            model = _get_command_model(ln_el, do_el, do_type_el)
             if model is None:
                 # TODO: log for status-only command model?
                 continue
@@ -374,7 +374,7 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
                 'with_operate_time': with_operate_time}
 
             if ctl_val_el.get('bType') == 'Enum':
-                cmd['enumerated'] = _parse_enumerated(
+                cmd['enumerated'] = _get_enumerated(
                     root_el, ctl_val_el.get('type'))
 
             yield cmd
@@ -384,7 +384,7 @@ def _parse_commands(root_el, ln_el, ln_type_el, logical_device, logical_node):
                          logical_device, logical_node, do_name, e, exc_info=e)
 
 
-def _parse_connection(root_el, ied_name, ap_name):
+def _get_connection(root_el, ied_name, ap_name):
     conn_conf = {}
     connected_ap_el = root_el.find(f"./Communication/SubNetwork/ConnectedAP"
                                    f"[@iedName='{ied_name}']"
@@ -542,7 +542,7 @@ def _names_from_fcda_name(name):
             yield i
 
 
-def _parse_rcb_names(rc_el):
+def _get_rcb_names(rc_el):
     name = rc_el.get('name')
     rpt_enabled_el = rc_el.find('./RptEnabled')
     max_rcbs = 0
@@ -559,7 +559,7 @@ def _parse_rcb_names(rc_el):
         yield name
 
 
-def _parse_rcb_opt_flds(rc_el):
+def _get_rcb_opt_flds(rc_el):
     opt_fields_el = rc_el.find('./OptFields')
 
     if opt_fields_el is None or opt_fields_el.get('bufOvfl') != 'false':
@@ -590,7 +590,7 @@ def _parse_rcb_opt_flds(rc_el):
         yield 'CONF_REVISION'
 
 
-def _parse_rcb_trg_ops(rc_el):
+def _get_rcb_trg_ops(rc_el):
     trg_ops_el = rc_el.find('./TrgOps')
     if trg_ops_el is None or trg_ops_el.get('gi') != 'false':
         yield 'GENERAL_INTERROGATION'
@@ -611,7 +611,7 @@ def _parse_rcb_trg_ops(rc_el):
         yield 'INTEGRITY'
 
 
-def _parse_command_model(ln_el, do_el, do_type_el):
+def _get_command_model(ln_el, do_el, do_type_el):
     do_name = do_el.get('name')
     ctl_model_el = do_type_el.find("./DA[@name='ctlModel']")
     if ctl_model_el is None:
@@ -769,7 +769,7 @@ def _get_basic_value_type(node):
     # "SvOptFlds"
 
 
-def _parse_enumerated(root_el, type_name):
+def _get_enumerated(root_el, type_name):
     type_el = root_el.find(f"./DataTypeTemplates/EnumType"
                            f"[@id='{type_name}']")
     return {'name': type_el.get('id'),
@@ -855,7 +855,7 @@ def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
             data_conf['selected'] = selected_ref
 
         if value_da_el.get('bType') == 'Enum':
-            data_conf['enumerated'] = _parse_enumerated(
+            data_conf['enumerated'] = _get_enumerated(
                 root_el, value_da_el.get('type'))
 
         yield data_conf
