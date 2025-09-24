@@ -428,7 +428,7 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
             return value_type
 
     array_length = node_el.get('count')
-    if array_length and not is_array_element:
+    if array_length is not None and not is_array_element:
         element_type = _get_value_type(
             root_el, node_el, is_array_element=True, with_fc=with_fc)
         if element_type is None:
@@ -436,7 +436,7 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
 
         value_type = {'type': 'ARRAY',
                       'element_type': element_type,
-                      'length': array_length}
+                      'length': int(array_length)}
         if with_fc:
             value_type['fc'] = fc
         return value_type
