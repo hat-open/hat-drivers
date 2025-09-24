@@ -78,7 +78,6 @@ properties:
                 - buffer_time
                 - trigger_options
                 - integrity_period
-                - uneditable
             properties:
                 ref:
                     $ref: "hat-drivers://iec61850/device.yaml#/$defs/refs/rcb"
@@ -115,16 +114,6 @@ properties:
                             - GENERAL_INTERROGATION
                 integrity_period:
                     type: integer
-                uneditable:
-                    type: array
-                    items:
-                        enum:
-                            - REPORT_ID
-                            - DATASET
-                            - OPTIONAL_FIELDS
-                            - BUFFER_TIME
-                            - TRIGGER_OPTIONS
-                            - INTEGRITY_PERIOD
     data:
         type: array
         items:
@@ -191,6 +180,26 @@ properties:
                     type: boolean
                 enumerated:
                     $ref: "hat-drivers://iec61850/device.yaml#/$defs/enumerated"
+    dynamic:
+        type: object
+        properties:
+            rcb_editable:
+                type: object
+                properties:
+                    report_id:
+                        type: boolean
+                    dataset:
+                        type: boolean
+                    optional_fields:
+                        type: boolean
+                    buffer_time:
+                        type: boolean
+                    trigger_options:
+                        type: boolean
+                    integrity_period:
+                        type: boolean
+            max_datasets:
+                type: integer
 $defs:
     refs:
         data:
