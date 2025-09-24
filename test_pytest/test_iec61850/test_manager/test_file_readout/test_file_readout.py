@@ -220,6 +220,7 @@ def test_3(validator):
     assert res['E1_7SA']['dynamic']['max_datasets'] == 30
 
     assert res['E1_REL']['dynamic']['rcb_editable']['report_id']
+    assert not res['E1_REL']['dynamic']['rcb_editable']['dataset']
     assert res['E1_REL']['dynamic']['rcb_editable']['optional_fields']
     assert res['E1_REL']['dynamic']['rcb_editable']['buffer_time']
     assert res['E1_REL']['dynamic']['rcb_editable']['trigger_options']

@@ -93,26 +93,13 @@ def _get_dynamic_rcb_editable(ied_el):
     if report_settings_el is None:
         return
 
-    ret = {}
-    if report_settings_el.get('rptID') == 'Dyn':
-        ret['report_id'] = True
-
-    if report_settings_el.get('datSet') == 'Dyn':
-        ret['dataset'] = True
-
-    if report_settings_el.get('optFields') == 'Dyn':
-        ret['optional_fields'] = True
-
-    if report_settings_el.get('bufTime') == 'Dyn':
-        ret['buffer_time'] = True
-
-    if report_settings_el.get('trgOps') == 'Dyn':
-        ret['trigger_options'] = True
-
-    if report_settings_el.get('intgPd') == 'Dyn':
-        ret['integrity_period'] = True
-
-    return ret
+    return {
+        'report_id': report_settings_el.get('rptID') == 'Dyn',
+        'dataset': report_settings_el.get('datSet') == 'Dyn',
+        'optional_fields': report_settings_el.get('optFields') == 'Dyn',
+        'buffer_time': report_settings_el.get('bufTime') == 'Dyn',
+        'trigger_options': report_settings_el.get('trgOps') == 'Dyn',
+        'integrity_period': report_settings_el.get('intgPd') == 'Dyn'}
 
 
 def _get_dynamic_max_datasets(ied_el):
