@@ -114,8 +114,7 @@ def _get_rcb_confs(rcb_attr_values: dict[common.RcbRef,
             'trigger_options': [
                i.name
                for i in attr_values[common.RcbAttrType.TRIGGER_OPTIONS]],
-            'integrity_period': attr_values[common.RcbAttrType.INTEGRITY_PERIOD],  # NOQA
-            'uneditable': []}
+            'integrity_period': attr_values[common.RcbAttrType.INTEGRITY_PERIOD]}  # NOQA
 
 
 def _get_data_confs(value_types: dict[common.RootDataRef,

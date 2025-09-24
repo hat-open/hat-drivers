@@ -290,6 +290,7 @@ $defs:
             required:
                 - type
                 - element_type
+                - length
             properties:
                 type:
                     const: ARRAY
