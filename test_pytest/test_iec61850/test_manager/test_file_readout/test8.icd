@@ -1,0 +1,1188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Generated with ABB IEC61850 Libraries 5.4.0.582 at 3/4/2024 6:08:53 PM.-->
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:sxy="http://www.iec.ch/61850/2003/SCLcoordinates" xmlns:esld="http://www.abb.com/61850/2006/SCL_SLD" xmlns:eComm="http://www.abb.com/61850/2015/SCL_ABBCommunication" xmlns:eABB="http://www.abb.com/61850/2010/ABBTranslations" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL SCL.xsd http://www.iec.ch/61850/2003/SCLcoordinates SCL_Coordinates.xsd http://www.abb.com/61850/2006/SCL_SLD SCL_SLD.xsd http://www.abb.com/61850/2015/SCL_ABBCommunication SCL_ABBCommunication.xsd http://www.abb.com/61850/2010/ABBTranslations SCL_ABBTranslations.xsd">
+    <Private type="ABB SLD">
+        <esld:SLD>
+            <esld:Sizes elementSize="1" />
+            <esld:AlarmSettings />
+            <esld:MeasurementStatus />
+            <esld:DefaultColors />
+            <esld:NameDisplay />
+            <esld:Fonts />
+            <esld:MeasurementPrecision defaultDecimals="0" />
+            <esld:DisplayMultipliers />
+        </esld:SLD>
+    </Private>
+    <Header id="ID" version="2003" revision="A" nameStructure="IEDName" />
+    <Substation name="AA1" desc="Substation">
+        <Private type="ABBPCMInternalObjRef">4d9c23d0-dc75-448d-8473-5729f5fea16a</Private>
+        <VoltageLevel name="J1" desc="Voltage Level">
+            <Private type="ABBPCMInternalObjRef">413d2595-d93b-4ed1-8fef-c7341cf50ada</Private>
+            <Voltage unit="V" multiplier="k">20</Voltage>
+            <Bay name="Q01" desc="Bay">
+                <Private type="ABBPCMInternalObjRef">59e03dbe-1c3c-4c6a-844c-a4003ddb7cdd</Private>
+                <LNode iedName="AA1RTUA02" ldInst="LD0" lnClass="LLN0" />
+                <LNode iedName="Client1" lnClass="IHMI" lnInst="1" />
+                <LNode iedName="Client2" lnClass="IHMI" lnInst="1" />
+                <LNode iedName="Client3" lnClass="IHMI" lnInst="1" />
+                <LNode iedName="Client4" lnClass="IHMI" lnInst="1" />
+                <LNode iedName="Client5" lnClass="IHMI" lnInst="1" />
+            </Bay>
+        </VoltageLevel>
+    </Substation>
+    <Communication>
+        <SubNetwork name="WA1" desc="Subnetwork" type="8-MMS">
+            <Private type="ABBPCMInternalObjRef">3e5dcdae-ce21-4890-b276-a9c642a65d94</Private>
+            <ConnectedAP iedName="AA1RTUA02" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.191</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">0.0.0.0</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                </Address>
+            </ConnectedAP>
+            <ConnectedAP iedName="Client1" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.101</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.0.101</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                </Address>
+            </ConnectedAP>
+            <ConnectedAP iedName="Client2" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.102</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.0.102</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                </Address>
+            </ConnectedAP>
+            <ConnectedAP iedName="Client3" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.103</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.0.103</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                </Address>
+            </ConnectedAP>
+            <ConnectedAP iedName="Client4" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.104</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.0.104</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                </Address>
+            </ConnectedAP>
+            <ConnectedAP iedName="Client5" apName="S1">
+                <Address>
+                    <P type="IP" xsi:type="tP_IP">192.168.0.105</P>
+                    <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+                    <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">192.168.0.105</P>
+                    <P type="OSI-TSEL" xsi:type="tP_OSI-TSEL">0001</P>
+                    <P type="OSI-SSEL" xsi:type="tP_OSI-SSEL">0001</P>
+                    <P type="OSI-PSEL" xsi:type="tP_OSI-PSEL">00000001</P>
+                    <P type="OSI-AP-Title" xsi:type="tP_OSI-AP-Title">1,3,9999,23</P>
+                    <P type="OSI-AE-Qualifier" xsi:type="tP_OSI-AE-Qualifier">23</P>
+                </Address>
+            </ConnectedAP>
+        </SubNetwork>
+    </Communication>
+    <IED name="Client1" desc="Client1" type="IEC61850 IED">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">37e3c3b2-9ef9-46a3-a5b1-da57cc48421f</Private>
+        <AccessPoint name="S1">
+            <LN lnClass="IHMI" inst="1" lnType="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" />
+        </AccessPoint>
+    </IED>
+    <IED name="AA1RTUA02" desc="AA1RTUA02" type="RTU560_2" manufacturer="ABB" configVersion="1.4">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">aba49f9c-d96b-4259-bf9e-a88a01eba099</Private>
+        <Services>
+            <DynAssociation />
+            <GetDirectory />
+            <GetDataObjectDefinition />
+            <DataObjectDirectory />
+            <GetDataSetValue />
+            <DataSetDirectory />
+            <ConfDataSet max="3" maxAttributes="4294967295" modify="false" />
+            <ReadWrite />
+            <ConfReportControl max="48" />
+            <GetCBValues />
+            <ReportSettings cbName="Conf" datSet="Conf" rptID="Dyn" optFields="Dyn" bufTime="Dyn" trgOps="Dyn" intgPd="Dyn" />
+            <GSESettings cbName="Conf" datSet="Conf" appID="Conf" />
+            <GOOSE max="8" />
+            <ConfLNs fixPrefix="true" fixLnInst="true" />
+        </Services>
+        <AccessPoint name="S1">
+            <Server>
+                <Authentication />
+                <LDevice inst="LD0">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0">
+                        <DataSet name="StatNrmlA" desc="Status data used for event list entries.">
+                            <FCDA ldInst="LD0" lnClass="LPHD" lnInst="1" doName="PhyHealth" fc="ST" />
+                        </DataSet>
+                        <DataSet name="StatUrgA">
+                            <FCDA ldInst="REG2" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="SIM" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="REG1" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD15" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD15" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD15" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD15" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD15" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD14" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD14" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD14" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD14" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD14" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD13" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD13" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD13" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD13" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD13" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD12" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD12" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD12" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD12" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD12" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD11" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD11" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD11" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD11" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD11" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD10" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD10" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD10" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD10" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD10" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD9" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD9" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD9" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD9" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD9" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD8" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD8" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD8" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD8" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD8" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD7" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD7" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD7" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD7" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD7" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD6" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD6" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD6" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD6" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD6" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD5" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD5" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD5" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD5" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD5" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD4" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD4" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD4" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD4" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD4" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD3" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD3" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD3" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD3" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD3" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD2" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD2" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD2" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD2" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD2" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD1" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD1" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD1" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD1" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD1" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD0" prefix="SP" lnClass="GGIO" lnInst="1" doName="Ind" fc="ST" />
+                            <FCDA ldInst="LD0" prefix="DP" lnClass="CSWI" lnInst="4" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD0" prefix="DP" lnClass="CSWI" lnInst="3" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD0" prefix="DP" lnClass="CSWI" lnInst="2" doName="Pos" fc="ST" />
+                            <FCDA ldInst="LD0" prefix="DP" lnClass="CSWI" lnInst="1" doName="Pos" fc="ST" />
+                        </DataSet>
+                        <DataSet name="MeasFltB">
+                            <FCDA ldInst="REG2" prefix="MV" lnClass="MMXN" lnInst="1" doName="Imp" fc="MX" />
+                            <FCDA ldInst="REG2" prefix="MV" lnClass="MMXN" lnInst="1" doName="Vol" fc="MX" />
+                            <FCDA ldInst="REG1" prefix="MV" lnClass="MMXN" lnInst="1" doName="Imp" fc="MX" />
+                            <FCDA ldInst="REG1" prefix="MV" lnClass="MMXN" lnInst="1" doName="Vol" fc="MX" />
+                            <FCDA ldInst="LD12" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD13" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD14" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD15" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD8" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD9" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD10" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD11" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD12" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD12" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD12" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD13" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD13" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD13" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD14" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD14" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD14" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD15" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD15" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD15" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD8" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD8" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD8" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD9" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD9" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD9" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD10" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD10" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD10" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD11" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD11" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD11" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD8" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD12" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD13" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD14" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD15" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD9" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD10" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD11" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD4" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD5" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD6" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD7" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD0" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD1" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD2" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD3" prefix="MV" lnClass="MMXN" lnInst="1" doName="Amp" fc="MX" />
+                            <FCDA ldInst="LD4" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD4" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD4" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD5" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD5" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD5" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD6" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD6" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD6" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD7" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD7" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD7" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD0" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD0" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD0" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD1" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD1" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD1" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD2" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD2" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD2" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD3" prefix="MV" lnClass="MMXU" lnInst="1" doName="PPV.phsBC" fc="MX" />
+                            <FCDA ldInst="LD3" prefix="MV" lnClass="MMXN" lnInst="1" doName="VolAmpr" fc="MX" />
+                            <FCDA ldInst="LD3" prefix="MV" lnClass="MMXN" lnInst="1" doName="Watt" fc="MX" />
+                            <FCDA ldInst="LD0" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD4" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD5" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD6" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD7" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD1" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD2" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                            <FCDA ldInst="LD3" prefix="MV" lnClass="MMXN" lnInst="1" doName="Hz" fc="MX" />
+                        </DataSet>
+                        <ReportControl name="rcb_A" rptID="A" datSet="StatNrmlA" confRev="1" bufTime="500" buffered="true">
+                            <TrgOps dchg="true" qchg="true" />
+                            <OptFields />
+                            <RptEnabled max="5">
+                                <ClientLN iedName="Client1" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client2" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client3" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client4" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client5" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                            </RptEnabled>
+                        </ReportControl>
+                        <ReportControl name="rcb_B" rptID="B" datSet="StatUrgA" confRev="1" bufTime="500" buffered="true">
+                            <TrgOps dchg="true" qchg="true" />
+                            <OptFields />
+                            <RptEnabled max="5">
+                                <ClientLN iedName="Client1" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client2" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client3" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client4" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client5" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                            </RptEnabled>
+                        </ReportControl>
+                        <ReportControl name="rcb_C" rptID="C" datSet="MeasFltB" confRev="1">
+                            <TrgOps dchg="true" qchg="true" dupd="true" />
+                            <OptFields />
+                            <RptEnabled max="5">
+                                <ClientLN iedName="Client1" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client2" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client3" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client4" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                                <ClientLN iedName="Client5" ldInst="LD0" lnClass="IHMI" lnInst="1" />
+                            </RptEnabled>
+                        </ReportControl>
+                    </LN0>
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth" desc="IED operable">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="REG2">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="SC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SCGGIO" />
+                    <LN prefix="BSC" lnClass="GGIO" inst="2" lnType="ABBRTU500_2_Rev1_BSCGGIO" />
+                    <LN prefix="BSC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_BSCGGIO" />
+                    <LN prefix="INC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_INCGGIO" />
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                </LDevice>
+                <LDevice inst="SIM">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="SC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SCGGIO" />
+                </LDevice>
+                <LDevice inst="REG1">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="SC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SCGGIO" />
+                    <LN prefix="BSC" lnClass="GGIO" inst="2" lnType="ABBRTU500_2_Rev1_BSCGGIO" />
+                    <LN prefix="BSC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_BSCGGIO" />
+                    <LN prefix="INC" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_INCGGIO" />
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                </LDevice>
+                <LDevice inst="LD12">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD13">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD14">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD15">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD8">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD9">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD10">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD11">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD4">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD5">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD6">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD7">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD1">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD2">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+                <LDevice inst="LD3">
+                    <LN0 lnClass="LLN0" inst="" lnType="ABBRTU500_2_Rev1_LLN0" />
+                    <LN lnClass="LPHD" inst="1" lnType="ABBRTU500_2_Rev1_LPHD">
+                        <DOI name="PhyHealth">
+                            <DAI name="stVal">
+                                <Private type="RTU560_IED_Health">1000</Private>
+                            </DAI>
+                        </DOI>
+                    </LN>
+                    <LN prefix="MV" lnClass="MMXN" inst="1" lnType="ABBRTU500_2_Rev1_MMXN" />
+                    <LN prefix="MV" lnClass="MMXU" inst="1" lnType="ABBRTU500_2_Rev1_MMXU" />
+                    <LN prefix="SP" lnClass="GGIO" inst="1" lnType="ABBRTU500_2_Rev1_SPGGIO" />
+                    <LN prefix="DC" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DC" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="4" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="3" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="2" lnType="ABBRTU500_2_Rev1_CSWI" />
+                    <LN prefix="DP" lnClass="CSWI" inst="1" lnType="ABBRTU500_2_Rev1_CSWI" />
+                </LDevice>
+            </Server>
+        </AccessPoint>
+    </IED>
+    <IED name="Client2" desc="Client2" type="IEC61850 IED">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">022bdbd0-0bb7-4255-89b3-a8f6b6e949c6</Private>
+        <AccessPoint name="S1">
+            <LN lnClass="IHMI" inst="1" lnType="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" />
+        </AccessPoint>
+    </IED>
+    <IED name="Client4" desc="Client4" type="IEC61850 IED">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">15bae2a0-bec9-4186-a470-876a88d98a03</Private>
+        <AccessPoint name="S1">
+            <LN lnClass="IHMI" inst="1" lnType="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" />
+        </AccessPoint>
+    </IED>
+    <IED name="Client5" desc="Client5" type="IEC61850 IED">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">80d015b0-9a9f-41ac-8027-48fdc6dafe2a</Private>
+        <AccessPoint name="S1">
+            <LN lnClass="IHMI" inst="1" lnType="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" />
+        </AccessPoint>
+    </IED>
+    <IED name="Client3" desc="Client3" type="IEC61850 IED">
+        <Private type="ABB_PCMObjectTypeName">Generic IEC61850 IED</Private>
+        <Private type="ABBPCMInternalObjRef">db9a28ad-44f6-42da-ad1e-13e443b0663f</Private>
+        <AccessPoint name="S1">
+            <LN lnClass="IHMI" inst="1" lnType="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" />
+        </AccessPoint>
+    </IED>
+    <DataTypeTemplates>
+        <LNodeType id="ABBRTU500_2_Rev1_LLN0" lnClass="LLN0" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL_LLN0" />
+            <DO name="Loc" type="ABBRTU500_2_Rev1_tcSPS" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_LPHD" lnClass="LPHD" iedType="RTU560_2">
+            <DO name="PhyNam" type="ABBRTU500_2_Rev1_tcDPL" />
+            <DO name="PhyHealth" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="Proxy" type="ABBRTU500_2_Rev1_tcSPS" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_MMXN" lnClass="MMXN" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="Amp" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="Vol" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="Watt" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="VolAmpr" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="VolAmp" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="PwrFact" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="Imp" type="ABBRTU500_2_Rev1_tcCMV" />
+            <DO name="Hz" type="ABBRTU500_2_Rev1_tcMV" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_MMXU" lnClass="MMXU" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="TotW" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="TotVAr" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="TotVA" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="TotPF" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="Hz" type="ABBRTU500_2_Rev1_tcMV" />
+            <DO name="PPV" type="ABBRTU500_2_Rev1_tcDEL" />
+            <DO name="PhV" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="A" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="W" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="VAr" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="VA" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="PF" type="ABBRTU500_2_Rev1_tcWYE" />
+            <DO name="Z" type="ABBRTU500_2_Rev1_tcWYE" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_SPGGIO" lnClass="GGIO" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="Ind" type="ABBRTU500_2_Rev1_tcSPS" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_CSWI" lnClass="CSWI" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="Loc" type="ABBRTU500_2_Rev1_tcSPS" />
+            <DO name="Pos" type="ABBRTU500_2_Rev1_tcDPC" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_SCGGIO" lnClass="GGIO" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="SPCSO" type="ABBRTU500_2_Rev1_tcSPC" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_BSCGGIO" lnClass="GGIO" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="RCO" type="ABBRTU500_2_Rev1_tcBSC_GGIO" />
+        </LNodeType>
+        <LNodeType id="ABBRTU500_2_Rev1_INCGGIO" lnClass="GGIO" iedType="RTU560_2">
+            <DO name="Mod" type="ABBRTU500_2_Rev1_tcROMod" />
+            <DO name="Beh" type="ABBRTU500_2_Rev1_tcBeh" />
+            <DO name="Health" type="ABBRTU500_2_Rev1_tcHealth" />
+            <DO name="NamPlt" type="ABBRTU500_2_Rev1_tcLPL" />
+            <DO name="ISCSO" type="ABBRTU500_2_Rev1_tcINC" />
+        </LNodeType>
+        <LNodeType id="IEC61850_OPC_ServerNETWORKHSI1LD0IHMI1" lnClass="IHMI" />
+        <DOType id="ABBRTU500_2_Rev1_tcROMod" cdc="INC" iedType="RTU560_2">
+            <DA name="stVal" bType="Enum" valKind="RO" count="0" type="Mod" fc="ST" dchg="true">
+                <Val>on</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="ctlModel" bType="Enum" valKind="RO" count="0" type="ctlModel" fc="CF">
+                <Val>status-only</Val>
+            </DA>
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcBeh" cdc="INS" iedType="RTU560_2">
+            <DA name="stVal" bType="Enum" valKind="RO" count="0" type="Beh" fc="ST" dchg="true">
+                <Val>on</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcHealth" cdc="INS" iedType="RTU560_2">
+            <DA name="stVal" bType="Enum" count="0" type="Health" fc="ST" dchg="true">
+                <Val>Alarm</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcLPL_LLN0" cdc="LPL" iedType="RTU560_2">
+            <DA name="vendor" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>ABB</Val>
+            </DA>
+            <DA name="swRev" bType="VisString255" count="0" fc="DC">
+                <Val>12.7.3.0</Val>
+            </DA>
+            <DA name="d" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>RTU500_Server</Val>
+            </DA>
+            <DA name="configRev" bType="VisString255" count="0" fc="DC">
+                <Val>1</Val>
+            </DA>
+            <DA name="ldNs" bType="VisString255" count="0" fc="EX">
+                <Val>IEC 61850-7-4:2003</Val>
+            </DA>
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcSPS" cdc="SPS" iedType="RTU560_2">
+            <DA name="stVal" bType="BOOLEAN" count="0" fc="ST" dchg="true">
+                <Val>false</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcDPL" cdc="DPL" iedType="RTU560_2">
+            <DA name="vendor" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>ABB</Val>
+            </DA>
+            <DA name="swRev" bType="VisString255" count="0" fc="DC">
+                <Val>12.7.3.0</Val>
+            </DA>
+            <DA name="serNum" bType="VisString255" count="0" fc="DC" />
+            <DA name="model" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>RTU500_Server</Val>
+            </DA>
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcLPL" cdc="LPL" iedType="RTU560_2">
+            <DA name="vendor" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>ABB</Val>
+            </DA>
+            <DA name="swRev" bType="VisString255" count="0" fc="DC">
+                <Val>12.7.3.0</Val>
+            </DA>
+            <DA name="d" bType="VisString255" valKind="RO" count="0" fc="DC">
+                <Val>RTU500_Server</Val>
+            </DA>
+            <DA name="configRev" bType="VisString255" count="0" fc="DC">
+                <Val>1</Val>
+            </DA>
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcMV" cdc="MV" iedType="RTU560_2">
+            <DA name="mag" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcAnalogValue" fc="MX" dchg="true" />
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="MX" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="MX" />
+            <DA name="units" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcUnit" fc="CF" />
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcCMV" cdc="CMV" iedType="RTU560_2">
+            <DA name="cVal" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcVector" fc="MX" dchg="true" />
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="MX" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="MX" />
+            <DA name="units" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcUnit" fc="CF" />
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcDEL" cdc="DEL" iedType="RTU560_2">
+            <SDO name="phsAB" type="ABBRTU500_2_Rev1_tcCMV" />
+            <SDO name="phsBC" type="ABBRTU500_2_Rev1_tcCMV" />
+            <SDO name="phsCA" type="ABBRTU500_2_Rev1_tcCMV" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcWYE" cdc="WYE" iedType="RTU560_2">
+            <SDO name="phsA" type="ABBRTU500_2_Rev1_tcCMV" />
+            <SDO name="phsB" type="ABBRTU500_2_Rev1_tcCMV" />
+            <SDO name="phsC" type="ABBRTU500_2_Rev1_tcCMV" />
+            <SDO name="neut" type="ABBRTU500_2_Rev1_tcCMV" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcDPC" cdc="DPC" iedType="RTU560_2">
+            <DA name="SBOw" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper" fc="CO" />
+            <DA name="Oper" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper" fc="CO" />
+            <DA name="Cancel" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcCancel" fc="CO" />
+            <DA name="stVal" bType="Dbpos" count="0" fc="ST" dchg="true" />
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="stSeld" bType="BOOLEAN" count="0" fc="ST" dchg="true">
+                <Val>false</Val>
+            </DA>
+            <DA name="ctlModel" bType="Enum" valKind="RO" count="0" type="ctlModel" fc="CF">
+                <Val>sbo-with-enhanced-security</Val>
+            </DA>
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcSPC" cdc="SPC" iedType="RTU560_2">
+            <DA name="SBOw" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper" fc="CO" />
+            <DA name="Oper" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper" fc="CO" />
+            <DA name="Cancel" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcCancel" fc="CO" />
+            <DA name="stVal" bType="BOOLEAN" count="0" fc="ST" dchg="true">
+                <Val>false</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="stSeld" bType="BOOLEAN" count="0" fc="ST" dchg="true">
+                <Val>false</Val>
+            </DA>
+            <DA name="ctlModel" bType="Enum" valKind="RO" count="0" type="ctlModel" fc="CF">
+                <Val>sbo-with-enhanced-security</Val>
+            </DA>
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcBSC_GGIO" cdc="BSC" iedType="RTU560_2">
+            <DA name="SBOw" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper_BSC" fc="CO" />
+            <DA name="Oper" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper_BSC" fc="CO" />
+            <DA name="Cancel" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcCancel_BSC" fc="CO" />
+            <DA name="valWTr" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcvalWTr" fc="ST" dchg="true" />
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="stSeld" bType="BOOLEAN" count="0" fc="ST" dchg="true">
+                <Val>false</Val>
+            </DA>
+            <DA name="persistent" bType="BOOLEAN" count="0" fc="CF" />
+            <DA name="ctlModel" bType="Enum" valKind="RO" count="0" type="ctlModel" fc="CF">
+                <Val>sbo-with-enhanced-security</Val>
+            </DA>
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+            <DA name="dataNs" bType="VisString255" count="0" fc="EX">
+                <Val>ABB 1KGT 150 702:2008</Val>
+            </DA>
+        </DOType>
+        <DOType id="ABBRTU500_2_Rev1_tcINC" cdc="INC" iedType="RTU560_2">
+            <DA name="Oper" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcOper_INT32" fc="CO" />
+            <DA name="stVal" bType="INT32" count="0" fc="ST" dchg="true">
+                <Val>0</Val>
+            </DA>
+            <DA name="q" bType="Quality" valKind="RO" count="0" fc="ST" qchg="true" />
+            <DA name="t" bType="Timestamp" valKind="RO" count="0" fc="ST" />
+            <DA name="ctlModel" bType="Enum" valKind="RO" count="0" type="ctlModel" fc="CF">
+                <Val>direct-with-normal-security</Val>
+            </DA>
+            <DA name="d" bType="VisString255" count="0" fc="DC" />
+        </DOType>
+        <DAType id="ABBRTU500_2_Rev1_tcAnalogValue" iedType="RTU560_2">
+            <BDA name="f" bType="FLOAT32" count="0">
+                <Val>0</Val>
+            </BDA>
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcUnit" iedType="RTU560_2">
+            <BDA name="SIUnit" bType="Enum" valKind="RO" count="0" type="SIUnit" />
+            <BDA name="multiplier" bType="Enum" valKind="RO" count="0" type="multiplier" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcVector" iedType="RTU560_2">
+            <BDA name="mag" bType="Struct" count="0" type="ABBRTU500_2_Rev1_tcAnalogValue" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_originator" iedType="RTU560_2">
+            <BDA name="orCat" bType="Enum" count="0" type="orCategory" />
+            <BDA name="orIdent" bType="Octet64" count="0" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcOper" iedType="RTU560_2">
+            <BDA name="ctlVal" bType="BOOLEAN" count="0" />
+            <BDA name="origin" bType="Struct" count="0" type="ABBRTU500_2_Rev1_originator" />
+            <BDA name="ctlNum" bType="INT8U" count="0" />
+            <BDA name="T" bType="Timestamp" count="0" />
+            <BDA name="Test" bType="BOOLEAN" count="0" />
+            <BDA name="Check" bType="Check" count="0" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcCancel" iedType="RTU560_2">
+            <BDA name="ctlVal" bType="BOOLEAN" count="0" />
+            <BDA name="origin" bType="Struct" count="0" type="ABBRTU500_2_Rev1_originator" />
+            <BDA name="ctlNum" bType="INT8U" count="0" />
+            <BDA name="T" bType="Timestamp" count="0" />
+            <BDA name="Test" bType="BOOLEAN" count="0" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcOper_BSC" iedType="RTU560_2">
+            <BDA name="ctlVal" bType="Tcmd" count="0" />
+            <BDA name="origin" bType="Struct" count="0" type="ABBRTU500_2_Rev1_originator" />
+            <BDA name="ctlNum" bType="INT8U" count="0" />
+            <BDA name="T" bType="Timestamp" count="0" />
+            <BDA name="Test" bType="BOOLEAN" count="0" />
+            <BDA name="Check" bType="Check" count="0" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcCancel_BSC" iedType="RTU560_2">
+            <BDA name="ctlVal" bType="Tcmd" count="0" />
+            <BDA name="origin" bType="Struct" count="0" type="ABBRTU500_2_Rev1_originator" />
+            <BDA name="ctlNum" bType="INT8U" count="0" />
+            <BDA name="T" bType="Timestamp" count="0" />
+            <BDA name="Test" bType="BOOLEAN" count="0" />
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcvalWTr" iedType="RTU560_2">
+            <BDA name="posVal" bType="INT8" count="0">
+                <Val>0</Val>
+            </BDA>
+        </DAType>
+        <DAType id="ABBRTU500_2_Rev1_tcOper_INT32" iedType="RTU560_2">
+            <BDA name="ctlVal" bType="INT32" count="0" />
+            <BDA name="origin" bType="Struct" count="0" type="ABBRTU500_2_Rev1_originator" />
+            <BDA name="ctlNum" bType="INT8U" count="0" />
+            <BDA name="T" bType="Timestamp" count="0" />
+            <BDA name="Test" bType="BOOLEAN" count="0" />
+            <BDA name="Check" bType="Check" count="0" />
+        </DAType>
+        <EnumType id="Mod">
+            <EnumVal ord="1">on</EnumVal>
+            <EnumVal ord="2">blocked</EnumVal>
+            <EnumVal ord="3">test</EnumVal>
+            <EnumVal ord="4">test/blocked</EnumVal>
+            <EnumVal ord="5">off</EnumVal>
+        </EnumType>
+        <EnumType id="ctlModel">
+            <EnumVal ord="0">status-only</EnumVal>
+            <EnumVal ord="1">direct-with-normal-security</EnumVal>
+            <EnumVal ord="2">sbo-with-normal-security</EnumVal>
+            <EnumVal ord="3">direct-with-enhanced-security</EnumVal>
+            <EnumVal ord="4">sbo-with-enhanced-security</EnumVal>
+        </EnumType>
+        <EnumType id="Beh">
+            <EnumVal ord="1">on</EnumVal>
+            <EnumVal ord="2">blocked</EnumVal>
+            <EnumVal ord="3">test</EnumVal>
+            <EnumVal ord="4">test/blocked</EnumVal>
+            <EnumVal ord="5">off</EnumVal>
+        </EnumType>
+        <EnumType id="Health">
+            <EnumVal ord="1">Ok</EnumVal>
+            <EnumVal ord="2">Warning</EnumVal>
+            <EnumVal ord="3">Alarm</EnumVal>
+        </EnumType>
+        <EnumType id="SIUnit">
+            <EnumVal ord="1" />
+            <EnumVal ord="2">m</EnumVal>
+            <EnumVal ord="3">kg</EnumVal>
+            <EnumVal ord="4">s</EnumVal>
+            <EnumVal ord="5">A</EnumVal>
+            <EnumVal ord="6">K</EnumVal>
+            <EnumVal ord="7">mol</EnumVal>
+            <EnumVal ord="8">cd</EnumVal>
+            <EnumVal ord="9">deg</EnumVal>
+            <EnumVal ord="10">rad</EnumVal>
+            <EnumVal ord="11">sr</EnumVal>
+            <EnumVal ord="21">Gy</EnumVal>
+            <EnumVal ord="22">Bq</EnumVal>
+            <EnumVal ord="23">°C</EnumVal>
+            <EnumVal ord="24">Sv</EnumVal>
+            <EnumVal ord="25">F</EnumVal>
+            <EnumVal ord="26">C</EnumVal>
+            <EnumVal ord="27">S</EnumVal>
+            <EnumVal ord="28">H</EnumVal>
+            <EnumVal ord="29">V</EnumVal>
+            <EnumVal ord="30">ohm</EnumVal>
+            <EnumVal ord="31">J</EnumVal>
+            <EnumVal ord="32">N</EnumVal>
+            <EnumVal ord="33">Hz</EnumVal>
+            <EnumVal ord="34">lx</EnumVal>
+            <EnumVal ord="35">Lm</EnumVal>
+            <EnumVal ord="36">Wb</EnumVal>
+            <EnumVal ord="37">T</EnumVal>
+            <EnumVal ord="38">W</EnumVal>
+            <EnumVal ord="39">Pa</EnumVal>
+            <EnumVal ord="41">m²</EnumVal>
+            <EnumVal ord="42">m³</EnumVal>
+            <EnumVal ord="43">m/s</EnumVal>
+            <EnumVal ord="44">m/s²</EnumVal>
+            <EnumVal ord="45">m³/s</EnumVal>
+            <EnumVal ord="46">m/m³</EnumVal>
+            <EnumVal ord="47">M</EnumVal>
+            <EnumVal ord="48">kg/m³</EnumVal>
+            <EnumVal ord="49">m²/s</EnumVal>
+            <EnumVal ord="50">W/m K</EnumVal>
+            <EnumVal ord="51">J/K</EnumVal>
+            <EnumVal ord="52">ppm</EnumVal>
+            <EnumVal ord="53">1/s</EnumVal>
+            <EnumVal ord="54">rad/s</EnumVal>
+            <EnumVal ord="61">VA</EnumVal>
+            <EnumVal ord="62">Watts</EnumVal>
+            <EnumVal ord="63">VAr</EnumVal>
+            <EnumVal ord="64">phi</EnumVal>
+            <EnumVal ord="65">cos(phi)</EnumVal>
+            <EnumVal ord="66">Vs</EnumVal>
+            <EnumVal ord="67">V²</EnumVal>
+            <EnumVal ord="68">As</EnumVal>
+            <EnumVal ord="69">A²</EnumVal>
+            <EnumVal ord="70">A²t</EnumVal>
+            <EnumVal ord="71">VAh</EnumVal>
+            <EnumVal ord="72">Wh</EnumVal>
+            <EnumVal ord="73">VArh</EnumVal>
+            <EnumVal ord="74">V/Hz</EnumVal>
+            <EnumVal ord="75">Hz/s</EnumVal>
+        </EnumType>
+        <EnumType id="multiplier">
+            <EnumVal ord="-24">y</EnumVal>
+            <EnumVal ord="-21">z</EnumVal>
+            <EnumVal ord="-18">a</EnumVal>
+            <EnumVal ord="-15">f</EnumVal>
+            <EnumVal ord="-12">p</EnumVal>
+            <EnumVal ord="-9">n</EnumVal>
+            <EnumVal ord="-6">µ</EnumVal>
+            <EnumVal ord="-3">m</EnumVal>
+            <EnumVal ord="-2">c</EnumVal>
+            <EnumVal ord="-1">d</EnumVal>
+            <EnumVal ord="0" />
+            <EnumVal ord="1">da</EnumVal>
+            <EnumVal ord="2">h</EnumVal>
+            <EnumVal ord="3">k</EnumVal>
+            <EnumVal ord="6">M</EnumVal>
+            <EnumVal ord="9">G</EnumVal>
+            <EnumVal ord="12">T</EnumVal>
+            <EnumVal ord="15">P</EnumVal>
+            <EnumVal ord="18">E</EnumVal>
+            <EnumVal ord="21">Z</EnumVal>
+            <EnumVal ord="24">Y</EnumVal>
+        </EnumType>
+        <EnumType id="orCategory">
+            <EnumVal ord="0">not-supported</EnumVal>
+            <EnumVal ord="1">bay-control</EnumVal>
+            <EnumVal ord="2">station-control</EnumVal>
+            <EnumVal ord="3">remote-control</EnumVal>
+            <EnumVal ord="4">automatic-bay</EnumVal>
+            <EnumVal ord="5">automatic-station</EnumVal>
+            <EnumVal ord="6">automatic-remote</EnumVal>
+            <EnumVal ord="7">maintenance</EnumVal>
+            <EnumVal ord="8">process</EnumVal>
+        </EnumType>
+    </DataTypeTemplates>
+</SCL>

@@ -22,7 +22,7 @@ def test_1(validator):
         res = readout(f)
 
     assert len(res) == 1
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'Demo' in res
@@ -137,7 +137,7 @@ def test_2(validator):
         res = readout(f)
 
     assert len(res) == 1
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'J01' in res
@@ -179,7 +179,7 @@ def test_3(validator):
         res = readout(f)
 
     assert len(res) == 3
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'E1_7SA' in res
@@ -256,7 +256,7 @@ def test_4(validator):
         res = readout(f)
 
     assert len(res) == 2
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'E1_7SA' in res
@@ -362,7 +362,7 @@ def test_5(validator):
         res = readout(f)
 
     assert len(res) == 1
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'SIP' in res
@@ -381,7 +381,7 @@ def test_6(validator):
         res = readout(f)
 
     assert len(res) == 1
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     assert 'X1_SACO' in res
@@ -403,7 +403,7 @@ def test_7(validator):
         res = readout(f)
 
     assert len(res) == 1
-    for device_name, device_json in res.items():
+    for _, device_json in res.items():
         validator.validate(json_schema_id, device_json)
 
     device_json = res['E3_TAPCON']
@@ -473,3 +473,30 @@ def test_7(validator):
                       "posVal"]})
     assert data_conf
     assert data_conf['value_type'] == 'INTEGER'
+
+
+def test_8(validator):
+    # File containes structs with count=0, which should not be defined as
+    # arrays. This test verifies that no array elements are defined.
+    with importlib.resources.open_text(__package__, 'test8.icd') as f:
+        res = readout(f)
+
+    assert len(res) == 1
+    for _, device_json in res.items():
+        validator.validate(json_schema_id, device_json)
+
+    device_json = res['AA1RTUA02']
+
+    def _get_all_array_types(vt):
+        if not isinstance(vt, dict):
+            return
+
+        if vt['type'] == 'ARRAY':
+            yield vt
+
+        if vt['type'] == 'STRUCT':
+            for i in vt['elements']:
+                yield from _get_all_array_types(i['type'])
+
+    for i in device_json['value_types']:
+        assert not list(_get_all_array_types(i['type']))
