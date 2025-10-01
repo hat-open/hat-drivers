@@ -90,12 +90,18 @@ async def readout(addr: tcp.Address,
                     mlog.info('logical device %s: getting control model '
                               'for %s...',
                               logical_device, data_ref_str)
-                    cmd_model = await client.get_control_model(cmd_ref)
-                    cmd_models[cmd_ref] = cmd_model
+                    try:
+                        cmd_model = await client.get_control_model(cmd_ref)
+                        cmd_models[cmd_ref] = cmd_model
 
-                    mlog.info('logical device %s: got control model %s '
-                              'for %s...',
-                              logical_device, cmd_model.name, data_ref_str)
+                        mlog.info('logical device %s: got control model %s '
+                                  'for %s',
+                                  logical_device, cmd_model.name, data_ref_str)
+
+                    except Exception:
+                        mlog.info('logical device %s: could not get control '
+                                  'model for %s',
+                                  logical_device, data_ref_str)
 
                 elif root_data_ref.fc in ('BR', 'RP'):
                     rcb_ref = common.RcbRef(

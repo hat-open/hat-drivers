@@ -156,6 +156,10 @@ def _get_command_confs(value_types: dict[common.RootDataRef,
             logical_node=root_data_ref.logical_node,
             name=root_data_ref.name)
 
+        model = cmd_models.get(cmd_ref)
+        if not model:
+            continue
+
         oper_value_type = next(
             (i for name, i in value_type.elements if name == 'Oper'),
             None)
@@ -166,10 +170,6 @@ def _get_command_confs(value_types: dict[common.RootDataRef,
             (i for name, i in oper_value_type.elements if name == 'ctlVal'),
             None)
         if not ctl_val_value_type:
-            continue
-
-        model = cmd_models.get(cmd_ref)
-        if not model:
             continue
 
         with_operate_time = any(
