@@ -534,13 +534,12 @@ def _names_from_fcda_name(name):
 def _get_rcb_names(rc_el):
     name = rc_el.get('name')
     rpt_enabled_el = rc_el.find('./RptEnabled')
-    max_rcbs = 0
+    max_rcbs = 1
     if rpt_enabled_el is not None:
         max_rcbs = int(rpt_enabled_el.get('max', '1'))
 
     indexed = rc_el.get('indexed') != 'false'
-
-    if indexed and max_rcbs > 1:
+    if indexed:
         for i in range(max_rcbs):
             yield f'{name}{i+1:02}'
 

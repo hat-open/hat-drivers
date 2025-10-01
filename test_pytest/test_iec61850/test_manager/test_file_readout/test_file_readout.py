@@ -262,7 +262,7 @@ def test_4(validator):
     assert 'E1_7SA' in res
     device_json = res['E1_7SA']
     assert len(device_json['datasets']) == 3
-    assert len(device_json['rcbs']) == 42
+    assert len(device_json['rcbs']) == 37
     assert len(device_json['commands']) == 100
     assert len(device_json['data']) == 3632
     assert len(device_json['value_types']) == 4079
@@ -275,12 +275,18 @@ def test_4(validator):
     assert device_json['dynamic']['rcb_editable']['trigger_options']
     assert device_json['dynamic']['rcb_editable']['integrity_period']
 
-    # indexed rcbs
+    # indexed rcb with max=6
     rcbs = [rcb_conf for rcb_conf in device_json['rcbs']
             if rcb_conf['report_id'] == "E1_7SA/Application/LLN0$BR$Report1"]
     assert len(rcbs) == 6
     assert [i['ref']['name'] for i in rcbs] == [
         f'Report10{i}' for i in range(1, 7)]
+
+    # indexed rcb with max=1
+    rcbs = [rcb_conf for rcb_conf in device_json['rcbs']
+            if rcb_conf['report_id'] == "E1_7SA/Application/LLN0$RP$Report2"]
+    assert len(rcbs) == 1
+    assert rcbs[0]['ref']['name'] == 'Report201'
 
     # subVal data value with subQ quality
     data_conf = util.first(

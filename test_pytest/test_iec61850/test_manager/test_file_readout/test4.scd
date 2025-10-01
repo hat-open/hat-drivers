@@ -414,7 +414,7 @@
 						<ReportControl datSet="DataSet2" rptID="E1_7SA/Application/LLN0$RP$Report2" confRev="60001" buffered="false" bufTime="100" name="Report2">
 							<TrgOps dchg="true" qchg="true" dupd="true" period="false" />
 							<OptFields seqNum="true" timeStamp="true" dataSet="false" reasonCode="true" dataRef="false" entryID="true" configRef="false" />
-							<RptEnabled max="6" />
+							<RptEnabled max="1" />
 						</ReportControl>
 						<DOI name="Mod" desc="Application mode">
 							<SDI name="origin">
