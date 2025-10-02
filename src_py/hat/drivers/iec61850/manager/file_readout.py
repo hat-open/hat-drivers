@@ -33,6 +33,10 @@ def main(args):
 
     device_confs = readout(source)
 
+    # validator = json.DefaultSchemaValidator(common.json_schema_repo)
+    # for device_conf in device_confs.values():
+    #     validator.validate('hat-drivers://iec61850/device.yaml', device_conf)
+
     if args.output == Path('-'):
         json.encode_stream(device_confs, sys.stdout)
 

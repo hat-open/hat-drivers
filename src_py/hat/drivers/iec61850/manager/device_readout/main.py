@@ -9,6 +9,7 @@ from hat import aio
 from hat import json
 
 from hat.drivers import tcp
+# from hat.drivers.iec61850.manager import common
 from hat.drivers.iec61850.manager.device_readout.readout import readout
 
 
@@ -111,6 +112,9 @@ async def async_main(args):
     except Exception as e:
         mlog.error('readout error: %s', e, exc_info=e)
         return
+
+    # validator = json.DefaultSchemaValidator(common.json_schema_repo)
+    # validator.validate('hat-drivers://iec61850/device.yaml', device_conf)
 
     try:
         if args.output == Path('-'):
