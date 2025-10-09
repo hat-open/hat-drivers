@@ -25,6 +25,7 @@ _dn_spdu = common.Spdu(type=common.SpduType.DN)
 
 
 class ConnectionInfo(typing.NamedTuple):
+    name: str | None
     local_addr: tcp.Address
     local_tsel: int | None
     local_ssel: int | None
@@ -39,6 +40,23 @@ ValidateCb: typing.TypeAlias = aio.AsyncCallable[[util.Bytes],
 
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: ConnectionInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'CospConnectionInfo',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel}}
+
+    return logging.LoggerAdapter(logger, extra)
 
 
 async def connect(addr: tcp.Address,
@@ -128,9 +146,9 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> list[tcp.Address]:
-        """Listening addresses"""
-        return self._srv.addresses
+    def info(self) -> tcp.ServerInfo:
+        """Server info"""
+        return self._srv.info
 
     async def _on_connection(self, cotp_conn):
         try:

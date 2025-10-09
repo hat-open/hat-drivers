@@ -23,22 +23,55 @@ class Address(typing.NamedTuple):
 
 
 class ConnectionInfo(typing.NamedTuple):
+    name: str | None
     local_addr: Address
     remote_addr: Address
+
+
+class ServerInfo(typing.NamedTuple):
+    name: str | None
+    addresses: list[Address]
 
 
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
+def create_logger_adapter(logger: logging.Logger,
+                          info: ConnectionInfo | ServerInfo
+                          ) -> logging.LoggerAdapter:
+    if isinstance(info, ConnectionInfo):
+        extra = {'info': {'type': 'TcpConnectionInfo',
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
+
+    elif isinstance(info, ServerInfo):
+        extra = {'info': {'type': 'TcpServerInfo',
+                          'name': info.name,
+                          'addresses': [{'host': addr.host,
+                                         'port': addr.port}
+                                        for addr in info.addresses]}}
+
+    else:
+        raise TypeError('invalid info type')
+
+    return logging.LoggerAdapter(logger, extra)
+
+
 async def connect(addr: Address,
                   *,
+                  name: str | None = None,
                   input_buffer_limit: int = 64 * 1024,
                   **kwargs
                   ) -> 'Connection':
     """Create TCP connection
 
     Argument `addr` specifies remote server listening address.
+
+    Argument `name` defines connection name available in property `info`.
 
     Argument `input_buffer_limit` defines number of bytes in input buffer
     that whill temporary pause data receiving. Once number of bytes
@@ -49,7 +82,8 @@ async def connect(addr: Address,
 
     """
     loop = asyncio.get_running_loop()
-    create_transport = functools.partial(Protocol, None, input_buffer_limit)
+    create_transport = functools.partial(Protocol, None, name,
+                                         input_buffer_limit)
     _, protocol = await loop.create_connection(create_transport,
                                                addr.host, addr.port,
                                                **kwargs)
@@ -60,6 +94,7 @@ async def listen(connection_cb: ConnectionCb,
                  addr: Address,
                  *,
                  bind_connections: bool = False,
+                 name: str | None = None,
                  input_buffer_limit: int = 64 * 1024,
                  **kwargs
                  ) -> 'Server':
@@ -67,6 +102,9 @@ async def listen(connection_cb: ConnectionCb,
 
     If `bind_connections` is ``True``, closing server will close all open
     incoming connections.
+
+    Argument `name` defines server name available in property `info`. This
+    name is used for all incomming connections.
 
     Argument `input_buffer_limit` is associated with newly created connections
     (see `connect`).
@@ -78,10 +116,11 @@ async def listen(connection_cb: ConnectionCb,
     server._connection_cb = connection_cb
     server._bind_connections = bind_connections
     server._async_group = aio.Group()
+    server._log = mlog
 
     on_connection = functools.partial(server.async_group.spawn,
                                       server._on_connection)
-    create_transport = functools.partial(Protocol, on_connection,
+    create_transport = functools.partial(Protocol, on_connection, name,
                                          input_buffer_limit)
 
     loop = asyncio.get_running_loop()
@@ -92,7 +131,10 @@ async def listen(connection_cb: ConnectionCb,
 
     try:
         socknames = (socket.getsockname() for socket in server._srv.sockets)
-        server._addresses = [Address(*sockname[:2]) for sockname in socknames]
+        addresses = [Address(*sockname[:2]) for sockname in socknames]
+        server._info = ServerInfo(name=name,
+                                  addresses=addresses)
+        server._log = create_logger_adapter(mlog, server._info)
 
     except Exception:
         await aio.uncancellable(server.async_close())
@@ -114,9 +156,9 @@ class Server(aio.Resource):
         return self._async_group
 
     @property
-    def addresses(self) -> list[Address]:
-        """Listening addresses"""
-        return self._addresses
+    def info(self) -> ServerInfo:
+        """Server info"""
+        return self._info
 
     async def _on_close(self):
         self._srv.close()
@@ -137,7 +179,7 @@ class Server(aio.Resource):
                 conn = None
 
         except Exception as e:
-            mlog.warning('connection callback error: %s', e, exc_info=e)
+            self._log.warning('connection callback error: %s', e, exc_info=e)
 
         finally:
             if conn:
@@ -150,6 +192,7 @@ class Connection(aio.Resource):
     def __init__(self, protocol: 'Protocol'):
         self._protocol = protocol
         self._async_group = aio.Group()
+        self._log = create_logger_adapter(mlog, protocol.info)
 
         self.async_group.spawn(aio.call_on_cancel, protocol.async_close)
         self.async_group.spawn(aio.call_on_done, protocol.wait_closed(),
@@ -217,8 +260,10 @@ class Protocol(asyncio.Protocol):
 
     def __init__(self,
                  on_connected: typing.Callable[['Protocol'], None] | None,
+                 name: str | None,
                  input_buffer_limit: int):
         self._on_connected = on_connected
+        self._name = name
         self._input_buffer_limit = input_buffer_limit
         self._loop = asyncio.get_running_loop()
         self._input_buffer = util.BytesBuffer()
@@ -229,6 +274,7 @@ class Protocol(asyncio.Protocol):
         self._closed_futures = None
         self._info = None
         self._ssl_object = None
+        self._log = mlog
 
     @property
     def info(self) -> ConnectionInfo:
@@ -247,8 +293,12 @@ class Protocol(asyncio.Protocol):
             sockname = transport.get_extra_info('sockname')
             peername = transport.get_extra_info('peername')
             self._info = ConnectionInfo(
+                name=self._name,
                 local_addr=Address(sockname[0], sockname[1]),
                 remote_addr=Address(peername[0], peername[1]))
+
+            self._log = create_logger_adapter(mlog, self._info)
+
             self._ssl_object = transport.get_extra_info('ssl_object')
 
             if self._on_connected:

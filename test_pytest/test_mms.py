@@ -24,7 +24,7 @@ async def test_listen(addr):
     server = await mms.listen(on_connection, addr)
 
     assert server.is_open
-    assert len(server.addresses) == 1
+    assert len(server.info.addresses) == 1
 
     await server.async_close()
 

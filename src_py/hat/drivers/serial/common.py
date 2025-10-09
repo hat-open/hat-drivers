@@ -1,5 +1,7 @@
 import abc
 import enum
+import logging
+import typing
 
 from hat import aio
 from hat import util
@@ -26,13 +28,18 @@ class StopBits(enum.Enum):
     TWO = 2
 
 
+class EndpointInfo(typing.NamedTuple):
+    name: str | None
+    port: str
+
+
 class Endpoint(aio.Resource):
     """Serial endpoint"""
 
     @property
     @abc.abstractmethod
-    def port(self) -> str:
-        """Port name"""
+    def info(self) -> EndpointInfo:
+        """Endpoint info"""
 
     @abc.abstractmethod
     async def read(self, size: int) -> util.Bytes:
@@ -75,3 +82,13 @@ class Endpoint(aio.Resource):
             ConnectionError
 
         """
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: EndpointInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'SerialEndpointInfo',
+                      'name': info.name,
+                      'port': info.port}}
+
+    return logging.LoggerAdapter(logger, extra)

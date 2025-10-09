@@ -25,6 +25,7 @@ with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
 
 
 class ConnectionInfo(typing.NamedTuple):
+    name: str | None
     local_addr: tcp.Address
     local_tsel: int | None
     local_ssel: int | None
@@ -46,6 +47,31 @@ ValidateCb: typing.TypeAlias = aio.AsyncCallable[[copp.SyntaxNames,
 
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: ConnectionInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'AcseConnectionInfo',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'local_ap_title': ('.'.join(info.local_ap_title)
+                                         if info.local_ap_title else None),
+                      'local_ae_qualifier': info.local_ae_qualifier,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel,
+                      'remote_ap_title': ('.'.join(info.remote_ap_title)
+                                          if info.remote_ap_title else None),
+                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+
+    return logging.LoggerAdapter(logger, extra)
 
 
 async def connect(addr: tcp.Address,
@@ -146,9 +172,9 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> list[tcp.Address]:
-        """Listening addresses"""
-        return self._srv.addresses
+    def info(self) -> tcp.ServerInfo:
+        """Server info"""
+        return self._srv.info
 
     async def _on_validate(self, syntax_names, user_data):
         aarq_apdu_syntax_name, aarq_apdu_entity = user_data

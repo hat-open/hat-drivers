@@ -2,6 +2,7 @@
 
 from hat.drivers.cotp.connection import (ConnectionInfo,
                                          ConnectionCb,
+                                         create_logger_adapter,
                                          connect,
                                          listen,
                                          Server,
@@ -10,6 +11,7 @@ from hat.drivers.cotp.connection import (ConnectionInfo,
 
 __all__ = ['ConnectionInfo',
            'ConnectionCb',
+           'create_logger_adapter',
            'connect',
            'listen',
            'Server',

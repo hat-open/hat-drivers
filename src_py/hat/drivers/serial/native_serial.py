@@ -21,7 +21,9 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-async def create(port, *,
+async def create(port,
+                 *,
+                 name=None,
                  baudrate=9600,
                  bytesize=common.ByteSize.EIGHTBITS,
                  parity=common.Parity.NONE,
@@ -31,12 +33,14 @@ async def create(port, *,
                  dsrdtr=False,
                  silent_interval=0):
     endpoint = Endpoint()
-    endpoint._port = port
     endpoint._silent_interval = silent_interval
     endpoint._loop = asyncio.get_running_loop()
     endpoint._input_buffer = util.BytesBuffer()
     endpoint._input_cv = asyncio.Condition()
     endpoint._write_queue = aio.Queue()
+    endpoint._info = common.EndpointInfo(name=name,
+                                         port=port)
+    endpoint._log = common.create_logger_adapter(mlog, endpoint._info)
 
     endpoint._serial = _native_serial.Serial(in_buff_size=0xFFFF,
                                              out_buff_size=0xFFFF)
@@ -74,8 +78,8 @@ class Endpoint(common.Endpoint):
         return self._async_group
 
     @property
-    def port(self):
-        return self._port
+    def info(self):
+        return self._info
 
     async def read(self, size):
         async with self._input_cv:
@@ -135,7 +139,7 @@ class Endpoint(common.Endpoint):
                     self._input_cv.notify_all()
 
         except Exception as e:
-            mlog.warning('read loop error: %s', e, exc_info=e)
+            self._log.warning('read loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -171,7 +175,7 @@ class Endpoint(common.Endpoint):
                 await asyncio.sleep(self._silent_interval)
 
         except Exception as e:
-            mlog.warning('write loop error: %s', e, exc_info=e)
+            self._log.warning('write loop error: %s', e, exc_info=e)
 
         finally:
             self.close()

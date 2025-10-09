@@ -25,7 +25,7 @@ async def test_connect_listen(addr):
     assert conn1.is_open
     assert conn2.is_open
 
-    assert srv.addresses == [addr]
+    assert srv.info.addresses == [addr]
     assert conn1.info.remote_addr == addr
     assert conn2.info.local_addr == addr
 
