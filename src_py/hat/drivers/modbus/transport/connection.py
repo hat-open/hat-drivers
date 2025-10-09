@@ -33,7 +33,7 @@ class Link(aio.Resource):
         pass
 
     @abc.abstractmethod
-    async def reset_input_buffer(self):
+    async def clear_input_buffer(self):
         pass
 
 
@@ -59,8 +59,8 @@ class SerialLink(Link):
     async def drain(self):
         await self._endpoint.drain()
 
-    async def reset_input_buffer(self):
-        return await self._endpoint.reset_input_buffer()
+    async def clear_input_buffer(self):
+        return await self._endpoint.clear_input_buffer()
 
 
 class TcpLink(Link):
@@ -85,8 +85,8 @@ class TcpLink(Link):
     async def drain(self):
         await self._conn.drain()
 
-    async def reset_input_buffer(self):
-        return self._conn.reset_input_buffer()
+    async def clear_input_buffer(self):
+        return self._conn.clear_input_buffer()
 
 
 class Connection(aio.Resource):
@@ -139,11 +139,11 @@ class Connection(aio.Resource):
         await self._link.drain()
         self._log.debug("output buffer empty")
 
-    async def reset_input_buffer(self) -> int:
+    async def clear_input_buffer(self) -> int:
         counter = 0
 
         while True:
-            i = await self._link.reset_input_buffer()
+            i = await self._link.clear_input_buffer()
             if not i:
                 break
             counter += i

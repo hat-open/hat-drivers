@@ -72,7 +72,7 @@ class Endpoint(aio.Resource):
         """
 
     @abc.abstractmethod
-    async def reset_input_buffer(self) -> int:
+    async def clear_input_buffer(self) -> int:
         """Reset input buffer
 
         Returns number of bytes available in buffer immediately before

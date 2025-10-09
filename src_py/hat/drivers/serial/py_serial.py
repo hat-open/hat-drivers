@@ -108,7 +108,7 @@ class Endpoint(common.Endpoint):
         except aio.QueueClosedError:
             raise ConnectionError()
 
-    async def reset_input_buffer(self):
+    async def clear_input_buffer(self):
         async with self._input_cv:
             count = len(self._input_buffer)
             self._input_buffer = bytearray()
