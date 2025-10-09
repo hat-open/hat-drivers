@@ -343,13 +343,13 @@ class Master(aio.Resource):
                 # req_adu, future = await self._send_queue.get()
 
                 async with self.async_group.create_subgroup() as subgroup:
-                    subgroup.spawn(self._reset_input_buffer_loop)
+                    subgroup.spawn(self._clear_input_buffer_loop)
                     self._log.debug("started discarding incomming data")
 
                     while not future or future.done():
                         req_adu, future = await self._send_queue.get()
 
-                await self._reset_input_buffer()
+                await self._clear_input_buffer()
                 self._log.debug("stopped discarding incomming data")
 
                 await self._conn.send(req_adu)
@@ -390,10 +390,10 @@ class Master(aio.Resource):
                     break
                 _, future = self._send_queue.get_nowait()
 
-    async def _reset_input_buffer_loop(self):
+    async def _clear_input_buffer_loop(self):
         try:
             while True:
-                await self._reset_input_buffer()
+                await self._clear_input_buffer()
 
                 await self._conn.read_byte()
                 self._log.debug("discarded 1 byte from input buffer")
@@ -406,8 +406,8 @@ class Master(aio.Resource):
                             exc_info=e)
             self.close()
 
-    async def _reset_input_buffer(self):
-        count = await self._conn.reset_input_buffer()
+    async def _clear_input_buffer(self):
+        count = await self._conn.clear_input_buffer()
         if not count:
             return
         self._log.debug("discarded %s bytes from input buffer", count)

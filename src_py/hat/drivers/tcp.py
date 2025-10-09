@@ -246,13 +246,13 @@ class Connection(aio.Resource):
         """
         return await self._protocol.readexactly(n)
 
-    def reset_input_buffer(self) -> int:
-        """Reset input buffer
+    def clear_input_buffer(self) -> int:
+        """Clear input buffer
 
         Returns number of bytes cleared from buffer.
 
         """
-        return self._protocol.reset_input_buffer()
+        return self._protocol.clear_input_buffer()
 
 
 class Protocol(asyncio.Protocol):
@@ -437,7 +437,7 @@ class Protocol(asyncio.Protocol):
         self._process_input_buffer()
         return await future
 
-    def reset_input_buffer(self) -> int:
+    def clear_input_buffer(self) -> int:
         count = self._input_buffer.clear()
         self._transport.resume_reading()
         return count
