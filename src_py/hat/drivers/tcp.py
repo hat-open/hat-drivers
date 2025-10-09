@@ -93,18 +93,18 @@ async def connect(addr: Address,
 async def listen(connection_cb: ConnectionCb,
                  addr: Address,
                  *,
-                 bind_connections: bool = False,
                  name: str | None = None,
+                 bind_connections: bool = False,
                  input_buffer_limit: int = 64 * 1024,
                  **kwargs
                  ) -> 'Server':
     """Create listening server
 
-    If `bind_connections` is ``True``, closing server will close all open
-    incoming connections.
-
     Argument `name` defines server name available in property `info`. This
     name is used for all incomming connections.
+
+    If `bind_connections` is ``True``, closing server will close all open
+    incoming connections.
 
     Argument `input_buffer_limit` is associated with newly created connections
     (see `connect`).

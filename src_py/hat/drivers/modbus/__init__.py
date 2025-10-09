@@ -3,7 +3,8 @@
 from hat.drivers.modbus.common import (ModbusType,
                                        DataType,
                                        Error,
-                                       apply_mask)
+                                       apply_mask,
+                                       create_logger_adapter)
 from hat.drivers.modbus.master import (create_tcp_master,
                                        create_serial_master,
                                        Master)
@@ -20,6 +21,7 @@ __all__ = ['ModbusType',
            'DataType',
            'Error',
            'apply_mask',
+           'create_logger_adapter',
            'create_tcp_master',
            'create_serial_master',
            'Master',
