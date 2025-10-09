@@ -60,9 +60,9 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> list[tcp.Address]:
-        """Listening addresses"""
-        return self._srv.addresses
+    def info(self) -> tcp.ServerInfo:
+        """Server info"""
+        return self._srv.info
 
     async def _on_connection(self, conn):
         try:

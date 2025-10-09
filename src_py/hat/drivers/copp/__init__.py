@@ -22,6 +22,7 @@ with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
 
 
 class ConnectionInfo(typing.NamedTuple):
+    name: str | None
     local_addr: tcp.Address
     local_tsel: int | None
     local_ssel: int | None
@@ -65,6 +66,25 @@ class SyntaxNames:
     def get_id(self, syntax_name: asn1.ObjectIdentifier) -> int:
         """Get syntax id associated with name"""
         return self._syntax_name_ids[syntax_name]
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: ConnectionInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'CoppConnectionInfo',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel}}
+
+    return logging.LoggerAdapter(logger, extra)
 
 
 async def connect(addr: tcp.Address,
@@ -149,9 +169,9 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def addresses(self) -> list[tcp.Address]:
-        """Listening addresses"""
-        return self._srv.addresses
+    def info(self) -> tcp.ServerInfo:
+        """Server info"""
+        return self._srv.info
 
     async def _on_validate(self, user_data):
         cp_ppdu = _decode('CP-type', user_data)

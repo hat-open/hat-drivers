@@ -16,7 +16,7 @@ def addr():
 async def test_connect_listen(addr):
     conn1_future = asyncio.Future()
     srv = await tpkt.listen(conn1_future.set_result, addr)
-    assert srv.addresses == [addr]
+    assert srv.info.addresses == [addr]
 
     conn2 = await tpkt.connect(addr)
     conn1 = await conn1_future

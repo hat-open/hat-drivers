@@ -25,7 +25,9 @@ read_timeout: float = 0.5
 """Read timeout"""
 
 
-async def create(port, *,
+async def create(port,
+                 *,
+                 name=None,
                  baudrate=9600,
                  bytesize=common.ByteSize.EIGHTBITS,
                  parity=common.Parity.NONE,
@@ -35,12 +37,14 @@ async def create(port, *,
                  dsrdtr=False,
                  silent_interval=0):
     endpoint = Endpoint()
-    endpoint._port = port
     endpoint._silent_interval = silent_interval
     endpoint._input_buffer = bytearray()
     endpoint._input_cv = asyncio.Condition()
     endpoint._write_queue = aio.Queue()
     endpoint._executor = aio.Executor(log_exceptions=False)
+    endpoint._info = common.EndpointInfo(name=name,
+                                         port=port)
+    endpoint._log = common.create_logger_adapter(mlog, endpoint._info)
 
     endpoint._serial = await endpoint._executor.spawn(
         serial.Serial,
@@ -69,8 +73,8 @@ class Endpoint(common.Endpoint):
         return self._async_group
 
     @property
-    def port(self):
-        return self._port
+    def info(self):
+        return self._info
 
     async def read(self, size):
         async with self._input_cv:
@@ -135,7 +139,7 @@ class Endpoint(common.Endpoint):
                     self._input_cv.notify_all()
 
         except Exception as e:
-            mlog.warning('read loop error: %s', e, exc_info=e)
+            self._log.warning('read loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -158,7 +162,7 @@ class Endpoint(common.Endpoint):
                 await asyncio.sleep(self._silent_interval)
 
         except Exception as e:
-            mlog.warning('write loop error: %s', e, exc_info=e)
+            self._log.warning('write loop error: %s', e, exc_info=e)
 
         finally:
             self.close()

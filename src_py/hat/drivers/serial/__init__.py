@@ -3,7 +3,9 @@
 from hat.drivers.serial.common import (ByteSize,
                                        Parity,
                                        StopBits,
-                                       Endpoint)
+                                       EndpointInfo,
+                                       Endpoint,
+                                       create_logger_adapter)
 
 from hat.drivers.serial import py_serial
 
@@ -17,13 +19,17 @@ except ImportError:
 __all__ = ['ByteSize',
            'Parity',
            'StopBits',
+           'EndpointInfo',
            'Endpoint',
+           'create_logger_adapter',
            'create',
            'py_serial',
            'native_serial']
 
 
-async def create(port: str, *,
+async def create(port: str,
+                 *,
+                 name: str | None = None,
                  baudrate: int = 9600,
                  bytesize: ByteSize = ByteSize.EIGHTBITS,
                  parity: Parity = Parity.NONE,
@@ -38,6 +44,7 @@ async def create(port: str, *,
     Args:
         port: port name dependent of operating system
             (e.g. `/dev/ttyUSB0`, `COM3`, ...)
+        name: endpoint name
         baudrate: baud rate
         bytesize: number of data bits
         parity: parity checking
@@ -51,6 +58,7 @@ async def create(port: str, *,
     """
     impl = native_serial or py_serial
     return await impl.create(port=port,
+                             name=name,
                              baudrate=baudrate,
                              bytesize=bytesize,
                              parity=parity,

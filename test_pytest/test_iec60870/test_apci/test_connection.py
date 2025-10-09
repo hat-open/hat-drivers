@@ -52,7 +52,7 @@ async def test_listen(addr):
     srv = await apci.listen(srv_conn_queue.put_nowait, addr)
 
     assert srv.is_open
-    assert srv.addresses == [addr]
+    assert srv.info.addresses == [addr]
 
     conn = await apci.connect(addr)
     srv_conn = await srv_conn_queue.get()

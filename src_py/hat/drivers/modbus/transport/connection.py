@@ -98,7 +98,7 @@ async def serial_create(port: str,
                         ) -> Connection:
     endpoint = await serial.create(port, **kwargs)
 
-    mlog.debug("serial endpoint opened: %s", endpoint.port)
+    mlog.debug("serial endpoint opened: %s", endpoint.info.port)
     return _SerialConnection(endpoint)
 
 
@@ -124,7 +124,7 @@ async def tcp_listen(connection_cb: ConnectionCb,
                               bind_connections=True,
                               **kwargs)
 
-    mlog.debug("tcp server listening: %s", server.addresses)
+    mlog.debug("tcp server listening: %s", server.info.addresses)
     return server
 
 
@@ -132,7 +132,7 @@ class _SerialConnection(Connection):
 
     def __init__(self, endpoint):
         self._endpoint = endpoint
-        self._log_prefix = f'serial port {endpoint.port}'
+        self._log_prefix = f'serial port {endpoint.info.port}'
 
     @property
     def async_group(self):

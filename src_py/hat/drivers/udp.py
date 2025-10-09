@@ -18,12 +18,29 @@ class Address(typing.NamedTuple):
 
 
 class EndpointInfo(typing.NamedTuple):
+    name: str | None
     local_addr: Address
     remote_addr: Address | None
 
 
+def create_logger_adapter(logger: logging.Logger,
+                          info: EndpointInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'UdpEndpointInfo',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': ({'host': info.remote_addr.host,
+                                       'port': info.remote_addr.port}
+                                      if info.remote_addr else None)}}
+
+    return logging.LoggerAdapter(logger, extra)
+
+
 async def create(local_addr: Address | None = None,
                  remote_addr: Address | None = None,
+                 *,
+                 name: str | None = None,
                  queue_size: int = 0,
                  **kwargs
                  ) -> 'Endpoint':
@@ -32,6 +49,7 @@ async def create(local_addr: Address | None = None,
     Args:
         local_addr: local address
         remote_addr: remote address
+        name: endpoint name
         queue_size: receive queue max size
         kwargs: additional arguments passed to
             :meth:`asyncio.AbstractEventLoop.create_datagram_endpoint`
@@ -42,6 +60,7 @@ async def create(local_addr: Address | None = None,
     endpoint._remote_addr = remote_addr
     endpoint._async_group = aio.Group()
     endpoint._queue = aio.Queue(queue_size)
+    endpoint._log = mlog
 
     class Protocol(asyncio.DatagramProtocol):
 
@@ -54,7 +73,7 @@ async def create(local_addr: Address | None = None,
                     (data, Address(addr[0], addr[1])))
 
             except aio.QueueFullError:
-                mlog.warning('receive queue full - dropping datagram')
+                endpoint._log.warning('receive queue full - dropping datagram')
 
     loop = asyncio.get_running_loop()
     endpoint._transport, endpoint._protocol = \
@@ -67,8 +86,11 @@ async def create(local_addr: Address | None = None,
     sockname = endpoint._transport.get_extra_info('sockname')
     peername = endpoint._transport.get_extra_info('peername')
     endpoint._info = EndpointInfo(
+        name=name,
         local_addr=Address(sockname[0], sockname[1]),
         remote_addr=Address(peername[0], peername[1]) if peername else None)
+
+    endpoint._log = create_logger_adapter(mlog, endpoint._info)
 
     return endpoint
 
