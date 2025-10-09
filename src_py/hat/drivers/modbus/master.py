@@ -8,6 +8,7 @@ import typing
 from hat import aio
 
 from hat.drivers import tcp
+from hat.drivers import serial
 from hat.drivers.modbus import common
 from hat.drivers.modbus import transport
 
@@ -18,6 +19,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 async def create_tcp_master(modbus_type: common.ModbusType,
                             addr: tcp.Address,
+                            *,
                             response_timeout: float | None = None,
                             **kwargs
                             ) -> 'Master':
@@ -31,12 +33,24 @@ async def create_tcp_master(modbus_type: common.ModbusType,
             (see `tcp.connect`)
 
     """
-    conn = await transport.tcp_connect(addr, **kwargs)
-    return Master(conn, modbus_type, response_timeout)
+    conn = await tcp.connect(addr, **kwargs)
+
+    try:
+        log = tcp.create_logger_adapter(mlog, conn.info)
+        log.debug("tcp connection established")
+
+        return Master(link=transport.TcpLink(conn),
+                      modbus_type=modbus_type,
+                      response_timeout=response_timeout)
+
+    except BaseException:
+        await aio.uncancellable(conn.async_close())
+        raise
 
 
 async def create_serial_master(modbus_type: common.ModbusType,
-                               port: str, *,
+                               port: str,
+                               *,
                                silent_interval: float = 0.005,
                                response_timeout: float | None = None,
                                **kwargs
@@ -52,23 +66,35 @@ async def create_serial_master(modbus_type: common.ModbusType,
             (see `serial.create`)
 
     """
-    conn = await transport.serial_create(port,
-                                         silent_interval=silent_interval,
-                                         **kwargs)
-    return Master(conn, modbus_type, response_timeout)
+    endpoint = await serial.create(port,
+                                   silent_interval=silent_interval,
+                                   **kwargs)
+
+    try:
+        log = serial.create_logger_adapter(mlog, endpoint.info)
+        log.debug("serial endpoint opened")
+
+        return Master(link=transport.SerialLink(endpoint),
+                      modbus_type=modbus_type,
+                      response_timeout=response_timeout)
+
+    except BaseException:
+        await aio.uncancellable(endpoint.async_close())
+        raise
 
 
 class Master(aio.Resource):
     """Modbus master"""
 
     def __init__(self,
-                 conn: transport.Connection,
+                 link: transport.Link,
                  modbus_type: common.ModbusType,
                  response_timeout: float | None):
-        self._conn = conn
         self._modbus_type = modbus_type
         self._response_timeout = response_timeout
+        self._conn = transport.Connection(link)
         self._send_queue = aio.Queue()
+        self._log = common.create_logger_adapter(mlog, self._conn.info)
 
         if modbus_type == common.ModbusType.TCP:
             self._next_transaction_ids = iter(i % 0x10000
@@ -82,9 +108,9 @@ class Master(aio.Resource):
         return self._conn.async_group
 
     @property
-    def log_prefix(self) -> str:
-        """Logging prefix"""
-        return self._conn.log_prefix
+    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+        """Connection or endpoint info"""
+        return self._conn.info
 
     async def read(self,
                    device_id: int,
@@ -291,29 +317,26 @@ class Master(aio.Resource):
 
             if isinstance(res_adu, transport.TcpAdu):
                 if res_adu.transaction_id != req_adu.transaction_id:
-                    self._log(logging.WARNING,
-                              "discarding response adu: "
-                              "invalid response transaction id")
+                    self._log.warning("discarding response adu: "
+                                      "invalid response transaction id")
                     continue
 
             if res_adu.device_id != req_adu.device_id:
-                self._log(logging.WARNING,
-                          "discarding response adu: "
-                          "invalid response device id")
+                self._log.warning("discarding response adu: "
+                                  "invalid response device id")
                 continue
 
             req_fc = transport.get_pdu_function_code(req_adu.pdu)
             res_fc = transport.get_pdu_function_code(res_adu.pdu)
             if req_fc != res_fc:
-                self._log(logging.WARNING,
-                          "discarding response adu: "
-                          "invalid response function code")
+                self._log.warning("discarding response adu: "
+                                  "invalid response function code")
                 continue
 
             return res_adu
 
     async def _send_loop(self):
-        self._log(logging.DEBUG, "starting master send loop")
+        self._log.debug("starting master send loop")
         future = None
         try:
             while self.is_open:
@@ -321,14 +344,13 @@ class Master(aio.Resource):
 
                 async with self.async_group.create_subgroup() as subgroup:
                     subgroup.spawn(self._reset_input_buffer_loop)
-                    self._log(logging.DEBUG,
-                              "started discarding incomming data")
+                    self._log.debug("started discarding incomming data")
 
                     while not future or future.done():
                         req_adu, future = await self._send_queue.get()
 
                 await self._reset_input_buffer()
-                self._log(logging.DEBUG, "stopped discarding incomming data")
+                self._log.debug("stopped discarding incomming data")
 
                 await self._conn.send(req_adu)
                 await self._conn.drain()
@@ -354,10 +376,10 @@ class Master(aio.Resource):
             pass
 
         except Exception as e:
-            self._log(logging.ERROR, "error in send loop: %s", e, exc_info=e)
+            self._log.error("error in send loop: %s", e, exc_info=e)
 
         finally:
-            self._log(logging.DEBUG, "stopping master send loop")
+            self._log.debug("stopping master send loop")
             self.close()
             self._send_queue.close()
 
@@ -374,24 +396,18 @@ class Master(aio.Resource):
                 await self._reset_input_buffer()
 
                 await self._conn.read_byte()
-                self._log(logging.DEBUG, "discarded 1 byte from input buffer")
+                self._log.debug("discarded 1 byte from input buffer")
 
         except ConnectionError:
             self.close()
 
         except Exception as e:
-            self._log(logging.ERROR, "error in reset input buffer loop: %s", e,
-                      exc_info=e)
+            self._log.error("error in reset input buffer loop: %s", e,
+                            exc_info=e)
             self.close()
 
     async def _reset_input_buffer(self):
         count = await self._conn.reset_input_buffer()
         if not count:
             return
-        self._log(logging.DEBUG, "discarded %s bytes from input buffer", count)
-
-    def _log(self, level, msg, *args, **kwargs):
-        if not mlog.isEnabledFor(level):
-            return
-
-        mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)
+        self._log.debug("discarded %s bytes from input buffer", count)

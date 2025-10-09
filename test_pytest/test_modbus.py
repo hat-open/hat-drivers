@@ -44,18 +44,27 @@ async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
         if comm_type == CommType.TCP:
             slave_queue = aio.Queue()
             srv = await modbus.create_tcp_server(
-                modbus_type, tcp_addr, slave_queue.put_nowait,
-                read_cb, write_cb, write_mask_cb)
+                modbus_type=modbus_type,
+                addr=tcp_addr,
+                slave_cb=slave_queue.put_nowait,
+                read_cb=read_cb,
+                write_cb=write_cb,
+                write_mask_cb=write_mask_cb)
             master = await modbus.create_tcp_master(
-                modbus_type, tcp_addr)
+                modbus_type=modbus_type,
+                addr=tcp_addr)
             slave = await slave_queue.get()
 
         elif comm_type == CommType.SERIAL:
             master = await modbus.create_serial_master(
-                modbus_type, str(nullmodem[0]))
+                modbus_type=modbus_type,
+                port=str(nullmodem[0]))
             slave = await modbus.create_serial_slave(
-                modbus_type, str(nullmodem[1]), read_cb, write_cb,
-                write_mask_cb)
+                modbus_type=modbus_type,
+                port=str(nullmodem[1]),
+                read_cb=read_cb,
+                write_cb=write_cb,
+                write_mask_cb=write_mask_cb)
 
         else:
             raise ValueError()
@@ -75,11 +84,13 @@ async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
 @pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
 async def test_create_tcp(tcp_addr, modbus_type):
     with pytest.raises(Exception):
-        await modbus.create_tcp_master(modbus_type, tcp_addr)
+        await modbus.create_tcp_master(modbus_type=modbus_type,
+                                       addr=tcp_addr)
 
     slave_queue = aio.Queue()
-    srv = await modbus.create_tcp_server(modbus_type, tcp_addr,
-                                         slave_queue.put_nowait)
+    srv = await modbus.create_tcp_server(modbus_type=modbus_type,
+                                         addr=tcp_addr,
+                                         slave_cb=slave_queue.put_nowait)
     assert not srv.is_closed
     assert slave_queue.empty()
 
@@ -87,7 +98,8 @@ async def test_create_tcp(tcp_addr, modbus_type):
     slaves = []
 
     for _ in range(10):
-        master = await modbus.create_tcp_master(modbus_type, tcp_addr)
+        master = await modbus.create_tcp_master(modbus_type=modbus_type,
+                                                addr=tcp_addr)
         assert not master.is_closed
         masters.append(master)
 
@@ -107,7 +119,8 @@ async def test_create_tcp(tcp_addr, modbus_type):
     slaves = []
 
     for _ in range(10):
-        master = await modbus.create_tcp_master(modbus_type, tcp_addr)
+        master = await modbus.create_tcp_master(modbus_type=modbus_type,
+                                                addr=tcp_addr)
         assert not master.is_closed
         masters.append(master)
 
@@ -126,8 +139,10 @@ async def test_create_tcp(tcp_addr, modbus_type):
 @pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
 async def test_create_serial(nullmodem, modbus_type,
                              patch_serial_read_timeout):
-    master = await modbus.create_serial_master(modbus_type, str(nullmodem[0]))
-    slave = await modbus.create_serial_slave(modbus_type, str(nullmodem[1]))
+    master = await modbus.create_serial_master(modbus_type=modbus_type,
+                                               port=str(nullmodem[0]))
+    slave = await modbus.create_serial_slave(modbus_type=modbus_type,
+                                             port=str(nullmodem[1]))
     assert not master.is_closed
     assert not slave.is_closed
     await master.async_close()

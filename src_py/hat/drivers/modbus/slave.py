@@ -5,6 +5,7 @@ import typing
 
 from hat import aio
 
+from hat.drivers import serial
 from hat.drivers import tcp
 from hat.drivers.modbus import common
 from hat.drivers.modbus import transport
@@ -79,10 +80,11 @@ Returns:
 
 async def create_tcp_server(modbus_type: common.ModbusType,
                             addr: tcp.Address,
-                            slave_cb: typing.Optional[SlaveCb] = None,
-                            read_cb: typing.Optional[ReadCb] = None,
-                            write_cb: typing.Optional[WriteCb] = None,
-                            write_mask_cb: typing.Optional[WriteMaskCb] = None,
+                            *,
+                            slave_cb: SlaveCb | None = None,
+                            read_cb: ReadCb | None = None,
+                            write_cb: WriteCb | None = None,
+                            write_mask_cb: WriteMaskCb | None = None,
                             **kwargs
                             ) -> tcp.Server:
     """Create TCP server
@@ -102,7 +104,13 @@ async def create_tcp_server(modbus_type: common.ModbusType,
     """
 
     async def on_connection(conn):
-        slave = Slave(conn=conn,
+        if not conn.is_open:
+            return
+
+        log = tcp.create_logger_adapter(mlog, conn.info)
+        log.debug("new incomming tcp connection")
+
+        slave = Slave(link=transport.TcpLink(conn),
                       modbus_type=modbus_type,
                       read_cb=read_cb,
                       write_cb=write_cb,
@@ -115,21 +123,27 @@ async def create_tcp_server(modbus_type: common.ModbusType,
             await slave.wait_closing()
 
         except Exception as e:
-            if mlog.isEnabledFor(logging.ERROR):
-                mlog.error(f"tcp local ({addr.host}:{addr.port}): "
-                           f"error in slave callback: %s", e, exc_info=e)
+            log.error("error in slave callback: %s", e, exc_info=e)
 
         finally:
-            slave.close()
+            await aio.uncancellable(slave.async_close())
 
-    return await transport.tcp_listen(on_connection, addr, **kwargs)
+    server = await tcp.listen(on_connection, addr,
+                              bind_connections=True,
+                              **kwargs)
+
+    log = tcp.create_logger_adapter(mlog, server.info)
+    log.debug("tcp server listening")
+
+    return server
 
 
 async def create_serial_slave(modbus_type: common.ModbusType,
                               port: str,
-                              read_cb: typing.Optional[ReadCb] = None,
-                              write_cb: typing.Optional[WriteCb] = None,
-                              write_mask_cb: typing.Optional[WriteMaskCb] = None,  # NOQA
+                              *,
+                              read_cb: ReadCb | None = None,
+                              write_cb: WriteCb | None = None,
+                              write_mask_cb: WriteMaskCb | None = None,
                               silent_interval: float = 0.005,
                               **kwargs
                               ) -> 'Slave':
@@ -146,30 +160,40 @@ async def create_serial_slave(modbus_type: common.ModbusType,
             (see `serial.create`)
 
     """
-    conn = await transport.serial_create(port,
-                                         silent_interval=silent_interval,
-                                         **kwargs)
-    return Slave(conn=conn,
-                 modbus_type=modbus_type,
-                 read_cb=read_cb,
-                 write_cb=write_cb,
-                 write_mask_cb=write_mask_cb)
+    endpoint = await serial.create(port,
+                                   silent_interval=silent_interval,
+                                   **kwargs)
+
+    try:
+        log = serial.create_logger_adapter(mlog, endpoint.info)
+        log.debug("serial endpoint opened")
+
+        return Slave(link=transport.SerialLink(endpoint),
+                     modbus_type=modbus_type,
+                     read_cb=read_cb,
+                     write_cb=write_cb,
+                     write_mask_cb=write_mask_cb)
+
+    except BaseException:
+        await aio.uncancellable(endpoint.async_close())
+        raise
 
 
 class Slave(aio.Resource):
     """Modbus slave"""
 
     def __init__(self,
-                 conn: transport.Connection,
+                 link: transport.Link,
                  modbus_type: common.ModbusType,
-                 read_cb: typing.Optional[ReadCb] = None,
-                 write_cb: typing.Optional[WriteCb] = None,
-                 write_mask_cb: typing.Optional[WriteMaskCb] = None):
-        self._conn = conn
+                 read_cb: ReadCb | None = None,
+                 write_cb: WriteCb | None = None,
+                 write_mask_cb: WriteMaskCb | None = None):
         self._modbus_type = modbus_type
         self._read_cb = read_cb
         self._write_cb = write_cb
         self._write_mask_cb = write_mask_cb
+        self._conn = transport.Connection(link)
+        self._log = common.create_logger_adapter(mlog, self._conn.info)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -179,16 +203,16 @@ class Slave(aio.Resource):
         return self._conn.async_group
 
     @property
-    def log_prefix(self) -> str:
-        """Logging prefix"""
-        return self._conn.log_prefix
+    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+        """Connection or endpoint info"""
+        return self._conn.info
 
     async def _receive_loop(self):
-        self._log(logging.DEBUG, "starting slave receive loop")
+        self._log.debug("starting slave receive loop")
         try:
             while True:
                 try:
-                    self._log(logging.DEBUG, "waiting for request")
+                    self._log.debug("waiting for request")
                     req_adu = await self._conn.receive(
                         modbus_type=self._modbus_type,
                         direction=transport.Direction.REQUEST)
@@ -197,31 +221,29 @@ class Slave(aio.Resource):
                     break
 
                 except Exception as e:
-                    self._log(logging.WARNING, "error receiving request: %s",
-                              e, exc_info=e)
+                    self._log.warning("error receiving request: %s", e,
+                                      exc_info=e)
                     continue
 
                 device_id = req_adu.device_id
                 req = req_adu.pdu
 
                 try:
-                    self._log(logging.DEBUG,
-                              "processing request (device_id %s): %s",
-                              device_id, req)
+                    self._log.debug("processing request (device_id %s): %s",
+                                    device_id, req)
                     res = await self._process_request(device_id, req)
 
                 except Exception as e:
-                    self._log(logging.WARNING, "error processing request: %s",
-                              e, exc_info=e)
+                    self._log.warning("error processing request: %s", e,
+                                      exc_info=e)
                     continue
 
                 if device_id == 0:
-                    self._log(logging.DEBUG,
-                              "skip sending response (broadcast request): %s",
-                              res)
+                    self._log.debug(
+                        "skip sending response (broadcast request): %s", res)
                     continue
 
-                self._log(logging.DEBUG, "sending response: %s", res)
+                self._log.debug("sending response: %s", res)
 
                 if self._modbus_type == common.ModbusType.TCP:
                     res_adu = transport.TcpAdu(
@@ -247,15 +269,15 @@ class Slave(aio.Resource):
                     break
 
                 except Exception as e:
-                    self._log(logging.WARNING, "error sending response: %s", e,
-                              exc_info=e)
+                    self._log.warning("error sending response: %s", e,
+                                      exc_info=e)
                     continue
 
         except Exception as e:
-            self._log(logging.ERROR, "receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
-            self._log(logging.DEBUG, "closing slave receive loop")
+            self._log.debug("closing slave receive loop")
             self.close()
 
     async def _process_request(self, device_id, req):
@@ -412,7 +434,7 @@ class Slave(aio.Resource):
     async def _call_read_cb(self, device_id, data_type, start_address,
                             quantity):
         if not self._read_cb:
-            self._log(logging.DEBUG, "read callback not defined")
+            self._log.debug("read callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -420,14 +442,14 @@ class Slave(aio.Resource):
                                   start_address, quantity)
 
         except Exception as e:
-            self._log(logging.WARNING, "error in read callback: %s", e,
-                      exc_info=e)
+            self._log.warning("error in read callback: %s", e,
+                              exc_info=e)
             return common.Error.FUNCTION_ERROR
 
     async def _call_write_cb(self, device_id, data_type, start_address,
                              values):
         if not self._write_cb:
-            self._log(logging.DEBUG, "write callback not defined")
+            self._log.debug("write callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -435,14 +457,14 @@ class Slave(aio.Resource):
                                   start_address, values)
 
         except Exception as e:
-            self._log(logging.WARNING, "error in write callback: %s", e,
-                      exc_info=e)
+            self._log.warning("error in write callback: %s", e,
+                              exc_info=e)
             return common.Error.FUNCTION_ERROR
 
     async def _call_write_mask_cb(self, device_id, address, and_mask,
                                   or_mask):
         if not self._write_mask_cb:
-            self._log(logging.DEBUG, "write mask callback not defined")
+            self._log.debug("write mask callback not defined")
             return common.Error.FUNCTION_ERROR
 
         try:
@@ -450,12 +472,6 @@ class Slave(aio.Resource):
                                   address, and_mask, or_mask)
 
         except Exception as e:
-            self._log(logging.WARNING, "error in write mask callback: %s", e,
-                      exc_info=e)
+            self._log.warning("error in write mask callback: %s", e,
+                              exc_info=e)
             return common.Error.FUNCTION_ERROR
-
-    def _log(self, level, msg, *args, **kwargs):
-        if not mlog.isEnabledFor(level):
-            return
-
-        mlog.log(level, f"{self.log_prefix}: {msg}", *args, **kwargs)

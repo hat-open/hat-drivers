@@ -31,11 +31,10 @@ from hat.drivers.modbus.transport.common import (Direction,
                                                  AsciiAdu,
                                                  Adu,
                                                  get_pdu_function_code)
-from hat.drivers.modbus.transport.connection import (Connection,
-                                                     ConnectionCb,
-                                                     serial_create,
-                                                     tcp_connect,
-                                                     tcp_listen)
+from hat.drivers.modbus.transport.connection import (Link,
+                                                     SerialLink,
+                                                     TcpLink,
+                                                     Connection)
 
 
 __all__ = ['Direction',
@@ -69,8 +68,7 @@ __all__ = ['Direction',
            'AsciiAdu',
            'Adu',
            'get_pdu_function_code',
-           'Connection',
-           'ConnectionCb',
-           'serial_create',
-           'tcp_connect',
-           'tcp_listen']
+           'Link',
+           'SerialLink',
+           'TcpLink',
+           'Connection']
