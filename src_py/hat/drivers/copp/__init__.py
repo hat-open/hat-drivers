@@ -106,6 +106,8 @@ async def connect(addr: tcp.Address,
     cp_ppdu_data = _encode('CP-type', cp_ppdu)
     conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
 
+    log = cosp.create_logger_adapter(mlog, conn.info)
+
     try:
         cpa_ppdu = _decode('CPA-PPDU', conn.conn_res_user_data)
         _validate_connect_response(cp_ppdu, cpa_ppdu)
@@ -116,7 +118,7 @@ async def connect(addr: tcp.Address,
                           copp_receive_queue_size, copp_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_cosp(conn, _arp_ppdu()))
+        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), log))
         raise
 
 
@@ -152,6 +154,8 @@ async def listen(validate_cb: ValidateCb,
                                     addr,
                                     bind_connections=False,
                                     **kwargs)
+
+    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
 
     return server
 
@@ -208,7 +212,8 @@ class Server(aio.Resource):
                                   self._send_queue_size)
 
             except Exception:
-                await aio.uncancellable(_close_cosp(cosp_conn, _arp_ppdu()))
+                await aio.uncancellable(
+                    _close_cosp(cosp_conn, _arp_ppdu(), self._log))
                 raise
 
             try:
@@ -219,8 +224,8 @@ class Server(aio.Resource):
                 raise
 
         except Exception as e:
-            mlog.error("error creating new incomming connection: %s", e,
-                       exc_info=e)
+            self._log.error("error creating new incomming connection: %s",
+                            e, exc_info=e)
             return
 
         if not self._bind_connections:
@@ -274,6 +279,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
+        self._log = create_logger_adapter(mlog, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -342,7 +348,7 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_cosp(self._conn, self._close_ppdu)
+        await _close_cosp(self._conn, self._close_ppdu, self._log)
 
     def _close(self, ppdu):
         if not self.is_open:
@@ -368,7 +374,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self._close(_arp_ppdu())
@@ -395,7 +401,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self._close(_arp_ppdu())
@@ -409,12 +415,12 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_cosp(cosp_conn, ppdu):
+async def _close_cosp(cosp_conn, ppdu, log):
     try:
         data = _encode('Abort-type', ppdu)
 
     except Exception as e:
-        mlog.error("error encoding abort ppdu: %s", e, exc_info=e)
+        log.error("error encoding abort ppdu: %s", e, exc_info=e)
         data = None
 
     finally:
