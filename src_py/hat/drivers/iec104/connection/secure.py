@@ -7,6 +7,7 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import tcp
 from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
 from hat.drivers.iec60870 import apci
@@ -34,6 +35,7 @@ class SecureConnection(common.Connection):
         self._encoder = encoder.Encoder()
         self._send_queue = aio.Queue()
         self._receive_queue = aio.Queue()
+        self._log = tcp.create_logger_adapter(mlog, conn.info)
 
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(self._receive_loop)
@@ -86,7 +88,7 @@ class SecureConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.warning('send loop error: %s', e, exc_info=e)
+            self._log.warning('send loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -108,7 +110,7 @@ class SecureConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.warning('receive loop error: %s', e, exc_info=e)
+            self._log.warning('receive loop error: %s', e, exc_info=e)
 
         finally:
             self.close()

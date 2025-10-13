@@ -31,6 +31,8 @@ class MasterConnection(aio.Resource):
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
 
+        self._log = link.create_logger_adapter(mlog, conn.info)
+
         self._encoder = iec103.Encoder()
 
         self._interrogate_lock = asyncio.Lock()
@@ -205,7 +207,7 @@ class MasterConnection(aio.Resource):
                         raise ValueError('unsupported asdu type')
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -258,14 +260,15 @@ class MasterConnection(aio.Resource):
             value=element.value))
 
     async def _process_IDENTIFICATION(self, cause, asdu_address, io_address, element):  # NOQA
-        mlog.debug("received device identification "
-                   "(compatibility: %s; value: %s; software: %s)",
-                   element.compatibility,
-                   bytes(element.value),
-                   bytes(element.software))
+        if self._log.isEnabledFor(logging.DEBUG):
+            self._log.debug("received device identification "
+                            "(compatibility: %s; value: %s; software: %s)",
+                            element.compatibility,
+                            bytes(element.value),
+                            bytes(element.software))
 
     async def _process_TIME_SYNCHRONIZATION(self, cause, asdu_address, io_address, element):  # NOQA
-        mlog.info("received time sync response")
+        self._log.info("received time sync response")
 
     async def _process_GENERAL_INTERROGATION_TERMINATION(self, cause, asdu_address, io_address, element):  # NOQA
         if element.scan_number != self._interrogate_req_id:
