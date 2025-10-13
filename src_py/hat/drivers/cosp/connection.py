@@ -75,6 +75,8 @@ async def connect(addr: tcp.Address,
     """
     conn = await cotp.connect(addr, **kwargs)
 
+    log = cotp.create_logger_adapter(mlog, conn.info)
+
     try:
         cn_spdu = common.Spdu(type=common.SpduType.CN,
                               extended_spdus=False,
@@ -95,7 +97,7 @@ async def connect(addr: tcp.Address,
                           cosp_receive_queue_size, cosp_send_queue_size)
 
     except BaseException:
-        await aio.uncancellable(_close_cotp(conn, _ab_spdu))
+        await aio.uncancellable(_close_cotp(conn, _ab_spdu, log))
         raise
 
 
@@ -129,6 +131,8 @@ async def listen(validate_cb: ValidateCb,
     server._srv = await cotp.listen(server._on_connection, addr,
                                     bind_connections=False,
                                     **kwargs)
+
+    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
 
     return server
 
@@ -177,7 +181,8 @@ class Server(aio.Resource):
                                   self._send_queue_size)
 
             except BaseException:
-                await aio.uncancellable(_close_cotp(cotp_conn, _ab_spdu))
+                await aio.uncancellable(
+                    _close_cotp(cotp_conn, _ab_spdu, self._log))
                 raise
 
             try:
@@ -188,8 +193,8 @@ class Server(aio.Resource):
                 raise
 
         except Exception as e:
-            mlog.error("error creating new incomming connection: %s", e,
-                       exc_info=e)
+            self._log.error("error creating new incomming connection: %s",
+                            e, exc_info=e)
             return
 
         if not self._bind_connections:
@@ -229,6 +234,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
+        self._log = create_logger_adapter(mlog, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -294,7 +300,7 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_cotp(self._conn, self._close_spdu)
+        await _close_cotp(self._conn, self._close_spdu, self._log)
 
     def _close(self, spdu):
         if not self.is_open:
@@ -333,7 +339,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -365,7 +371,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -379,7 +385,7 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_cotp(cotp_conn, spdu):
+async def _close_cotp(cotp_conn, spdu, log):
     try:
         if not cotp_conn.is_open or not spdu:
             return
@@ -389,7 +395,7 @@ async def _close_cotp(cotp_conn, spdu):
         await cotp_conn.drain()
 
     except Exception as e:
-        mlog.error('close cotp error: %s', e, exc_info=e)
+        log.error('close cotp error: %s', e, exc_info=e)
 
     finally:
         await cotp_conn.async_close()
