@@ -38,6 +38,8 @@ async def connect(addr: tcp.Address,
         request_cb=client._on_request,
         notification_cb=client._on_notification)
 
+    client._log = tcp.create_logger_adapter(mlog, conn.info)
+
     try:
         client.async_group.spawn(aio.call_on_cancel, client._on_close,
                                  close_timeout)
@@ -184,10 +186,10 @@ class Client(aio.Resource):
             pass
 
         except asyncio.TimeoutError:
-            mlog.warning('enquire link timeout')
+            self._log.warning('enquire link timeout')
 
         except Exception as e:
-            mlog.error('equire link loop error: %s', e, exc_info=e)
+            self._log.error('equire link loop error: %s', e, exc_info=e)
 
         finally:
             self.close()

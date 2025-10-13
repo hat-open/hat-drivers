@@ -34,6 +34,7 @@ class Connection(aio.Resource):
         self._next_sequence_number = ((i % 0x7ffffffe) + 1
                                       for i in itertools.count(0))
         self._sequence_number_futures = {}
+        self._log = tcp.create_logger_adapter(mlog, conn.info)
 
         if self.is_open:
             self.async_group.spawn(self._receive_loop)
@@ -121,7 +122,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error('receive loop error: %s', e, exc_info=e)
+            self._log.error('receive loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
