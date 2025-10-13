@@ -156,6 +156,8 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
+    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+
     return server
 
 
@@ -238,8 +240,8 @@ class Server(aio.Resource):
                 raise
 
         except Exception as e:
-            mlog.error("error creating new incomming connection: %s", e,
-                       exc_info=e)
+            self._log.error("error creating new incomming connection: %s",
+                            e, exc_info=e)
             return
 
         if not self._bind_connections:
@@ -293,6 +295,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
+        self._log = create_logger_adapter(mlog, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -380,7 +383,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self._close(_abrt_apdu(1))
@@ -405,7 +408,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self._close(_abrt_apdu(1))
