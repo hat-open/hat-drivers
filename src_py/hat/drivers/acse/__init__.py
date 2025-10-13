@@ -52,7 +52,7 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 def create_logger_adapter(logger: logging.Logger,
                           info: ConnectionInfo
                           ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'AcseConnectionInfo',
+    extra = {'info': {'type': 'AcseConnection',
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

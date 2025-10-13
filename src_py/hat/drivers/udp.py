@@ -26,7 +26,7 @@ class EndpointInfo(typing.NamedTuple):
 def create_logger_adapter(logger: logging.Logger,
                           info: EndpointInfo
                           ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'UdpEndpointInfo',
+    extra = {'info': {'type': 'UdpEndpoint',
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

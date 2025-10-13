@@ -41,7 +41,7 @@ def create_logger_adapter(logger: logging.Logger,
                           info: ConnectionInfo | ServerInfo
                           ) -> logging.LoggerAdapter:
     if isinstance(info, ConnectionInfo):
-        extra = {'info': {'type': 'TcpConnectionInfo',
+        extra = {'info': {'type': 'TcpConnection',
                           'name': info.name,
                           'local_addr': {'host': info.local_addr.host,
                                          'port': info.local_addr.port},
@@ -49,7 +49,7 @@ def create_logger_adapter(logger: logging.Logger,
                                           'port': info.remote_addr.port}}}
 
     elif isinstance(info, ServerInfo):
-        extra = {'info': {'type': 'TcpServerInfo',
+        extra = {'info': {'type': 'TcpServer',
                           'name': info.name,
                           'addresses': [{'host': addr.host,
                                          'port': addr.port}
