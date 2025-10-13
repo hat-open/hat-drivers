@@ -36,11 +36,16 @@ class Endpoint(aio.Resource):
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
         self._data = bytearray()
+        self._log = serial.create_logger_adapter(mlog, endpoint.info)
 
     @property
     def async_group(self):
         """Async group"""
         return self._endpoint.async_group
+
+    @property
+    def info(self) -> serial.EndpointInfo:
+        return self._endpoint.info
 
     async def receive(self) -> common.Frame:
         """Receive"""
@@ -62,7 +67,7 @@ class Endpoint(aio.Resource):
                 return self._encoder.decode(memoryview(data))
 
             except Exception as e:
-                mlog.error("error decoding message: %s", e, exc_info=e)
+                self._log.error("error decoding message: %s", e, exc_info=e)
 
     async def send(self, msg: common.Frame):
         """Send"""

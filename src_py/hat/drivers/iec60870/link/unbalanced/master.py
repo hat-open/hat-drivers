@@ -7,6 +7,7 @@ import time
 
 from hat import aio
 
+from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
@@ -42,6 +43,8 @@ async def create_master_link(port: str,
                                            direction_valid=False,
                                            **kwargs)
 
+    link._log = serial.create_logger_adapter(mlog, link._endpoint.info)
+
     link.async_group.spawn(link._send_loop)
     link.async_group.spawn(link._receive_loop)
 
@@ -57,6 +60,7 @@ class MasterLink(aio.Resource):
     async def open_connection(self,
                               addr: common.Address,
                               *,
+                              name: str | None = None,
                               response_timeout: float = 15,
                               send_retry_count: int = 3,
                               poll_class1_delay: float | None = 1,
@@ -67,14 +71,17 @@ class MasterLink(aio.Resource):
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
 
-        conn = _MasterConnection()
-        conn._addr = addr
+        conn = MasterConnection()
         conn._send_retry_count = send_retry_count
         conn._loop = self._loop
         conn._send_queue = aio.Queue(send_queue_size)
         conn._receive_queue = aio.Queue(receive_queue_size)
         conn._access_demand_event = asyncio.Event()
         conn._async_group = self.async_group.create_subgroup()
+        conn._info = common.ConnectionInfo(name=name,
+                                           port=self._endpoint.info.port,
+                                           address=addr)
+        conn._log = common.create_logger_adapter(mlog, conn._info)
 
         send = functools.partial(self._send, response_timeout)
 
@@ -150,7 +157,7 @@ class MasterLink(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("read loop error: %s", e, exc_info=e)
+            self._log.error("read loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -174,7 +181,7 @@ class MasterLink(aio.Resource):
 
                 self._res_future = self._loop.create_future()
 
-                mlog.debug("writing request %s", req.function.name)
+                self._log.debug("writing request %s", req.function.name)
                 await self._endpoint.send(req)
                 await self._endpoint.drain()
 
@@ -202,7 +209,7 @@ class MasterLink(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("write loop error: %s", e, exc_info=e)
+            self._log.error("write loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -218,15 +225,15 @@ class MasterLink(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class _MasterConnection(common.Connection):
+class MasterConnection(common.Connection):
 
     @property
     def async_group(self):
         return self._async_group
 
     @property
-    def address(self):
-        return self._addr
+    def info(self):
+        return self._info
 
     async def send(self, data, sent_cb=None):
         if not data:
@@ -268,7 +275,7 @@ class _MasterConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.error("poll loop class 1 error: %s", e, exc_info=e)
+            self._log.error("poll loop class 1 error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -287,7 +294,7 @@ class _MasterConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.error("poll loop class 2 error: %s", e, exc_info=e)
+            self._log.error("poll loop class 2 error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -316,7 +323,7 @@ class _MasterConnection(common.Connection):
                     frame_count_bit=frame_count_bit,
                     frame_count_valid=True,
                     function=function,
-                    address=self._addr,
+                    address=self._info.address,
                     data=data)
 
                 retry_counter = 0
@@ -370,7 +377,7 @@ class _MasterConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self.close()

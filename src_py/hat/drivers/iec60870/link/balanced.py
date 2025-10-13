@@ -6,6 +6,7 @@ import logging
 
 from hat import aio
 
+from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
@@ -33,6 +34,8 @@ async def create_balanced_link(port: str,
                                            silent_interval=silent_interval,
                                            **kwargs)
 
+    link._log = serial.create_logger_adapter(mlog, link._endpoint.info)
+
     link.async_group.spawn(link._send_loop)
     link.async_group.spawn(link._receive_loop)
 
@@ -49,6 +52,7 @@ class BalancedLink(aio.Resource):
                               direction: common.Direction,
                               addr: common.Address,
                               *,
+                              name: str | None = None,
                               response_timeout: float = 15,
                               send_retry_count: int = 3,
                               status_delay: float = 5,
@@ -62,9 +66,8 @@ class BalancedLink(aio.Resource):
         if conn_key in self._conns:
             raise Exception('connection already exists')
 
-        conn = _BalancedConnection()
+        conn = BalancedConnection()
         conn._direction = direction
-        conn._addr = addr
         conn._send_retry_count = send_retry_count
         conn._loop = self._loop
         conn._send_event = asyncio.Event()
@@ -73,6 +76,10 @@ class BalancedLink(aio.Resource):
         conn._frame_count_bit = None
         conn._res = None
         conn._async_group = self.async_group.create_subgroup()
+        conn._info = common.ConnectionInfo(name=name,
+                                           port=self._endpoint.info.port,
+                                           address=addr)
+        conn._log = common.create_logger_adapter(mlog, conn._info)
 
         conn.async_group.spawn(aio.call_on_cancel, self._conns.pop, conn_key,
                                None)
@@ -160,7 +167,7 @@ class BalancedLink(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -176,7 +183,7 @@ class BalancedLink(aio.Resource):
 
                 self._res_future = self._loop.create_future()
 
-                mlog.debug("writing request %s", req.function.name)
+                self._log.debug("writing request %s", req.function.name)
                 await self._endpoint.send(req)
                 await self._endpoint.drain()
 
@@ -201,7 +208,7 @@ class BalancedLink(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -217,15 +224,15 @@ class BalancedLink(aio.Resource):
                 future, _, __ = self._send_queue.get_nowait()
 
 
-class _BalancedConnection(common.Connection):
+class BalancedConnection(common.Connection):
 
     @property
     def async_group(self):
         return self._async_group
 
     @property
-    def address(self):
-        return self._addr
+    def info(self):
+        return self._info
 
     async def send(self, data, sent_cb=None):
         if not data:
@@ -274,7 +281,7 @@ class _BalancedConnection(common.Connection):
                     frame_count_bit=frame_count_bit,
                     frame_count_valid=True,
                     function=function,
-                    address=self._addr,
+                    address=self._info.address,
                     data=data)
 
                 retry_counter = 0
@@ -321,7 +328,7 @@ class _BalancedConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.error("send loop error: %s", e, exc_info=e)
+            self._log.error("send loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -360,7 +367,7 @@ class _BalancedConnection(common.Connection):
             pass
 
         except Exception as e:
-            mlog.error("status loop error: %s", e, exc_info=e)
+            self._log.error("status loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -410,7 +417,7 @@ class _BalancedConnection(common.Connection):
                                   access_demand=False,
                                   data_flow_control=False,
                                   function=function,
-                                  address=self._addr,
+                                  address=self._info.address,
                                   data=data)
 
         # TODO: remember response only if resend posible

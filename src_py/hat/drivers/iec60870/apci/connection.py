@@ -101,6 +101,8 @@ async def listen(connection_cb: ConnectionCb,
 
     """
 
+    log = mlog
+
     async def on_connection(conn):
         try:
             try:
@@ -121,11 +123,15 @@ async def listen(connection_cb: ConnectionCb,
                 raise
 
         except Exception as e:
-            mlog.error("on connection error: %s", e, exc_info=e)
+            log.error("on connection error: %s", e, exc_info=e)
 
-    return await tcp.listen(on_connection, addr,
-                            bind_connections=bind_connections,
-                            **kwargs)
+    server = await tcp.listen(on_connection, addr,
+                              bind_connections=bind_connections,
+                              **kwargs)
+
+    log = tcp.create_logger_adapter(mlog, server.info)
+
+    return server
 
 
 class Connection(aio.Resource):
@@ -165,6 +171,7 @@ class Connection(aio.Resource):
         self._waiting_ack_handles = {}
         self._waiting_ack_cv = asyncio.Condition()
         self._loop = asyncio.get_running_loop()
+        self._log = tcp.create_logger_adapter(mlog, conn.info)
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -249,7 +256,7 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     def _on_response_timeout(self):
-        mlog.warning("response timeout occured - closing connection")
+        self._log.warning("response timeout occured - closing connection")
         self.close()
 
     def _on_supervisory_timeout(self):
@@ -260,7 +267,7 @@ class Connection(aio.Resource):
             await self._write_apdus()
 
         except Exception as e:
-            mlog.warning('supervisory timeout error: %s', e, exc_info=e)
+            self._log.warning('supervisory timeout error: %s', e, exc_info=e)
 
     async def _read_loop(self):
         try:
@@ -283,7 +290,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.warning('read loop error: %s', e, exc_info=e)
+            self._log.warning('read loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -321,7 +328,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.warning('write loop error: %s', e, exc_info=e)
+            self._log.warning('write loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -352,7 +359,7 @@ class Connection(aio.Resource):
                                    self._response_timeout)
 
         except Exception as e:
-            mlog.warning('test loop error: %s', e, exc_info=e)
+            self._log.warning('test loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -363,7 +370,7 @@ class Connection(aio.Resource):
             await _write_apdu(self._conn,
                               common.APDUU(common.ApduFunction.STARTDT_CON))
 
-            mlog.debug("send data enabled")
+            self._log.debug("send data enabled")
             self._enabled_cbs.notify(True)
 
         elif apdu.function == common.ApduFunction.STOPDT_ACT:
@@ -373,7 +380,7 @@ class Connection(aio.Resource):
                 await _write_apdu(self._conn,
                                   common.APDUU(common.ApduFunction.STOPDT_CON))
 
-                mlog.debug("send data disabled")
+                self._log.debug("send data disabled")
                 self._enabled_cbs.notify(False)
 
         elif apdu.function == common.ApduFunction.TESTFR_ACT:
@@ -412,7 +419,7 @@ class Connection(aio.Resource):
                          self._send_window_size))
 
         if not self._is_enabled:
-            mlog.debug("send data not enabled - discarding message")
+            self._log.debug("send data not enabled - discarding message")
             return
 
         await _write_apdu(self._conn, common.APDUI(ssn=self._ssn,

@@ -1,5 +1,6 @@
 import abc
 import enum
+import logging
 import typing
 
 from hat import aio
@@ -10,15 +11,15 @@ Address: typing.TypeAlias = int
 """addres is 0 or in range [0, 255] or in range [0, 65535]"""
 
 
-class Direction(enum.Enum):
-    B_TO_A = 0
-    A_TO_B = 1
-
-
 class AddressSize(enum.Enum):
     ZERO = 0
     ONE = 1
     TWO = 2
+
+
+class Direction(enum.Enum):
+    B_TO_A = 0
+    A_TO_B = 1
 
 
 class ReqFunction(enum.Enum):
@@ -68,21 +69,17 @@ class ShortFrame(typing.NamedTuple):
 Frame: typing.TypeAlias = ReqFrame | ResFrame | ShortFrame
 
 
-def get_broadcast_address(address_size: AddressSize):
-    if address_size == AddressSize.ONE:
-        return 0xFF
-
-    if address_size == AddressSize.TWO:
-        return 0xFFFF
-
-    raise ValueError('unsupported address size')
+class ConnectionInfo(typing.NamedTuple):
+    name: str | None
+    port: str
+    address: Address
 
 
 class Connection(aio.Resource):
 
     @property
     @abc.abstractmethod
-    def address(self) -> Address:
+    def info(self) -> ConnectionInfo:
         pass
 
     @abc.abstractmethod
@@ -94,3 +91,24 @@ class Connection(aio.Resource):
     @abc.abstractmethod
     async def receive(self) -> util.Bytes:
         pass
+
+
+def get_broadcast_address(address_size: AddressSize):
+    if address_size == AddressSize.ONE:
+        return 0xFF
+
+    if address_size == AddressSize.TWO:
+        return 0xFFFF
+
+    raise ValueError('unsupported address size')
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: ConnectionInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'Iec60870LinkConnection',
+                      'name': info.name,
+                      'port': info.port,
+                      'address': info.address}}
+
+    return logging.LoggerAdapter(logger, extra)

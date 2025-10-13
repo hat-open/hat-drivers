@@ -6,6 +6,7 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
@@ -42,6 +43,8 @@ async def create_slave_link(port: str,
                                            direction_valid=False,
                                            **kwargs)
 
+    link._log = serial.create_logger_adapter(mlog, link._endpoint.info)
+
     link.async_group.spawn(link._receive_loop)
 
     return link
@@ -56,6 +59,7 @@ class SlaveLink(aio.Resource):
     async def open_connection(self,
                               addr: common.Address,
                               *,
+                              name: str | None = None,
                               poll_class2_cb: PollClass2Cb | None = None,
                               keep_alive_timeout: float = 30,
                               receive_queue_size: int = 1024,
@@ -67,8 +71,7 @@ class SlaveLink(aio.Resource):
         if addr in self._conns:
             raise Exception('connection already exists')
 
-        conn = _SlaveConnection()
-        conn._addr = addr
+        conn = SlaveConnection()
         conn._poll_class2_cb = poll_class2_cb
         conn._loop = self._loop
         conn._active_future = self._loop.create_future()
@@ -78,6 +81,10 @@ class SlaveLink(aio.Resource):
         conn._send_queue = aio.Queue(send_queue_size)
         conn._receive_queue = aio.Queue(receive_queue_size)
         conn._async_group = self.async_group.create_subgroup()
+        conn._info = common.ConnectionInfo(name=name,
+                                           port=self._endpoint.info.port,
+                                           address=addr)
+        conn._log = common.create_logger_adapter(mlog, conn._info)
 
         conn.async_group.spawn(aio.call_on_cancel, conn._send_queue.close)
         conn.async_group.spawn(aio.call_on_cancel, conn._receive_queue.close)
@@ -147,15 +154,15 @@ class SlaveLink(aio.Resource):
             self.close()
 
 
-class _SlaveConnection(common.Connection):
+class SlaveConnection(common.Connection):
 
     @property
     def async_group(self):
         return self._async_group
 
     @property
-    def address(self):
-        return self._addr
+    def info(self):
+        return self._info
 
     async def send(self, data, sent_cb=None):
         if not data:
@@ -263,7 +270,7 @@ class _SlaveConnection(common.Connection):
                                   access_demand=access_demand,
                                   data_flow_control=False,
                                   function=function,
-                                  address=self._addr,
+                                  address=self._info.address,
                                   data=data)
 
         # TODO: remember response only if resend posible

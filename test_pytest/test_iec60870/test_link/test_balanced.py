@@ -35,6 +35,11 @@ class _MockSerialConnection(aio.Resource):
     def async_group(self):
         return self._async_group
 
+    @property
+    def info(self):
+        return serial.EndpointInfo(name=None,
+                                   port='')
+
     async def extend_data(self, data):
         if self.is_open:
             self._data.extend(data)

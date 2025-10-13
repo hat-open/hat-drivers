@@ -7,6 +7,7 @@ import pytest
 
 from hat import aio
 
+from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 import hat.drivers.serial
@@ -57,6 +58,11 @@ class SerialMock(aio.Resource):
     @property
     def async_group(self):
         return self._async_group
+
+    @property
+    def info(self):
+        return serial.EndpointInfo(name=None,
+                                   port='')
 
     async def read(self, size):
         ret = bytearray()
