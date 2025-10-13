@@ -14,11 +14,13 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v2c_trap_sender(remote_addr: udp.Address,
-                                 community: common.CommunityName = 'public'
+                                 community: common.CommunityName = 'public',
+                                 **kwargs
                                  ) -> common.TrapSender:
     """Create v2c trap sender"""
     endpoint = await udp.create(local_addr=None,
-                                remote_addr=remote_addr)
+                                remote_addr=remote_addr,
+                                **kwargs)
 
     try:
         return V2CTrapSender(endpoint=endpoint,
@@ -39,6 +41,7 @@ class V2CTrapSender(common.TrapSender):
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
+        self._log = udp.create_logger_adapter(mlog, endpoint.info)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -129,14 +132,14 @@ class V2CTrapSender(common.TrapSender):
                         future.set_result(res)
 
                 except Exception as e:
-                    mlog.warning("dropping message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("dropping message from %s: %s",
+                                      addr, e, exc_info=e)
 
         except ConnectionError:
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()

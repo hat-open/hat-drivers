@@ -12,11 +12,13 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_v1_trap_sender(remote_addr: udp.Address,
-                                community: common.CommunityName = 'public'
+                                community: common.CommunityName = 'public',
+                                **kwargs
                                 ) -> common.TrapSender:
     """Create v1 trap sender"""
     endpoint = await udp.create(local_addr=None,
-                                remote_addr=remote_addr)
+                                remote_addr=remote_addr,
+                                **kwargs)
 
     try:
         return V1TrapSender(endpoint=endpoint,

@@ -29,15 +29,18 @@ V3RequestCb: typing.TypeAlias = aio.AsyncCallable[
 
 
 async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
+                       *,
                        v1_request_cb: V1RequestCb | None = None,
                        v2c_request_cb: V2CRequestCb | None = None,
                        v3_request_cb: V3RequestCb | None = None,
                        authoritative_engine_id: common.EngineId | None = None,
-                       users: Collection[common.User] = []
+                       users: Collection[common.User] = [],
+                       **kwargs
                        ) -> 'Agent':
     """Create agent"""
     endpoint = await udp.create(local_addr=local_addr,
-                                remote_addr=None)
+                                remote_addr=None,
+                                **kwargs)
 
     try:
         return Agent(endpoint=endpoint,
@@ -60,7 +63,7 @@ class Agent(aio.Resource):
                  v2c_request_cb: V2CRequestCb | None,
                  v3_request_cb: V3RequestCb | None,
                  authoritative_engine_id: common.EngineId | None,
-                 users: Collection[common.User] = []):
+                 users: Collection[common.User]):
         self._endpoint = endpoint
         self._v1_request_cb = v1_request_cb
         self._v2c_request_cb = v2c_request_cb
@@ -68,6 +71,7 @@ class Agent(aio.Resource):
         self._auth_engine_id = authoritative_engine_id
         self._auth_keys = {}
         self._priv_keys = {}
+        self._log = udp.create_logger_adapter(mlog, endpoint.info)
 
         for user in users:
             common.validate_user(user)
@@ -125,38 +129,32 @@ class Agent(aio.Resource):
                                              priv_key_cb=self._on_priv_key)
 
                 except Exception as e:
-                    mlog.warning("error decoding message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("error decoding message from %s: %s",
+                                      addr, e, exc_info=e)
                     continue
 
                 try:
                     if isinstance(req_msg, encoder.v1.Msg):
-                        res_msg = await _process_v1_req_msg(
+                        res_msg = await self._process_v1_req_msg(
                             req_msg=req_msg,
-                            addr=addr,
-                            request_cb=self._v1_request_cb)
+                            addr=addr)
 
                     elif isinstance(req_msg, encoder.v2c.Msg):
-                        res_msg = await _process_v2c_req_msg(
+                        res_msg = await self._process_v2c_req_msg(
                             req_msg=req_msg,
-                            addr=addr,
-                            request_cb=self._v2c_request_cb)
+                            addr=addr)
 
                     elif isinstance(req_msg, encoder.v3.Msg):
-                        res_msg = await _process_v3_req_msg(
+                        res_msg = await self._process_v3_req_msg(
                             req_msg=req_msg,
-                            addr=addr,
-                            request_cb=self._v3_request_cb,
-                            authoritative_engine_id=self._auth_engine_id,
-                            auth_keys=self._auth_keys,
-                            priv_keys=self._priv_keys)
+                            addr=addr)
 
                     else:
                         raise ValueError('unsupported message type')
 
                 except Exception as e:
-                    mlog.warning("error processing message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("error processing message from %s: %s",
+                                      addr, e, exc_info=e)
                     continue
 
                 if not res_msg:
@@ -182,7 +180,8 @@ class Agent(aio.Resource):
                                                    priv_key=priv_key)
 
                 except Exception as e:
-                    mlog.warning("error encoding message: %s", e, exc_info=e)
+                    self._log.warning("error encoding message: %s",
+                                      e, exc_info=e)
                     continue
 
                 self._endpoint.send(res_msg_bytes, addr)
@@ -191,210 +190,209 @@ class Agent(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
 
+    async def _process_v1_req_msg(self, req_msg, addr):
+        if not self._v1_request_cb:
+            raise Exception('not accepting V1')
 
-async def _process_v1_req_msg(req_msg, addr, request_cb):
-    if not request_cb:
-        raise Exception('not accepting V1')
+        if req_msg.type == encoder.v1.MsgType.GET_REQUEST:
+            req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
 
-    if req_msg.type == encoder.v1.MsgType.GET_REQUEST:
-        req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
+        elif req_msg.type == encoder.v1.MsgType.GET_NEXT_REQUEST:
+            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
 
-    elif req_msg.type == encoder.v1.MsgType.GET_NEXT_REQUEST:
-        req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v1.MsgType.SET_REQUEST:
-        req = common.SetDataReq(data=req_msg.pdu.data)
-
-    else:
-        raise Exception('invalid request message type')
-
-    try:
-        res = await aio.call(request_cb, addr, req_msg.community, req)
-
-        if isinstance(res, common.Error):
-            if res.type.value > common.ErrorType.GEN_ERR.value:
-                raise Exception('invalid error type')
-
-            res_error = res
-            res_data = []
+        elif req_msg.type == encoder.v1.MsgType.SET_REQUEST:
+            req = common.SetDataReq(data=req_msg.pdu.data)
 
         else:
-            res_error = common.Error(common.ErrorType.NO_ERROR, 0)
-            res_data = res
+            raise Exception('invalid request message type')
 
-    except Exception as e:
-        mlog.warning("error processing request: %s", e, exc_info=e)
+        try:
+            res = await aio.call(self._v1_request_cb, addr, req_msg.community,
+                                 req)
 
-        res_error = common.Error(common.ErrorType.GEN_ERR, 0)
-        res_data = []
+            if isinstance(res, common.Error):
+                if res.type.value > common.ErrorType.GEN_ERR.value:
+                    raise Exception('invalid error type')
 
-    res_pdu = encoder.v1.BasicPdu(
-        request_id=req_msg.pdu.request_id,
-        error=res_error,
-        data=res_data)
+                res_error = res
+                res_data = []
 
-    res_msg = encoder.v1.Msg(
-        type=encoder.v1.MsgType.GET_RESPONSE,
-        community=req_msg.community,
-        pdu=res_pdu)
+            else:
+                res_error = common.Error(common.ErrorType.NO_ERROR, 0)
+                res_data = res
 
-    return res_msg
+        except Exception as e:
+            self._log.warning("error processing request: %s", e, exc_info=e)
 
-
-async def _process_v2c_req_msg(req_msg, addr, request_cb):
-    if not request_cb:
-        raise Exception('not accepting V2C')
-
-    if req_msg.type == encoder.v2c.MsgType.GET_REQUEST:
-        req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v2c.MsgType.GET_NEXT_REQUEST:
-        req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v2c.MsgType.GET_BULK_REQUEST:
-        req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v2c.MsgType.SET_REQUEST:
-        req = common.SetDataReq(data=req_msg.pdu.data)
-
-    else:
-        raise Exception('invalid request message type')
-
-    try:
-        res = await aio.call(request_cb, addr, req_msg.community, req)
-
-        if isinstance(res, common.Error):
-            res_error = res
+            res_error = common.Error(common.ErrorType.GEN_ERR, 0)
             res_data = []
 
+        res_pdu = encoder.v1.BasicPdu(
+            request_id=req_msg.pdu.request_id,
+            error=res_error,
+            data=res_data)
+
+        res_msg = encoder.v1.Msg(
+            type=encoder.v1.MsgType.GET_RESPONSE,
+            community=req_msg.community,
+            pdu=res_pdu)
+
+        return res_msg
+
+    async def _process_v2c_req_msg(self, req_msg, addr):
+        if not self._v2c_request_cb:
+            raise Exception('not accepting V2C')
+
+        if req_msg.type == encoder.v2c.MsgType.GET_REQUEST:
+            req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v2c.MsgType.GET_NEXT_REQUEST:
+            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v2c.MsgType.GET_BULK_REQUEST:
+            req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v2c.MsgType.SET_REQUEST:
+            req = common.SetDataReq(data=req_msg.pdu.data)
+
         else:
-            res_error = common.Error(common.ErrorType.NO_ERROR, 0)
-            res_data = res
+            raise Exception('invalid request message type')
 
-    except Exception as e:
-        mlog.warning("error processing request: %s", e, exc_info=e)
+        try:
+            res = await aio.call(self._v2c_request_cb, addr, req_msg.community,
+                                 req)
 
-        res_error = common.Error(common.ErrorType.GEN_ERR, 0)
-        res_data = []
+            if isinstance(res, common.Error):
+                res_error = res
+                res_data = []
 
-    res_pdu = encoder.v2c.BasicPdu(
-        request_id=req_msg.pdu.request_id,
-        error=res_error,
-        data=res_data)
+            else:
+                res_error = common.Error(common.ErrorType.NO_ERROR, 0)
+                res_data = res
 
-    res_msg = encoder.v2c.Msg(
-        type=encoder.v2c.MsgType.RESPONSE,
-        community=req_msg.community,
-        pdu=res_pdu)
+        except Exception as e:
+            self._log.warning("error processing request: %s", e, exc_info=e)
 
-    return res_msg
-
-
-async def _process_v3_req_msg(req_msg, addr, request_cb,
-                              authoritative_engine_id, auth_keys, priv_keys):
-    if not request_cb or authoritative_engine_id is None:
-        raise Exception('not accepting V3')
-
-    if req_msg.type == encoder.v3.MsgType.GET_REQUEST:
-        req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v3.MsgType.GET_NEXT_REQUEST:
-        req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v3.MsgType.GET_BULK_REQUEST:
-        req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
-
-    elif req_msg.type == encoder.v3.MsgType.SET_REQUEST:
-        req = common.SetDataReq(data=req_msg.pdu.data)
-
-    else:
-        raise Exception('invalid request message type')
-
-    if req_msg.authorative_engine.id != authoritative_engine_id:
-        if req_msg.reportable:
-
-            # TODO report data and conditions for sending reports
-
-            authorative_engine = encoder.v3.AuthorativeEngine(
-                id=authoritative_engine_id,
-                boots=0,
-                time=round(time.monotonic()))
-
-            res_pdu = encoder.v3.BasicPdu(
-                request_id=req_msg.pdu.request_id,
-                error=common.Error(common.ErrorType.NO_ERROR, 0),
-                data=[])
-
-            res_msg = encoder.v3.Msg(
-                type=encoder.v3.MsgType.REPORT,
-                id=req_msg.id,
-                reportable=False,
-                auth=False,
-                priv=False,
-                authorative_engine=authorative_engine,
-                user='',
-                context=req_msg.context,
-                pdu=res_pdu)
-
-            return res_msg
-
-        raise Exception('invalid authoritative engine id')
-
-    # TODO check authoritative engine boot and time
-
-    if req_msg.user not in auth_keys or req_msg.user not in priv_keys:
-        raise Exception('invalid user')
-
-    if auth_keys[req_msg.user] is not None and not req_msg.auth:
-        raise Exception('invalid auth flag')
-
-    if priv_keys[req_msg.user] is not None and not req_msg.priv:
-        raise Exception('invalid priv flag')
-
-    try:
-        res = await aio.call(request_cb, addr, req_msg.user, req_msg.context,
-                             req)
-
-        if isinstance(res, common.Error):
-            res_error = res
+            res_error = common.Error(common.ErrorType.GEN_ERR, 0)
             res_data = []
 
+        res_pdu = encoder.v2c.BasicPdu(
+            request_id=req_msg.pdu.request_id,
+            error=res_error,
+            data=res_data)
+
+        res_msg = encoder.v2c.Msg(
+            type=encoder.v2c.MsgType.RESPONSE,
+            community=req_msg.community,
+            pdu=res_pdu)
+
+        return res_msg
+
+    async def _process_v3_req_msg(self, req_msg, addr):
+        if not self._v3_request_cb or self._auth_engine_id is None:
+            raise Exception('not accepting V3')
+
+        if req_msg.type == encoder.v3.MsgType.GET_REQUEST:
+            req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v3.MsgType.GET_NEXT_REQUEST:
+            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v3.MsgType.GET_BULK_REQUEST:
+            req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
+
+        elif req_msg.type == encoder.v3.MsgType.SET_REQUEST:
+            req = common.SetDataReq(data=req_msg.pdu.data)
+
         else:
-            res_error = common.Error(common.ErrorType.NO_ERROR, 0)
-            res_data = res
+            raise Exception('invalid request message type')
 
-    except Exception as e:
-        mlog.warning("error processing request: %s", e, exc_info=e)
+        if req_msg.authorative_engine.id != self._auth_engine_id:
+            if req_msg.reportable:
 
-        res_error = common.Error(common.ErrorType.GEN_ERR, 0)
-        res_data = []
+                # TODO report data and conditions for sending reports
 
-    authorative_engine = encoder.v3.AuthorativeEngine(
-        id=req_msg.authorative_engine.id,
-        boots=0,
-        time=round(time.monotonic()))
+                authorative_engine = encoder.v3.AuthorativeEngine(
+                    id=self._auth_engine_id,
+                    boots=0,
+                    time=round(time.monotonic()))
 
-    res_pdu = encoder.v3.BasicPdu(
-        request_id=req_msg.pdu.request_id,
-        error=res_error,
-        data=res_data)
+                res_pdu = encoder.v3.BasicPdu(
+                    request_id=req_msg.pdu.request_id,
+                    error=common.Error(common.ErrorType.NO_ERROR, 0),
+                    data=[])
 
-    # TODO can we reuse request id for res msg id
+                res_msg = encoder.v3.Msg(
+                    type=encoder.v3.MsgType.REPORT,
+                    id=req_msg.id,
+                    reportable=False,
+                    auth=False,
+                    priv=False,
+                    authorative_engine=authorative_engine,
+                    user='',
+                    context=req_msg.context,
+                    pdu=res_pdu)
 
-    res_msg = encoder.v3.Msg(
-        type=encoder.v3.MsgType.RESPONSE,
-        id=req_msg.id,
-        reportable=False,
-        auth=req_msg.auth,
-        priv=req_msg.priv,
-        authorative_engine=authorative_engine,
-        user=req_msg.user,
-        context=req_msg.context,
-        pdu=res_pdu)
+                return res_msg
 
-    return res_msg
+            raise Exception('invalid authoritative engine id')
+
+        # TODO check authoritative engine boot and time
+
+        if (req_msg.user not in self._auth_keys or
+                req_msg.user not in self._priv_keys):
+            raise Exception('invalid user')
+
+        if self._auth_keys[req_msg.user] is not None and not req_msg.auth:
+            raise Exception('invalid auth flag')
+
+        if self._priv_keys[req_msg.user] is not None and not req_msg.priv:
+            raise Exception('invalid priv flag')
+
+        try:
+            res = await aio.call(self._v3_request_cb, addr, req_msg.user,
+                                 req_msg.context, req)
+
+            if isinstance(res, common.Error):
+                res_error = res
+                res_data = []
+
+            else:
+                res_error = common.Error(common.ErrorType.NO_ERROR, 0)
+                res_data = res
+
+        except Exception as e:
+            self._log.warning("error processing request: %s", e, exc_info=e)
+
+            res_error = common.Error(common.ErrorType.GEN_ERR, 0)
+            res_data = []
+
+        authorative_engine = encoder.v3.AuthorativeEngine(
+            id=req_msg.authorative_engine.id,
+            boots=0,
+            time=round(time.monotonic()))
+
+        res_pdu = encoder.v3.BasicPdu(
+            request_id=req_msg.pdu.request_id,
+            error=res_error,
+            data=res_data)
+
+        # TODO can we reuse request id for res msg id
+
+        res_msg = encoder.v3.Msg(
+            type=encoder.v3.MsgType.RESPONSE,
+            id=req_msg.id,
+            reportable=False,
+            auth=req_msg.auth,
+            priv=req_msg.priv,
+            authorative_engine=authorative_engine,
+            user=req_msg.user,
+            context=req_msg.context,
+            pdu=res_pdu)
+
+        return res_msg

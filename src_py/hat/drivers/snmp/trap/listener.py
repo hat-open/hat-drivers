@@ -40,16 +40,19 @@ V3InformCb: typing.TypeAlias = aio.AsyncCallable[
 
 
 async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162),  # NOQA
+                               *,
                                v1_trap_cb: V1TrapCb | None = None,
                                v2c_trap_cb: V2CTrapCb | None = None,
                                v2c_inform_cb: V2CInformCb | None = None,
                                v3_trap_cb: V3TrapCb | None = None,
                                v3_inform_cb: V3InformCb | None = None,
-                               users: Collection[common.User] = []
+                               users: Collection[common.User] = [],
+                               **kwargs
                                ) -> 'TrapListener':
     """Create trap listener"""
     endpoint = await udp.create(local_addr=local_addr,
-                                remote_addr=None)
+                                remote_addr=None,
+                                **kwargs)
 
     try:
         return TrapListener(endpoint=endpoint,
@@ -84,6 +87,7 @@ class TrapListener(aio.Resource):
         self._users = {}
         self._auth_keys = {}
         self._priv_keys = {}
+        self._log = udp.create_logger_adapter(mlog, endpoint.info)
 
         for user in users:
             common.validate_user(user)
@@ -141,8 +145,8 @@ class TrapListener(aio.Resource):
                                              priv_key_cb=self._on_priv_key)
 
                 except Exception as e:
-                    mlog.warning("error decoding message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("error decoding message from %s: %s",
+                                      addr, e, exc_info=e)
                     continue
 
                 try:
@@ -170,8 +174,8 @@ class TrapListener(aio.Resource):
                         raise ValueError('unsupported message type')
 
                 except Exception as e:
-                    mlog.warning("error processing message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("error processing message from %s: %s",
+                                      addr, e, exc_info=e)
                     continue
 
                 if not res_msg:
@@ -197,7 +201,8 @@ class TrapListener(aio.Resource):
                                                    priv_key=priv_key)
 
                 except Exception as e:
-                    mlog.warning("error encoding message: %s", e, exc_info=e)
+                    self._log.warning("error encoding message: %s",
+                                      e, exc_info=e)
                     continue
 
                 self._endpoint.send(res_msg_bytes, addr)
@@ -206,7 +211,7 @@ class TrapListener(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()

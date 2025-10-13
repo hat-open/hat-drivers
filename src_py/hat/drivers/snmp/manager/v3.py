@@ -23,11 +23,13 @@ _default_user = common.User(name='public',
 
 async def create_v3_manager(remote_addr: udp.Address,
                             context: common.Context | None = None,
-                            user: common.User = _default_user
+                            user: common.User = _default_user,
+                            **kwargs
                             ) -> common.Manager:
     """Create v3 manager"""
     endpoint = await udp.create(local_addr=None,
-                                remote_addr=remote_addr)
+                                remote_addr=remote_addr,
+                                **kwargs)
 
     try:
         manager = V3Manager(endpoint=endpoint,
@@ -64,6 +66,7 @@ class V3Manager(common.Manager):
         self._authorative_engine_set_time = time.monotonic()
         self._auth_key = None
         self._priv_key = None
+        self._log = udp.create_logger_adapter(mlog, endpoint.info)
 
         common.validate_user(user)
 
@@ -248,14 +251,14 @@ class V3Manager(common.Manager):
                         future.set_result(res)
 
                 except Exception as e:
-                    mlog.warning("dropping message from %s: %s",
-                                 addr, e, exc_info=e)
+                    self._log.warning("dropping message from %s: %s",
+                                      addr, e, exc_info=e)
 
         except ConnectionError:
             pass
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
