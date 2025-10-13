@@ -89,6 +89,10 @@ def _get_dynamic(ied_el):
     if max_datasets is not None:
         ret['max_datasets'] = max_datasets
 
+    max_dataset_attrs = _get_dynamic_max_dataset_attrs(ied_el)
+    if max_dataset_attrs is not None:
+        ret['max_dataset_attributes'] = max_dataset_attrs
+
     return ret
 
 
@@ -114,6 +118,16 @@ def _get_dynamic_max_datasets(ied_el):
     max_datasets = dyn_data_set_el.get('max')
     if max_datasets is not None:
         return int(max_datasets)
+
+
+def _get_dynamic_max_dataset_attrs(ied_el):
+    dyn_data_set_el = ied_el.find('./Services/DynDataSet')
+    if dyn_data_set_el is None:
+        return
+
+    max_dataset_attrs = dyn_data_set_el.get('maxAttributes')
+    if max_dataset_attrs is not None:
+        return int(max_dataset_attrs)
 
 
 def _get_device(root_el, ied_el, ap_el, ied_name):

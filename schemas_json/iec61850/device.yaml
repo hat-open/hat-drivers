@@ -204,6 +204,8 @@ properties:
                         type: boolean
             max_datasets:
                 type: integer
+            max_dataset_attributes:
+                type: integer
 $defs:
     refs:
         data:
