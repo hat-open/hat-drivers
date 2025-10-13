@@ -93,6 +93,8 @@ async def listen(connection_cb: ConnectionCb,
 
     """
 
+    log = mlog
+
     async def on_connection(conn):
         try:
             conn = Connection(conn=conn,
@@ -104,16 +106,20 @@ async def listen(connection_cb: ConnectionCb,
             await aio.call(connection_cb, conn)
 
         except Exception as e:
-            mlog.warning('connection callback error: %s', e, exc_info=e)
+            log.warning('connection callback error: %s', e, exc_info=e)
             await aio.uncancellable(conn.async_close())
 
         except BaseException:
             await aio.uncancellable(conn.async_close())
             raise
 
-    return await tcp.listen(on_connection, addr,
-                            bind_connections=bind_connections,
-                            **kwargs)
+    server = await tcp.listen(on_connection, addr,
+                              bind_connections=bind_connections,
+                              **kwargs)
+
+    server._log = tcp.create_logger_adapter(mlog, server.info)
+
+    return server
 
 
 class Connection(aio.Resource):
@@ -135,6 +141,7 @@ class Connection(aio.Resource):
         self._loop = asyncio.get_running_loop()
         self._next_msg_ids = itertools.count(1)
         self._ping_event = asyncio.Event()
+        self._log = tcp.create_logger_adapter(mlog, conn.info)
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -203,10 +210,10 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _read_loop(self):
-        mlog.debug("connection's read loop started")
+        self._log.debug("connection's read loop started")
         try:
             while True:
-                mlog.debug("waiting for incoming message")
+                self._log.debug("waiting for incoming message")
                 data = await self._read()
                 msg = Msg(
                     data=Data(type=data['data']['type'],
@@ -220,56 +227,57 @@ class Connection(aio.Resource):
                 self._ping_event.set()
 
                 if msg.data.type == 'HatChatter.Ping':
-                    mlog.debug("received ping request - sending ping response")
+                    self._log.debug("received ping request - "
+                                    "sending ping response")
                     await self.send(Data('HatChatter.Pong', b''),
                                     conv=msg.conv)
 
                 elif msg.data.type == 'HatChatter.Pong':
-                    mlog.debug("received ping response")
+                    self._log.debug("received ping response")
 
                 else:
-                    mlog.debug("received message %s", msg.data.type)
+                    self._log.debug("received message %s", msg.data.type)
                     await self._receive_queue.put(msg)
 
         except ConnectionError:
-            mlog.debug("connection error")
+            self._log.debug("connection error")
 
         except Exception as e:
-            mlog.error("read loop error: %s", e, exc_info=e)
+            self._log.error("read loop error: %s", e, exc_info=e)
 
         finally:
-            mlog.debug("connection's read loop stopping")
+            self._log.debug("connection's read loop stopping")
             self.close()
             self._receive_queue.close()
 
     async def _write_loop(self):
-        mlog.debug("connection's write loop started")
+        self._log.debug("connection's write loop started")
         future = None
 
         try:
             while True:
-                mlog.debug("waiting for outgoing message")
+                self._log.debug("waiting for outgoing message")
                 msg, future = await self._send_queue.get()
 
                 if msg is None:
-                    mlog.debug("draining output buffer")
+                    self._log.debug("draining output buffer")
                     await self._conn.drain()
 
                 else:
-                    mlog.debug("writing message %s", msg['data']['type'])
+                    self._log.debug("writing message %s", msg['data']['type'])
                     await self._write(msg)
 
                 if future and not future.done():
                     future.set_result(None)
 
         except ConnectionError:
-            mlog.debug("connection error")
+            self._log.debug("connection error")
 
         except Exception as e:
-            mlog.error("write loop error: %s", e, exc_info=e)
+            self._log.error("write loop error: %s", e, exc_info=e)
 
         finally:
-            mlog.debug("connection's write loop stopping")
+            self._log.debug("connection's write loop stopping")
             self.close()
             self._send_queue.close()
 
@@ -281,7 +289,7 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
     async def _ping_loop(self, delay, timeout):
-        mlog.debug("ping loop started")
+        self._log.debug("ping loop started")
         try:
             while True:
                 self._ping_event.clear()
@@ -290,7 +298,7 @@ class Connection(aio.Resource):
                     await aio.wait_for(self._ping_event.wait(), delay)
                     continue
 
-                mlog.debug("sending ping request")
+                self._log.debug("sending ping request")
                 await self.send(Data('HatChatter.Ping', b''),
                                 last=False)
 
@@ -298,14 +306,14 @@ class Connection(aio.Resource):
                     await aio.wait_for(self._ping_event.wait(), timeout)
                     continue
 
-                mlog.warning("ping timeout")
+                self._log.warning("ping timeout")
                 break
 
         except ConnectionError:
             pass
 
         finally:
-            mlog.debug("ping loop stopped")
+            self._log.debug("ping loop stopped")
             self.close()
 
     async def _read(self):
