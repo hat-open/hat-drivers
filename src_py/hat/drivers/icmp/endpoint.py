@@ -4,6 +4,7 @@ import logging
 import math
 import socket
 import sys
+import typing
 import uuid
 
 from hat import aio
@@ -15,7 +16,31 @@ from hat.drivers.icmp import encoder
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-async def create_endpoint(local_host: str = '0.0.0.0') -> 'Endpoint':
+class Address(typing.NamedTuple):
+    host: str
+    port: int
+
+
+class EndpointInfo(typing.NamedTuple):
+    name: str | None
+    local_addr: Address
+
+
+def create_logger_adapter(logger: logging.Logger,
+                          info: EndpointInfo
+                          ) -> logging.LoggerAdapter:
+    extra = {'info': {'type': 'IcmpEndpoint',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port}}}
+
+    return logging.LoggerAdapter(logger, extra)
+
+
+async def create_endpoint(local_host: str = '0.0.0.0',
+                          *,
+                          name: str | None = None
+                          ) -> 'Endpoint':
     loop = asyncio.get_running_loop()
     local_addr = await _get_host_addr(loop, local_host)
 
@@ -24,6 +49,9 @@ async def create_endpoint(local_host: str = '0.0.0.0') -> 'Endpoint':
     endpoint._loop = loop
     endpoint._echo_data = _echo_data_iter()
     endpoint._echo_futures = {}
+    endpoint._info = EndpointInfo(name=name,
+                                  local_addr=local_addr)
+    endpoint._log = create_logger_adapter(mlog, endpoint._info)
 
     endpoint._socket = _create_socket(local_addr)
 
@@ -37,6 +65,10 @@ class Endpoint(aio.Resource):
     @property
     def async_group(self) -> aio.Group:
         return self._async_group
+
+    @property
+    def info(self) -> EndpointInfo:
+        return self._info
 
     async def ping(self, remote_host: str):
         if not self.is_open:
@@ -63,10 +95,11 @@ class Endpoint(aio.Resource):
             self._echo_futures[data] = future
 
             if sys.version_info[:2] >= (3, 11):
-                await self._loop.sock_sendto(self._socket, req_bytes, addr)
+                await self._loop.sock_sendto(self._socket, req_bytes,
+                                             tuple(addr))
 
             else:
-                self._socket.sendto(req_bytes, addr)
+                self._socket.sendto(req_bytes, tuple(addr))
 
             await future
 
@@ -82,14 +115,15 @@ class Endpoint(aio.Resource):
                     msg = encoder.decode_msg(memoryview(msg_bytes))
 
                 except Exception as e:
-                    mlog.warning("error decoding message: %s", e, exc_info=e)
+                    self._log.warning("error decoding message: %s",
+                                      e, exc_info=e)
                     continue
 
                 if isinstance(msg, common.EchoMsg):
                     self._process_echo_msg(msg)
 
         except Exception as e:
-            mlog.error("receive loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -122,7 +156,7 @@ def _create_socket(local_addr):
 
     try:
         s.setblocking(False)
-        s.bind(local_addr)
+        s.bind(tuple(local_addr))
 
     except Exception:
         s.close()
@@ -139,7 +173,7 @@ async def _get_host_addr(loop, host):
     if not infos:
         raise Exception("could not resolve host addr")
 
-    return infos[0][4]
+    return Address(*infos[0][4])
 
 
 def _echo_data_iter():
