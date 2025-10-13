@@ -6,6 +6,7 @@ import pytest
 from hat import aio
 
 from hat.drivers import iec103
+from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec103 as encoding
 
 
@@ -49,8 +50,10 @@ def create_connection_slave_pair():
             return self._async_group
 
         @property
-        def address(self):
-            return 0
+        def info(self):
+            return link.ConnectionInfo(name=None,
+                                       port='',
+                                       address=0)
 
         async def send(self, data, sent_cb=None):
             send_queue.put_nowait(data)

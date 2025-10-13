@@ -6,6 +6,7 @@ import pytest
 from hat import aio
 
 from hat.drivers import iec101
+from hat.drivers.iec60870 import link
 from hat.drivers.iec60870.encodings import iec101 as encoding
 
 
@@ -21,8 +22,10 @@ class MockMasterConnection(aio.Resource):
         return self._async_group
 
     @property
-    def address(self):
-        return 0
+    def info(self):
+        return link.ConnectionInfo(name=None,
+                                   port='',
+                                   address=0)
 
     async def send(self, data, sent_cb=None):
         self._data_queue.put_nowait(data)
