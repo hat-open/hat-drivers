@@ -203,7 +203,8 @@ class Agent(aio.Resource):
             req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v1.MsgType.GET_NEXT_REQUEST:
-            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
+            req = common.GetNextDataReq(
+                names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v1.MsgType.SET_REQUEST:
             req = common.SetDataReq(data=req_msg.pdu.data)
@@ -252,10 +253,12 @@ class Agent(aio.Resource):
             req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v2c.MsgType.GET_NEXT_REQUEST:
-            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
+            req = common.GetNextDataReq(
+                names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v2c.MsgType.GET_BULK_REQUEST:
-            req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
+            req = common.GetBulkDataReq(
+                names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v2c.MsgType.SET_REQUEST:
             req = common.SetDataReq(data=req_msg.pdu.data)
@@ -301,10 +304,12 @@ class Agent(aio.Resource):
             req = common.GetDataReq(names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v3.MsgType.GET_NEXT_REQUEST:
-            req = common.GetNextDataReq(names=[i.name for i in req_msg.pdu.data])
+            req = common.GetNextDataReq(
+                names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v3.MsgType.GET_BULK_REQUEST:
-            req = common.GetBulkDataReq(names=[i.name for i in req_msg.pdu.data])
+            req = common.GetBulkDataReq(
+                names=[i.name for i in req_msg.pdu.data])
 
         elif req_msg.type == encoder.v3.MsgType.SET_REQUEST:
             req = common.SetDataReq(data=req_msg.pdu.data)
