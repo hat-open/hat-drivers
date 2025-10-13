@@ -74,6 +74,8 @@ async def connect(addr: tcp.Address,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
+    client._log = acse.create_logger_adapter(mlog, client._conn.info)
+
     if client.is_open and status_delay is not None:
         client.async_group.spawn(client._status_loop, status_delay,
                                  status_timeout)
@@ -471,22 +473,22 @@ class Client(aio.Resource):
                 await self._process_report(unconfirmed.data)
 
             except Exception as e:
-                mlog.error("error processing report: %s", e, exc_info=e)
+                self._log.error("error processing report: %s", e, exc_info=e)
 
         elif _is_unconfirmed_last_appl_error(unconfirmed):
             try:
                 self._process_last_appl_error(unconfirmed.data[0])
 
             except Exception as e:
-                mlog.error("error processing last application error: %s",
-                           e, exc_info=e)
+                self._log.error("error processing last application error: %s",
+                                e, exc_info=e)
 
         elif _is_unconfirmed_termination(unconfirmed):
             names = [i.name for i in unconfirmed.specification]
             data = list(unconfirmed.data)
 
             if len(names) != len(data):
-                mlog.warning("names/data size mismatch")
+                self._log.warning("names/data size mismatch")
                 return
 
             data_ref = encoder.data_ref_from_object_name(names[-1])
@@ -502,14 +504,15 @@ class Client(aio.Resource):
                                               else None))
 
             except Exception as e:
-                mlog.error("error processing termination: %s", e, exc_info=e)
+                self._log.error("error processing termination: %s",
+                                e, exc_info=e)
 
         else:
-            mlog.info("received unprocessed unconfirmed message")
+            self._log.info("received unprocessed unconfirmed message")
 
     async def _process_report(self, mms_data):
         if not self._report_cb:
-            mlog.info("report callback not defined - skipping report")
+            self._log.info("report callback not defined - skipping report")
             return
 
         report_id = encoder.value_from_mms_data(
@@ -517,7 +520,7 @@ class Client(aio.Resource):
 
         data_defs = self._report_data_defs.get(report_id)
         if data_defs is None:
-            mlog.info("report id not defined - skipping report")
+            self._log.info("report id not defined - skipping report")
             return
 
         report = encoder.report_from_mms_data(mms_data, data_defs)
@@ -534,13 +537,14 @@ class Client(aio.Resource):
     async def _process_termination(self, ref, cmd_mms_data,
                                    last_appl_error_mms_data):
         if not self._termination_cb:
-            mlog.info("termination callback not defined - "
-                      "skipping termination")
+            self._log.info("termination callback not defined - "
+                           "skipping termination")
             return
 
         value_type = self._cmd_value_types.get(ref)
         if value_type is None:
-            mlog.info("command value type not defined - skipping termination")
+            self._log.info("command value type not defined - "
+                           "skipping termination")
             return
 
         cmd = encoder.command_from_mms_data(mms_data=cmd_mms_data,
@@ -569,7 +573,7 @@ class Client(aio.Resource):
 
     async def _status_loop(self, delay, timeout):
         try:
-            mlog.debug("starting status loop")
+            self._log.debug("starting status loop")
             while True:
                 self._status_event.clear()
 
@@ -577,20 +581,20 @@ class Client(aio.Resource):
                     await aio.wait_for(self._status_event.wait(), delay)
                     continue
 
-                mlog.debug("sending status request")
+                self._log.debug("sending status request")
                 await aio.wait_for(self._send(mms.StatusRequest()), timeout)
 
         except asyncio.TimeoutError:
-            mlog.warning("status timeout")
+            self._log.warning("status timeout")
 
         except ConnectionError:
             pass
 
         except Exception as e:
-            mlog.error("status loop error: %s", e, exc_info=e)
+            self._log.error("status loop error: %s", e, exc_info=e)
 
         finally:
-            mlog.debug("stopping status loop")
+            self._log.debug("stopping status loop")
             self.close()
 
     async def _get_name_list(self, object_class, object_scope):
