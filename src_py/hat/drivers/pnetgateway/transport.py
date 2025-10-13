@@ -12,6 +12,10 @@ class Transport(aio.Resource):
     def async_group(self):
         return self._conn.async_group
 
+    @property
+    def info(self) -> tcp.ConnectionInfo:
+        return self._conn.info
+
     async def receive(self) -> json.Data:
         size_bytes = await self._conn.readexactly(4)
         size = int.from_bytes(size_bytes, 'big')

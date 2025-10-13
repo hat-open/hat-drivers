@@ -55,6 +55,8 @@ async def connect(addr: tcp.Address,
 
     conn._conn = transport.Transport(await tcp.connect(addr, **kwargs))
 
+    conn._log = tcp.create_logger_adapter(mlog, conn._conn.info)
+
     try:
         await conn._conn.send({'type': 'authentication_request',
                                'body': {'username': username,
@@ -160,7 +162,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.warning('read loop error: %s', e, exc_info=e)
+            self._log.warning('read loop error: %s', e, exc_info=e)
 
         finally:
             self.close()
@@ -173,7 +175,7 @@ class Connection(aio.Resource):
         if not future or future.done():
             return
 
-        mlog.debug('received change data response for %s', body.get('id'))
+        self._log.debug('received change data response for %s', body.get('id'))
         future.set_result(body['success'])
 
     def _on_command_response(self, body):
@@ -181,21 +183,21 @@ class Connection(aio.Resource):
         if not future or future.done():
             return
 
-        mlog.debug('received command response for %s', body.get('id'))
+        self._log.debug('received command response for %s', body.get('id'))
         future.set_result(body['success'])
 
     async def _on_data_changed_unsolicited(self, body):
         if not body['data']:
             return
 
-        mlog.debug('received data change unsolicited')
+        self._log.debug('received data change unsolicited')
         data = [encoder.data_from_json(i) for i in body['data']]
         for i in data:
             self._data[i.key] = i
         await aio.call(self._data_cb, data)
 
     async def _on_status_changed_unsolicited(self, body):
-        mlog.debug('received status changed unsolicited')
+        self._log.debug('received status changed unsolicited')
         self._pnet_status = common.Status(body['status'])
 
         self._data = {}
