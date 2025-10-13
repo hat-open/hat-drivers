@@ -79,6 +79,7 @@ async def connect(addr: tcp.Address,
     client._ping_future = None
     client._disconnect_reason = common.Reason.SUCCESS
     client._disconnect_reason_string = None
+    client._log = tcp.create_logger_adapter(mlog, conn.info)
 
     client._maximum_qos = res.maximum_qos
     client._client_id = (res.assigned_client_identifier
@@ -190,7 +191,7 @@ class Client(aio.Resource):
                 raise common.MqttError(res.reason, res.reason_string)
 
         except asyncio.TimeoutError:
-            mlog.error("response timeout exceeded")
+            self._log.error("response timeout exceeded")
 
             self._set_disconnect_reason(
                 common.Reason.IMPLEMENTATION_SPECIFIC_ERROR,
@@ -222,7 +223,7 @@ class Client(aio.Resource):
             return res.reasons
 
         except asyncio.TimeoutError:
-            mlog.error("response timeout exceeded")
+            self._log.error("response timeout exceeded")
 
             self._set_disconnect_reason(
                 common.Reason.IMPLEMENTATION_SPECIFIC_ERROR,
@@ -252,7 +253,7 @@ class Client(aio.Resource):
             return res.reasons
 
         except asyncio.TimeoutError:
-            mlog.error("response timeout exceeded")
+            self._log.error("response timeout exceeded")
 
             self._set_disconnect_reason(
                 common.Reason.IMPLEMENTATION_SPECIFIC_ERROR,
@@ -292,7 +293,7 @@ class Client(aio.Resource):
         if isinstance(res, cls):
             return
 
-        mlog.error('received invalid response (expecting %s)', cls)
+        self._log.error('received invalid response (expecting %s)', cls)
 
         self._set_disconnect_reason(common.Reason.PROTOCOL_ERROR,
                                     'invalid response type')
@@ -302,7 +303,7 @@ class Client(aio.Resource):
 
     async def _receive_loop(self):
         try:
-            mlog.debug('starting receive loop')
+            self._log.debug('starting receive loop')
 
             while True:
                 packet = await self._conn.receive()
@@ -319,16 +320,16 @@ class Client(aio.Resource):
                                          transport.SubAckPacket,
                                          transport.UnsubAckPacket)):
                     if not self._identifier_registry.register_packet(packet):
-                        mlog.warning('packet identifier not expected - '
-                                     'dropping packet')
+                        self._log.warning('packet identifier not expected - '
+                                          'dropping packet')
 
                 elif isinstance(packet, transport.PingResPacket):
                     if self._ping_future and not self._ping_future.done():
                         self._ping_future.set_result(None)
 
                 elif isinstance(packet, transport.DisconnectPacket):
-                    mlog.debug('received disconnect packet: %s: %s',
-                               packet.reason, packet.reason_string)
+                    self._log.debug('received disconnect packet: %s: %s',
+                                    packet.reason, packet.reason_string)
 
                     self._conn.close()
                     break
@@ -346,23 +347,23 @@ class Client(aio.Resource):
             pass
 
         except common.MqttError as e:
-            mlog.error('receive loop mqtt error: %s', e, exc_info=e)
+            self._log.error('receive loop mqtt error: %s', e, exc_info=e)
 
             self._set_disconnect_reason(e.reason, e.description)
 
         except Exception as e:
-            mlog.error('receive loop error: %s', e, exc_info=e)
+            self._log.error('receive loop error: %s', e, exc_info=e)
 
             self._set_disconnect_reason(common.Reason.UNSPECIFIED_ERROR, None)
 
         finally:
-            mlog.debug('stopping receive loop')
+            self._log.debug('stopping receive loop')
 
             self.close()
 
     async def _ping_loop(self):
         try:
-            mlog.debug('starting ping loop')
+            self._log.debug('starting ping loop')
 
             while True:
                 self._sent_event.clear()
@@ -381,19 +382,19 @@ class Client(aio.Resource):
             pass
 
         except asyncio.TimeoutError:
-            mlog.error('ping response timeout')
+            self._log.error('ping response timeout')
 
             self._set_disconnect_reason(
                 common.Reason.IMPLEMENTATION_SPECIFIC_ERROR,
                 "response timeout exceeded")
 
         except Exception as e:
-            mlog.error('ping loop error: %s', e, exc_info=e)
+            self._log.error('ping loop error: %s', e, exc_info=e)
 
             self._set_disconnect_reason(common.Reason.UNSPECIFIED_ERROR, None)
 
         finally:
-            mlog.debug('stopping ping loop')
+            self._log.debug('stopping ping loop')
 
             self.close()
 
@@ -442,8 +443,8 @@ class Client(aio.Resource):
         #      timeout
 
         if common.is_error_reason(packet.reason):
-            mlog.warning('publish release error: %s: %s',
-                         packet.reason, packet.reason_string)
+            self._log.warning('publish release error: %s: %s',
+                              packet.reason, packet.reason_string)
             return
 
         req = transport.PubCompPacket(
