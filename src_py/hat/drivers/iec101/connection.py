@@ -24,8 +24,8 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def address(self) -> common.Address:
-        return self._conn.address
+    def info(self) -> link.ConnectionInfo:
+        return self._conn.info
 
     async def send(self,
                    msgs: list[common.Msg],
