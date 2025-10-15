@@ -31,24 +31,24 @@ def create_argument_parser(subparsers) -> argparse.ArgumentParser:
 def main(args):
     source = args.source if args.source != Path('-') else sys.stdin
 
-    device_confs = readout(source)
+    result = readout(source)
 
     # validator = json.DefaultSchemaValidator(common.json_schema_repo)
-    # for device_conf in device_confs.values():
-    #     validator.validate('hat-drivers://iec61850/device.yaml', device_conf)
+    # validator.validate('hat-drivers://iec61850/readout.yaml', result)
 
     if args.output == Path('-'):
-        json.encode_stream(device_confs, sys.stdout)
+        json.encode_stream(result, sys.stdout)
 
     else:
-        json.encode_file(device_confs, args.output)
+        json.encode_file(result, args.output)
 
 
 def readout(source: typing.TextIO | Path
-            ) -> dict[common.IedName, common.DeviceConf]:
+            ) -> common.ReadoutResult:
     root_el = _read_xml(source)
-    return {ied_name: device_conf
-            for ied_name, device_conf in _get_ieds(root_el)}
+    return {'type': 'iec61850-readout',
+            'version': '1',
+            'devices': list(_get_ieds(root_el))}
 
 
 def _read_xml(source):
@@ -72,10 +72,10 @@ def _get_ieds(root_el):
                 continue
 
             mlog.info('IED %s', ied_name)
-            yield ied_name, _get_device(root_el=root_el,
-                                        ied_el=ied_el,
-                                        ap_el=ap_el,
-                                        ied_name=ied_name)
+            yield _get_device(root_el=root_el,
+                              ied_el=ied_el,
+                              ap_el=ap_el,
+                              ied_name=ied_name)
 
 
 def _get_dynamic(ied_el):
@@ -172,8 +172,7 @@ def _get_device(root_el, ied_el, ap_el, ied_name):
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
 
     device_conf = {
-        'type': 'iec61850-device',
-        'version': '1',
+        'ied_name': ied_name,
         'connection': _get_connection(root_el, ied_name, ap_name),
         'value_types': value_types,
         'datasets': datasets,

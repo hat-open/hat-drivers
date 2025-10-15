@@ -14,8 +14,5 @@ with importlib.resources.as_file(importlib.resources.files(__package__) /
     """JSON schema repository"""
 
 
-IedName: typing.TypeAlias = str
-
-
-DeviceConf: typing.TypeAlias = json.Data
-"""Device configuration defined by ``hat-drivers://iec61850/device.yaml``"""
+ReadoutResult: typing.TypeAlias = json.Data
+"""Readout result as defined by ``hat-drivers://iec61850/readout.yaml``"""

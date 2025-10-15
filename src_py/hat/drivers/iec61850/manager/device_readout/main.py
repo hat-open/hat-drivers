@@ -95,7 +95,7 @@ def main(args):
 
 async def async_main(args):
     try:
-        device_conf = await readout(
+        result = await readout(
             addr=tcp.Address(args.host, args.port),
             local_tsel=args.local_tsel,
             remote_tsel=args.remote_tsel,
@@ -114,14 +114,14 @@ async def async_main(args):
         return
 
     # validator = json.DefaultSchemaValidator(common.json_schema_repo)
-    # validator.validate('hat-drivers://iec61850/device.yaml', device_conf)
+    # validator.validate('hat-drivers://iec61850/readout.yaml', result)
 
     try:
         if args.output == Path('-'):
-            json.encode_stream(device_conf, sys.stdout)
+            json.encode_stream(result, sys.stdout)
 
         else:
-            json.encode_file(device_conf, args.output)
+            json.encode_file(result, args.output)
 
     except Exception as e:
         mlog.error('write output error: %s', e, exc_info=e)

@@ -27,7 +27,7 @@ async def readout(addr: tcp.Address,
                   local_ae_qualifier: int | None = None,
                   remote_ae_qualifier: int | None = None,
                   local_detail_calling: int | None = None
-                  ) -> common.DeviceConf:
+                  ) -> common.ReadoutResult:
     value_types: dict[common.RootDataRef, common.ValueType | None] = {}
     dataset_data_refs: dict[common.DatasetRef, Collection[common.DataRef]] = {}
     rcb_attr_values: dict[common.RcbRef, dict[common.RcbAttrType,
@@ -141,13 +141,17 @@ async def readout(addr: tcp.Address,
     finally:
         await aio.uncancellable(conn.async_close())
 
-    return get_device_conf(addr=addr,
-                           tsel=remote_tsel,
-                           ssel=remote_ssel,
-                           psel=remote_psel,
-                           ap_title=remote_ap_title,
-                           ae_qualifier=remote_ae_qualifier,
-                           value_types=value_types,
-                           dataset_data_refs=dataset_data_refs,
-                           rcb_attr_values=rcb_attr_values,
-                           cmd_models=cmd_models)
+    device_conf = get_device_conf(addr=addr,
+                                  tsel=remote_tsel,
+                                  ssel=remote_ssel,
+                                  psel=remote_psel,
+                                  ap_title=remote_ap_title,
+                                  ae_qualifier=remote_ae_qualifier,
+                                  value_types=value_types,
+                                  dataset_data_refs=dataset_data_refs,
+                                  rcb_attr_values=rcb_attr_values,
+                                  cmd_models=cmd_models)
+
+    return {'type': 'iec61850-readout',
+            'version': '1',
+            'devices': [device_conf]}

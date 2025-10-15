@@ -22,15 +22,13 @@ def get_device_conf(addr: tcp.Address,
                                           dict[common.RcbAttrType,
                                                common.RcbAttrValue]],
                     cmd_models: dict[common.CommandRef, common.ControlModel]
-                    ) -> common.DeviceConf:
+                    ) -> json.Data:
     updated_value_types = {
         ref: (_update_value_type(value_type) if value_type is not None
               else None)
         for ref, value_type in value_types.items()}
 
     return {
-        'type': 'iec61850-device',
-        'version': '1',
         'connection': _get_connection_conf(addr=addr,
                                            tsel=tsel,
                                            ssel=ssel,

@@ -117,7 +117,7 @@ def task_asn1():
 def task_json_schema():
     """Generate JSON Schema repository"""
     yield _get_subtask_json_schema(
-        src_paths=[common.schemas_json_dir / 'iec61850/device.yaml'],
+        src_paths=[common.schemas_json_dir / 'iec61850/readout.yaml'],
         dst_path=(common.src_py_dir /
                   'hat/drivers/iec61850/manager/json_schema_repo.json'))
 

@@ -9,7 +9,7 @@ from hat.drivers.iec61850.manager.common import json_schema_repo
 from hat.drivers.iec61850.manager.file_readout import readout
 
 
-json_schema_id = "hat-drivers://iec61850/device.yaml"
+json_schema_id = "hat-drivers://iec61850/readout.yaml"
 
 
 @pytest.fixture(scope='session')
@@ -21,12 +21,15 @@ def test_1(validator):
     with importlib.resources.open_text(__package__, 'test1.cid') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'Demo' in res
-    device_json = res['Demo']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    assert 'Demo' in device_jsons
+    device_json = device_jsons['Demo']
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 6
     assert len(device_json['commands']) == 4
@@ -136,12 +139,15 @@ def test_2(validator):
     with importlib.resources.open_text(__package__, 'test2.cid') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'J01' in res
-    device_json = res['J01']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    assert 'J01' in device_jsons
+    device_json = device_jsons['J01']
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 15
     assert len(device_json['commands']) == 2
@@ -178,69 +184,72 @@ def test_3(validator):
     with importlib.resources.open_text(__package__, 'test3.scd') as f:
         res = readout(f)
 
-    assert len(res) == 3
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'E1_7SA' in res
-    assert res['E1_7SA']['connection']['host'] == '192.168.29.162'
-    assert res['E1_7SA']['connection']['tsel'] == 1
-    assert res['E1_7SA']['connection']['ssel'] == 1
-    assert res['E1_7SA']['connection']['psel'] == 1
-    assert res['E1_7SA']['connection']['ap_title'] == [1, 3, 9999, 23]
-    assert res['E1_7SA']['connection']['ae_qualifier'] == 23
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
 
-    assert 'E1_REL' in res
-    assert res['E1_REL']['connection']['host'] == '192.168.29.163'
-    assert res['E1_REL']['connection']['tsel'] == 1
-    assert res['E1_REL']['connection']['ssel'] == 1
-    assert res['E1_REL']['connection']['psel'] == 1
-    assert res['E1_REL']['connection']['ap_title'] == [1, 3, 9999, 23]
-    assert res['E1_REL']['connection']['ae_qualifier'] == 23
+    assert len(device_jsons) == 3
 
-    assert 'LKKU' in res
-    assert res['LKKU']['connection']['host'] == '10.228.34.150'
-    assert res['LKKU']['connection']['tsel'] == 1
-    assert res['LKKU']['connection']['ssel'] == 1
-    assert res['LKKU']['connection']['psel'] == 1
-    assert res['LKKU']['connection']['ap_title'] == [1, 3, 9999, 23]
-    assert res['LKKU']['connection']['ae_qualifier'] == 23
+    assert 'E1_7SA' in device_jsons
+    assert device_jsons['E1_7SA']['connection']['host'] == '192.168.29.162'
+    assert device_jsons['E1_7SA']['connection']['tsel'] == 1
+    assert device_jsons['E1_7SA']['connection']['ssel'] == 1
+    assert device_jsons['E1_7SA']['connection']['psel'] == 1
+    assert device_jsons['E1_7SA']['connection']['ap_title'] == [1, 3, 9999, 23]
+    assert device_jsons['E1_7SA']['connection']['ae_qualifier'] == 23
 
-    assert len(res['E1_7SA']['value_types']) == 4023
-    assert len(res['E1_REL']['value_types']) == 1334
-    assert len(res['LKKU']['value_types']) == 3
+    assert 'E1_REL' in device_jsons
+    assert device_jsons['E1_REL']['connection']['host'] == '192.168.29.163'
+    assert device_jsons['E1_REL']['connection']['tsel'] == 1
+    assert device_jsons['E1_REL']['connection']['ssel'] == 1
+    assert device_jsons['E1_REL']['connection']['psel'] == 1
+    assert device_jsons['E1_REL']['connection']['ap_title'] == [1, 3, 9999, 23]
+    assert device_jsons['E1_REL']['connection']['ae_qualifier'] == 23
+
+    assert 'LKKU' in device_jsons
+    assert device_jsons['LKKU']['connection']['host'] == '10.228.34.150'
+    assert device_jsons['LKKU']['connection']['tsel'] == 1
+    assert device_jsons['LKKU']['connection']['ssel'] == 1
+    assert device_jsons['LKKU']['connection']['psel'] == 1
+    assert device_jsons['LKKU']['connection']['ap_title'] == [1, 3, 9999, 23]
+    assert device_jsons['LKKU']['connection']['ae_qualifier'] == 23
+
+    assert len(device_jsons['E1_7SA']['value_types']) == 4023
+    assert len(device_jsons['E1_REL']['value_types']) == 1334
+    assert len(device_jsons['LKKU']['value_types']) == 3
 
     # dynamic
-    assert res['E1_7SA']['dynamic']['rcb_editable']['report_id']
-    assert res['E1_7SA']['dynamic']['rcb_editable']['dataset']
-    assert res['E1_7SA']['dynamic']['rcb_editable']['optional_fields']
-    assert res['E1_7SA']['dynamic']['rcb_editable']['buffer_time']
-    assert res['E1_7SA']['dynamic']['rcb_editable']['trigger_options']
-    assert res['E1_7SA']['dynamic']['rcb_editable']['integrity_period']
-    assert res['E1_7SA']['dynamic']['max_datasets'] == 30
-    assert res['E1_7SA']['dynamic']['max_dataset_attributes'] == 60
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['report_id']
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['dataset']
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['optional_fields']
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['buffer_time']
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['trigger_options']
+    assert device_jsons['E1_7SA']['dynamic']['rcb_editable']['integrity_period']  # NOQA
+    assert device_jsons['E1_7SA']['dynamic']['max_datasets'] == 30
+    assert device_jsons['E1_7SA']['dynamic']['max_dataset_attributes'] == 60
 
-    assert res['E1_REL']['dynamic']['rcb_editable']['report_id']
-    assert not res['E1_REL']['dynamic']['rcb_editable']['dataset']
-    assert res['E1_REL']['dynamic']['rcb_editable']['optional_fields']
-    assert res['E1_REL']['dynamic']['rcb_editable']['buffer_time']
-    assert res['E1_REL']['dynamic']['rcb_editable']['trigger_options']
-    assert res['E1_REL']['dynamic']['rcb_editable']['integrity_period']
-    assert 'max_datasets' not in res['E1_REL']['dynamic']
-    assert 'max_dataset_attributes' not in res['E1_REL']['dynamic']
+    assert device_jsons['E1_REL']['dynamic']['rcb_editable']['report_id']
+    assert not device_jsons['E1_REL']['dynamic']['rcb_editable']['dataset']
+    assert device_jsons['E1_REL']['dynamic']['rcb_editable']['optional_fields']
+    assert device_jsons['E1_REL']['dynamic']['rcb_editable']['buffer_time']
+    assert device_jsons['E1_REL']['dynamic']['rcb_editable']['trigger_options']
+    assert device_jsons['E1_REL']['dynamic']['rcb_editable']['integrity_period']  # NOQA
+    assert 'max_datasets' not in device_jsons['E1_REL']['dynamic']
+    assert 'max_dataset_attributes' not in device_jsons['E1_REL']['dynamic']
 
-    assert res['LKKU']['dynamic']['rcb_editable']['report_id']
-    assert res['LKKU']['dynamic']['rcb_editable']['dataset']
-    assert res['LKKU']['dynamic']['rcb_editable']['optional_fields']
-    assert res['LKKU']['dynamic']['rcb_editable']['buffer_time']
-    assert res['LKKU']['dynamic']['rcb_editable']['trigger_options']
-    assert res['LKKU']['dynamic']['rcb_editable']['integrity_period']
-    assert 'max_datasets' not in res['LKKU']['dynamic']
-    assert 'max_dataset_attributes' not in res['LKKU']['dynamic']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['report_id']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['dataset']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['optional_fields']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['buffer_time']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['trigger_options']
+    assert device_jsons['LKKU']['dynamic']['rcb_editable']['integrity_period']
+    assert 'max_datasets' not in device_jsons['LKKU']['dynamic']
+    assert 'max_dataset_attributes' not in device_jsons['LKKU']['dynamic']
 
     # verify a E1_REL dataset values
-    assert len(res['E1_REL']['datasets']) == 5
-    ds_staturg = util.first(res['E1_REL']['datasets'],
+    assert len(device_jsons['E1_REL']['datasets']) == 5
+    ds_staturg = util.first(device_jsons['E1_REL']['datasets'],
                             lambda i: i['ref'] == {
                                 'logical_device': 'E1_RELLD0',
                                 'logical_node': 'LLN0',
@@ -258,12 +267,15 @@ def test_4(validator):
     with importlib.resources.open_text(__package__, 'test4.scd') as f:
         res = readout(f)
 
-    assert len(res) == 2
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'E1_7SA' in res
-    device_json = res['E1_7SA']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 2
+
+    assert 'E1_7SA' in device_jsons
+    device_json = device_jsons['E1_7SA']
     assert len(device_json['datasets']) == 3
     assert len(device_json['rcbs']) == 37
     assert len(device_json['commands']) == 100
@@ -306,8 +318,8 @@ def test_4(validator):
         **data_conf['value'],
         'names': [*data_conf['value']['names'][:-1], 'subQ']}
 
-    assert 'E1_REL' in res
-    device_json = res['E1_REL']
+    assert 'E1_REL' in device_jsons
+    device_json = device_jsons['E1_REL']
     assert len(device_json['datasets']) == 5
     assert len(device_json['rcbs']) == 32
     assert len(device_json['commands']) == 92
@@ -371,12 +383,15 @@ def test_5(validator):
     with importlib.resources.open_text(__package__, 'test5.scd') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'SIP' in res
-    device_json = res['SIP']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    assert 'SIP' in device_jsons
+    device_json = device_jsons['SIP']
     assert len(device_json['datasets']) == 2
     assert len(device_json['rcbs']) == 62
     assert len(device_json['commands']) == 48
@@ -390,12 +405,15 @@ def test_6(validator):
     with importlib.resources.open_text(__package__, 'test6.cid') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    assert 'X1_SACO' in res
-    device_json = res['X1_SACO']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    assert 'X1_SACO' in device_jsons
+    device_json = device_jsons['X1_SACO']
 
     assert 'max_datasets' not in device_json['dynamic']
     assert 'max_dataset_attributes' not in device_json['dynamic']
@@ -413,11 +431,14 @@ def test_7(validator):
     with importlib.resources.open_text(__package__, 'test7.icd') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    device_json = res['E3_TAPCON']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    device_json = device_jsons['E3_TAPCON']
 
     assert device_json['dynamic']['max_datasets'] == 35
     assert device_json['dynamic']['max_dataset_attributes'] == 200
@@ -493,11 +514,14 @@ def test_8(validator):
     with importlib.resources.open_text(__package__, 'test8.icd') as f:
         res = readout(f)
 
-    assert len(res) == 1
-    for _, device_json in res.items():
-        validator.validate(json_schema_id, device_json)
+    validator.validate(json_schema_id, res)
 
-    device_json = res['AA1RTUA02']
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+
+    device_json = device_jsons['AA1RTUA02']
 
     def _get_all_array_types(vt):
         if not isinstance(vt, dict):
