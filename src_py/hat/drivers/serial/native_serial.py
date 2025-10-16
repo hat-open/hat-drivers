@@ -60,6 +60,8 @@ async def create(port,
         rtscts=rtscts,
         dsrdtr=dsrdtr)
 
+    endpoint._log.debug('endpoint created')
+
     endpoint._async_group = aio.Group()
     endpoint._async_group.spawn(aio.call_on_done,
                                 asyncio.shield(endpoint._close_cb_future),
@@ -122,6 +124,8 @@ class Endpoint(common.Endpoint):
             self._input_cv.notify_all()
 
         self._serial.set_close_cb(None)
+
+        self._log.debug('endpoint closed')
 
     async def _read_loop(self):
         try:

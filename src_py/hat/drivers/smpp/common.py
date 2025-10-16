@@ -1,7 +1,10 @@
 import enum
+import logging
 import typing
 
 from hat import util
+
+from hat.drivers import tcp
 
 
 # HACK should be str - bytes because of invalid ascii encoding
@@ -39,3 +42,15 @@ class DataCoding(enum.Enum):
     MUSIC = 10
     EXTENDED_KANJI = 13
     KS = 14
+
+
+def create_connection_logger_adapter(logger: logging.Logger,
+                                     info: tcp.ConnectionInfo):
+    extra = {'meta': {'type': 'SmppConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(logger, extra)

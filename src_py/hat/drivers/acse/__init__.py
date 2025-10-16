@@ -49,31 +49,6 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'AcseConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'local_ap_title': ('.'.join(info.local_ap_title)
-                                         if info.local_ap_title else None),
-                      'local_ae_qualifier': info.local_ae_qualifier,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel,
-                      'remote_ap_title': ('.'.join(info.remote_ap_title)
-                                          if info.remote_ap_title else None),
-                      'remote_ae_qualifier': info.remote_ae_qualifier}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def connect(addr: tcp.Address,
                   syntax_name_list: list[asn1.ObjectIdentifier],
                   app_context_name: asn1.ObjectIdentifier,
@@ -149,6 +124,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = acse_receive_queue_size
     server._send_queue_size = acse_send_queue_size
+    server._log = mlog
 
     server._srv = await copp.listen(server._on_validate,
                                     server._on_connection,
@@ -156,7 +132,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -295,7 +271,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = create_logger_adapter(mlog, self._info)
+        self._log = _create_connection_logger_adapter(self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -542,3 +518,36 @@ def _encode(value):
 
 def _decode(entity):
     return _encoder.decode_value(asn1.TypeRef('ACSE-1', 'ACSE-apdu'), entity)
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'AcseServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'AcseConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'local_ap_title': ('.'.join(info.local_ap_title)
+                                         if info.local_ap_title else None),
+                      'local_ae_qualifier': info.local_ae_qualifier,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel,
+                      'remote_ap_title': ('.'.join(info.remote_ap_title)
+                                          if info.remote_ap_title else None),
+                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+
+    return logging.LoggerAdapter(mlog, extra)

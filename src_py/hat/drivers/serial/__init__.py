@@ -4,8 +4,7 @@ from hat.drivers.serial.common import (ByteSize,
                                        Parity,
                                        StopBits,
                                        EndpointInfo,
-                                       Endpoint,
-                                       create_logger_adapter)
+                                       Endpoint)
 
 from hat.drivers.serial import py_serial
 
@@ -21,7 +20,6 @@ __all__ = ['ByteSize',
            'StopBits',
            'EndpointInfo',
            'Endpoint',
-           'create_logger_adapter',
            'create',
            'py_serial',
            'native_serial']

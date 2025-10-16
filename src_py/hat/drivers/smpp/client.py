@@ -38,7 +38,7 @@ async def connect(addr: tcp.Address,
         request_cb=client._on_request,
         notification_cb=client._on_notification)
 
-    client._log = tcp.create_logger_adapter(mlog, conn.info)
+    client._log = common.create_connection_logger_adapter(mlog, conn.info)
 
     try:
         client.async_group.spawn(aio.call_on_cancel, client._on_close,

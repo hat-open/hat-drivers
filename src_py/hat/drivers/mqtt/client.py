@@ -79,7 +79,7 @@ async def connect(addr: tcp.Address,
     client._ping_future = None
     client._disconnect_reason = common.Reason.SUCCESS
     client._disconnect_reason_string = None
-    client._log = tcp.create_logger_adapter(mlog, conn.info)
+    client._log = _create_logger_adapter(conn.info)
 
     client._maximum_qos = res.maximum_qos
     client._client_id = (res.assigned_client_identifier
@@ -608,3 +608,14 @@ def _create_connect_packet(will_msg, will_delay, ping_delay, client_id,
         will=will,
         user_name=user_name,
         password=password)
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'MqttClient',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

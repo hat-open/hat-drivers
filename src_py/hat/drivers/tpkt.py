@@ -41,8 +41,11 @@ async def listen(connection_cb: ConnectionCb,
     """
     server = Server()
     server._connection_cb = connection_cb
+    server._log = mlog
 
     server._srv = await tcp.listen(server._on_connection, addr, **kwargs)
+
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -70,7 +73,7 @@ class Server(aio.Resource):
             await aio.call(self._connection_cb, conn)
 
         except Exception as e:
-            mlog.warning('connection callback error: %s', e, exc_info=e)
+            self._log.warning('connection callback error: %s', e, exc_info=e)
             await aio.uncancellable(conn.async_close())
 
         except asyncio.CancelledError:
@@ -86,6 +89,7 @@ class Connection(aio.Resource):
         self._conn = conn
         self._loop = asyncio.get_running_loop()
         self._receive_futures = aio.Queue()
+        self._log = _create_connection_logger_adapter(conn.info)
 
         self.async_group.spawn(self._read_loop)
 
@@ -156,7 +160,7 @@ class Connection(aio.Resource):
             pass
 
         except Exception as e:
-            mlog.warning("read loop error: %s", e, exc_info=e)
+            self._log.warning("read loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -168,3 +172,24 @@ class Connection(aio.Resource):
                 if self._receive_futures.empty():
                     break
                 future = self._receive_futures.get_nowait()
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'TpktServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'TpktConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

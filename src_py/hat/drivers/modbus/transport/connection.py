@@ -93,7 +93,7 @@ class Connection(aio.Resource):
 
     def __init__(self, link: Link):
         self._link = link
-        self._log = common.create_logger_adapter(mlog, link.info)
+        self._log = _create_logger_adapter(link.info)
 
     @property
     def async_group(self) -> aio.Group:
@@ -152,3 +152,23 @@ class Connection(aio.Resource):
 
     async def read_byte(self) -> bytes:
         return await self._link.read(1)
+
+
+def _create_logger_adapter(info):
+    if isinstance(info, tcp.ConnectionInfo):
+        extra = {'meta': {'type': 'ModbusTcpConnection',
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
+
+    elif isinstance(info, serial.EndpointInfo):
+        extra = {'meta': {'type': 'ModbusSerialConnection',
+                          'name': info.name,
+                          'port': info.port}}
+
+    else:
+        raise TypeError('invalid info type')
+
+    return logging.LoggerAdapter(mlog, extra)

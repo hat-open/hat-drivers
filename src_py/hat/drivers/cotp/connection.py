@@ -30,21 +30,6 @@ ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'CotpConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def connect(addr: tcp.Address,
                   *,
                   local_tsel: int | None = None,
@@ -101,10 +86,11 @@ async def listen(connection_cb: ConnectionCb,
     server._connection_cb = connection_cb
     server._receive_queue_size = cotp_receive_queue_size
     server._send_queue_size = cotp_send_queue_size
+    server._log = mlog
 
     server._srv = await tpkt.listen(server._on_connection, addr, **kwargs)
 
-    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -188,7 +174,7 @@ class Connection(aio.Resource):
                                     **conn.info._asdict())
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
-        self._log = create_logger_adapter(mlog, self._info)
+        self._log = _create_connection_logger_adapter(self._info)
 
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
@@ -373,3 +359,26 @@ def _get_tsels(cr_tpdu, cc_tpdu):
                    else cc_tpdu.called_tsel)
 
     return calling_tsel, called_tsel
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'CotpServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'CotpConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel}}
+
+    return logging.LoggerAdapter(mlog, extra)

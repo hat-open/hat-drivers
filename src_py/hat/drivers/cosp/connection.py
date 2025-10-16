@@ -42,23 +42,6 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'CospConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def connect(addr: tcp.Address,
                   user_data: util.Bytes | None = None,
                   *,
@@ -74,8 +57,6 @@ async def connect(addr: tcp.Address,
 
     """
     conn = await cotp.connect(addr, **kwargs)
-
-    log = cotp.create_logger_adapter(mlog, conn.info)
 
     try:
         cn_spdu = common.Spdu(type=common.SpduType.CN,
@@ -97,7 +78,7 @@ async def connect(addr: tcp.Address,
                           cosp_receive_queue_size, cosp_send_queue_size)
 
     except BaseException:
-        await aio.uncancellable(_close_cotp(conn, _ab_spdu, log))
+        await aio.uncancellable(_close_cotp(conn, _ab_spdu, mlog))
         raise
 
 
@@ -127,12 +108,13 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = cosp_receive_queue_size
     server._send_queue_size = cosp_send_queue_size
+    server._log = mlog
 
     server._srv = await cotp.listen(server._on_connection, addr,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -234,7 +216,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = create_logger_adapter(mlog, self._info)
+        self._log = _create_connection_logger_adapter(self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -433,3 +415,28 @@ def _validate_connect_response(cn_spdu, ac_spdu):
             cn_spdu.called_ssel != ac_spdu.called_ssel):
         raise Exception(f"received calling ssel {ac_spdu.called_ssel} "
                         f"(expecting {cn_spdu.called_ssel})")
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'CospServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'CospConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel}}
+
+    return logging.LoggerAdapter(mlog, extra)

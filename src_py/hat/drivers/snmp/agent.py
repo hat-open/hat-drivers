@@ -71,7 +71,7 @@ class Agent(aio.Resource):
         self._auth_engine_id = authoritative_engine_id
         self._auth_keys = {}
         self._priv_keys = {}
-        self._log = udp.create_logger_adapter(mlog, endpoint.info)
+        self._log = _create_logger_adapter(endpoint.info)
 
         for user in users:
             common.validate_user(user)
@@ -401,3 +401,15 @@ class Agent(aio.Resource):
             pdu=res_pdu)
 
         return res_msg
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'SnmpAgent',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': ({'host': info.remote_addr.host,
+                                       'port': info.remote_addr.port}
+                                      if info.remote_addr else None)}}
+
+    return logging.LoggerAdapter(mlog, extra)

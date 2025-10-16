@@ -68,25 +68,6 @@ class SyntaxNames:
         return self._syntax_name_ids[syntax_name]
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'CoppConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def connect(addr: tcp.Address,
                   syntax_names: SyntaxNames,
                   user_data: IdentifiedEntity | None = None,
@@ -106,8 +87,6 @@ async def connect(addr: tcp.Address,
     cp_ppdu_data = _encode('CP-type', cp_ppdu)
     conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
 
-    log = cosp.create_logger_adapter(mlog, conn.info)
-
     try:
         cpa_ppdu = _decode('CPA-PPDU', conn.conn_res_user_data)
         _validate_connect_response(cp_ppdu, cpa_ppdu)
@@ -118,7 +97,7 @@ async def connect(addr: tcp.Address,
                           copp_receive_queue_size, copp_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), log))
+        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), mlog))
         raise
 
 
@@ -148,6 +127,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = copp_receive_queue_size
     server._send_queue_size = copp_send_queue_size
+    server._log = mlog
 
     server._srv = await cosp.listen(server._on_validate,
                                     server._on_connection,
@@ -155,7 +135,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -279,7 +259,7 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = create_logger_adapter(mlog, self._info)
+        self._log = _create_connection_logger_adapter(self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -540,3 +520,30 @@ def _decode(name, data):
     res, _ = _encoder.decode(asn1.TypeRef('ISO8823-PRESENTATION', name),
                              memoryview(data))
     return res
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'CoppServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'CoppConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel}}
+
+    return logging.LoggerAdapter(mlog, extra)

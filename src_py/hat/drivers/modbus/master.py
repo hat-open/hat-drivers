@@ -36,9 +36,6 @@ async def create_tcp_master(modbus_type: common.ModbusType,
     conn = await tcp.connect(addr, **kwargs)
 
     try:
-        log = tcp.create_logger_adapter(mlog, conn.info)
-        log.debug("tcp connection established")
-
         return Master(link=transport.TcpLink(conn),
                       modbus_type=modbus_type,
                       response_timeout=response_timeout)
@@ -71,9 +68,6 @@ async def create_serial_master(modbus_type: common.ModbusType,
                                    **kwargs)
 
     try:
-        log = serial.create_logger_adapter(mlog, endpoint.info)
-        log.debug("serial endpoint opened")
-
         return Master(link=transport.SerialLink(endpoint),
                       modbus_type=modbus_type,
                       response_timeout=response_timeout)
@@ -94,13 +88,15 @@ class Master(aio.Resource):
         self._response_timeout = response_timeout
         self._conn = transport.Connection(link)
         self._send_queue = aio.Queue()
-        self._log = common.create_logger_adapter(mlog, self._conn.info)
+        self._log = _create_logger_adapter(self._conn.info)
 
         if modbus_type == common.ModbusType.TCP:
             self._next_transaction_ids = iter(i % 0x10000
                                               for i in itertools.count(1))
 
         self.async_group.spawn(self._send_loop)
+
+        self._log.debug('master created')
 
     @property
     def async_group(self) -> aio.Group:
@@ -411,3 +407,23 @@ class Master(aio.Resource):
         if not count:
             return
         self._log.debug("discarded %s bytes from input buffer", count)
+
+
+def _create_logger_adapter(info):
+    if isinstance(info, tcp.ConnectionInfo):
+        extra = {'meta': {'type': 'ModbusTcpMaster',
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
+
+    elif isinstance(info, serial.EndpointInfo):
+        extra = {'meta': {'type': 'ModbusSerialMaster',
+                          'name': info.name,
+                          'port': info.port}}
+
+    else:
+        raise TypeError('invalid info type')
+
+    return logging.LoggerAdapter(mlog, extra)

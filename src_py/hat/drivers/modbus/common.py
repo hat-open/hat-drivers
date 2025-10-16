@@ -1,10 +1,6 @@
 """Modbus common data structures"""
 
 import enum
-import logging
-
-from hat.drivers import serial
-from hat.drivers import tcp
 
 
 class ModbusType(enum.Enum):
@@ -33,15 +29,3 @@ class Error(enum.Enum):
 def apply_mask(value: int, and_mask: int, or_mask: int) -> int:
     """Apply mask to value"""
     return (value & and_mask) | (or_mask & (~and_mask))
-
-
-def create_logger_adapter(logger: logging.Logger,
-                          info: tcp.ConnectionInfo | serial.EndpointInfo
-                          ) -> logging.LoggerAdapter:
-    if isinstance(info, tcp.ConnectionInfo):
-        return tcp.create_logger_adapter(logger, info)
-
-    if isinstance(info, serial.EndpointInfo):
-        return serial.create_logger_adapter(logger, info)
-
-    raise TypeError('invalid info type')

@@ -6,6 +6,8 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import serial
+
 
 Address: typing.TypeAlias = int
 """addres is 0 or in range [0, 255] or in range [0, 65535]"""
@@ -104,9 +106,19 @@ def get_broadcast_address(address_size: AddressSize):
 
 
 def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo
+                          info: serial.EndpointInfo
                           ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'Iec60870LinkConnection',
+    extra = {'meta': {'type': 'Iec60870Link',
+                      'name': info.name,
+                      'port': info.port}}
+
+    return logging.LoggerAdapter(logger, extra)
+
+
+def create_connection_logger_adapter(logger: logging.Logger,
+                                     info: ConnectionInfo
+                                     ) -> logging.LoggerAdapter:
+    extra = {'meta': {'type': 'Iec60870LinkConnection',
                       'name': info.name,
                       'port': info.port,
                       'address': info.address}}

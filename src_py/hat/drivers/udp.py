@@ -23,20 +23,6 @@ class EndpointInfo(typing.NamedTuple):
     remote_addr: Address | None
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: EndpointInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'UdpEndpoint',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': ({'host': info.remote_addr.host,
-                                       'port': info.remote_addr.port}
-                                      if info.remote_addr else None)}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def create(local_addr: Address | None = None,
                  remote_addr: Address | None = None,
                  *,
@@ -90,7 +76,7 @@ async def create(local_addr: Address | None = None,
         local_addr=Address(sockname[0], sockname[1]),
         remote_addr=Address(peername[0], peername[1]) if peername else None)
 
-    endpoint._log = create_logger_adapter(mlog, endpoint._info)
+    endpoint._log = _create_logger_adapter(endpoint._info)
 
     return endpoint
 
@@ -136,3 +122,15 @@ class Endpoint(aio.Resource):
             raise ConnectionError()
 
         return data, addr
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'UdpEndpoint',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': ({'host': info.remote_addr.host,
+                                       'port': info.remote_addr.port}
+                                      if info.remote_addr else None)}}
+
+    return logging.LoggerAdapter(mlog, extra)

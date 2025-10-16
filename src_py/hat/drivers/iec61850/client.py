@@ -74,7 +74,7 @@ async def connect(addr: tcp.Address,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
-    client._log = acse.create_logger_adapter(mlog, client._conn.info)
+    client._log = _create_logger_adapter(client._conn.info)
 
     if client.is_open and status_delay is not None:
         client.async_group.spawn(client._status_loop, status_delay,
@@ -757,3 +757,26 @@ def _is_unconfirmed_termination(unconfirmed):
     return (data_ref.fc == 'CO' and
             len(data_ref_names) == 2 and
             data_ref_names[1] == 'Oper')
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'Iec61850Client',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'local_ap_title': ('.'.join(info.local_ap_title)
+                                         if info.local_ap_title else None),
+                      'local_ae_qualifier': info.local_ae_qualifier,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel,
+                      'remote_ap_title': ('.'.join(info.remote_ap_title)
+                                          if info.remote_ap_title else None),
+                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+
+    return logging.LoggerAdapter(mlog, extra)

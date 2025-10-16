@@ -36,7 +36,7 @@ class Endpoint(aio.Resource):
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
         self._data = bytearray()
-        self._log = serial.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, endpoint.info)
 
     @property
     def async_group(self):

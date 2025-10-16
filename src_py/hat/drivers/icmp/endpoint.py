@@ -26,17 +26,6 @@ class EndpointInfo(typing.NamedTuple):
     local_addr: Address
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: EndpointInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'info': {'type': 'IcmpEndpoint',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port}}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def create_endpoint(local_host: str = '0.0.0.0',
                           *,
                           name: str | None = None
@@ -51,7 +40,7 @@ async def create_endpoint(local_host: str = '0.0.0.0',
     endpoint._echo_futures = {}
     endpoint._info = EndpointInfo(name=name,
                                   local_addr=local_addr)
-    endpoint._log = create_logger_adapter(mlog, endpoint._info)
+    endpoint._log = _create_logger_adapter(endpoint._info)
 
     endpoint._socket = _create_socket(local_addr)
 
@@ -183,3 +172,12 @@ def _echo_data_iter():
         i_size = math.ceil(i.bit_length() / 8)
 
         yield prefix + i.to_bytes(i_size, 'big')
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'IcmpEndpoint',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

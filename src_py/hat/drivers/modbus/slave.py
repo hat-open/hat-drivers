@@ -107,8 +107,7 @@ async def create_tcp_server(modbus_type: common.ModbusType,
         if not conn.is_open:
             return
 
-        log = tcp.create_logger_adapter(mlog, conn.info)
-        log.debug("new incomming tcp connection")
+        log = _create_logger_adapter(conn.info)
 
         slave = Slave(link=transport.TcpLink(conn),
                       modbus_type=modbus_type,
@@ -131,9 +130,6 @@ async def create_tcp_server(modbus_type: common.ModbusType,
     server = await tcp.listen(on_connection, addr,
                               bind_connections=True,
                               **kwargs)
-
-    log = tcp.create_logger_adapter(mlog, server.info)
-    log.debug("tcp server listening")
 
     return server
 
@@ -165,9 +161,6 @@ async def create_serial_slave(modbus_type: common.ModbusType,
                                    **kwargs)
 
     try:
-        log = serial.create_logger_adapter(mlog, endpoint.info)
-        log.debug("serial endpoint opened")
-
         return Slave(link=transport.SerialLink(endpoint),
                      modbus_type=modbus_type,
                      read_cb=read_cb,
@@ -193,9 +186,11 @@ class Slave(aio.Resource):
         self._write_cb = write_cb
         self._write_mask_cb = write_mask_cb
         self._conn = transport.Connection(link)
-        self._log = common.create_logger_adapter(mlog, self._conn.info)
+        self._log = _create_logger_adapter(self._conn.info)
 
         self.async_group.spawn(self._receive_loop)
+
+        self._log.debug('slave created')
 
     @property
     def async_group(self) -> aio.Group:
@@ -475,3 +470,23 @@ class Slave(aio.Resource):
             self._log.warning("error in write mask callback: %s", e,
                               exc_info=e)
             return common.Error.FUNCTION_ERROR
+
+
+def _create_logger_adapter(info):
+    if isinstance(info, tcp.ConnectionInfo):
+        extra = {'meta': {'type': 'ModbusTcpSlave',
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
+
+    elif isinstance(info, serial.EndpointInfo):
+        extra = {'meta': {'type': 'ModbusSerialSlave',
+                          'name': info.name,
+                          'port': info.port}}
+
+    else:
+        raise TypeError('invalid info type')
+
+    return logging.LoggerAdapter(mlog, extra)

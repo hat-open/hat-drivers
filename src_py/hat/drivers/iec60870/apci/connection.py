@@ -129,7 +129,7 @@ async def listen(connection_cb: ConnectionCb,
                               bind_connections=bind_connections,
                               **kwargs)
 
-    log = tcp.create_logger_adapter(mlog, server.info)
+    log = _create_server_logger_adapter(server.info)
 
     return server
 
@@ -171,7 +171,7 @@ class Connection(aio.Resource):
         self._waiting_ack_handles = {}
         self._waiting_ack_cv = asyncio.Condition()
         self._loop = asyncio.get_running_loop()
-        self._log = tcp.create_logger_adapter(mlog, conn.info)
+        self._log = _create_connection_logger_adapter(conn.info)
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -518,3 +518,24 @@ async def _wait_startdt_con(conn):
         if req.function == common.ApduFunction.TESTFR_ACT:
             res = common.APDUU(common.ApduFunction.TESTFR_CON)
             _write_apdu(conn, res)
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'Iec60870ApciServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'Iec60870ApciConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

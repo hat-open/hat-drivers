@@ -66,7 +66,7 @@ class V3Manager(common.Manager):
         self._authorative_engine_set_time = time.monotonic()
         self._auth_key = None
         self._priv_key = None
-        self._log = udp.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, endpoint.info)
 
         common.validate_user(user)
 

@@ -41,7 +41,7 @@ class V2CManager(common.Manager):
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
-        self._log = udp.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, endpoint.info)
 
         self.async_group.spawn(self._receive_loop)
 

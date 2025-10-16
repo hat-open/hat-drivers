@@ -31,7 +31,7 @@ class MasterConnection(aio.Resource):
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
 
-        self._log = link.create_logger_adapter(mlog, conn.info)
+        self._log = _create_logger_adapter(conn.info)
 
         self._encoder = iec103.Encoder()
 
@@ -445,3 +445,12 @@ async def _try_aio_call(cb, *args):
     if not cb:
         return
     return await aio.call(cb, *args)
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'Iec103Master',
+                      'name': info.name,
+                      'port': info.port,
+                      'address': info.address}}
+
+    return logging.LoggerAdapter(mlog, extra)

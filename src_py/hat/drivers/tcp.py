@@ -37,30 +37,6 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          info: ConnectionInfo | ServerInfo
-                          ) -> logging.LoggerAdapter:
-    if isinstance(info, ConnectionInfo):
-        extra = {'info': {'type': 'TcpConnection',
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
-
-    elif isinstance(info, ServerInfo):
-        extra = {'info': {'type': 'TcpServer',
-                          'name': info.name,
-                          'addresses': [{'host': addr.host,
-                                         'port': addr.port}
-                                        for addr in info.addresses]}}
-
-    else:
-        raise TypeError('invalid info type')
-
-    return logging.LoggerAdapter(logger, extra)
-
-
 async def connect(addr: Address,
                   *,
                   name: str | None = None,
@@ -134,11 +110,13 @@ async def listen(connection_cb: ConnectionCb,
         addresses = [Address(*sockname[:2]) for sockname in socknames]
         server._info = ServerInfo(name=name,
                                   addresses=addresses)
-        server._log = create_logger_adapter(mlog, server._info)
+        server._log = _create_server_logger_adapter(server._info)
 
     except Exception:
         await aio.uncancellable(server.async_close())
         raise
+
+    server._log.debug('listening for incomming connections')
 
     return server
 
@@ -167,6 +145,8 @@ class Server(aio.Resource):
             await self._srv.wait_closed()
 
     async def _on_connection(self, protocol):
+        self._log.debug('new incomming connection')
+
         conn = Connection(protocol)
 
         try:
@@ -192,7 +172,9 @@ class Connection(aio.Resource):
     def __init__(self, protocol: 'Protocol'):
         self._protocol = protocol
         self._async_group = aio.Group()
-        self._log = create_logger_adapter(mlog, protocol.info)
+        self._log = _create_connection_logger_adapter(protocol.info)
+
+        self._log.debug('connection established')
 
         self.async_group.spawn(aio.call_on_cancel, protocol.async_close)
         self.async_group.spawn(aio.call_on_done, protocol.wait_closed(),
@@ -297,7 +279,7 @@ class Protocol(asyncio.Protocol):
                 local_addr=Address(sockname[0], sockname[1]),
                 remote_addr=Address(peername[0], peername[1]))
 
-            self._log = create_logger_adapter(mlog, self._info)
+            self._log = _create_connection_logger_adapter(self._info)
 
             self._ssl_object = transport.get_extra_info('ssl_object')
 
@@ -330,6 +312,8 @@ class Protocol(asyncio.Protocol):
             future = closed_futures.popleft()
             if not future.done():
                 future.set_result(None)
+
+        self._log.debug('connection closed')
 
     def pause_writing(self):
         self._write_queue = collections.deque()
@@ -498,3 +482,24 @@ class Protocol(asyncio.Protocol):
 
         else:
             self._transport.resume_reading()
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'TcpServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'TcpConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

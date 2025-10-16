@@ -55,7 +55,7 @@ async def connect(addr: tcp.Address,
 
     conn._conn = transport.Transport(await tcp.connect(addr, **kwargs))
 
-    conn._log = tcp.create_logger_adapter(mlog, conn._conn.info)
+    conn._log = _create_logger_adapter(conn._conn.info)
 
     try:
         await conn._conn.send({'type': 'authentication_request',
@@ -206,3 +206,14 @@ class Connection(aio.Resource):
             self._data[data.key] = data
 
         await aio.call(self._status_cb, self._pnet_status)
+
+
+def _create_logger_adapter(info):
+    extra = {'meta': {'type': 'PnetGatewayClient',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port}}}
+
+    return logging.LoggerAdapter(mlog, extra)

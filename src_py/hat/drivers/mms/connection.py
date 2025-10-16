@@ -147,7 +147,7 @@ async def listen(connection_cb: ConnectionCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = tcp.create_logger_adapter(mlog, server._srv.info)
+    server._log = _create_server_logger_adapter(server._srv.info)
 
     return server
 
@@ -246,7 +246,7 @@ class Connection(aio.Resource):
         self._response_futures = {}
         self._close_pdu = 'conclude-RequestPDU', None
         self._async_group = aio.Group()
-        self._log = acse.create_logger_adapter(mlog, conn.info)
+        self._log = _create_connection_logger_adapter(conn.info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -420,3 +420,36 @@ def _encode(value):
 def _decode(entity):
     return _encoder.decode_value(asn1.TypeRef('ISO-9506-MMS-1', 'MMSpdu'),
                                  entity)
+
+
+def _create_server_logger_adapter(info):
+    extra = {'meta': {'type': 'MmsServer',
+                      'name': info.name,
+                      'addresses': [{'host': addr.host,
+                                     'port': addr.port}
+                                    for addr in info.addresses]}}
+
+    return logging.LoggerAdapter(mlog, extra)
+
+
+def _create_connection_logger_adapter(info):
+    extra = {'meta': {'type': 'MmsConnection',
+                      'name': info.name,
+                      'local_addr': {'host': info.local_addr.host,
+                                     'port': info.local_addr.port},
+                      'local_tsel': info.local_tsel,
+                      'local_ssel': info.local_ssel,
+                      'local_psel': info.local_psel,
+                      'local_ap_title': ('.'.join(info.local_ap_title)
+                                         if info.local_ap_title else None),
+                      'local_ae_qualifier': info.local_ae_qualifier,
+                      'remote_addr': {'host': info.remote_addr.host,
+                                      'port': info.remote_addr.port},
+                      'remote_tsel': info.remote_tsel,
+                      'remote_ssel': info.remote_ssel,
+                      'remote_psel': info.remote_psel,
+                      'remote_ap_title': ('.'.join(info.remote_ap_title)
+                                          if info.remote_ap_title else None),
+                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+
+    return logging.LoggerAdapter(mlog, extra)
