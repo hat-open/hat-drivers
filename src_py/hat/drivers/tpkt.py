@@ -19,6 +19,8 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 
 async def connect(addr: tcp.Address,
+                  *,
+                  tpkt_receive_queue_size: int = 1024,
                   **kwargs
                   ) -> 'Connection':
     """Create new TPKT connection
@@ -27,11 +29,14 @@ async def connect(addr: tcp.Address,
 
     """
     conn = await tcp.connect(addr, **kwargs)
-    return Connection(conn)
+    return Connection(conn=conn,
+                      receive_queue_size=tpkt_receive_queue_size)
 
 
 async def listen(connection_cb: ConnectionCb,
                  addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 *,
+                 tpkt_receive_queue_size: int = 1024,
                  **kwargs
                  ) -> 'Server':
     """Create new TPKT listening server
@@ -41,6 +46,7 @@ async def listen(connection_cb: ConnectionCb,
     """
     server = Server()
     server._connection_cb = connection_cb
+    server._receive_queue_size = tpkt_receive_queue_size
     server._log = mlog
 
     server._srv = await tcp.listen(server._on_connection, addr, **kwargs)
@@ -69,7 +75,8 @@ class Server(aio.Resource):
 
     async def _on_connection(self, conn):
         try:
-            conn = Connection(conn)
+            conn = Connection(conn=conn,
+                              receive_queue_size=self._receive_queue_size)
             await aio.call(self._connection_cb, conn)
 
         except Exception as e:
@@ -85,10 +92,10 @@ class Connection(aio.Resource):
     """TPKT connection"""
 
     def __init__(self,
-                 conn: tcp.Connection):
+                 conn: tcp.Connection,
+                 receive_queue_size: int):
         self._conn = conn
-        self._loop = asyncio.get_running_loop()
-        self._receive_futures = aio.Queue()
+        self._receive_queue = aio.Queue(receive_queue_size)
         self._log = _create_connection_logger_adapter(conn.info)
 
         self.async_group.spawn(self._read_loop)
@@ -106,9 +113,7 @@ class Connection(aio.Resource):
     async def receive(self) -> util.Bytes:
         """Receive data"""
         try:
-            future = self._loop.create_future()
-            self._receive_futures.put_nowait(future)
-            return await future
+            return await self._receive_queue.get()
 
         except aio.QueueClosedError:
             raise ConnectionError()
@@ -128,6 +133,8 @@ class Connection(aio.Resource):
             [3, 0, packet_length >> 8, packet_length & 0xFF],
             data))
 
+        self._log.debug('sending %s bytes', data_len)
+
         await self._conn.write(packet)
 
     async def drain(self):
@@ -135,7 +142,8 @@ class Connection(aio.Resource):
         await self._conn.drain()
 
     async def _read_loop(self):
-        future = None
+        self._log.debug('starting read loop')
+
         try:
             while True:
                 header = await self._conn.readexactly(4)
@@ -151,10 +159,9 @@ class Connection(aio.Resource):
                 data_length = packet_length - 4
                 data = await self._conn.readexactly(data_length)
 
-                while not future or future.done():
-                    future = await self._receive_futures.get()
+                self._log.debug('received %s bytes', len(data))
 
-                future.set_result(data)
+                await self._receive_queue.put(data)
 
         except ConnectionError:
             pass
@@ -163,15 +170,10 @@ class Connection(aio.Resource):
             self._log.warning("read loop error: %s", e, exc_info=e)
 
         finally:
-            self.close()
-            self._receive_futures.close()
+            self._log.debug('stopping read loop')
 
-            while True:
-                if future and not future.done():
-                    future.set_exception(ConnectionError())
-                if self._receive_futures.empty():
-                    break
-                future = self._receive_futures.get_nowait()
+            self.close()
+            self._receive_queue.close()
 
 
 def _create_server_logger_adapter(info):

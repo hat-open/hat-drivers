@@ -58,9 +58,9 @@ async def connect(addr: Address,
 
     """
     loop = asyncio.get_running_loop()
-    create_transport = functools.partial(Protocol, None, name,
-                                         input_buffer_limit)
-    _, protocol = await loop.create_connection(create_transport,
+    create_protocol = functools.partial(Protocol, None, name,
+                                        input_buffer_limit)
+    _, protocol = await loop.create_connection(create_protocol,
                                                addr.host, addr.port,
                                                **kwargs)
     return Connection(protocol)
@@ -96,11 +96,11 @@ async def listen(connection_cb: ConnectionCb,
 
     on_connection = functools.partial(server.async_group.spawn,
                                       server._on_connection)
-    create_transport = functools.partial(Protocol, on_connection, name,
-                                         input_buffer_limit)
+    create_protocol = functools.partial(Protocol, on_connection, name,
+                                        input_buffer_limit)
 
     loop = asyncio.get_running_loop()
-    server._srv = await loop.create_server(create_transport, addr.host,
+    server._srv = await loop.create_server(create_protocol, addr.host,
                                            addr.port, **kwargs)
 
     server.async_group.spawn(aio.call_on_cancel, server._on_close)
@@ -316,10 +316,14 @@ class Protocol(asyncio.Protocol):
         self._log.debug('connection closed')
 
     def pause_writing(self):
+        self._log.debug('pause writing')
+
         self._write_queue = collections.deque()
         self._drain_futures = collections.deque()
 
     def resume_writing(self):
+        self._log.debug('resume writing')
+
         write_queue, self._write_queue = self._write_queue, None
         drain_futures, self._drain_futures = self._drain_futures, None
 
@@ -328,6 +332,7 @@ class Protocol(asyncio.Protocol):
             if future.done():
                 continue
 
+            self._log.debug('writing %s bytes', len(data))
             self._transport.write(data)
             future.set_result(None)
 
@@ -346,10 +351,14 @@ class Protocol(asyncio.Protocol):
                 future.set_result(None)
 
     def data_received(self, data: util.Bytes):
+        self._log.debug('received %s bytes', len(data))
+
         self._input_buffer.add(data)
         self._process_input_buffer()
 
     def eof_received(self):
+        self._log.debug('eof received')
+
         while self._read_queue:
             exact, n, future = self._read_queue.popleft()
             if future.done():
@@ -371,6 +380,7 @@ class Protocol(asyncio.Protocol):
             raise ConnectionError()
 
         if self._write_queue is None:
+            self._log.debug('writing %s bytes', len(data))
             self._transport.write(data)
             return
 
