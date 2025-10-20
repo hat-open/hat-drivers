@@ -7,7 +7,6 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
 from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
 from hat.drivers.iec60870 import apci

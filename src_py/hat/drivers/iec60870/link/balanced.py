@@ -6,7 +6,6 @@ import logging
 
 from hat import aio
 
-from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
 
