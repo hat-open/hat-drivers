@@ -74,7 +74,8 @@ async def connect(addr: tcp.Address,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
-    client._log = _create_logger_adapter(client._conn.info)
+    client._log = _create_logger_adapter(False, client._conn.info)
+    client._comm_log = _create_logger_adapter(True, client._conn.info)
 
     if client.is_open and status_delay is not None:
         client.async_group.spawn(client._status_loop, status_delay,
@@ -466,6 +467,8 @@ class Client(aio.Resource):
                                                         with_checks=True)
 
     async def _on_unconfirmed(self, conn, unconfirmed):
+        self._comm_log.debug('received %s', unconfirmed)
+
         self._status_event.set()
 
         if _is_unconfirmed_report(unconfirmed):
@@ -567,8 +570,13 @@ class Client(aio.Resource):
         await aio.call(self._termination_cb, termination)
 
     async def _send(self, req):
+        self._comm_log.debug('sending %s', req)
+
         res = await self._conn.send_confirmed(req)
         self._status_event.set()
+
+        self._comm_log.debug('received %s', res)
+
         return res
 
     async def _status_loop(self, delay, timeout):
@@ -759,8 +767,9 @@ def _is_unconfirmed_termination(unconfirmed):
             data_ref_names[1] == 'Oper')
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     extra = {'meta': {'type': 'Iec61850Client',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

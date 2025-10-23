@@ -7,8 +7,8 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
+from hat.drivers.iec104.connection import common
 from hat.drivers.iec60870 import apci
 
 
@@ -34,7 +34,7 @@ class SecureConnection(common.Connection):
         self._encoder = encoder.Encoder()
         self._send_queue = aio.Queue()
         self._receive_queue = aio.Queue()
-        self._log = _create_logger_adapter(conn.info)
+        self._log = common.create_logger_adapter(mlog, False, conn.info)
 
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(self._receive_loop)
@@ -120,14 +120,3 @@ class _SendQueueEntry(typing.NamedTuple):
     msg: typing.Optional[common.Msg]
     future: typing.Optional[asyncio.Future]
     wait_ack: bool
-
-
-def _create_logger_adapter(info):
-    extra = {'meta': {'type': 'Iec104SecureConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
-
-    return logging.LoggerAdapter(mlog, extra)

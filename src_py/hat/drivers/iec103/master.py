@@ -31,7 +31,8 @@ class MasterConnection(aio.Resource):
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
 
-        self._log = _create_logger_adapter(conn.info)
+        self._log = _create_logger_adapter(False, conn.info)
+        self._comm_log = _create_logger_adapter(True, conn.info)
 
         self._encoder = iec103.Encoder()
 
@@ -93,6 +94,9 @@ class MasterConnection(aio.Resource):
                 address=io_address,
                 elements=[iec103.IoElement_TIME_SYNCHRONIZATION(
                     time=time)])])
+
+        self._comm_log.debug('sending %s', asdu)
+
         data = self._encoder.encode_asdu(asdu)
 
         await self._conn.send(data)
@@ -113,6 +117,9 @@ class MasterConnection(aio.Resource):
                         information_number=_InformationNumber.GENERAL_INTERROGATION_OR_TIME_SYNCHRONIZATION.value),  # NOQA
                     elements=[iec103.IoElement_GENERAL_INTERROGATION(  # NOQA
                         scan_number=scan_number)])])
+
+            self._comm_log.debug('sending %s', asdu)
+
             data = self._encoder.encode_asdu(asdu)
 
             try:
@@ -144,6 +151,9 @@ class MasterConnection(aio.Resource):
                     elements=[iec103.IoElement_GENERAL_COMMAND(
                         value=value,
                         return_identifier=return_identifier)])])
+
+            self._comm_log.debug('sending %s', asdu)
+
             data = self._encoder.encode_asdu(asdu)
 
             try:
@@ -173,6 +183,9 @@ class MasterConnection(aio.Resource):
                     elements=[iec103.IoElement_GENERIC_COMMAND(
                         return_identifier=return_identifier,
                         data=[])])])
+
+            self._comm_log.debug('sending %s', asdu)
+
             data = self._encoder.encode_asdu(asdu)
 
             try:
@@ -190,6 +203,8 @@ class MasterConnection(aio.Resource):
             while True:
                 data = await self._conn.receive()
                 asdu, _ = self._encoder.decode_asdu(data)
+
+                self._comm_log.debug('received %s', asdu)
 
                 for io in asdu.ios:
                     if asdu.type in self._process_single_element_fns:
@@ -447,8 +462,9 @@ async def _try_aio_call(cb, *args):
     return await aio.call(cb, *args)
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     extra = {'meta': {'type': 'Iec103Master',
+                      'communication': communication,
                       'name': info.name,
                       'port': info.port,
                       'address': info.address}}

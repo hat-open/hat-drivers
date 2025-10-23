@@ -93,7 +93,8 @@ class Connection(aio.Resource):
 
     def __init__(self, link: Link):
         self._link = link
-        self._log = _create_logger_adapter(link.info)
+        self._log = _create_logger_adapter(False, link.info)
+        self._comm_log = _create_logger_adapter(True, link.info)
 
     @property
     def async_group(self) -> aio.Group:
@@ -104,7 +105,8 @@ class Connection(aio.Resource):
         return self._link.info
 
     async def send(self, adu: common.Adu):
-        self._log.debug("sending adu: %s", adu)
+        self._comm_log.debug("sending %s", adu)
+
         adu_bytes = encoder.encode_adu(adu)
 
         if self._log.isEnabledFor(logging.DEBUG):
@@ -131,7 +133,8 @@ class Connection(aio.Resource):
         buff = memoryview(buff)
         adu, _ = encoder.decode_adu(modbus_type, direction, buff)
 
-        self._log.debug("received adu: %s", adu)
+        self._comm_log.debug("received %s", adu)
+
         return adu
 
     async def drain(self):
@@ -154,9 +157,10 @@ class Connection(aio.Resource):
         return await self._link.read(1)
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     if isinstance(info, tcp.ConnectionInfo):
         extra = {'meta': {'type': 'ModbusTcpConnection',
+                          'communication': communication,
                           'name': info.name,
                           'local_addr': {'host': info.local_addr.host,
                                          'port': info.local_addr.port},
@@ -165,6 +169,7 @@ def _create_logger_adapter(info):
 
     elif isinstance(info, serial.EndpointInfo):
         extra = {'meta': {'type': 'ModbusSerialConnection',
+                          'communication': communication,
                           'name': info.name,
                           'port': info.port}}
 
