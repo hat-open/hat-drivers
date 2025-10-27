@@ -9,7 +9,7 @@ from hat import util
 from hat.drivers import ssl
 from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
-from hat.drivers.iec60870.apci import encoder
+from hat.drivers.iec60870.apci.transport import Transport
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -53,15 +53,18 @@ async def connect(addr: tcp.Address,
     conn = await tcp.connect(addr, **kwargs)
 
     try:
-        apdu = common.APDUU(common.ApduFunction.STARTDT_ACT)
-        await _write_apdu(conn, apdu)
-        await aio.wait_for(_wait_startdt_con(conn), response_timeout)
+        transport = Transport(conn)
 
-    except Exception:
+        apdu = common.APDUU(common.ApduFunction.STARTDT_ACT)
+        await transport.write(apdu)
+
+        await aio.wait_for(_wait_startdt_con(transport), response_timeout)
+
+    except BaseException:
         await aio.uncancellable(conn.async_close())
         raise
 
-    return Connection(conn=conn,
+    return Connection(transport=transport,
                       always_enabled=True,
                       response_timeout=response_timeout,
                       supervisory_timeout=supervisory_timeout,
@@ -106,7 +109,7 @@ async def listen(connection_cb: ConnectionCb,
     async def on_connection(conn):
         try:
             try:
-                conn = Connection(conn=conn,
+                conn = Connection(transport=Transport(conn),
                                   always_enabled=False,
                                   response_timeout=response_timeout,
                                   supervisory_timeout=supervisory_timeout,
@@ -142,7 +145,7 @@ class Connection(aio.Resource):
     """
 
     def __init__(self,
-                 conn: tcp.Connection,
+                 transport: Transport,
                  always_enabled: bool,
                  response_timeout: float,
                  supervisory_timeout: float,
@@ -151,7 +154,7 @@ class Connection(aio.Resource):
                  receive_window_size: int,
                  send_queue_size: int,
                  receive_queue_size: int):
-        self._conn = conn
+        self._transport = transport
         self._always_enabled = always_enabled
         self._is_enabled = always_enabled
         self._enabled_cbs = util.CallbackRegistry()
@@ -171,7 +174,7 @@ class Connection(aio.Resource):
         self._waiting_ack_handles = {}
         self._waiting_ack_cv = asyncio.Condition()
         self._loop = asyncio.get_running_loop()
-        self._log = _create_connection_logger_adapter(conn.info)
+        self._log = _create_connection_logger_adapter(transport.info)
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -180,17 +183,17 @@ class Connection(aio.Resource):
     @property
     def async_group(self) -> aio.Group:
         """Async group"""
-        return self._conn.async_group
+        return self._transport.async_group
 
     @property
     def info(self) -> tcp.ConnectionInfo:
         """Connection info"""
-        return self._conn.info
+        return self._transport.info
 
     @property
     def ssl_object(self) -> ssl.SSLObject | ssl.SSLSocket | None:
         """SSL Object"""
-        return self._conn.ssl_object
+        return self._transport.ssl_object
 
     @property
     def is_enabled(self) -> bool:
@@ -272,7 +275,7 @@ class Connection(aio.Resource):
     async def _read_loop(self):
         try:
             while True:
-                apdu = await _read_apdu(self._conn)
+                apdu = await self._transport.read()
 
                 if isinstance(apdu, common.APDUU):
                     await self._process_apduu(apdu)
@@ -304,7 +307,7 @@ class Connection(aio.Resource):
                 entry = await self._send_queue.get()
 
                 if entry.data is None:
-                    await self._conn.drain()
+                    await self._transport.drain()
                     ssn = (self._ssn or 0x8000) - 1
                     handle = self._waiting_ack_handles.get(ssn)
 
@@ -352,8 +355,8 @@ class Connection(aio.Resource):
                 await asyncio.sleep(self._test_timeout)
 
                 self._test_event.clear()
-                await _write_apdu(self._conn,
-                                  common.APDUU(common.ApduFunction.TESTFR_ACT))
+                await self._transport.write(
+                    common.APDUU(common.ApduFunction.TESTFR_ACT))
 
                 await aio.wait_for(self._test_event.wait(),
                                    self._response_timeout)
@@ -367,8 +370,8 @@ class Connection(aio.Resource):
     async def _process_apduu(self, apdu):
         if apdu.function == common.ApduFunction.STARTDT_ACT:
             self._is_enabled = True
-            await _write_apdu(self._conn,
-                              common.APDUU(common.ApduFunction.STARTDT_CON))
+            await self._transport.write(
+                common.APDUU(common.ApduFunction.STARTDT_CON))
 
             self._log.debug("send data enabled")
             self._enabled_cbs.notify(True)
@@ -377,15 +380,15 @@ class Connection(aio.Resource):
             if not self._always_enabled:
                 await self._write_apdus()
                 self._is_enabled = False
-                await _write_apdu(self._conn,
-                                  common.APDUU(common.ApduFunction.STOPDT_CON))
+                await self._transport.write(
+                    common.APDUU(common.ApduFunction.STOPDT_CON))
 
                 self._log.debug("send data disabled")
                 self._enabled_cbs.notify(False)
 
         elif apdu.function == common.ApduFunction.TESTFR_ACT:
-            await _write_apdu(self._conn,
-                              common.APDUU(common.ApduFunction.TESTFR_CON))
+            await self._transport.write(
+                common.APDUU(common.ApduFunction.TESTFR_CON))
 
         elif apdu.function == common.ApduFunction.TESTFR_CON:
             self._test_event.set()
@@ -422,9 +425,9 @@ class Connection(aio.Resource):
             self._log.debug("send data not enabled - discarding message")
             return
 
-        await _write_apdu(self._conn, common.APDUI(ssn=self._ssn,
-                                                   rsn=self._rsn,
-                                                   data=data))
+        await self._transport.write(common.APDUI(ssn=self._ssn,
+                                                 rsn=self._rsn,
+                                                 data=data))
         self._w = 0
         self._stop_supervisory_timeout()
 
@@ -435,7 +438,7 @@ class Connection(aio.Resource):
         return handle
 
     async def _write_apdus(self):
-        await _write_apdu(self._conn, common.APDUS(self._rsn))
+        await self._transport.write(common.APDUS(self._rsn))
         self._w = 0
         self._stop_supervisory_timeout()
 
@@ -488,26 +491,9 @@ class _SendQueueEntry(typing.NamedTuple):
     wait_ack: bool
 
 
-async def _read_apdu(conn):
-    data = bytearray()
-
+async def _wait_startdt_con(transport):
     while True:
-        size = encoder.get_next_apdu_size(data)
-        if size <= len(data):
-            break
-        data.extend(await conn.readexactly(size - len(data)))
-
-    return encoder.decode(memoryview(data))
-
-
-async def _write_apdu(conn, apdu):
-    data = encoder.encode(apdu)
-    await conn.write(data)
-
-
-async def _wait_startdt_con(conn):
-    while True:
-        req = await _read_apdu(conn)
+        req = await transport.read()
 
         if not isinstance(req, common.APDUU):
             continue
@@ -517,7 +503,7 @@ async def _wait_startdt_con(conn):
 
         if req.function == common.ApduFunction.TESTFR_ACT:
             res = common.APDUU(common.ApduFunction.TESTFR_CON)
-            _write_apdu(conn, res)
+            await transport.write(res)
 
 
 def _create_server_logger_adapter(info):
