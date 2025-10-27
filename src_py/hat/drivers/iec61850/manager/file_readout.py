@@ -455,7 +455,7 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
 
     node_type_el = _get_node_type_el(root_el, node_el)
     if node_type_el is None:
-        mlog.warning("type %s not defined", )
+        mlog.warning("type %s not defined", node_el.get('type'))
         return
 
     elements = []
@@ -464,11 +464,8 @@ def _get_value_type(root_el, node_el, is_array_element=False, with_fc=False):
         if el_type is None:
             continue
 
-        value_type = {'type': el_type,
-                      'name': da_el.get('name')}
-        if with_fc:
-            value_type['fc'] = da_el.get('fc')
-        elements.append(value_type)
+        elements.append({'type': el_type,
+                         'name': da_el.get('name')})
 
     value_type = {'type': 'STRUCT',
                   'elements': elements}
@@ -484,11 +481,11 @@ def _get_all_fcs(value_type):
     if value_type.get('fc') is not None:
         yield value_type.get('fc')
 
-    if 'elements' in value_type:
+    if value_type['type'] == 'STRUCT':
         for element_vt in value_type['elements']:
-            yield from _get_all_fcs(element_vt)
+            yield from _get_all_fcs(element_vt['type'])
 
-    if 'element_type' in value_type:
+    if value_type['type'] == 'ARRAY':
         yield from _get_all_fcs(value_type['element_type'])
 
 
@@ -506,9 +503,6 @@ def _get_value_type_for_fc(value_type, fc):
     elif value_type['type'] == 'STRUCT':
         elements = []
         for el in value_type['elements']:
-            if el['fc'] is not None and el['fc'] != fc:
-                continue
-
             element_type = _get_value_type_for_fc(el['type'], fc)
             if element_type is not None:
                 elements.append({'name': el['name'],

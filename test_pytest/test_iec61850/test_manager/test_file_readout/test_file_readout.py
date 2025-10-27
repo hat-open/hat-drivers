@@ -36,7 +36,7 @@ def test_1(validator):
     assert len(device_json['data']) == 123
     writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 3
-    assert len(device_json['value_types']) == 125
+    assert len(device_json['value_types']) == 127
 
     # assert parent and child data exist for sub DO
     for subdo_name in ["phsA", "phsB", "phsC"]:
@@ -154,7 +154,7 @@ def test_2(validator):
     assert len(device_json['data']) == 369
     writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 0
-    assert len(device_json['value_types']) == 512
+    assert len(device_json['value_types']) == 515
 
     ds_conf = util.first(device_json['datasets'],
                          lambda i: i['ref'] == {
@@ -215,8 +215,8 @@ def test_3(validator):
     assert device_jsons['LKKU']['connection']['ap_title'] == [1, 3, 9999, 23]
     assert device_jsons['LKKU']['connection']['ae_qualifier'] == 23
 
-    assert len(device_jsons['E1_7SA']['value_types']) == 4023
-    assert len(device_jsons['E1_REL']['value_types']) == 1334
+    assert len(device_jsons['E1_7SA']['value_types']) == 4053
+    assert len(device_jsons['E1_REL']['value_types']) == 1350
     assert len(device_jsons['LKKU']['value_types']) == 3
 
     # dynamic
@@ -280,7 +280,7 @@ def test_4(validator):
     assert len(device_json['rcbs']) == 37
     assert len(device_json['commands']) == 100
     assert len(device_json['data']) == 3632
-    assert len(device_json['value_types']) == 4079
+    assert len(device_json['value_types']) == 4109
 
     assert device_json['dynamic']['max_datasets'] == 30
     assert device_json['dynamic']['max_dataset_attributes'] == 60
@@ -324,7 +324,7 @@ def test_4(validator):
     assert len(device_json['rcbs']) == 32
     assert len(device_json['commands']) == 92
     assert len(device_json['data']) == 1342
-    assert len(device_json['value_types']) == 1334
+    assert len(device_json['value_types']) == 1350
 
     # command, data and control model on the same address
     value_types = [i for i in device_json['value_types']
@@ -398,7 +398,7 @@ def test_5(validator):
     assert len(device_json['data']) == 1990
     writable_values = [i for i in device_json['data'] if i['writable']]
     assert len(writable_values) == 77
-    assert len(device_json['value_types']) == 1337
+    assert len(device_json['value_types']) == 1363
 
 
 def test_6(validator):
@@ -522,6 +522,8 @@ def test_8(validator):
     assert len(device_jsons) == 1
 
     device_json = device_jsons['AA1RTUA02']
+
+    assert len(device_json['value_types']) == 3726
 
     def _get_all_array_types(vt):
         if not isinstance(vt, dict):
