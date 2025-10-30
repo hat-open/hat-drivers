@@ -10,6 +10,11 @@ from hat.drivers import udp
 
 class Endpoint(aio.Resource):
 
+    @property
+    @abc.abstractmethod
+    def info(self) -> serial.EndpointInfo | tcp.ConnectionInfo | udp.EndpointInfo:  # NOQA
+        """Endpoint info"""
+
     @abc.abstractmethod
     async def read(self, size: int) -> util.Bytes:
         """Read
@@ -50,6 +55,10 @@ class SerialEndpoint(Endpoint):
     def async_group(self):
         return self._endpoint.async_group
 
+    @property
+    def info(self):
+        return self._endpoint.info
+
     async def read(self, size):
         return await self._endpoint.read(size)
 
@@ -69,6 +78,10 @@ class TcpEndpoint(Endpoint):
     def async_group(self):
         return self._conn.async_group
 
+    @property
+    def info(self):
+        return self._conn.info
+
     async def read(self, size):
         return await self._conn.readexactly(size)
 
@@ -81,19 +94,25 @@ class TcpEndpoint(Endpoint):
 
 class UdpEndpoint(Endpoint):
 
-    def __init__(self, endpoint: udp.Endpoint, remote_addr: udp.Address):
+    def __init__(self, endpoint: udp.Endpoint):
+        if not endpoint.info.remote_addr:
+            raise Exception('endpoint with remote address required')
+
         self._endpoint = endpoint
-        self._remote_addr = remote_addr
         self._buff = util.BytesBuffer()
 
     @property
     def async_group(self):
         return self._conn.async_group
 
+    @property
+    def info(self):
+        return self._endpoint.info
+
     async def read(self, size):
         while (len(self._buff) < size):
             data, addr = await self._endpoint.receive()
-            if addr != self._remote_addr:
+            if addr != self._andpoint.info.remote_addr:
                 continue
 
             self._buff.add(data)
@@ -101,7 +120,7 @@ class UdpEndpoint(Endpoint):
         return self._buff.read(size)
 
     async def write(self, data):
-        await self._endpoint.send(data, self._remote_addr)
+        await self._endpoint.send(data)
 
     async def drain(self):
         pass
