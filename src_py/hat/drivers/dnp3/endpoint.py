@@ -10,6 +10,11 @@ from hat.drivers import udp
 
 class Endpoint(aio.Resource):
 
+    @property
+    @abc.abstractmethod
+    def info(self) -> serial.EndpointInfo | tcp.ConnectionInfo | udp.EndpointInfo:  # NOQA
+        """Endpoint info"""
+
     @abc.abstractmethod
     async def read(self, size: int) -> util.Bytes:
         """Read
@@ -50,6 +55,10 @@ class SerialEndpoint(Endpoint):
     def async_group(self):
         return self._endpoint.async_group
 
+    @property
+    def info(self):
+        return self._endpoint.info
+
     async def read(self, size):
         return await self._endpoint.read(size)
 
@@ -68,6 +77,10 @@ class TcpEndpoint(Endpoint):
     @property
     def async_group(self):
         return self._conn.async_group
+
+    @property
+    def info(self):
+        return self._conn.info
 
     async def read(self, size):
         return await self._conn.readexactly(size)
@@ -89,6 +102,10 @@ class UdpEndpoint(Endpoint):
     @property
     def async_group(self):
         return self._conn.async_group
+
+    @property
+    def info(self):
+        return self._endpoint.info
 
     async def read(self, size):
         while (len(self._buff) < size):
