@@ -96,9 +96,12 @@ class Connection(aio.Resource):
                  receive_queue_size: int):
         self._conn = conn
         self._receive_queue = aio.Queue(receive_queue_size)
-        self._log = _create_connection_logger_adapter(conn.info)
+        self._log = _create_connection_logger_adapter(False, conn.info)
+        self._comm_log = _create_connection_logger_adapter(True, conn.info)
 
         self.async_group.spawn(self._read_loop)
+
+        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -133,7 +136,8 @@ class Connection(aio.Resource):
             [3, 0, packet_length >> 8, packet_length & 0xFF],
             data))
 
-        self._log.debug('sending %s bytes', data_len)
+        if self._comm_log.isEnabledFor(logging.DEBUG):
+            self._log.debug('sending %s', data.hex(' '))
 
         await self._conn.write(packet)
 
@@ -159,7 +163,8 @@ class Connection(aio.Resource):
                 data_length = packet_length - 4
                 data = await self._conn.readexactly(data_length)
 
-                self._log.debug('received %s bytes', len(data))
+                if self._comm_log.isEnabledFor(logging.DEBUG):
+                    self._comm_log.debug('received %s', data.hex(' '))
 
                 await self._receive_queue.put(data)
 
@@ -175,6 +180,8 @@ class Connection(aio.Resource):
             self.close()
             self._receive_queue.close()
 
+            self._comm_log.debug('connection closed')
+
 
 def _create_server_logger_adapter(info):
     extra = {'meta': {'type': 'TpktServer',
@@ -186,8 +193,9 @@ def _create_server_logger_adapter(info):
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(info):
+def _create_connection_logger_adapter(communication, info):
     extra = {'meta': {'type': 'TpktConnection',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

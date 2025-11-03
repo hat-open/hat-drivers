@@ -78,7 +78,7 @@ async def connect(addr: tcp.Address,
                           cosp_receive_queue_size, cosp_send_queue_size)
 
     except BaseException:
-        await aio.uncancellable(_close_cotp(conn, _ab_spdu, mlog))
+        await aio.uncancellable(_close_cotp(conn, _ab_spdu, mlog, mlog))
         raise
 
 
@@ -164,7 +164,7 @@ class Server(aio.Resource):
 
             except BaseException:
                 await aio.uncancellable(
-                    _close_cotp(cotp_conn, _ab_spdu, self._log))
+                    _close_cotp(cotp_conn, _ab_spdu, self._log, self._log))
                 raise
 
             try:
@@ -216,13 +216,16 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(self._info)
+        self._log = _create_connection_logger_adapter(False, self._info)
+        self._comm_log = _create_connection_logger_adapter(True, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
+
+        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -282,7 +285,10 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_cotp(self._conn, self._close_spdu, self._log)
+        await _close_cotp(self._conn, self._close_spdu, self._log,
+                          self._comm_log)
+
+        self._comm_log.debug('connection closed')
 
     def _close(self, spdu):
         if not self.is_open:
@@ -297,6 +303,8 @@ class Connection(aio.Resource):
             while True:
                 spdu_bytes = await self._conn.receive()
                 spdu = encoder.decode(memoryview(spdu_bytes))
+
+                self._comm_log.debug('received %s', spdu)
 
                 if spdu.type == common.SpduType.DT:
                     data.extend(spdu.data)
@@ -344,6 +352,8 @@ class Connection(aio.Resource):
                     msg = bytes(itertools.chain(common.give_tokens_spdu_bytes,
                                                 spdu_bytes))
 
+                    self._comm_log.debug('sending %s', spdu)
+
                     await self._conn.send(msg)
 
                 if future and not future.done():
@@ -367,12 +377,15 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_cotp(cotp_conn, spdu, log):
+async def _close_cotp(cotp_conn, spdu, log, comm_log):
     try:
         if not cotp_conn.is_open or not spdu:
             return
 
         spdu_bytes = encoder.encode(spdu)
+
+        comm_log.debug('sending %s', spdu)
+
         await cotp_conn.send(spdu_bytes)
         await cotp_conn.drain()
 
@@ -427,8 +440,9 @@ def _create_server_logger_adapter(info):
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(info):
+def _create_connection_logger_adapter(communication, info):
     extra = {'meta': {'type': 'CospConnection',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

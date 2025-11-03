@@ -34,10 +34,15 @@ class Connection(aio.Resource):
         self._next_sequence_number = ((i % 0x7ffffffe) + 1
                                       for i in itertools.count(0))
         self._sequence_number_futures = {}
-        self._log = common.create_connection_logger_adapter(mlog, conn.info)
+        self._log = common.create_connection_logger_adapter(mlog, False,
+                                                            conn.info)
+        self._comm_log = common.create_connection_logger_adapter(mlog, True,
+                                                                 conn.info)
 
         if self.is_open:
             self.async_group.spawn(self._receive_loop)
+
+            self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -103,6 +108,10 @@ class Connection(aio.Resource):
                 body_bytes = await self._conn.readexactly(
                     header.command_length - encoder.header_length)
 
+                if self._comm_log.isEnabledFor(logging.DEBUG):
+                    self._comm_log.debug('received %s %s',
+                                         header, body_bytes.hex(' '))
+
                 if header.command_id in _request_command_ids:
                     await self._process_request(header=header,
                                                 body_bytes=body_bytes)
@@ -130,6 +139,8 @@ class Connection(aio.Resource):
             for future in self._sequence_number_futures.values():
                 if not future.done():
                     future.cancel()
+
+            self._comm_log.debug('connection closed')
 
     async def _process_request(self, header, body_bytes):
         if not self._request_cb:
@@ -223,6 +234,8 @@ class Connection(aio.Resource):
         pdu_bytes = bytearray(len(header_bytes) + len(body_bytes))
         pdu_bytes[:len(header_bytes)] = header_bytes
         pdu_bytes[len(header_bytes):] = body_bytes
+
+        self._comm_log.debug('sending %s %s', header, body)
 
         await self._conn.write(pdu_bytes)
 

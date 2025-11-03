@@ -38,6 +38,8 @@ class V1TrapSender(common.TrapSender):
         self._community = community
         self._addr = tuple(int(i)
                            for i in endpoint.info.local_addr.host.split('.'))
+        self._comm_log = common.create_logger_adapter(mlog, True,
+                                                      endpoint.info)
 
     @property
     def async_group(self) -> aio.Group:
@@ -59,6 +61,8 @@ class V1TrapSender(common.TrapSender):
                              community=self._community,
                              pdu=pdu)
         msg_bytes = encoder.encode(msg)
+
+        self._comm_log.debug('sending %s', msg)
 
         self._endpoint.send(msg_bytes)
 

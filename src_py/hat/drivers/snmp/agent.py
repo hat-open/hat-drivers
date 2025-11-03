@@ -71,7 +71,8 @@ class Agent(aio.Resource):
         self._auth_engine_id = authoritative_engine_id
         self._auth_keys = {}
         self._priv_keys = {}
-        self._log = _create_logger_adapter(endpoint.info)
+        self._log = _create_logger_adapter(False, endpoint.info)
+        self._comm_log = _create_logger_adapter(True, endpoint.info)
 
         for user in users:
             common.validate_user(user)
@@ -97,6 +98,8 @@ class Agent(aio.Resource):
                 self._priv_keys[user.name] = None
 
         self.async_group.spawn(self._receive_loop)
+
+        self._comm_log.debug('agent created')
 
     @property
     def async_group(self) -> aio.Group:
@@ -132,6 +135,8 @@ class Agent(aio.Resource):
                     self._log.warning("error decoding message from %s: %s",
                                       addr, e, exc_info=e)
                     continue
+
+                self._comm_log.debug('received %s', req_msg)
 
                 try:
                     if isinstance(req_msg, encoder.v1.Msg):
@@ -184,6 +189,8 @@ class Agent(aio.Resource):
                                       e, exc_info=e)
                     continue
 
+                self._comm_log.debug('sending %s', res_msg)
+
                 self._endpoint.send(res_msg_bytes, addr)
 
         except ConnectionError:
@@ -194,6 +201,8 @@ class Agent(aio.Resource):
 
         finally:
             self.close()
+
+            self._comm_log.debug('agent closed')
 
     async def _process_v1_req_msg(self, req_msg, addr):
         if not self._v1_request_cb:
@@ -403,8 +412,9 @@ class Agent(aio.Resource):
         return res_msg
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     extra = {'meta': {'type': 'SnmpAgent',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

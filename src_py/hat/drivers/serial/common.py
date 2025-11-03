@@ -85,9 +85,11 @@ class Endpoint(aio.Resource):
 
 
 def create_logger_adapter(logger: logging.Logger,
+                          communication: bool,
                           info: EndpointInfo
                           ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'SerialEndpoint',
+                      'communication': communication,
                       'name': info.name,
                       'port': info.port}}
 

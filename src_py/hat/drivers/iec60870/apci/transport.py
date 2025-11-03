@@ -48,9 +48,10 @@ class Transport(aio.Resource):
         return apdu
 
     async def write(self, apdu: common.APDU):
+        data = encoder.encode(apdu)
+
         self._comm_log.debug('sending %s', apdu)
 
-        data = encoder.encode(apdu)
         await self._conn.write(data)
 
 

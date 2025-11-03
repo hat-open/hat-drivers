@@ -23,8 +23,10 @@ class TrapSender(aio.Resource):
 
 
 def create_logger_adapter(logger: logging.Logger,
+                          communication: bool,
                           info: udp.EndpointInfo):
     extra = {'meta': {'type': 'SnmpTrapSender',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

@@ -41,9 +41,13 @@ class V1Manager(common.Manager):
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
-        self._log = common.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
+        self._comm_log = common.create_logger_adapter(mlog, True,
+                                                      endpoint.info)
 
         self.async_group.spawn(self._receive_loop)
+
+        self._comm_log.debug('manager created')
 
     @property
     def async_group(self) -> aio.Group:
@@ -86,6 +90,8 @@ class V1Manager(common.Manager):
         future = self._loop.create_future()
         self._receive_futures[request_id] = future
         try:
+            self._comm_log.debug('sending %s', msg)
+
             self._endpoint.send(msg_bytes)
             return await future
 
@@ -99,6 +105,8 @@ class V1Manager(common.Manager):
                 # TODO check address
                 try:
                     msg = encoder.decode(msg_bytes)
+
+                    self._comm_log.debug('received %s', msg)
 
                     if not isinstance(msg, encoder.v1.Msg):
                         raise Exception('invalid version')
@@ -133,3 +141,5 @@ class V1Manager(common.Manager):
             for future in self._receive_futures.values():
                 if not future.done():
                     future.set_exception(ConnectionError())
+
+            self._comm_log.debug('manager closed')

@@ -94,7 +94,7 @@ async def connect(addr: tcp.Address,
                           acse_receive_queue_size, acse_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_copp(conn, _abrt_apdu(1)))
+        await aio.uncancellable(_close_copp(conn, _abrt_apdu(1), mlog))
         raise
 
 
@@ -205,7 +205,8 @@ class Server(aio.Resource):
                                   self._send_queue_size)
 
             except Exception:
-                await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
+                await aio.uncancellable(
+                    _close_copp(copp_conn, _abrt_apdu(1), mlog))
                 raise
 
             try:
@@ -271,13 +272,16 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(self._info)
+        self._log = _create_connection_logger_adapter(False, self._info)
+        self._comm_log = _create_connection_logger_adapter(True, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
+
+        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -326,7 +330,9 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_copp(self._conn, self._close_apdu)
+        await _close_copp(self._conn, self._close_apdu, self._comm_log)
+
+        self._comm_log.debug('connection closed')
 
     def _close(self, apdu):
         if not self.is_open:
@@ -339,6 +345,8 @@ class Connection(aio.Resource):
         try:
             while True:
                 syntax_name, entity = await self._conn.receive()
+
+                self._comm_log.debug('received %s %s', syntax_name, entity)
 
                 if syntax_name == _acse_syntax_name:
                     if entity[0] == 'abrt':
@@ -375,6 +383,8 @@ class Connection(aio.Resource):
                     await self._conn.drain()
 
                 else:
+                    self._comm_log.debug('sending %s', data)
+
                     await self._conn.send(data)
 
                 if future and not future.done():
@@ -398,8 +408,11 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_copp(copp_conn, apdu):
+async def _close_copp(copp_conn, apdu, comm_log):
     data = (_acse_syntax_name, _encode(apdu)) if apdu else None
+
+    comm_log.debug('sending %s', apdu)
+
     await copp_conn.async_close(data)
 
 
@@ -530,8 +543,9 @@ def _create_server_logger_adapter(info):
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(info):
+def _create_connection_logger_adapter(communication, info):
     extra = {'meta': {'type': 'AcseConnection',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

@@ -106,9 +106,11 @@ def get_broadcast_address(address_size: AddressSize):
 
 
 def create_logger_adapter(logger: logging.Logger,
+                          communication: bool,
                           info: serial.EndpointInfo
                           ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec60870Link',
+                      'communication': communication,
                       'name': info.name,
                       'port': info.port}}
 

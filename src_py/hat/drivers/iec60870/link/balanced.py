@@ -33,7 +33,7 @@ async def create_balanced_link(port: str,
                                            silent_interval=silent_interval,
                                            **kwargs)
 
-    link._log = common.create_logger_adapter(mlog, link._endpoint.info)
+    link._log = common.create_logger_adapter(mlog, False, link._endpoint.info)
 
     link.async_group.spawn(link._send_loop)
     link.async_group.spawn(link._receive_loop)

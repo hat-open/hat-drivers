@@ -66,11 +66,15 @@ class V3Manager(common.Manager):
         self._authorative_engine_set_time = time.monotonic()
         self._auth_key = None
         self._priv_key = None
-        self._log = common.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
+        self._comm_log = common.create_logger_adapter(mlog, True,
+                                                      endpoint.info)
 
         common.validate_user(user)
 
         self.async_group.spawn(self._receive_loop)
+
+        self._comm_log.debug('manager created')
 
     @property
     def async_group(self) -> aio.Group:
@@ -166,6 +170,8 @@ class V3Manager(common.Manager):
         future = self._loop.create_future()
         self._req_msg_futures[request_id] = req_msg, future
         try:
+            self._comm_log.debug('sending %s', req_msg)
+
             self._endpoint.send(req_msg_bytes)
             return await future
 
@@ -195,6 +201,8 @@ class V3Manager(common.Manager):
                     res_msg = encoder.decode(msg_bytes=res_msg_bytes,
                                              auth_key_cb=self._on_auth_key,
                                              priv_key_cb=self._on_priv_key)
+
+                    self._comm_log.debug('received %s', res_msg)
 
                     if not isinstance(res_msg, encoder.v3.Msg):
                         raise Exception('invalid version')
@@ -266,3 +274,5 @@ class V3Manager(common.Manager):
             for _, future in self._req_msg_futures.values():
                 if not future.done():
                     future.set_exception(ConnectionError())
+
+            self._comm_log.debug('manager closed')

@@ -40,11 +40,14 @@ async def create_endpoint(local_host: str = '0.0.0.0',
     endpoint._echo_futures = {}
     endpoint._info = EndpointInfo(name=name,
                                   local_addr=local_addr)
-    endpoint._log = _create_logger_adapter(endpoint._info)
+    endpoint._log = _create_logger_adapter(False, endpoint._info)
+    endpoint._comm_log = _create_logger_adapter(True, endpoint._info)
 
     endpoint._socket = _create_socket(local_addr)
 
     endpoint.async_group.spawn(endpoint._receive_loop)
+
+    endpoint._comm_log.debug('endpoint created')
 
     return endpoint
 
@@ -83,6 +86,8 @@ class Endpoint(aio.Resource):
         try:
             self._echo_futures[data] = future
 
+            self._comm_log.debug('sending %s', req)
+
             if sys.version_info[:2] >= (3, 11):
                 await self._loop.sock_sendto(self._socket, req_bytes,
                                              tuple(addr))
@@ -108,6 +113,8 @@ class Endpoint(aio.Resource):
                                       e, exc_info=e)
                     continue
 
+                self._comm_log.debug('received %s', msg)
+
                 if isinstance(msg, common.EchoMsg):
                     self._process_echo_msg(msg)
 
@@ -122,6 +129,8 @@ class Endpoint(aio.Resource):
                     future.set_exception(ConnectionError())
 
             self._socket.close()
+
+            self._comm_log.debug('endpoint closed')
 
     def _process_echo_msg(self, msg):
         if not msg.is_reply:
@@ -174,8 +183,9 @@ def _echo_data_iter():
         yield prefix + i.to_bytes(i_size, 'big')
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     extra = {'meta': {'type': 'IcmpEndpoint',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port}}}

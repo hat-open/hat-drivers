@@ -40,7 +40,9 @@ async def create(port,
     endpoint._write_queue = aio.Queue()
     endpoint._info = common.EndpointInfo(name=name,
                                          port=port)
-    endpoint._log = common.create_logger_adapter(mlog, endpoint._info)
+    endpoint._log = common.create_logger_adapter(mlog, False, endpoint._info)
+    endpoint._comm_log = common.create_logger_adapter(mlog, True,
+                                                      endpoint._info)
 
     endpoint._serial = _native_serial.Serial(in_buff_size=0xFFFF,
                                              out_buff_size=0xFFFF)
@@ -60,7 +62,7 @@ async def create(port,
         rtscts=rtscts,
         dsrdtr=dsrdtr)
 
-    endpoint._log.debug('endpoint created')
+    endpoint._comm_log.debug('endpoint created')
 
     endpoint._async_group = aio.Group()
     endpoint._async_group.spawn(aio.call_on_done,
@@ -125,7 +127,7 @@ class Endpoint(common.Endpoint):
 
         self._serial.set_close_cb(None)
 
-        self._log.debug('endpoint closed')
+        self._comm_log.debug('endpoint closed')
 
     async def _read_loop(self):
         try:
@@ -137,6 +139,9 @@ class Endpoint(common.Endpoint):
                     if not data:
                         await change_future
                         continue
+
+                if self._comm_log.isEnabledFor(logging.DEBUG):
+                    self._comm_log.debug('received %s', data.hex(' '))
 
                 async with self._input_cv:
                     self._input_buffer.add(data)
@@ -167,6 +172,10 @@ class Endpoint(common.Endpoint):
                             result = self._serial.write(bytes(data))
                             if result < 0:
                                 raise Exception('write error')
+
+                            if self._comm_log.isEnabledFor(logging.DEBUG):
+                                self._comm_log.debug('sending %s',
+                                                     data[:result].hex(' '))
 
                             data = data[result:]
 

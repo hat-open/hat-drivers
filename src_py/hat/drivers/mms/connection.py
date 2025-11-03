@@ -246,12 +246,15 @@ class Connection(aio.Resource):
         self._response_futures = {}
         self._close_pdu = 'conclude-RequestPDU', None
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(conn.info)
+        self._log = _create_connection_logger_adapter(False, conn.info)
+        self._comm_log = _create_connection_logger_adapter(True, conn.info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
+
+        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -271,6 +274,9 @@ class Connection(aio.Resource):
         pdu = 'unconfirmed-PDU', {
             'service': encoder.encode_unconfirmed(unconfirmed)}
         data = _mms_syntax_name, _encode(pdu)
+
+        self._comm_log.debug('sending %s', pdu)
+
         await self._conn.send(data)
 
     async def send_confirmed(self,
@@ -285,6 +291,9 @@ class Connection(aio.Resource):
             'invokeID': invoke_id,
             'service': encoder.encode_request(req)}
         data = _mms_syntax_name, _encode(pdu)
+
+        self._comm_log.debug('sending %s', pdu)
+
         await self._conn.send(data)
 
         if not self.is_open:
@@ -302,6 +311,9 @@ class Connection(aio.Resource):
         if self._conn.is_open:
             try:
                 data = _mms_syntax_name, _encode(self._close_pdu)
+
+                self._comm_log.debug('sending %s', self._close_pdu)
+
                 await self._conn.send(data)
                 await self._conn.drain()
 
@@ -312,6 +324,8 @@ class Connection(aio.Resource):
 
         await self._conn.async_close()
 
+        self._comm_log.debug('connection closed')
+
     async def _receive_loop(self):
         try:
             while True:
@@ -320,6 +334,9 @@ class Connection(aio.Resource):
                     continue
 
                 pdu = _decode(entity)
+
+                self._comm_log.debug('received %s', pdu)
+
                 name, data = pdu
 
                 if name == 'unconfirmed-PDU':
@@ -385,6 +402,9 @@ class Connection(aio.Resource):
             TypeError('unsupported response/error type')
 
         res_data = _mms_syntax_name, _encode(res_pdu)
+
+        self._comm_log.debug('sending %s', res_pdu)
+
         await self._conn.send(res_data)
 
     async def _process_response(self, data):
@@ -432,8 +452,9 @@ def _create_server_logger_adapter(info):
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(info):
+def _create_connection_logger_adapter(communication, info):
     extra = {'meta': {'type': 'MmsConnection',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

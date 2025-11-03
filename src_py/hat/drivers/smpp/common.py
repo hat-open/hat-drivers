@@ -45,8 +45,10 @@ class DataCoding(enum.Enum):
 
 
 def create_connection_logger_adapter(logger: logging.Logger,
+                                     communication: bool,
                                      info: tcp.ConnectionInfo):
     extra = {'meta': {'type': 'SmppConnection',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

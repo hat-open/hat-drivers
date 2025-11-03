@@ -72,6 +72,8 @@ class MasterConnection(aio.Resource):
 
         self.async_group.spawn(self._receive_loop)
 
+        self._comm_log.debug('master connection created')
+
     @property
     def async_group(self):
         return self._conn.async_group
@@ -95,9 +97,9 @@ class MasterConnection(aio.Resource):
                 elements=[iec103.IoElement_TIME_SYNCHRONIZATION(
                     time=time)])])
 
-        self._comm_log.debug('sending %s', asdu)
-
         data = self._encoder.encode_asdu(asdu)
+
+        self._comm_log.debug('sending %s', asdu)
 
         await self._conn.send(data)
 
@@ -118,11 +120,11 @@ class MasterConnection(aio.Resource):
                     elements=[iec103.IoElement_GENERAL_INTERROGATION(  # NOQA
                         scan_number=scan_number)])])
 
-            self._comm_log.debug('sending %s', asdu)
-
             data = self._encoder.encode_asdu(asdu)
 
             try:
+                self._comm_log.debug('sending %s', asdu)
+
                 self._interrogate_req_id = scan_number
                 self._interrogate_future = asyncio.Future()
                 await self._conn.send(data)
@@ -152,11 +154,11 @@ class MasterConnection(aio.Resource):
                         value=value,
                         return_identifier=return_identifier)])])
 
-            self._comm_log.debug('sending %s', asdu)
-
             data = self._encoder.encode_asdu(asdu)
 
             try:
+                self._comm_log.debug('sending %s', asdu)
+
                 self._send_command_req_id = return_identifier
                 self._send_command_future = asyncio.Future()
                 await self._conn.send(data)
@@ -184,11 +186,11 @@ class MasterConnection(aio.Resource):
                         return_identifier=return_identifier,
                         data=[])])])
 
-            self._comm_log.debug('sending %s', asdu)
-
             data = self._encoder.encode_asdu(asdu)
 
             try:
+                self._comm_log.debug('sending %s', asdu)
+
                 self._interrogate_generic_req_id = return_identifier
                 self._interrogate_generic_future = asyncio.Future()
                 await self._conn.send(data)
@@ -230,6 +232,8 @@ class MasterConnection(aio.Resource):
             _try_set_exception(self._send_command_future, ConnectionError())
             _try_set_exception(self._interrogate_generic_future,
                                ConnectionError())
+
+            self._comm_log.debug('master connection closed')
 
     async def _process_TIME_TAGGED_MESSAGE(self, cause, asdu_address, io_address, element):  # NOQA
         if cause == iec103.Cause.GENERAL_COMMAND:

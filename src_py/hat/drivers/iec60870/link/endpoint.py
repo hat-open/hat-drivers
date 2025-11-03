@@ -36,7 +36,9 @@ class Endpoint(aio.Resource):
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
         self._data = bytearray()
-        self._log = common.create_logger_adapter(mlog, endpoint.info)
+        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
+        self._comm_log = common.create_logger_adapter(mlog, True,
+                                                      endpoint.info)
 
     @property
     def async_group(self):
@@ -64,7 +66,11 @@ class Endpoint(aio.Resource):
 
             try:
                 data, self._data = self._data[:size], self._data[size:]
-                return self._encoder.decode(memoryview(data))
+                msg = self._encoder.decode(memoryview(data))
+
+                self._comm_log.debug('received %s', msg)
+
+                return msg
 
             except Exception as e:
                 self._log.error("error decoding message: %s", e, exc_info=e)
@@ -72,6 +78,9 @@ class Endpoint(aio.Resource):
     async def send(self, msg: common.Frame):
         """Send"""
         data = self._encoder.encode(msg)
+
+        self._comm_log.debug('sending %s', msg)
+
         await self._endpoint.write(data)
 
     async def drain(self):

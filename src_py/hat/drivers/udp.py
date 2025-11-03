@@ -48,6 +48,7 @@ async def create(local_addr: Address | None = None,
     endpoint._async_group = aio.Group()
     endpoint._queue = aio.Queue(queue_size)
     endpoint._log = mlog
+    endpoint._comm_log = mlog
     endpoint._transport = None
     endpoint._protocol = None
 
@@ -68,11 +69,14 @@ async def create(local_addr: Address | None = None,
             remote_addr=(Address(peername[0], peername[1])
                          if peername else None))
 
-        endpoint._log = _create_logger_adapter(endpoint._info)
+        endpoint._log = _create_logger_adapter(False, endpoint._info)
+        endpoint._comm_log = _create_logger_adapter(True, endpoint._info)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
         raise
+
+    endpoint._comm_log.debug('endpoint created')
 
     return endpoint
 
@@ -106,7 +110,8 @@ class Endpoint(aio.Resource):
         if not self.is_open or not self._transport:
             raise ConnectionError()
 
-        self._log.debug('sending %s bytes', len(data))
+        if self._comm_log.isEnabledFor(logging.DEBUG):
+            self._comm_log.debug('sending %s', data.hex(' '))
 
         self._transport.sendto(data, remote_addr or self._remote_addr)
 
@@ -129,6 +134,8 @@ class Endpoint(aio.Resource):
         self._transport = None
         self._protocol = None
 
+        self._comm_log.debug('endpoint closed')
+
 
 class Protocol(asyncio.DatagramProtocol):
 
@@ -141,7 +148,8 @@ class Protocol(asyncio.DatagramProtocol):
         self._endpoint.close()
 
     def datagram_received(self, data: util.Bytes, addr: tuple):
-        self._endpoint._log.debug('received %s bytes', len(data))
+        if self._endpoint._comm_log.isEnabledFor(logging.DEBUG):
+            self._endpoint._comm_log.debug('received %s', data.hex(' '))
 
         try:
             self._endpoint._queue.put_nowait(
@@ -152,8 +160,9 @@ class Protocol(asyncio.DatagramProtocol):
                                         'dropping datagram')
 
 
-def _create_logger_adapter(info):
+def _create_logger_adapter(communication, info):
     extra = {'meta': {'type': 'UdpEndpoint',
+                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},
