@@ -54,9 +54,9 @@ def decode_frame(data: util.Bytes) -> common.Frame:
 
         frame_count_valid = bool(control & 0x10)
         if ((frame_count_valid and
-             function_code not in _frame_count_valid_function_codes) or
+             function_code not in common.frame_count_valid_function_codes) or
             (not frame_count_valid and
-             function_code in _frame_count_valid_function_codes)):
+             function_code in common.frame_count_valid_function_codes)):
             raise Exception("invalid frame count valid")
 
         frame = common.PrimaryFrame(direction=direction,
@@ -96,7 +96,7 @@ def encode_frame(frame: common.Frame) -> util.Bytes:
         if frame.frame_count:
             control |= 0x20
 
-        if frame.function_code in _frame_count_valid_function_codes:
+        if frame.function_code in common.frame_count_valid_function_codes:
             control |= 0x10
 
     elif isinstance(frame, common.SecondaryFrame):
@@ -148,8 +148,3 @@ def _calculate_crc(data):
                 crc ^= 0xa6bc
     crc = ~crc
     return crc & 0xffff
-
-
-_frame_count_valid_function_codes = {
-    common.PrimaryFunctionCode.TEST_LINK_STATES,
-    common.PrimaryFunctionCode.CONFIRMED_USER_DATA}

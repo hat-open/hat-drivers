@@ -47,3 +47,8 @@ class SecondaryFrame(typing.NamedTuple):
 
 
 Frame: typing.TypeAlias = PrimaryFrame | SecondaryFrame
+
+
+frame_count_valid_function_codes: set[PrimaryFunctionCode] = {
+    PrimaryFunctionCode.TEST_LINK_STATES,
+    PrimaryFunctionCode.CONFIRMED_USER_DATA}
