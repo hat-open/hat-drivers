@@ -8,6 +8,7 @@ from hat.drivers import serial
 from hat.drivers import tcp
 from hat.drivers.modbus.transport import common
 from hat.drivers.modbus.transport import encoder
+from hat.drivers.modbus.transport import logger
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -93,8 +94,12 @@ class Connection(aio.Resource):
 
     def __init__(self, link: Link):
         self._link = link
-        self._log = _create_logger_adapter(False, link.info)
-        self._comm_log = _create_logger_adapter(True, link.info)
+        self._log = logger.create_logger(mlog, link.info)
+        self._comm_log = logger.CommunicationLogger(mlog, link.info)
+
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -105,13 +110,9 @@ class Connection(aio.Resource):
         return self._link.info
 
     async def send(self, adu: common.Adu):
-        self._comm_log.debug("sending %s", adu)
+        self._comm_log.log(common.CommLogAction.SEND, adu)
 
         adu_bytes = encoder.encode_adu(adu)
-
-        if self._log.isEnabledFor(logging.DEBUG):
-            self._log.debug("writing bytes: %s", bytes(adu_bytes).hex(' '))
-
         await self._link.write(adu_bytes)
 
     async def receive(self,
@@ -127,13 +128,10 @@ class Connection(aio.Resource):
                 break
             buff.extend(await self._link.read(next_adu_size - len(buff)))
 
-        if self._log.isEnabledFor(logging.DEBUG):
-            self._log.debug("received bytes: %s", buff.hex(' '))
-
         buff = memoryview(buff)
         adu, _ = encoder.decode_adu(modbus_type, direction, buff)
 
-        self._comm_log.debug("received %s", adu)
+        self._comm_log.log(common.CommLogAction.RECEIVE, adu)
 
         return adu
 
@@ -155,25 +153,3 @@ class Connection(aio.Resource):
 
     async def read_byte(self) -> bytes:
         return await self._link.read(1)
-
-
-def _create_logger_adapter(communication, info):
-    if isinstance(info, tcp.ConnectionInfo):
-        extra = {'meta': {'type': 'ModbusTcpConnection',
-                          'communication': communication,
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
-
-    elif isinstance(info, serial.EndpointInfo):
-        extra = {'meta': {'type': 'ModbusSerialConnection',
-                          'communication': communication,
-                          'name': info.name,
-                          'port': info.port}}
-
-    else:
-        raise TypeError('invalid info type')
-
-    return logging.LoggerAdapter(mlog, extra)

@@ -9,6 +9,7 @@ from hat import aio
 
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import endpoint
+from hat.drivers.iec60870.link import logger
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ async def create_master_link(port: str,
                                            direction_valid=False,
                                            **kwargs)
 
-    link._log = common.create_logger_adapter(mlog, False, link._endpoint.info)
+    link._log = logger.create_logger(mlog, link._endpoint.info)
 
     link.async_group.spawn(link._send_loop)
     link.async_group.spawn(link._receive_loop)
@@ -80,7 +81,7 @@ class MasterLink(aio.Resource):
         conn._info = common.ConnectionInfo(name=name,
                                            port=self._endpoint.info.port,
                                            address=addr)
-        conn._log = common.create_connection_logger_adapter(mlog, conn._info)
+        conn._log = logger.create_connection_logger(mlog, conn._info)
 
         send = functools.partial(self._send, response_timeout)
 

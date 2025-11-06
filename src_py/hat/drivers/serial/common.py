@@ -1,3 +1,5 @@
+from hat.drivers.common import *  # NOQA
+
 import abc
 import enum
 import logging
@@ -5,6 +7,8 @@ import typing
 
 from hat import aio
 from hat import util
+
+from hat.drivers.common import CommLogAction
 
 
 class ByteSize(enum.Enum):
@@ -84,13 +88,38 @@ class Endpoint(aio.Resource):
         """
 
 
-def create_logger_adapter(logger: logging.Logger,
-                          communication: bool,
-                          info: EndpointInfo
-                          ) -> logging.LoggerAdapter:
+def create_logger(logger: logging.Logger,
+                  info: EndpointInfo
+                  ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'SerialEndpoint',
-                      'communication': communication,
                       'name': info.name,
                       'port': info.port}}
 
     return logging.LoggerAdapter(logger, extra)
+
+
+class CommunicationLogger:
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 info: EndpointInfo):
+        extra = {'meta': {'type': 'UdpEndpoint',
+                          'communication': True,
+                          'name': info.name,
+                          'port': info.port}}
+
+        self._log = logging.LoggerAdapter(logger, extra)
+
+    def log(self,
+            action: CommLogAction,
+            *data: util.Bytes):
+        if not self._log.isEnabledFor(logging.DEBUG):
+            return
+
+        if not data:
+            self._log.debug(action.value, stacklevel=2)
+
+        else:
+            self._log.debug('%s (%s)',
+                            action.value, ' '.join(i.hex(' ') for i in data),
+                            stacklevel=2)

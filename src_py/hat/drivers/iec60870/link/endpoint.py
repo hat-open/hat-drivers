@@ -5,6 +5,7 @@ from hat import aio
 from hat.drivers import serial
 from hat.drivers.iec60870.link import common
 from hat.drivers.iec60870.link import encoder
+from hat.drivers.iec60870.link import logger
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -36,9 +37,12 @@ class Endpoint(aio.Resource):
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
         self._data = bytearray()
-        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
-        self._comm_log = common.create_logger_adapter(mlog, True,
-                                                      endpoint.info)
+        self._log = logger.create_logger(mlog, endpoint.info)
+        self._comm_log = logger.CommunicationLogger(mlog, endpoint.info)
+
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self):
@@ -68,7 +72,7 @@ class Endpoint(aio.Resource):
                 data, self._data = self._data[:size], self._data[size:]
                 msg = self._encoder.decode(memoryview(data))
 
-                self._comm_log.debug('received %s', msg)
+                self._comm_log.log(common.CommLogAction.RECEIVE, msg)
 
                 return msg
 
@@ -79,7 +83,7 @@ class Endpoint(aio.Resource):
         """Send"""
         data = self._encoder.encode(msg)
 
-        self._comm_log.debug('sending %s', msg)
+        self._comm_log.log(common.CommLogAction.SEND, msg)
 
         await self._endpoint.write(data)
 

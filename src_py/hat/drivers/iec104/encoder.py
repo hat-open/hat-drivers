@@ -8,7 +8,7 @@ from hat.drivers.iec104 import common
 from hat.drivers.iec60870.encodings import iec104
 
 
-def get_msg_asdu_type(msg: common.Msg) -> iec104.common.AsduType:
+def get_msg_asdu_type(msg: common.Msg) -> iec104.AsduType:
     if isinstance(msg, common.DataMsg):
         return _get_data_asdu_type(msg.data, msg.time)
 
@@ -16,31 +16,31 @@ def get_msg_asdu_type(msg: common.Msg) -> iec104.common.AsduType:
         return _get_command_asdu_type(msg.command, msg.time)
 
     if isinstance(msg, common.InitializationMsg):
-        return iec104.common.AsduType.M_EI_NA
+        return iec104.AsduType.M_EI_NA
 
     if isinstance(msg, common.InterrogationMsg):
-        return iec104.common.AsduType.C_IC_NA
+        return iec104.AsduType.C_IC_NA
 
     if isinstance(msg, common.CounterInterrogationMsg):
-        return iec104.common.AsduType.C_CI_NA
+        return iec104.AsduType.C_CI_NA
 
     if isinstance(msg, common.ReadMsg):
-        return iec104.common.AsduType.C_RD_NA
+        return iec104.AsduType.C_RD_NA
 
     if isinstance(msg, common.ClockSyncMsg):
-        return iec104.common.AsduType.C_CS_NA
+        return iec104.AsduType.C_CS_NA
 
     if isinstance(msg, common.TestMsg):
-        return iec104.common.AsduType.C_TS_TA
+        return iec104.AsduType.C_TS_TA
 
     if isinstance(msg, common.ResetMsg):
-        return iec104.common.AsduType.C_RP_NA
+        return iec104.AsduType.C_RP_NA
 
     if isinstance(msg, common.ParameterMsg):
         return _get_parameter_asdu_type(msg.parameter)
 
     if isinstance(msg, common.ParameterActivationMsg):
-        return iec104.common.AsduType.P_AC_NA
+        return iec104.AsduType.P_AC_NA
 
     raise TypeError('unsupported message')
 
@@ -79,27 +79,27 @@ def _decode_asdu(asdu):
 def _decode_io_element(asdu, io, io_element, io_element_index):
     io_address = io.address + io_element_index
 
-    if asdu.type in {iec104.common.AsduType.M_SP_NA,
-                     iec104.common.AsduType.M_DP_NA,
-                     iec104.common.AsduType.M_ST_NA,
-                     iec104.common.AsduType.M_BO_NA,
-                     iec104.common.AsduType.M_ME_NA,
-                     iec104.common.AsduType.M_ME_NB,
-                     iec104.common.AsduType.M_ME_NC,
-                     iec104.common.AsduType.M_IT_NA,
-                     iec104.common.AsduType.M_PS_NA,
-                     iec104.common.AsduType.M_ME_ND,
-                     iec104.common.AsduType.M_SP_TB,
-                     iec104.common.AsduType.M_DP_TB,
-                     iec104.common.AsduType.M_ST_TB,
-                     iec104.common.AsduType.M_BO_TB,
-                     iec104.common.AsduType.M_ME_TD,
-                     iec104.common.AsduType.M_ME_TE,
-                     iec104.common.AsduType.M_ME_TF,
-                     iec104.common.AsduType.M_IT_TB,
-                     iec104.common.AsduType.M_EP_TD,
-                     iec104.common.AsduType.M_EP_TE,
-                     iec104.common.AsduType.M_EP_TF}:
+    if asdu.type in {iec104.AsduType.M_SP_NA,
+                     iec104.AsduType.M_DP_NA,
+                     iec104.AsduType.M_ST_NA,
+                     iec104.AsduType.M_BO_NA,
+                     iec104.AsduType.M_ME_NA,
+                     iec104.AsduType.M_ME_NB,
+                     iec104.AsduType.M_ME_NC,
+                     iec104.AsduType.M_IT_NA,
+                     iec104.AsduType.M_PS_NA,
+                     iec104.AsduType.M_ME_ND,
+                     iec104.AsduType.M_SP_TB,
+                     iec104.AsduType.M_DP_TB,
+                     iec104.AsduType.M_ST_TB,
+                     iec104.AsduType.M_BO_TB,
+                     iec104.AsduType.M_ME_TD,
+                     iec104.AsduType.M_ME_TE,
+                     iec104.AsduType.M_ME_TF,
+                     iec104.AsduType.M_IT_TB,
+                     iec104.AsduType.M_EP_TD,
+                     iec104.AsduType.M_EP_TE,
+                     iec104.AsduType.M_EP_TF}:
         return common.DataMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -110,20 +110,20 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             cause=_decode_cause(asdu.cause.type,
                                 common.DataResCause))
 
-    elif asdu.type in {iec104.common.AsduType.C_SC_NA,
-                       iec104.common.AsduType.C_DC_NA,
-                       iec104.common.AsduType.C_RC_NA,
-                       iec104.common.AsduType.C_SE_NA,
-                       iec104.common.AsduType.C_SE_NB,
-                       iec104.common.AsduType.C_SE_NC,
-                       iec104.common.AsduType.C_BO_NA,
-                       iec104.common.AsduType.C_SC_TA,
-                       iec104.common.AsduType.C_DC_TA,
-                       iec104.common.AsduType.C_RC_TA,
-                       iec104.common.AsduType.C_SE_TA,
-                       iec104.common.AsduType.C_SE_TB,
-                       iec104.common.AsduType.C_SE_TC,
-                       iec104.common.AsduType.C_BO_TA}:
+    elif asdu.type in {iec104.AsduType.C_SC_NA,
+                       iec104.AsduType.C_DC_NA,
+                       iec104.AsduType.C_RC_NA,
+                       iec104.AsduType.C_SE_NA,
+                       iec104.AsduType.C_SE_NB,
+                       iec104.AsduType.C_SE_NC,
+                       iec104.AsduType.C_BO_NA,
+                       iec104.AsduType.C_SC_TA,
+                       iec104.AsduType.C_DC_TA,
+                       iec104.AsduType.C_RC_TA,
+                       iec104.AsduType.C_SE_TA,
+                       iec104.AsduType.C_SE_TB,
+                       iec104.AsduType.C_SE_TC,
+                       iec104.AsduType.C_BO_TA}:
         return common.CommandMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -136,7 +136,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.CommandReqCause,
                                 common.CommandResCause))
 
-    elif asdu.type == iec104.common.AsduType.M_EI_NA:
+    elif asdu.type == iec104.AsduType.M_EI_NA:
         return common.InitializationMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -145,7 +145,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
             cause=_decode_cause(io_element.cause,
                                 common.InitializationResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_IC_NA:
+    elif asdu.type == iec104.AsduType.C_IC_NA:
         return common.InterrogationMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -156,7 +156,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.CommandReqCause,
                                 common.CommandResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_CI_NA:
+    elif asdu.type == iec104.AsduType.C_CI_NA:
         return common.CounterInterrogationMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -168,7 +168,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.CommandReqCause,
                                 common.CommandResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_RD_NA:
+    elif asdu.type == iec104.AsduType.C_RD_NA:
         return common.ReadMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -178,7 +178,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.ReadReqCause,
                                 common.ReadResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_CS_NA:
+    elif asdu.type == iec104.AsduType.C_CS_NA:
         return common.ClockSyncMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -189,7 +189,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.ClockSyncReqCause,
                                 common.ClockSyncResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_RP_NA:
+    elif asdu.type == iec104.AsduType.C_RP_NA:
         return common.ResetMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -199,7 +199,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.ActivationReqCause,
                                 common.ActivationResCause))
 
-    elif asdu.type == iec104.common.AsduType.C_TS_TA:
+    elif asdu.type == iec104.AsduType.C_TS_TA:
         return common.TestMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -210,9 +210,9 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.ActivationReqCause,
                                 common.ActivationResCause))
 
-    elif asdu.type in {iec104.common.AsduType.P_ME_NA,
-                       iec104.common.AsduType.P_ME_NB,
-                       iec104.common.AsduType.P_ME_NC}:
+    elif asdu.type in {iec104.AsduType.P_ME_NA,
+                       iec104.AsduType.P_ME_NB,
+                       iec104.AsduType.P_ME_NC}:
         return common.ParameterMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -223,7 +223,7 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
                                 common.ParameterReqCause,
                                 common.ParameterResCause))
 
-    elif asdu.type == iec104.common.AsduType.P_AC_NA:
+    elif asdu.type == iec104.AsduType.P_AC_NA:
         return common.ParameterActivationMsg(
             is_test=asdu.cause.is_test,
             originator_address=asdu.cause.originator_address,
@@ -238,68 +238,68 @@ def _decode_io_element(asdu, io, io_element, io_element_index):
 
 
 def _decode_data_io_element(io_element, asdu_type):
-    if asdu_type in {iec104.common.AsduType.M_SP_NA,
-                     iec104.common.AsduType.M_SP_TB}:
+    if asdu_type in {iec104.AsduType.M_SP_NA,
+                     iec104.AsduType.M_SP_TB}:
         return common.SingleData(value=io_element.value,
                                  quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_DP_NA,
-                       iec104.common.AsduType.M_DP_TB}:
+    elif asdu_type in {iec104.AsduType.M_DP_NA,
+                       iec104.AsduType.M_DP_TB}:
         return common.DoubleData(value=io_element.value,
                                  quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_ST_NA,
-                       iec104.common.AsduType.M_ST_TB}:
+    elif asdu_type in {iec104.AsduType.M_ST_NA,
+                       iec104.AsduType.M_ST_TB}:
         return common.StepPositionData(value=io_element.value,
                                        quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_BO_NA,
-                       iec104.common.AsduType.M_BO_TB}:
+    elif asdu_type in {iec104.AsduType.M_BO_NA,
+                       iec104.AsduType.M_BO_TB}:
         return common.BitstringData(value=io_element.value,
                                     quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_ME_NA,
-                       iec104.common.AsduType.M_ME_ND,
-                       iec104.common.AsduType.M_ME_TD}:
-        quality = (None if asdu_type == iec104.common.AsduType.M_ME_ND
+    elif asdu_type in {iec104.AsduType.M_ME_NA,
+                       iec104.AsduType.M_ME_ND,
+                       iec104.AsduType.M_ME_TD}:
+        quality = (None if asdu_type == iec104.AsduType.M_ME_ND
                    else io_element.quality)
         return common.NormalizedData(value=io_element.value,
                                      quality=quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_ME_NB,
-                       iec104.common.AsduType.M_ME_TE}:
+    elif asdu_type in {iec104.AsduType.M_ME_NB,
+                       iec104.AsduType.M_ME_TE}:
         return common.ScaledData(value=io_element.value,
                                  quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_ME_NC,
-                       iec104.common.AsduType.M_ME_TF}:
+    elif asdu_type in {iec104.AsduType.M_ME_NC,
+                       iec104.AsduType.M_ME_TF}:
         return common.FloatingData(value=io_element.value,
                                    quality=io_element.quality)
 
-    elif asdu_type in {iec104.common.AsduType.M_IT_NA,
-                       iec104.common.AsduType.M_IT_TB}:
+    elif asdu_type in {iec104.AsduType.M_IT_NA,
+                       iec104.AsduType.M_IT_TB}:
         return common.BinaryCounterData(value=io_element.value,
                                         quality=io_element.quality)
 
-    elif asdu_type == iec104.common.AsduType.M_EP_TD:
+    elif asdu_type == iec104.AsduType.M_EP_TD:
         return common.ProtectionData(
             value=io_element.value,
             quality=io_element.quality,
             elapsed_time=io_element.elapsed_time)
 
-    elif asdu_type == iec104.common.AsduType.M_EP_TE:
+    elif asdu_type == iec104.AsduType.M_EP_TE:
         return common.ProtectionStartData(
             value=io_element.value,
             quality=io_element.quality,
             duration_time=io_element.duration_time)
 
-    elif asdu_type == iec104.common.AsduType.M_EP_TF:
+    elif asdu_type == iec104.AsduType.M_EP_TF:
         return common.ProtectionCommandData(
             value=io_element.value,
             quality=io_element.quality,
             operating_time=io_element.operating_time)
 
-    elif asdu_type == iec104.common.AsduType.M_PS_NA:
+    elif asdu_type == iec104.AsduType.M_PS_NA:
         return common.StatusData(value=io_element.value,
                                  quality=io_element.quality)
 
@@ -307,56 +307,56 @@ def _decode_data_io_element(io_element, asdu_type):
 
 
 def _decode_command_io_element(io_element, asdu_type):
-    if asdu_type in {iec104.common.AsduType.C_SC_NA,
-                     iec104.common.AsduType.C_SC_TA}:
+    if asdu_type in {iec104.AsduType.C_SC_NA,
+                     iec104.AsduType.C_SC_TA}:
         return common.SingleCommand(value=io_element.value,
                                     select=io_element.select,
                                     qualifier=io_element.qualifier)
 
-    elif asdu_type in {iec104.common.AsduType.C_DC_NA,
-                       iec104.common.AsduType.C_DC_TA}:
+    elif asdu_type in {iec104.AsduType.C_DC_NA,
+                       iec104.AsduType.C_DC_TA}:
         return common.DoubleCommand(value=io_element.value,
                                     select=io_element.select,
                                     qualifier=io_element.qualifier)
 
-    elif asdu_type in {iec104.common.AsduType.C_RC_NA,
-                       iec104.common.AsduType.C_RC_TA}:
+    elif asdu_type in {iec104.AsduType.C_RC_NA,
+                       iec104.AsduType.C_RC_TA}:
         return common.RegulatingCommand(value=io_element.value,
                                         select=io_element.select,
                                         qualifier=io_element.qualifier)
 
-    elif asdu_type in {iec104.common.AsduType.C_SE_NA,
-                       iec104.common.AsduType.C_SE_TA}:
+    elif asdu_type in {iec104.AsduType.C_SE_NA,
+                       iec104.AsduType.C_SE_TA}:
         return common.NormalizedCommand(value=io_element.value,
                                         select=io_element.select)
 
-    elif asdu_type in {iec104.common.AsduType.C_SE_NB,
-                       iec104.common.AsduType.C_SE_TB}:
+    elif asdu_type in {iec104.AsduType.C_SE_NB,
+                       iec104.AsduType.C_SE_TB}:
         return common.ScaledCommand(value=io_element.value,
                                     select=io_element.select)
 
-    elif asdu_type in {iec104.common.AsduType.C_SE_NC,
-                       iec104.common.AsduType.C_SE_TC}:
+    elif asdu_type in {iec104.AsduType.C_SE_NC,
+                       iec104.AsduType.C_SE_TC}:
         return common.FloatingCommand(value=io_element.value,
                                       select=io_element.select)
 
-    elif asdu_type in {iec104.common.AsduType.C_BO_NA,
-                       iec104.common.AsduType.C_BO_TA}:
+    elif asdu_type in {iec104.AsduType.C_BO_NA,
+                       iec104.AsduType.C_BO_TA}:
         return common.BitstringCommand(value=io_element.value)
 
     raise ValueError('unsupported asdu type')
 
 
 def _decode_parameter_io_element(io_element, asdu_type):
-    if asdu_type == iec104.common.AsduType.P_ME_NA:
+    if asdu_type == iec104.AsduType.P_ME_NA:
         return common.NormalizedParameter(value=io_element.value,
                                           qualifier=io_element.qualifier)
 
-    elif asdu_type == iec104.common.AsduType.P_ME_NB:
+    elif asdu_type == iec104.AsduType.P_ME_NB:
         return common.ScaledParameter(value=io_element.value,
                                       qualifier=io_element.qualifier)
 
-    elif asdu_type == iec104.common.AsduType.P_ME_NC:
+    elif asdu_type == iec104.AsduType.P_ME_NC:
         return common.FloatingParameter(value=io_element.value,
                                         qualifier=io_element.qualifier)
 
@@ -375,7 +375,7 @@ def _decode_cause(cause_type, *cause_classes):
 def _encode_cause(cause):
     value = cause.value if isinstance(cause, enum.Enum) else cause
     with contextlib.suppress(ValueError):
-        return iec104.common.CauseType(value)
+        return iec104.CauseType(value)
     return value
 
 
@@ -402,52 +402,52 @@ def _encode_msg(msg):
         time = msg.time
 
     elif isinstance(msg, common.InitializationMsg):
-        asdu_type = iec104.common.AsduType.M_EI_NA
-        cause_type = iec104.common.CauseType.INITIALIZED
-        io_element = iec104.common.IoElement_M_EI_NA(
+        asdu_type = iec104.AsduType.M_EI_NA
+        cause_type = iec104.CauseType.INITIALIZED
+        io_element = iec104.IoElement_M_EI_NA(
             param_change=msg.param_change,
             cause=(msg.cause.value if isinstance(msg.cause, enum.Enum)
                    else msg.cause))
 
     elif isinstance(msg, common.InterrogationMsg):
-        asdu_type = iec104.common.AsduType.C_IC_NA
+        asdu_type = iec104.AsduType.C_IC_NA
         cause_type = _encode_cause(msg.cause)
         is_negative_confirm = msg.is_negative_confirm
-        io_element = iec104.common.IoElement_C_IC_NA(
+        io_element = iec104.IoElement_C_IC_NA(
             qualifier=msg.request)
 
     elif isinstance(msg, common.CounterInterrogationMsg):
-        asdu_type = iec104.common.AsduType.C_CI_NA
+        asdu_type = iec104.AsduType.C_CI_NA
         cause_type = _encode_cause(msg.cause)
         is_negative_confirm = msg.is_negative_confirm
-        io_element = iec104.common.IoElement_C_CI_NA(
+        io_element = iec104.IoElement_C_CI_NA(
             request=msg.request,
             freeze=msg.freeze)
 
     elif isinstance(msg, common.ReadMsg):
-        asdu_type = iec104.common.AsduType.C_RD_NA
+        asdu_type = iec104.AsduType.C_RD_NA
         cause_type = _encode_cause(msg.cause)
         io_address = msg.io_address
-        io_element = iec104.common.IoElement_C_RD_NA()
+        io_element = iec104.IoElement_C_RD_NA()
 
     elif isinstance(msg, common.ClockSyncMsg):
-        asdu_type = iec104.common.AsduType.C_CS_NA
+        asdu_type = iec104.AsduType.C_CS_NA
         cause_type = _encode_cause(msg.cause)
         is_negative_confirm = msg.is_negative_confirm
-        io_element = iec104.common.IoElement_C_CS_NA(
+        io_element = iec104.IoElement_C_CS_NA(
             time=msg.time)
 
     elif isinstance(msg, common.TestMsg):
-        asdu_type = iec104.common.AsduType.C_TS_TA
+        asdu_type = iec104.AsduType.C_TS_TA
         cause_type = _encode_cause(msg.cause)
-        io_element = iec104.common.IoElement_C_TS_TA(
+        io_element = iec104.IoElement_C_TS_TA(
             counter=msg.counter)
         time = msg.time
 
     elif isinstance(msg, common.ResetMsg):
-        asdu_type = iec104.common.AsduType.C_RP_NA
+        asdu_type = iec104.AsduType.C_RP_NA
         cause_type = _encode_cause(msg.cause)
-        io_element = iec104.common.IoElement_C_RP_NA(
+        io_element = iec104.IoElement_C_RP_NA(
             qualifier=msg.qualifier)
 
     elif isinstance(msg, common.ParameterMsg):
@@ -457,28 +457,28 @@ def _encode_msg(msg):
         io_element = _get_parameter_io_element(msg.parameter, asdu_type)
 
     elif isinstance(msg, common.ParameterActivationMsg):
-        asdu_type = iec104.common.AsduType.P_AC_NA
+        asdu_type = iec104.AsduType.P_AC_NA
         cause_type = _encode_cause(msg.cause)
         io_address = msg.io_address
-        io_element = iec104.common.IoElement_P_AC_NA(
+        io_element = iec104.IoElement_P_AC_NA(
             qualifier=msg.qualifier)
 
     else:
         raise ValueError('unsupported message')
 
-    cause = iec104.common.Cause(type=cause_type,
-                                is_negative_confirm=is_negative_confirm,
-                                is_test=msg.is_test,
-                                originator_address=msg.originator_address)
+    cause = iec104.Cause(type=cause_type,
+                         is_negative_confirm=is_negative_confirm,
+                         is_test=msg.is_test,
+                         originator_address=msg.originator_address)
 
-    io = iec104.common.IO(address=io_address,
-                          elements=[io_element],
-                          time=time)
+    io = iec104.IO(address=io_address,
+                   elements=[io_element],
+                   time=time)
 
-    asdu = iec104.common.ASDU(type=asdu_type,
-                              cause=cause,
-                              address=msg.asdu_address,
-                              ios=[io])
+    asdu = iec104.ASDU(type=asdu_type,
+                       cause=cause,
+                       address=msg.asdu_address,
+                       ios=[io])
 
     return asdu
 
@@ -486,80 +486,80 @@ def _encode_msg(msg):
 def _get_data_asdu_type(data, time):
     if isinstance(data, common.SingleData):
         if time is None:
-            return iec104.common.AsduType.M_SP_NA
+            return iec104.AsduType.M_SP_NA
 
         else:
-            return iec104.common.AsduType.M_SP_TB
+            return iec104.AsduType.M_SP_TB
 
     elif isinstance(data, common.DoubleData):
         if time is None:
-            return iec104.common.AsduType.M_DP_NA
+            return iec104.AsduType.M_DP_NA
 
         else:
-            return iec104.common.AsduType.M_DP_TB
+            return iec104.AsduType.M_DP_TB
 
     elif isinstance(data, common.StepPositionData):
         if time is None:
-            return iec104.common.AsduType.M_ST_NA
+            return iec104.AsduType.M_ST_NA
 
         else:
-            return iec104.common.AsduType.M_ST_TB
+            return iec104.AsduType.M_ST_TB
 
     elif isinstance(data, common.BitstringData):
         if time is None:
-            return iec104.common.AsduType.M_BO_NA
+            return iec104.AsduType.M_BO_NA
 
         else:
-            return iec104.common.AsduType.M_BO_TB
+            return iec104.AsduType.M_BO_TB
 
     elif isinstance(data, common.NormalizedData):
         if time is None:
             if data.quality is not None:
-                return iec104.common.AsduType.M_ME_NA
+                return iec104.AsduType.M_ME_NA
 
             else:
-                return iec104.common.AsduType.M_ME_ND
+                return iec104.AsduType.M_ME_ND
 
         else:
             if data.quality is not None:
-                return iec104.common.AsduType.M_ME_TD
+                return iec104.AsduType.M_ME_TD
 
     elif isinstance(data, common.ScaledData):
         if time is None:
-            return iec104.common.AsduType.M_ME_NB
+            return iec104.AsduType.M_ME_NB
 
         else:
-            return iec104.common.AsduType.M_ME_TE
+            return iec104.AsduType.M_ME_TE
 
     elif isinstance(data, common.FloatingData):
         if time is None:
-            return iec104.common.AsduType.M_ME_NC
+            return iec104.AsduType.M_ME_NC
 
         else:
-            return iec104.common.AsduType.M_ME_TF
+            return iec104.AsduType.M_ME_TF
 
     elif isinstance(data, common.BinaryCounterData):
         if time is None:
-            return iec104.common.AsduType.M_IT_NA
+            return iec104.AsduType.M_IT_NA
 
         else:
-            return iec104.common.AsduType.M_IT_TB
+            return iec104.AsduType.M_IT_TB
 
     elif isinstance(data, common.ProtectionData):
         if time is not None:
-            return iec104.common.AsduType.M_EP_TD
+            return iec104.AsduType.M_EP_TD
 
     elif isinstance(data, common.ProtectionStartData):
         if time is not None:
-            return iec104.common.AsduType.M_EP_TE
+            return iec104.AsduType.M_EP_TE
 
     elif isinstance(data, common.ProtectionCommandData):
         if time is not None:
-            return iec104.common.AsduType.M_EP_TF
+            return iec104.AsduType.M_EP_TF
 
     elif isinstance(data, common.StatusData):
         if time is None:
-            return iec104.common.AsduType.M_PS_NA
+            return iec104.AsduType.M_PS_NA
 
     raise ValueError('unsupported data')
 
@@ -567,155 +567,155 @@ def _get_data_asdu_type(data, time):
 def _get_command_asdu_type(command, time):
     if isinstance(command, common.SingleCommand):
         if time is None:
-            return iec104.common.AsduType.C_SC_NA
+            return iec104.AsduType.C_SC_NA
 
         else:
-            return iec104.common.AsduType.C_SC_TA
+            return iec104.AsduType.C_SC_TA
 
     elif isinstance(command, common.DoubleCommand):
         if time is None:
-            return iec104.common.AsduType.C_DC_NA
+            return iec104.AsduType.C_DC_NA
 
         else:
-            return iec104.common.AsduType.C_DC_TA
+            return iec104.AsduType.C_DC_TA
 
     elif isinstance(command, common.RegulatingCommand):
         if time is None:
-            return iec104.common.AsduType.C_RC_NA
+            return iec104.AsduType.C_RC_NA
 
         else:
-            return iec104.common.AsduType.C_RC_TA
+            return iec104.AsduType.C_RC_TA
 
     elif isinstance(command, common.NormalizedCommand):
         if time is None:
-            return iec104.common.AsduType.C_SE_NA
+            return iec104.AsduType.C_SE_NA
 
         else:
-            return iec104.common.AsduType.C_SE_TA
+            return iec104.AsduType.C_SE_TA
 
     elif isinstance(command, common.ScaledCommand):
         if time is None:
-            return iec104.common.AsduType.C_SE_NB
+            return iec104.AsduType.C_SE_NB
 
         else:
-            return iec104.common.AsduType.C_SE_TB
+            return iec104.AsduType.C_SE_TB
 
     elif isinstance(command, common.FloatingCommand):
         if time is None:
-            return iec104.common.AsduType.C_SE_NC
+            return iec104.AsduType.C_SE_NC
 
         else:
-            return iec104.common.AsduType.C_SE_TC
+            return iec104.AsduType.C_SE_TC
 
     elif isinstance(command, common.BitstringCommand):
         if time is None:
-            return iec104.common.AsduType.C_BO_NA
+            return iec104.AsduType.C_BO_NA
 
         else:
-            return iec104.common.AsduType.C_BO_TA
+            return iec104.AsduType.C_BO_TA
 
     raise ValueError('unsupported command')
 
 
 def _get_parameter_asdu_type(parameter):
     if isinstance(parameter, common.NormalizedParameter):
-        return iec104.common.AsduType.P_ME_NA
+        return iec104.AsduType.P_ME_NA
 
     elif isinstance(parameter, common.ScaledParameter):
-        return iec104.common.AsduType.P_ME_NB
+        return iec104.AsduType.P_ME_NB
 
     elif isinstance(parameter, common.FloatingParameter):
-        return iec104.common.AsduType.P_ME_NC
+        return iec104.AsduType.P_ME_NC
 
     raise ValueError('unsupported parameter')
 
 
 def _get_data_io_element(data, asdu_type):
-    if asdu_type == iec104.common.AsduType.M_SP_NA:
-        return iec104.common.IoElement_M_SP_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_SP_NA:
+        return iec104.IoElement_M_SP_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_DP_NA:
-        return iec104.common.IoElement_M_DP_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_DP_NA:
+        return iec104.IoElement_M_DP_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ST_NA:
-        return iec104.common.IoElement_M_ST_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ST_NA:
+        return iec104.IoElement_M_ST_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_BO_NA:
-        return iec104.common.IoElement_M_BO_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_BO_NA:
+        return iec104.IoElement_M_BO_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_NA:
-        return iec104.common.IoElement_M_ME_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_NA:
+        return iec104.IoElement_M_ME_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_NB:
-        return iec104.common.IoElement_M_ME_NB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_NB:
+        return iec104.IoElement_M_ME_NB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_NC:
-        return iec104.common.IoElement_M_ME_NC(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_NC:
+        return iec104.IoElement_M_ME_NC(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_IT_NA:
-        return iec104.common.IoElement_M_IT_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_IT_NA:
+        return iec104.IoElement_M_IT_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_PS_NA:
-        return iec104.common.IoElement_M_PS_NA(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_PS_NA:
+        return iec104.IoElement_M_PS_NA(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_ND:
-        return iec104.common.IoElement_M_ME_ND(value=data.value)
+    if asdu_type == iec104.AsduType.M_ME_ND:
+        return iec104.IoElement_M_ME_ND(value=data.value)
 
-    if asdu_type == iec104.common.AsduType.M_SP_TB:
-        return iec104.common.IoElement_M_SP_TB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_SP_TB:
+        return iec104.IoElement_M_SP_TB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_DP_TB:
-        return iec104.common.IoElement_M_DP_TB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_DP_TB:
+        return iec104.IoElement_M_DP_TB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ST_TB:
-        return iec104.common.IoElement_M_ST_TB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ST_TB:
+        return iec104.IoElement_M_ST_TB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_BO_TB:
-        return iec104.common.IoElement_M_BO_TB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_BO_TB:
+        return iec104.IoElement_M_BO_TB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_TD:
-        return iec104.common.IoElement_M_ME_TD(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_TD:
+        return iec104.IoElement_M_ME_TD(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_TE:
-        return iec104.common.IoElement_M_ME_TE(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_TE:
+        return iec104.IoElement_M_ME_TE(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_ME_TF:
-        return iec104.common.IoElement_M_ME_TF(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_ME_TF:
+        return iec104.IoElement_M_ME_TF(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_IT_TB:
-        return iec104.common.IoElement_M_IT_TB(value=data.value,
-                                               quality=data.quality)
+    if asdu_type == iec104.AsduType.M_IT_TB:
+        return iec104.IoElement_M_IT_TB(value=data.value,
+                                        quality=data.quality)
 
-    if asdu_type == iec104.common.AsduType.M_EP_TD:
-        return iec104.common.IoElement_M_EP_TD(
+    if asdu_type == iec104.AsduType.M_EP_TD:
+        return iec104.IoElement_M_EP_TD(
             value=data.value,
             quality=data.quality,
             elapsed_time=data.elapsed_time)
 
-    if asdu_type == iec104.common.AsduType.M_EP_TE:
-        return iec104.common.IoElement_M_EP_TE(
+    if asdu_type == iec104.AsduType.M_EP_TE:
+        return iec104.IoElement_M_EP_TE(
             value=data.value,
             quality=data.quality,
             duration_time=data.duration_time)
 
-    if asdu_type == iec104.common.AsduType.M_EP_TF:
-        return iec104.common.IoElement_M_EP_TF(
+    if asdu_type == iec104.AsduType.M_EP_TF:
+        return iec104.IoElement_M_EP_TF(
             value=data.value,
             quality=data.quality,
             operating_time=data.operating_time)
@@ -724,82 +724,82 @@ def _get_data_io_element(data, asdu_type):
 
 
 def _get_command_io_element(command, asdu_type):
-    if asdu_type == iec104.common.AsduType.C_SC_NA:
-        return iec104.common.IoElement_C_SC_NA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_SC_NA:
+        return iec104.IoElement_C_SC_NA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_SC_TA:
-        return iec104.common.IoElement_C_SC_TA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_SC_TA:
+        return iec104.IoElement_C_SC_TA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_DC_NA:
-        return iec104.common.IoElement_C_DC_NA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_DC_NA:
+        return iec104.IoElement_C_DC_NA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_DC_TA:
-        return iec104.common.IoElement_C_DC_TA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_DC_TA:
+        return iec104.IoElement_C_DC_TA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_RC_NA:
-        return iec104.common.IoElement_C_RC_NA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_RC_NA:
+        return iec104.IoElement_C_RC_NA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_RC_TA:
-        return iec104.common.IoElement_C_RC_TA(value=command.value,
-                                               select=command.select,
-                                               qualifier=command.qualifier)
+    if asdu_type == iec104.AsduType.C_RC_TA:
+        return iec104.IoElement_C_RC_TA(value=command.value,
+                                        select=command.select,
+                                        qualifier=command.qualifier)
 
-    if asdu_type == iec104.common.AsduType.C_SE_NA:
-        return iec104.common.IoElement_C_SE_NA(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_NA:
+        return iec104.IoElement_C_SE_NA(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_SE_TA:
-        return iec104.common.IoElement_C_SE_TA(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_TA:
+        return iec104.IoElement_C_SE_TA(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_SE_NB:
-        return iec104.common.IoElement_C_SE_NB(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_NB:
+        return iec104.IoElement_C_SE_NB(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_SE_TB:
-        return iec104.common.IoElement_C_SE_TB(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_TB:
+        return iec104.IoElement_C_SE_TB(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_SE_NC:
-        return iec104.common.IoElement_C_SE_NC(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_NC:
+        return iec104.IoElement_C_SE_NC(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_SE_TC:
-        return iec104.common.IoElement_C_SE_TC(value=command.value,
-                                               select=command.select)
+    if asdu_type == iec104.AsduType.C_SE_TC:
+        return iec104.IoElement_C_SE_TC(value=command.value,
+                                        select=command.select)
 
-    if asdu_type == iec104.common.AsduType.C_BO_NA:
-        return iec104.common.IoElement_C_BO_NA(value=command.value)
+    if asdu_type == iec104.AsduType.C_BO_NA:
+        return iec104.IoElement_C_BO_NA(value=command.value)
 
-    if asdu_type == iec104.common.AsduType.C_BO_TA:
-        return iec104.common.IoElement_C_BO_TA(value=command.value)
+    if asdu_type == iec104.AsduType.C_BO_TA:
+        return iec104.IoElement_C_BO_TA(value=command.value)
 
     raise ValueError('unsupported asdu type')
 
 
 def _get_parameter_io_element(parameter, asdu_type):
-    if asdu_type == iec104.common.AsduType.P_ME_NA:
-        return iec104.common.IoElement_P_ME_NA(
+    if asdu_type == iec104.AsduType.P_ME_NA:
+        return iec104.IoElement_P_ME_NA(
             value=parameter.value,
             qualifier=parameter.qualifier)
 
-    if asdu_type == iec104.common.AsduType.P_ME_NB:
-        return iec104.common.IoElement_P_ME_NB(
+    if asdu_type == iec104.AsduType.P_ME_NB:
+        return iec104.IoElement_P_ME_NB(
             value=parameter.value,
             qualifier=parameter.qualifier)
 
-    if asdu_type == iec104.common.AsduType.P_ME_NC:
-        return iec104.common.IoElement_P_ME_NC(
+    if asdu_type == iec104.AsduType.P_ME_NC:
+        return iec104.IoElement_P_ME_NC(
             value=parameter.value,
             qualifier=parameter.qualifier)
 

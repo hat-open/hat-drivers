@@ -551,7 +551,8 @@ class _CommunicationLogger:
             return
 
         if data is None:
-            self._log.debug(action.value)
+            self._log.debug(action.value, stacklevel=2)
 
         else:
-            self._log.debug('%s (%s)', action.value, data.hex(' '))
+            self._log.debug('%s (%s)', action.value, data.hex(' '),
+                            stacklevel=2)

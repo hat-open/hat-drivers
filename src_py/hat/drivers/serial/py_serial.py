@@ -44,9 +44,8 @@ async def create(port,
     endpoint._executor = aio.Executor(log_exceptions=False)
     endpoint._info = common.EndpointInfo(name=name,
                                          port=port)
-    endpoint._log = common.create_logger_adapter(mlog, False, endpoint._info)
-    endpoint._comm_log = common.create_logger_adapter(mlog, True,
-                                                      endpoint._info)
+    endpoint._log = common.create_logger(mlog, endpoint._info)
+    endpoint._comm_log = common.CommunicationLogger(mlog, endpoint._info)
 
     endpoint._serial = await endpoint._executor.spawn(
         serial.Serial,
@@ -60,7 +59,7 @@ async def create(port,
         dsrdtr=dsrdtr,
         timeout=read_timeout)
 
-    endpoint._comm_log.debug('endpoint created')
+    endpoint._comm_log.log(common.CommLogAction.OPEN)
 
     endpoint._async_group = aio.Group()
     endpoint._async_group.spawn(aio.call_on_cancel, endpoint._on_close)
@@ -126,7 +125,7 @@ class Endpoint(common.Endpoint):
 
         await self._executor.async_close()
 
-        self._comm_log.debug('endpoint closed')
+        self._comm_log.log(common.CommLogAction.CLOSE)
 
     async def _read_loop(self):
         try:
@@ -137,10 +136,8 @@ class Endpoint(common.Endpoint):
 
                 data_rest = await self._executor.spawn(self._ext_read, -1)
 
-                if self._comm_log.isEnabledFor(logging.DEBUG):
-                    self._comm_log.debug('received %s %s',
-                                         data_head.hex(' '),
-                                         data_rest.hex(' '))
+                self._comm_log.log(common.CommLogAction.RECEIVE, data_head,
+                                   data_rest)
 
                 async with self._input_cv:
                     self._input_buffer.extend(data_head)
@@ -162,8 +159,7 @@ class Endpoint(common.Endpoint):
                 data, future = await self._write_queue.get()
 
                 if data is not None:
-                    if self._comm_log.isEnabledFor(logging.DEBUG):
-                        self._comm_log.debug('sending %s', data.hex(' '))
+                    self._comm_log.log(common.CommLogAction.SEND, data)
 
                     await self._executor.spawn(self._ext_write, data)
 

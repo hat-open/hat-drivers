@@ -1,5 +1,7 @@
 """Modbus common data structures"""
 
+from hat.drivers.common import *  # NOQA
+
 import enum
 
 

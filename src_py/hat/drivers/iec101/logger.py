@@ -3,39 +3,21 @@ import collections
 import enum
 import logging
 
-from hat.drivers import tcp
-
-from hat.drivers.iec104 import common
-from hat.drivers.iec104 import encoder
-
-
-def create_server_logger(logger: logging.Logger,
-                         name: str | None,
-                         info: tcp.ServerInfo
-                         ) -> logging.LoggerAdapter:
-    extra = {'meta': {'type': 'Iec104Server',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
-
-    return logging.LoggerAdapter(logger, extra)
+from hat.drivers.iec101 import common
+from hat.drivers.iec101 import encoder
+from hat.drivers.iec60870 import link
 
 
 class CommunicationLogger:
 
     def __init__(self,
                  logger: logging.Logger,
-                 info: tcp.ConnectionInfo):
-        extra = {'meta': {'type': 'Iec104Connection',
+                 info: link.ConnectionInfo):
+        extra = {'meta': {'type': 'Iec101Connection',
                           'communication': True,
                           'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
+                          'port': info.port,
+                          'address': info.address}}
 
         self._log = logging.LoggerAdapter(logger, extra)
 
@@ -77,7 +59,6 @@ def _format_msg(msg):
                 f"io={msg.io_address} "
                 f"command={_format_command(msg.command)} "
                 f"negative={msg.is_negative_confirm} "
-                f"time={_format_time(msg.time)} "
                 f"cause={_format_cause(msg.cause)})")
 
     if isinstance(msg, common.InitializationMsg):
@@ -135,8 +116,6 @@ def _format_msg(msg):
                 f"test={msg.is_test} "
                 f"originator={msg.originator_address} "
                 f"asdu={msg.asdu_address} "
-                f"counter={msg.counter} "
-                f"time={_format_time(msg.time)} "
                 f"cause={_format_cause(msg.cause)})")
 
     if isinstance(msg, common.ResetMsg):
@@ -146,6 +125,15 @@ def _format_msg(msg):
                 f"originator={msg.originator_address} "
                 f"asdu={msg.asdu_address} "
                 f"qualifier={msg.qualifier} "
+                f"cause={_format_cause(msg.cause)})")
+
+    if isinstance(msg, common.DelayMsg):
+        return (f"(Delay "
+                f"type={asdu_type.name} "
+                f"test={msg.is_test} "
+                f"originator={msg.originator_address} "
+                f"asdu={msg.asdu_address} "
+                f"time={msg.time} "
                 f"cause={_format_cause(msg.cause)})")
 
     if isinstance(msg, common.ParameterMsg):

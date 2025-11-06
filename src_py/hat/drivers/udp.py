@@ -8,6 +8,8 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import common
+
 
 mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
@@ -47,10 +49,10 @@ async def create(local_addr: Address | None = None,
     endpoint._remote_addr = remote_addr
     endpoint._async_group = aio.Group()
     endpoint._queue = aio.Queue(queue_size)
-    endpoint._log = mlog
-    endpoint._comm_log = mlog
     endpoint._transport = None
     endpoint._protocol = None
+    endpoint._log = _create_logger(name, None)
+    endpoint._comm_log = _CommunicationLogger(name, None)
 
     loop = asyncio.get_running_loop()
     create_protocol = functools.partial(Protocol, endpoint)
@@ -69,14 +71,14 @@ async def create(local_addr: Address | None = None,
             remote_addr=(Address(peername[0], peername[1])
                          if peername else None))
 
-        endpoint._log = _create_logger_adapter(False, endpoint._info)
-        endpoint._comm_log = _create_logger_adapter(True, endpoint._info)
+        endpoint._log = _create_logger(name, endpoint._info)
+        endpoint._comm_log = _CommunicationLogger(name, endpoint._info)
 
     except BaseException:
         await aio.uncancellable(endpoint.async_close())
         raise
 
-    endpoint._comm_log.debug('endpoint created')
+    endpoint._comm_log.log(common.CommLogAction.OPEN)
 
     return endpoint
 
@@ -110,10 +112,10 @@ class Endpoint(aio.Resource):
         if not self.is_open or not self._transport:
             raise ConnectionError()
 
-        if self._comm_log.isEnabledFor(logging.DEBUG):
-            self._comm_log.debug('sending %s', data.hex(' '))
+        msg = data, (remote_addr or self._remote_addr)
+        self._comm_log.log(common.CommLogAction.SEND, msg)
 
-        self._transport.sendto(data, remote_addr or self._remote_addr)
+        self._transport.sendto(msg[0], msg[1])
 
     async def receive(self) -> tuple[util.Bytes, Address]:
         """Receive datagram"""
@@ -134,7 +136,7 @@ class Endpoint(aio.Resource):
         self._transport = None
         self._protocol = None
 
-        self._comm_log.debug('endpoint closed')
+        self._comm_log.log(common.CommLogAction.CLOSE)
 
 
 class Protocol(asyncio.DatagramProtocol):
@@ -148,26 +150,61 @@ class Protocol(asyncio.DatagramProtocol):
         self._endpoint.close()
 
     def datagram_received(self, data: util.Bytes, addr: tuple):
-        if self._endpoint._comm_log.isEnabledFor(logging.DEBUG):
-            self._endpoint._comm_log.debug('received %s', data.hex(' '))
+        msg = data, Address(addr[0], addr[1])
+        self._endpoint._comm_log.log(common.CommLogAction.RECEIVE, msg)
 
         try:
-            self._endpoint._queue.put_nowait(
-                (data, Address(addr[0], addr[1])))
+            self._endpoint._queue.put_nowait(msg)
 
         except aio.QueueFullError:
             self._endpoint._log.warning('receive queue full - '
                                         'dropping datagram')
 
 
-def _create_logger_adapter(communication, info):
+def _create_logger(name, info):
     extra = {'meta': {'type': 'UdpEndpoint',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': ({'host': info.remote_addr.host,
-                                       'port': info.remote_addr.port}
-                                      if info.remote_addr else None)}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                       'port': info.local_addr.port}
+
+        if info.remote_addr is not None:
+            extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                            'port': info.remote_addr.port}
 
     return logging.LoggerAdapter(mlog, extra)
+
+
+class _CommunicationLogger:
+
+    def __init__(self,
+                 name: str | None,
+                 info: EndpointInfo | None):
+        extra = {'meta': {'type': 'UdpEndpoint',
+                          'communication': True,
+                          'name': name}}
+
+        if info is not None:
+            extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                           'port': info.local_addr.port}
+
+            if info.remote_addr is not None:
+                extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                                'port': info.remote_addr.port}
+
+        self._log = logging.LoggerAdapter(mlog, extra)
+
+    def log(self,
+            action: common.CommLogAction,
+            msg: tuple[util.Bytes, Address] | None = None):
+        if not self._log.isEnabledFor(logging.DEBUG):
+            return
+
+        if msg is None:
+            self._log.debug(action.value, stacklevel=2)
+
+        else:
+            self._log.debug('%s (data=(%s) remote=%s)',
+                            action.value, msg[0].hex(' '), tuple(msg[1]),
+                            stacklevel=2)

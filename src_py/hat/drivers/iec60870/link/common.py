@@ -1,12 +1,11 @@
+from hat.drivers.common import *  # NOQA
+
 import abc
 import enum
-import logging
 import typing
 
 from hat import aio
 from hat import util
-
-from hat.drivers import serial
 
 
 Address: typing.TypeAlias = int
@@ -103,26 +102,3 @@ def get_broadcast_address(address_size: AddressSize):
         return 0xFFFF
 
     raise ValueError('unsupported address size')
-
-
-def create_logger_adapter(logger: logging.Logger,
-                          communication: bool,
-                          info: serial.EndpointInfo
-                          ) -> logging.LoggerAdapter:
-    extra = {'meta': {'type': 'Iec60870Link',
-                      'communication': communication,
-                      'name': info.name,
-                      'port': info.port}}
-
-    return logging.LoggerAdapter(logger, extra)
-
-
-def create_connection_logger_adapter(logger: logging.Logger,
-                                     info: ConnectionInfo
-                                     ) -> logging.LoggerAdapter:
-    extra = {'meta': {'type': 'Iec60870LinkConnection',
-                      'name': info.name,
-                      'port': info.port,
-                      'address': info.address}}
-
-    return logging.LoggerAdapter(logger, extra)
