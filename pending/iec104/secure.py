@@ -1,6 +1,7 @@
 # TODO WIP
 
 import asyncio
+import enum
 import logging
 import typing
 
@@ -16,11 +17,25 @@ from hat.drivers.iec60870 import apci
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-default_critical_functions = {common.Function.COMMAND,
-                              common.Function.TEST,
-                              common.Function.RESET,
-                              common.Function.PARAMETER,
-                              common.Function.PARAMETER_ACTIVATION}
+class Function(enum.Enum):
+    DATA = 'data'
+    COMMAND = 'command'
+    INITIALIZATION = 'initialization'
+    INTERROGATION = 'interrogation'
+    COUNTER_INTERROGATION = 'counter_interrogation'
+    READ = 'read'
+    CLOCK_SYNC = 'clock_sync'
+    TEST = 'test'
+    RESET = 'reset'
+    PARAMETER = 'parameter'
+    PARAMETER_ACTIVATION = 'parameter_activation'
+
+
+default_critical_functions = {Function.COMMAND,
+                              Function.TEST,
+                              Function.RESET,
+                              Function.PARAMETER,
+                              Function.PARAMETER_ACTIVATION}
 
 
 class SecureConnection(common.Connection):
@@ -29,7 +44,7 @@ class SecureConnection(common.Connection):
                  conn: apci.Connection,
                  is_master: bool,
                  update_key: util.Bytes,
-                 critical_functions: typing.Set[common.Function] = default_critical_functions):  # NOQA
+                 critical_functions: typing.Set[Function] = default_critical_functions):  # NOQA
         self._conn = conn
         self._is_master = is_master
         self._encoder = encoder.Encoder()

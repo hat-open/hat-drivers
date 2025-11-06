@@ -89,13 +89,11 @@ from hat.drivers.iec104.common import (AsduTypeError,
                                        ParameterActivationMsg,
                                        Msg,
                                        time_from_datetime,
-                                       time_to_datetime,
-                                       Connection,
-                                       Function)
+                                       time_to_datetime)
 from hat.drivers.iec104.connection import (ConnectionCb,
                                            connect,
                                            listen,
-                                           Server)
+                                           Connection)
 
 
 __all__ = ['AsduTypeError',
@@ -188,9 +186,7 @@ __all__ = ['AsduTypeError',
            'Msg',
            'time_from_datetime',
            'time_to_datetime',
-           'Connection',
-           'Function',
            'ConnectionCb',
            'connect',
            'listen',
-           'Server']
+           'Connection']

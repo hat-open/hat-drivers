@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 import enum
 import logging
 
@@ -7,10 +8,19 @@ from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
 
 
-def create_logger(logger: logging.Logger,
-                  info: tcp.ConnectionInfo
-                  ) -> logging.LoggerAdapter:
-    return _create_logger_adapter(logger, False, info)
+def create_server_logger(logger: logging.Logger,
+                         name: str | None,
+                         info: tcp.ServerInfo
+                         ) -> logging.LoggerAdapter:
+    extra = {'meta': {'type': 'Iec104Server',
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
+
+    return logging.LoggerAdapter(logger, extra)
 
 
 class CommunicationLogger:
@@ -18,35 +28,28 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: tcp.ConnectionInfo):
-        self._log = _create_logger_adapter(logger, True, info)
+        extra = {'meta': {'type': 'Iec104Connection',
+                          'communication': True,
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
 
-    @property
-    def is_enabled(self):
-        return self._log.isEnabledFor(logging.DEBUG)
+        self._log = logging.LoggerAdapter(logger, extra)
 
     def log(self,
             action: common.CommLogAction,
-            msg: common.Msg | None = None):
-        if not self.is_enabled:
+            msgs: Iterable[common.Msg] | None = None):
+        if not self._log.isEnabledFor(logging.DEBUG):
             return
 
-        if msg is None:
+        if msgs is None:
             self._log.debug(action.value)
 
         else:
-            self._log.debug('%s %s', action.value, _format_msg(msg))
-
-
-def _create_logger_adapter(logger, communication, info):
-    extra = {'meta': {'type': 'Iec104Connection',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
-
-    return logging.LoggerAdapter(logger, extra)
+            for msg in msgs:
+                self._log.debug('%s %s', action.value, _format_msg(msg))
 
 
 def _format_msg(msg):

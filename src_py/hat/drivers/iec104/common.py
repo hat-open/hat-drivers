@@ -1,15 +1,8 @@
 from hat.drivers.common import *  # NOQA
 
-import abc
-import enum
 import typing
 
-from hat import aio
-from hat import util
-
 from hat.drivers import iec101
-from hat.drivers import tcp
-from hat.drivers.iec60870 import apci
 
 
 AsduTypeError: typing.TypeAlias = iec101.AsduTypeError
@@ -159,54 +152,3 @@ Msg: typing.TypeAlias = (DataMsg |
 
 time_from_datetime = iec101.time_from_datetime
 time_to_datetime = iec101.time_to_datetime
-
-
-class Connection(aio.Resource):
-
-    @property
-    @abc.abstractmethod
-    def conn(self) -> apci.Connection:
-        pass
-
-    @property
-    def async_group(self) -> aio.Group:
-        return self.conn.async_group
-
-    @property
-    def info(self) -> tcp.ConnectionInfo:
-        return self.conn.info
-
-    @property
-    def is_enabled(self) -> bool:
-        return self.conn.is_enabled
-
-    def register_enabled_cb(self,
-                            cb: typing.Callable[[bool], None]
-                            ) -> util.RegisterCallbackHandle:
-        return self.conn.register_enabled_cb(cb)
-
-    @abc.abstractmethod
-    async def send(self, msgs: list[Msg], wait_ack: bool = False):
-        pass
-
-    @abc.abstractmethod
-    async def drain(self, wait_ack: bool = False):
-        pass
-
-    @abc.abstractmethod
-    async def receive(self) -> list[Msg]:
-        pass
-
-
-class Function(enum.Enum):
-    DATA = 'data'
-    COMMAND = 'command'
-    INITIALIZATION = 'initialization'
-    INTERROGATION = 'interrogation'
-    COUNTER_INTERROGATION = 'counter_interrogation'
-    READ = 'read'
-    CLOCK_SYNC = 'clock_sync'
-    TEST = 'test'
-    RESET = 'reset'
-    PARAMETER = 'parameter'
-    PARAMETER_ACTIVATION = 'parameter_activation'
