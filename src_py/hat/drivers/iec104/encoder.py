@@ -8,6 +8,43 @@ from hat.drivers.iec104 import common
 from hat.drivers.iec60870.encodings import iec104
 
 
+def get_msg_asdu_type(msg: common.Msg) -> iec104.common.AsduType:
+    if isinstance(msg, common.DataMsg):
+        return _get_data_asdu_type(msg.data, msg.time)
+
+    if isinstance(msg, common.CommandMsg):
+        return _get_command_asdu_type(msg.command, msg.time)
+
+    if isinstance(msg, common.InitializationMsg):
+        return iec104.common.AsduType.M_EI_NA
+
+    if isinstance(msg, common.InterrogationMsg):
+        return iec104.common.AsduType.C_IC_NA
+
+    if isinstance(msg, common.CounterInterrogationMsg):
+        return iec104.common.AsduType.C_CI_NA
+
+    if isinstance(msg, common.ReadMsg):
+        return iec104.common.AsduType.C_RD_NA
+
+    if isinstance(msg, common.ClockSyncMsg):
+        return iec104.common.AsduType.C_CS_NA
+
+    if isinstance(msg, common.TestMsg):
+        return iec104.common.AsduType.C_TS_TA
+
+    if isinstance(msg, common.ResetMsg):
+        return iec104.common.AsduType.C_RP_NA
+
+    if isinstance(msg, common.ParameterMsg):
+        return _get_parameter_asdu_type(msg.parameter)
+
+    if isinstance(msg, common.ParameterActivationMsg):
+        return iec104.common.AsduType.P_AC_NA
+
+    raise TypeError('unsupported message')
+
+
 class Encoder:
 
     def __init__(self):

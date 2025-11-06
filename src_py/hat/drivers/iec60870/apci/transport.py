@@ -15,7 +15,11 @@ class Transport(aio.Resource):
 
     def __init__(self, conn: tcp.Connection):
         self._conn = conn
-        self._comm_log = _create_logger_adapter(True, conn.info)
+        self._comm_log = _CommunicationLogger(conn.info)
+
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -43,25 +47,55 @@ class Transport(aio.Resource):
 
         apdu = encoder.decode(memoryview(data))
 
-        self._comm_log.debug('received %s', apdu)
+        self._comm_log.log(common.CommLogAction.RECEIVE, apdu)
 
         return apdu
 
     async def write(self, apdu: common.APDU):
         data = encoder.encode(apdu)
 
-        self._comm_log.debug('sending %s', apdu)
+        self._comm_log.log(common.CommLogAction.SEND, apdu)
 
         await self._conn.write(data)
 
 
-def _create_logger_adapter(communication, info):
-    extra = {'meta': {'type': 'Iec60870ApciTransport',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+class _CommunicationLogger:
 
-    return logging.LoggerAdapter(mlog, extra)
+    def __init__(self, info: tcp.ConnectionInfo):
+        extra = {'meta': {'type': 'Iec60870ApciTransport',
+                          'communication': True,
+                          'name': info.name,
+                          'local_addr': {'host': info.local_addr.host,
+                                         'port': info.local_addr.port},
+                          'remote_addr': {'host': info.remote_addr.host,
+                                          'port': info.remote_addr.port}}}
+
+        self._log = logging.LoggerAdapter(mlog, extra)
+
+    def log(self,
+            action: common.CommLogAction,
+            apdu: common.APDU | None = None):
+        if not self._log.isEnabledFor(logging.DEBUG):
+            return
+
+        if apdu is None:
+            self._log.debug(action.value)
+
+        else:
+            self._log.debug('%s %s', action.value, _format_comm_log_apdu(apdu))
+
+
+def _format_comm_log_apdu(apdu):
+    if isinstance(apdu, common.APDUI):
+        return (f"(APDUI "
+                f"ssn={apdu.ssn} "
+                f"rsn={apdu.rsn} "
+                f"data=({apdu.data.hex(' ')}))")
+
+    if isinstance(apdu, common.APDUS):
+        return f"(APDUS rsn={apdu.rsn})"
+
+    if isinstance(apdu, common.APDUU):
+        return f"(APDUU function={apdu.function.name})"
+
+    raise TypeError('unsupported apdu type')

@@ -10,6 +10,7 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import common
 from hat.drivers import ssl
 
 
@@ -92,7 +93,7 @@ async def listen(connection_cb: ConnectionCb,
     server._connection_cb = connection_cb
     server._bind_connections = bind_connections
     server._async_group = aio.Group()
-    server._log = mlog
+    server._log = _create_server_logger(name, None)
 
     on_connection = functools.partial(server.async_group.spawn,
                                       server._on_connection)
@@ -110,7 +111,7 @@ async def listen(connection_cb: ConnectionCb,
         addresses = [Address(*sockname[:2]) for sockname in socknames]
         server._info = ServerInfo(name=name,
                                   addresses=addresses)
-        server._log = _create_server_logger_adapter(server._info)
+        server._log = _create_server_logger(name, server._info)
 
     except Exception:
         await aio.uncancellable(server.async_close())
@@ -172,14 +173,16 @@ class Connection(aio.Resource):
     def __init__(self, protocol: 'Protocol'):
         self._protocol = protocol
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(False, protocol.info)
-        self._comm_log = _create_connection_logger_adapter(True, protocol.info)
+        self._log = _create_connection_logger(protocol.info.name,
+                                              protocol.info)
+        self._comm_log = _CommunicationLogger(protocol.info.name,
+                                              protocol.info)
 
         self.async_group.spawn(aio.call_on_cancel, protocol.async_close)
         self.async_group.spawn(aio.call_on_done, protocol.wait_closed(),
                                self.close)
 
-        self._comm_log.debug('connection established')
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -257,8 +260,8 @@ class Protocol(asyncio.Protocol):
         self._closed_futures = None
         self._info = None
         self._ssl_object = None
-        self._log = mlog
-        self._comm_log = mlog
+        self._log = _create_connection_logger(name, None)
+        self._comm_log = _CommunicationLogger(name, None)
 
     @property
     def info(self) -> ConnectionInfo:
@@ -281,9 +284,8 @@ class Protocol(asyncio.Protocol):
                 local_addr=Address(sockname[0], sockname[1]),
                 remote_addr=Address(peername[0], peername[1]))
 
-            self._log = _create_connection_logger_adapter(False, self._info)
-            self._comm_log = _create_connection_logger_adapter(
-                True, self._info)
+            self._log = _create_connection_logger(self._name, self._info)
+            self._comm_log = _CommunicationLogger(self._name, self._info)
 
             self._ssl_object = transport.get_extra_info('ssl_object')
 
@@ -317,7 +319,7 @@ class Protocol(asyncio.Protocol):
             if not future.done():
                 future.set_result(None)
 
-        self._comm_log.debug('connection closed')
+        self._comm_log.log(common.CommLogAction.CLOSE)
 
     def pause_writing(self):
         self._log.debug('pause writing')
@@ -336,8 +338,7 @@ class Protocol(asyncio.Protocol):
             if future.done():
                 continue
 
-            if self._comm_log.isEnabledFor(logging.DEBUG):
-                self._comm_log.debug('sending %s', data.hex(''))
+            self._comm_log.log(common.CommLogAction.SEND, data)
 
             self._transport.write(data)
             future.set_result(None)
@@ -357,8 +358,7 @@ class Protocol(asyncio.Protocol):
                 future.set_result(None)
 
     def data_received(self, data: util.Bytes):
-        if self._comm_log.isEnabledFor(logging.DEBUG):
-            self._comm_log.debug('received %s', data.hex(' '))
+        self._comm_log.log(common.CommLogAction.RECEIVE, data)
 
         self._input_buffer.add(data)
         self._process_input_buffer()
@@ -387,8 +387,7 @@ class Protocol(asyncio.Protocol):
             raise ConnectionError()
 
         if self._write_queue is None:
-            if self._comm_log.isEnabledFor(logging.DEBUG):
-                self._comm_log.debug('sending %s', data.hex(' '))
+            self._comm_log.log(common.CommLogAction.SEND, data)
 
             self._transport.write(data)
             return
@@ -503,23 +502,56 @@ class Protocol(asyncio.Protocol):
             self._transport.resume_reading()
 
 
-def _create_server_logger_adapter(info):
+def _create_server_logger(name, info):
     extra = {'meta': {'type': 'TcpServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(communication, info):
+def _create_connection_logger(name, info):
     extra = {'meta': {'type': 'TcpConnection',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                       'port': info.local_addr.port}
+        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                        'port': info.remote_addr.port}
 
     return logging.LoggerAdapter(mlog, extra)
+
+
+class _CommunicationLogger:
+
+    def __init__(self,
+                 name: str | None,
+                 info: ConnectionInfo | None):
+        extra = {'meta': {'type': 'TcpConnection',
+                          'communication': True,
+                          'name': name}}
+
+        if info is not None:
+            extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                           'port': info.local_addr.port}
+            extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                            'port': info.remote_addr.port}
+
+        self._log = logging.LoggerAdapter(mlog, extra)
+
+    def log(self,
+            action: common.CommLogAction,
+            data: util.Bytes | None = None):
+        if not self._log.isEnabledFor(logging.DEBUG):
+            return
+
+        if data is None:
+            self._log.debug(action.value)
+
+        else:
+            self._log.debug('%s (%s)', action.value, data.hex(' '))

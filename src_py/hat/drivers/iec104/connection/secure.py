@@ -7,8 +7,9 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
-from hat.drivers.iec104.connection import common
+from hat.drivers.iec104.connection import logger
 from hat.drivers.iec60870 import apci
 
 
@@ -34,7 +35,7 @@ class SecureConnection(common.Connection):
         self._encoder = encoder.Encoder()
         self._send_queue = aio.Queue()
         self._receive_queue = aio.Queue()
-        self._log = common.create_logger_adapter(mlog, False, conn.info)
+        self._log = logger.create_logger(mlog, conn.info)
 
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(self._receive_loop)
