@@ -54,6 +54,66 @@ async def test_connect(addr, conn_count):
     await server.async_close()
 
 
+async def test_connection_info(addr):
+    server_conn_queue = aio.Queue()
+    server = await mms.listen(server_conn_queue.put_nowait, addr)
+
+    local_tsel = 1
+    local_ssel = 2
+    local_psel = 3
+    local_ap_title = (1, 2, 3)
+    local_ae_qualifier = 7
+    remote_tsel = 8
+    remote_ssel = 9
+    remote_psel = 10
+    remote_ap_title = (1, 3, 4)
+    remote_ae_qualifier = 14
+
+    client_conn = await mms.connect(
+        addr,
+        local_tsel=local_tsel,
+        local_ssel=local_ssel,
+        local_psel=local_psel,
+        local_ap_title=local_ap_title,
+        local_ae_qualifier=local_ae_qualifier,
+        remote_tsel=remote_tsel,
+        remote_ssel=remote_ssel,
+        remote_psel=remote_psel,
+        remote_ap_title=remote_ap_title,
+        remote_ae_qualifier=remote_ae_qualifier)
+    server_conn = await server_conn_queue.get()
+
+    assert client_conn.info.local_tsel == local_tsel
+    assert client_conn.info.local_ssel == local_ssel
+    assert client_conn.info.local_psel == local_psel
+    assert client_conn.info.local_ap_title == local_ap_title
+    assert client_conn.info.local_ae_qualifier == local_ae_qualifier
+    assert client_conn.info.remote_tsel == remote_tsel
+    assert client_conn.info.remote_ssel == remote_ssel
+    assert client_conn.info.remote_psel == remote_psel
+    assert client_conn.info.remote_ap_title == remote_ap_title
+    assert client_conn.info.remote_ae_qualifier == remote_ae_qualifier
+
+    assert client_conn.info.local_addr == server_conn.info.remote_addr
+    assert client_conn.info.remote_addr == server_conn.info.local_addr
+
+    assert server_conn.info.local_tsel == remote_tsel
+    assert server_conn.info.local_ssel == remote_ssel
+    assert server_conn.info.local_psel == remote_psel
+    assert server_conn.info.local_ap_title == remote_ap_title
+    assert server_conn.info.local_ae_qualifier == remote_ae_qualifier
+    assert server_conn.info.remote_tsel == local_tsel
+    assert server_conn.info.remote_ssel == local_ssel
+    assert server_conn.info.remote_psel == local_psel
+    assert server_conn.info.remote_ap_title == local_ap_title
+    assert server_conn.info.remote_ae_qualifier == local_ae_qualifier
+
+    await client_conn.async_close()
+    await server_conn.wait_closed()
+
+    await server.async_close()
+
+
 @pytest.mark.parametrize("req, res", [
     (mms.StatusRequest(),
      mms.StatusResponse(logical=1, physical=1)),

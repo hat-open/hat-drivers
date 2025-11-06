@@ -149,14 +149,14 @@ Application-context-name ::= OBJECT IDENTIFIER
 
 --  Application-entity title productions follow (not in alphabetical order)
 AP-title ::= CHOICE {
-  ap-title-form1  AP-title-form1,
   ap-title-form2  AP-title-form2,
+  ap-title-form1  AP-title-form1,
   ...
 }
 
 AE-qualifier ::= CHOICE {
-  ae-qualifier-form1  AE-qualifier-form1,
   ae-qualifier-form2  AE-qualifier-form2,
+  ae-qualifier-form1  AE-qualifier-form1,
   ...
 }
 

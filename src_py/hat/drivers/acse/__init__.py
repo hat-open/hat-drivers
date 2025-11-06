@@ -199,8 +199,8 @@ class Server(aio.Resource):
                     aarq_apdu)
 
                 conn = Connection(copp_conn, aarq_apdu, aare_apdu,
-                                  calling_ap_title, called_ap_title,
-                                  calling_ae_qualifier, called_ae_qualifier,
+                                  called_ap_title, calling_ap_title,
+                                  called_ae_qualifier, calling_ae_qualifier,
                                   self._receive_queue_size,
                                   self._send_queue_size)
 
@@ -433,12 +433,12 @@ def _get_ap_titles(aarq_apdu):
 def _get_ae_qualifiers(aarq_apdu):
     calling = None
     if 'calling-AE-qualifier' in aarq_apdu[1]:
-        if aarq_apdu[1]['calling-AE-qualifier'][0] == 'ap-qualifier-form2':
+        if aarq_apdu[1]['calling-AE-qualifier'][0] == 'ae-qualifier-form2':
             calling = aarq_apdu[1]['calling-AE-qualifier'][1]
 
     called = None
     if 'called-AE-qualifier' in aarq_apdu[1]:
-        if aarq_apdu[1]['called-AE-qualifier'][0] == 'ap-qualifier-form2':
+        if aarq_apdu[1]['called-AE-qualifier'][0] == 'ae-qualifier-form2':
             called = aarq_apdu[1]['called-AE-qualifier'][1]
 
     return calling, called
@@ -552,16 +552,18 @@ def _create_connection_logger_adapter(communication, info):
                       'local_tsel': info.local_tsel,
                       'local_ssel': info.local_ssel,
                       'local_psel': info.local_psel,
-                      'local_ap_title': ('.'.join(info.local_ap_title)
-                                         if info.local_ap_title else None),
+                      'local_ap_title': (
+                            '.'.join(str(i) for i in info.local_ap_title)
+                            if info.local_ap_title else None),
                       'local_ae_qualifier': info.local_ae_qualifier,
                       'remote_addr': {'host': info.remote_addr.host,
                                       'port': info.remote_addr.port},
                       'remote_tsel': info.remote_tsel,
                       'remote_ssel': info.remote_ssel,
                       'remote_psel': info.remote_psel,
-                      'remote_ap_title': ('.'.join(info.remote_ap_title)
-                                          if info.remote_ap_title else None),
+                      'remote_ap_title': (
+                            '.'.join(str(i) for i in info.remote_ap_title)
+                            if info.remote_ap_title else None),
                       'remote_ae_qualifier': info.remote_ae_qualifier}}
 
     return logging.LoggerAdapter(mlog, extra)

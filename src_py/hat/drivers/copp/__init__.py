@@ -187,7 +187,7 @@ class Server(aio.Resource):
                 calling_psel, called_psel = _get_psels(cp_ppdu)
 
                 conn = Connection(cosp_conn, syntax_names, cp_ppdu, cpa_ppdu,
-                                  calling_psel, called_psel,
+                                  called_psel, calling_psel,
                                   self._receive_queue_size,
                                   self._send_queue_size)
 
