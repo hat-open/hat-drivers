@@ -69,13 +69,14 @@ async def connect(addr: tcp.Address,
                     for data_ref in data_refs]
         for report_id, data_refs in report_data_refs.items()}
 
+    client._log = _create_logger(kwargs.get('name'), None)
+
     client._conn = await mms.connect(addr=addr,
                                      request_cb=None,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
-    client._log = _create_logger_adapter(False, client._conn.info)
-    client._comm_log = _create_logger_adapter(True, client._conn.info)
+    client._log = _create_logger(client._conn.info.name, client._conn.info)
 
     if client.is_open and status_delay is not None:
         client.async_group.spawn(client._status_loop, status_delay,
@@ -467,8 +468,6 @@ class Client(aio.Resource):
                                                         with_checks=True)
 
     async def _on_unconfirmed(self, conn, unconfirmed):
-        self._comm_log.debug('received %s', unconfirmed)
-
         self._status_event.set()
 
         if _is_unconfirmed_report(unconfirmed):
@@ -570,13 +569,8 @@ class Client(aio.Resource):
         await aio.call(self._termination_cb, termination)
 
     async def _send(self, req):
-        self._comm_log.debug('sending %s', req)
-
         res = await self._conn.send_confirmed(req)
         self._status_event.set()
-
-        self._comm_log.debug('received %s', res)
-
         return res
 
     async def _status_loop(self, delay, timeout):
@@ -767,27 +761,14 @@ def _is_unconfirmed_termination(unconfirmed):
             data_ref_names[1] == 'Oper')
 
 
-def _create_logger_adapter(communication, info):
+def _create_logger(name, info):
     extra = {'meta': {'type': 'Iec61850Client',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'local_ap_title': (
-                          '.'.join(str(i) for i in info.local_ap_title)
-                          if info.local_ap_title else None),
-                      'local_ae_qualifier': info.local_ae_qualifier,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel,
-                      'remote_ap_title': (
-                          '.'.join(str(i) for i in info.remote_ap_title)
-                          if info.remote_ap_title else None),
-                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                       'port': info.local_addr.port}
+        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                        'port': info.remote_addr.port}
 
     return logging.LoggerAdapter(mlog, extra)

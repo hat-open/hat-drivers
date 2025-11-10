@@ -14,6 +14,7 @@ from hat.drivers import acse
 from hat.drivers import tcp
 from hat.drivers.mms import common
 from hat.drivers.mms import encoder
+from hat.drivers.mms import logger
 
 
 mlog = logging.getLogger(__name__)
@@ -141,13 +142,16 @@ async def listen(connection_cb: ConnectionCb,
     server._unconfirmed_cb = unconfirmed_cb
     server._bind_connections = bind_connections
 
+    server._log = logger.create_server_logger(mlog, kwargs.get('name'), None)
+
     server._srv = await acse.listen(validate_cb=server._on_validate,
                                     connection_cb=server._on_connection,
                                     addr=addr,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = _create_server_logger_adapter(server._srv.info)
+    server._log = logger.create_server_logger(mlog, server._srv.info.name,
+                                              server._srv.info)
 
     return server
 
@@ -246,15 +250,17 @@ class Connection(aio.Resource):
         self._response_futures = {}
         self._close_pdu = 'conclude-RequestPDU', None
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(False, conn.info)
-        self._comm_log = _create_connection_logger_adapter(True, conn.info)
+        self._log = logger.create_connection_logger(mlog, conn.info)
+        self._comm_log = logger.CommunicationLogger(mlog, conn.info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
 
-        self._comm_log.debug('connection established')
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -275,7 +281,7 @@ class Connection(aio.Resource):
             'service': encoder.encode_unconfirmed(unconfirmed)}
         data = _mms_syntax_name, _encode(pdu)
 
-        self._comm_log.debug('sending %s', pdu)
+        self._comm_log.log(common.CommLogAction.SEND, unconfirmed)
 
         await self._conn.send(data)
 
@@ -292,7 +298,7 @@ class Connection(aio.Resource):
             'service': encoder.encode_request(req)}
         data = _mms_syntax_name, _encode(pdu)
 
-        self._comm_log.debug('sending %s', pdu)
+        self._comm_log.log(common.CommLogAction.SEND, req)
 
         await self._conn.send(data)
 
@@ -312,8 +318,6 @@ class Connection(aio.Resource):
             try:
                 data = _mms_syntax_name, _encode(self._close_pdu)
 
-                self._comm_log.debug('sending %s', self._close_pdu)
-
                 await self._conn.send(data)
                 await self._conn.drain()
 
@@ -324,8 +328,6 @@ class Connection(aio.Resource):
 
         await self._conn.async_close()
 
-        self._comm_log.debug('connection closed')
-
     async def _receive_loop(self):
         try:
             while True:
@@ -333,11 +335,7 @@ class Connection(aio.Resource):
                 if syntax_name != _mms_syntax_name:
                     continue
 
-                pdu = _decode(entity)
-
-                self._comm_log.debug('received %s', pdu)
-
-                name, data = pdu
+                name, data = _decode(entity)
 
                 if name == 'unconfirmed-PDU':
                     await self._process_unconfirmed(data)
@@ -374,6 +372,8 @@ class Connection(aio.Resource):
     async def _process_unconfirmed(self, data):
         unconfirmed = encoder.decode_unconfirmed(data['service'])
 
+        self._comm_log.log(common.CommLogAction.RECEIVE, unconfirmed)
+
         if self._unconfirmed_cb is None:
             raise Exception('unconfirmed_cb not defined')
 
@@ -382,6 +382,8 @@ class Connection(aio.Resource):
     async def _process_request(self, data):
         invoke_id = data['invokeID']
         req = encoder.decode_request(data['service'])
+
+        self._comm_log.log(common.CommLogAction.RECEIVE, req)
 
         if self._request_cb is None:
             raise Exception('request_cb not defined')
@@ -403,13 +405,15 @@ class Connection(aio.Resource):
 
         res_data = _mms_syntax_name, _encode(res_pdu)
 
-        self._comm_log.debug('sending %s', res_pdu)
+        self._comm_log.log(common.CommLogAction.SEND, res)
 
         await self._conn.send(res_data)
 
     async def _process_response(self, data):
         invoke_id = data['invokeID']
         res = encoder.decode_response(data['service'])
+
+        self._comm_log.log(common.CommLogAction.RECEIVE, res)
 
         future = self._response_futures.get(invoke_id)
         if not future or future.done():
@@ -422,6 +426,8 @@ class Connection(aio.Resource):
     async def _process_error(self, data):
         invoke_id = data['invokeID']
         error = encoder.decode_error(data['serviceError'])
+
+        self._comm_log.log(common.CommLogAction.RECEIVE, error)
 
         future = self._response_futures.get(invoke_id)
         if not future or future.done():
@@ -440,39 +446,3 @@ def _encode(value):
 def _decode(entity):
     return _encoder.decode_value(asn1.TypeRef('ISO-9506-MMS-1', 'MMSpdu'),
                                  entity)
-
-
-def _create_server_logger_adapter(info):
-    extra = {'meta': {'type': 'MmsServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
-
-    return logging.LoggerAdapter(mlog, extra)
-
-
-def _create_connection_logger_adapter(communication, info):
-    extra = {'meta': {'type': 'MmsConnection',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'local_ap_title': (
-                          '.'.join(str(i) for i in info.local_ap_title)
-                          if info.local_ap_title else None),
-                      'local_ae_qualifier': info.local_ae_qualifier,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel,
-                      'remote_ap_title': (
-                          '.'.join(str(i) for i in info.remote_ap_title)
-                          if info.remote_ap_title else None),
-                      'remote_ae_qualifier': info.remote_ae_qualifier}}
-
-    return logging.LoggerAdapter(mlog, extra)
