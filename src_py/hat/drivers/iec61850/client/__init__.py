@@ -1,4 +1,4 @@
-from collections.abc import Collection, Iterable
+from collections.abc import Collection
 import asyncio
 import collections
 import contextlib
@@ -12,6 +12,7 @@ from hat.drivers import mms
 from hat.drivers import tcp
 from hat.drivers.iec61850 import common
 from hat.drivers.iec61850 import encoder
+from hat.drivers.iec61850.client import logger
 
 
 mlog = logging.getLogger(__name__)
@@ -69,18 +70,32 @@ async def connect(addr: tcp.Address,
                     for data_ref in data_refs]
         for report_id, data_refs in report_data_refs.items()}
 
-    client._log = _create_logger(kwargs.get('name'), None)
+    client._log = logger.create_logger(mlog, kwargs.get('name'), None)
+    client._comm_log = logger.CommunicationLogger(mlog, kwargs.get('name'),
+                                                  None)
 
     client._conn = await mms.connect(addr=addr,
                                      request_cb=None,
                                      unconfirmed_cb=client._on_unconfirmed,
                                      **kwargs)
 
-    client._log = _create_logger(client._conn.info.name, client._conn.info)
+    try:
+        client._log = logger.create_logger(mlog, client._conn.info.name,
+                                           client._conn.info)
+        client._comm_log = logger.CommunicationLogger(
+            mlog, client._conn.info.name, client._conn.info)
 
-    if client.is_open and status_delay is not None:
-        client.async_group.spawn(client._status_loop, status_delay,
-                                 status_timeout)
+        if status_delay is not None:
+            client.async_group.spawn(client._status_loop, status_delay,
+                                     status_timeout)
+
+        client.async_group.spawn(aio.call_on_cancel, client._comm_log.log,
+                                 common.CommLogAction.CLOSE)
+        client._comm_log.log(common.CommLogAction.OPEN)
+
+    except BaseException:
+        await aio.uncancellable(client.async_close())
+        raise
 
     return client
 
@@ -100,7 +115,7 @@ class Client(aio.Resource):
 
     async def create_dataset(self,
                              ref: common.DatasetRef,
-                             data: Iterable[common.DataRef]
+                             data: Collection[common.DataRef]
                              ) -> common.ServiceError | None:
         """Create dataset"""
         req = mms.DefineNamedVariableListRequest(
@@ -110,28 +125,43 @@ class Client(aio.Resource):
                     encoder.data_ref_to_object_name(i))
                 for i in data])
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.CreateDatasetReq(ref=ref,
+                                                       data=data))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
             if res == mms.AccessError.OBJECT_NON_EXISTENT:
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+                result = common.ServiceError.INSTANCE_NOT_AVAILABLE
 
-            if res == mms.AccessError.OBJECT_ACCESS_DENIED:
-                return common.ServiceError.ACCESS_VIOLATION
+            elif res == mms.AccessError.OBJECT_ACCESS_DENIED:
+                result = common.ServiceError.ACCESS_VIOLATION
 
-            if res == mms.DefinitionError.OBJECT_EXISTS:
-                return common.ServiceError.INSTANCE_IN_USE
+            elif res == mms.DefinitionError.OBJECT_EXISTS:
+                result = common.ServiceError.INSTANCE_IN_USE
 
-            if res == mms.DefinitionError.OBJECT_UNDEFINED:
-                return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
+            elif res == mms.DefinitionError.OBJECT_UNDEFINED:
+                result = common.ServiceError.PARAMETER_VALUE_INCONSISTENT
 
-            if res == mms.ResourceError.CAPABILITY_UNAVAILABLE:
-                return common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
+            elif res == mms.ResourceError.CAPABILITY_UNAVAILABLE:
+                result = common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
 
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            else:
+                result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-        if not isinstance(res, mms.DefineNamedVariableListResponse):
+        elif isinstance(res, mms.DefineNamedVariableListResponse):
+            result = None
+
+        else:
             raise Exception('unsupported response type')
+
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.CreateDatasetRes(result))
+
+        return result
 
     async def delete_dataset(self,
                              ref: common.DatasetRef
@@ -140,46 +170,72 @@ class Client(aio.Resource):
         req = mms.DeleteNamedVariableListRequest([
             encoder.dataset_ref_to_object_name(ref)])
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.DeleteDatasetReq(ref))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
             if res == mms.AccessError.OBJECT_NON_EXISTENT:
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+                result = common.ServiceError.INSTANCE_NOT_AVAILABLE
 
-            if res == mms.AccessError.OBJECT_ACCESS_DENIED:
-                return common.ServiceError.ACCESS_VIOLATION
+            elif res == mms.AccessError.OBJECT_ACCESS_DENIED:
+                result = common.ServiceError.ACCESS_VIOLATION
 
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            else:
+                result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-        if not isinstance(res, mms.DeleteNamedVariableListResponse):
+        elif isinstance(res, mms.DeleteNamedVariableListResponse):
+            if res.matched == 0 and res.deleted == 0:
+                result = common.ServiceError.INSTANCE_NOT_AVAILABLE
+
+            elif res.matched != res.deleted:
+                result = common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
+
+            else:
+                result = None
+
+        else:
             raise Exception('unsupported response type')
 
-        if res.matched == 0 and res.deleted == 0:
-            return common.ServiceError.INSTANCE_NOT_AVAILABLE
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.DeleteDatasetRes(result))
 
-        if res.matched != res.deleted:
-            return common.ServiceError.FAILED_DUE_TO_SERVER_CONSTRAINT
+        return result
 
     async def get_persisted_dataset_refs(self,
                                          logical_device: str
                                          ) -> Collection[common.PersistedDatasetRef] | common.ServiceError:  # NOQA
         """Get persisted dataset references associated with logical device"""
+
+        if self._comm_log.is_enabled:
+            self._comm_log.log(
+                common.CommLogAction.SEND,
+                logger.GetPersistedDatasetRefsReq(logical_device))
+
         identifiers = await self._get_name_list(
             object_class=mms.ObjectClass.NAMED_VARIABLE_LIST,
             object_scope=mms.DomainSpecificObjectScope(logical_device))
 
         if isinstance(identifiers, common.ServiceError):
-            return identifiers
+            result = identifiers
 
-        refs = collections.deque()
-        for identifier in identifiers:
-            logical_node, name = identifier.split('$')
-            refs.append(
-                common.PersistedDatasetRef(logical_device=logical_device,
-                                           logical_node=logical_node,
-                                           name=name))
+        else:
+            result = collections.deque()
+            for identifier in identifiers:
+                logical_node, name = identifier.split('$')
+                result.append(
+                    common.PersistedDatasetRef(logical_device=logical_device,
+                                               logical_node=logical_node,
+                                               name=name))
 
-        return refs
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.GetPersistedDatasetRefsRes(result))
+
+        return result
 
     async def get_dataset_data_refs(self,
                                     ref: common.DatasetRef
@@ -188,32 +244,42 @@ class Client(aio.Resource):
         req = mms.GetNamedVariableListAttributesRequest(
             encoder.dataset_ref_to_object_name(ref))
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.GetDatasetDataRefsReq(ref))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
             if res == mms.AccessError.OBJECT_NON_EXISTENT:
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
+                result = common.ServiceError.INSTANCE_NOT_AVAILABLE
 
-            if res == mms.AccessError.OBJECT_ACCESS_DENIED:
-                return common.ServiceError.ACCESS_VIOLATION
+            elif res == mms.AccessError.OBJECT_ACCESS_DENIED:
+                result = common.ServiceError.ACCESS_VIOLATION
 
-            if res == mms.ServiceError.PDU_SIZE:
-                return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+            elif res == mms.ServiceError.PDU_SIZE:
+                result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            else:
+                result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-        if not isinstance(res, mms.GetNamedVariableListAttributesResponse):
+        elif isinstance(res, mms.GetNamedVariableListAttributesResponse):
+            result = collections.deque()
+
+            for i in res.specification:
+                if not isinstance(i, mms.NameVariableSpecification):
+                    raise Exception('unsupported specification type')
+
+                result.append(encoder.data_ref_from_object_name(i.name))
+
+        else:
             raise Exception('unsupported response type')
 
-        refs = collections.deque()
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.GetDatasetDataRefsRes(result))
 
-        for i in res.specification:
-            if not isinstance(i, mms.NameVariableSpecification):
-                raise Exception('unsupported specification type')
-
-            refs.append(encoder.data_ref_from_object_name(i.name))
-
-        return refs
+        return result
 
     async def get_rcb_attrs(self,
                             ref: common.RcbRef,
@@ -248,34 +314,45 @@ class Client(aio.Resource):
 
         req = mms.ReadRequest(specification)
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.GetRcbAttrsReq(ref=ref,
+                                                     attr_types=attr_types))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return {attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
-                    for attr_type in attr_types}
+            results = {
+                attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                for attr_type in attr_types}
 
-        if not isinstance(res, mms.ReadResponse):
-            raise Exception('unsupported response type')
+        elif isinstance(res, mms.ReadResponse):
+            if len(res.results) != len(attr_types):
+                raise Exception('invalid results length')
 
-        if len(res.results) != len(attr_types):
-            raise Exception('invalid results length')
+            results = {}
 
-        results = {}
+            for attr_type, mms_data in zip(attr_types, res.results):
+                if isinstance(mms_data, mms.DataAccessError):
+                    if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                        results[attr_type] = common.ServiceError.ACCESS_VIOLATION  # NOQA
 
-        for attr_type, mms_data in zip(attr_types, res.results):
-            if isinstance(mms_data, mms.DataAccessError):
-                if mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
-                    results[attr_type] = common.ServiceError.ACCESS_VIOLATION
+                    elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                        results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE  # NOQA
 
-                elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
-                    results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE  # NOQA
+                    else:
+                        results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
                 else:
-                    results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                    results[attr_type] = encoder.rcb_attr_value_from_mms_data(
+                        mms_data, attr_type)
 
-            else:
-                results[attr_type] = encoder.rcb_attr_value_from_mms_data(
-                    mms_data, attr_type)
+        else:
+            raise Exception('unsupported response type')
+
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.GetRcbAttrsRes(results))
 
         return results
 
@@ -317,41 +394,52 @@ class Client(aio.Resource):
         req = mms.WriteRequest(specification=specification,
                                data=data)
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.SetRcbAttrsReq(ref=ref,
+                                                     attrs=attrs))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return {attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
-                    for attr_type, _ in attrs}
+            results = {
+                attr_type: common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                for attr_type, _ in attrs}
 
-        if not isinstance(res, mms.WriteResponse):
+        elif isinstance(res, mms.WriteResponse):
+            if len(res.results) != len(attrs):
+                raise Exception('invalid results length')
+
+            results = {}
+
+            for (attr_type, _), mms_data in zip(attrs, res.results):
+                if mms_data is None:
+                    results[attr_type] = None
+
+                elif mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                    results[attr_type] = common.ServiceError.ACCESS_VIOLATION
+
+                elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                    results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE  # NOQA
+
+                elif mms_data == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:
+                    results[attr_type] = common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT  # NOQA
+
+                elif mms_data == mms.DataAccessError.TYPE_INCONSISTENT:
+                    results[attr_type] = common.ServiceError.TYPE_CONFLICT
+
+                elif mms_data == mms.DataAccessError.OBJECT_VALUE_INVALID:
+                    results[attr_type] = common.ServiceError.PARAMETER_VALUE_INCONSISTENT  # NOQA
+
+                else:
+                    results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+
+        else:
             raise Exception('unsupported response type')
 
-        if len(res.results) != len(attrs):
-            raise Exception('invalid results length')
-
-        results = {}
-
-        for (attr_type, _), mms_data in zip(attrs, res.results):
-            if mms_data is None:
-                results[attr_type] = None
-
-            elif mms_data == mms.DataAccessError.OBJECT_ACCESS_DENIED:
-                results[attr_type] = common.ServiceError.ACCESS_VIOLATION
-
-            elif mms_data == mms.DataAccessError.OBJECT_NON_EXISTENT:
-                results[attr_type] = common.ServiceError.INSTANCE_NOT_AVAILABLE
-
-            elif mms_data == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:
-                results[attr_type] = common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT  # NOQA
-
-            elif mms_data == mms.DataAccessError.TYPE_INCONSISTENT:
-                results[attr_type] = common.ServiceError.TYPE_CONFLICT
-
-            elif mms_data == mms.DataAccessError.OBJECT_VALUE_INVALID:
-                results[attr_type] = common.ServiceError.PARAMETER_VALUE_INCONSISTENT  # NOQA
-
-            else:
-                results[attr_type] = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.SetRcbAttrsRes(results))
 
         return results
 
@@ -368,34 +456,50 @@ class Client(aio.Resource):
                     encoder.data_ref_to_object_name(ref))],
             data=[encoder.value_to_mms_data(value,  value_type)])
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.WriteDataReq(ref=ref,
+                                                   value=value))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+            result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
 
-        if not isinstance(res, mms.WriteResponse):
+        elif isinstance(res, mms.WriteResponse):
+            if len(res.results) != 1:
+                raise Exception('invalid results size')
+
+            if res.results[0] is not None:
+                if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                    result = common.ServiceError.ACCESS_VIOLATION
+
+                elif res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                    result = common.ServiceError.INSTANCE_NOT_AVAILABLE
+
+                elif res.results[0] == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:  # NOQA
+                    result = common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT  # NOQA
+
+                elif res.results[0] == mms.DataAccessError.TYPE_INCONSISTENT:
+                    result = common.ServiceError.TYPE_CONFLICT
+
+                elif res.results[0] == mms.DataAccessError.OBJECT_VALUE_INVALID:  # NOQA
+                    result = common.ServiceError.PARAMETER_VALUE_INCONSISTENT
+
+                else:
+                    result = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+
+            else:
+                result = None
+
+        else:
             raise Exception('unsupported response type')
 
-        if len(res.results) != 1:
-            raise Exception('invalid results size')
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.WriteDataRes(result))
 
-        if res.results[0] is not None:
-            if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
-                return common.ServiceError.ACCESS_VIOLATION
-
-            if res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
-                return common.ServiceError.INSTANCE_NOT_AVAILABLE
-
-            if res.results[0] == mms.DataAccessError.TEMPORARILY_UNAVAILABLE:
-                return common.ServiceError.INSTANCE_LOCKED_BY_OTHER_CLIENT
-
-            if res.results[0] == mms.DataAccessError.TYPE_INCONSISTENT:
-                return common.ServiceError.TYPE_CONFLICT
-
-            if res.results[0] == mms.DataAccessError.OBJECT_VALUE_INVALID:
-                return common.ServiceError.PARAMETER_VALUE_INCONSISTENT
-
-            return common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT
+        return result
 
     async def select(self,
                      ref: common.CommandRef,
@@ -416,36 +520,52 @@ class Client(aio.Resource):
                                    fc='CO',
                                    names=(ref.name, 'SBO'))))])
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.CommandReq(ref=ref,
+                                                 attr='SBO',
+                                                 cmd=cmd))
+
         res = await self._send(req)
 
         if isinstance(res, mms.Error):
-            return _create_command_error(
+            result = _create_command_error(
                 service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
                 last_appl_error=None)
 
-        if not isinstance(res, mms.ReadResponse):
-            raise Exception('unsupported response type')
+        elif isinstance(res, mms.ReadResponse):
+            if len(res.results) != 1:
+                raise Exception('invalid results size')
 
-        if len(res.results) != 1:
-            raise Exception('invalid results size')
+            if not isinstance(res.results[0], mms.VisibleStringData):
+                if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
+                    service_error = common.ServiceError.ACCESS_VIOLATION
 
-        if not isinstance(res.results[0], mms.VisibleStringData):
-            if res.results[0] == mms.DataAccessError.OBJECT_ACCESS_DENIED:
-                service_error = common.ServiceError.ACCESS_VIOLATION
+                elif res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
+                    service_error = common.ServiceError.INSTANCE_NOT_AVAILABLE
 
-            elif res.results[0] == mms.DataAccessError.OBJECT_NON_EXISTENT:
-                service_error = common.ServiceError.INSTANCE_NOT_AVAILABLE
+                else:
+                    service_error = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+
+                result = _create_command_error(service_error=service_error,
+                                               last_appl_error=None)
+
+            elif res.results[0].value == '':
+                result = _create_command_error(
+                    service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
+                    last_appl_error=None)
 
             else:
-                service_error = common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT  # NOQA
+                result = None
 
-            return _create_command_error(service_error=service_error,
-                                         last_appl_error=None)
+        else:
+            raise Exception('unsupported response type')
 
-        if res.results[0].value == '':
-            return _create_command_error(
-                service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
-                last_appl_error=None)
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.CommandRes(result))
+
+        return result
 
     async def cancel(self,
                      ref: common.CommandRef,
@@ -527,6 +647,8 @@ class Client(aio.Resource):
 
         report = encoder.report_from_mms_data(mms_data, data_defs)
 
+        self._comm_log.log(common.CommLogAction.RECEIVE, report)
+
         await aio.call(self._report_cb, report)
 
     def _process_last_appl_error(self, mms_data):
@@ -565,6 +687,8 @@ class Client(aio.Resource):
         termination = common.Termination(ref=ref,
                                          cmd=cmd,
                                          error=error)
+
+        self._comm_log.log(common.CommLogAction.RECEIVE, termination)
 
         await aio.call(self._termination_cb, termination)
 
@@ -662,6 +786,12 @@ class Client(aio.Resource):
 
         self._last_appl_errors[key] = None
 
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.SEND,
+                               logger.CommandReq(ref=ref,
+                                                 attr=attr,
+                                                 cmd=cmd))
+
         try:
             res = await self._send(req)
 
@@ -669,19 +799,29 @@ class Client(aio.Resource):
             last_appl_error = self._last_appl_errors.pop(key, None)
 
         if isinstance(res, mms.Error):
-            return _create_command_error(
+            result = _create_command_error(
                 service_error=common.ServiceError.FAILED_DUE_TO_COMMUNICATIONS_CONSTRAINT,  # NOQA
                 last_appl_error=last_appl_error)
 
-        if not isinstance(res, mms.WriteResponse):
+        elif isinstance(res, mms.WriteResponse):
+            if len(res.results) != 1:
+                raise Exception('invalid results size')
+
+            if res.results[0] is not None:
+                result = _create_command_error(service_error=None,
+                                               last_appl_error=last_appl_error)
+
+            else:
+                result = None
+
+        else:
             raise Exception('unsupported response type')
 
-        if len(res.results) != 1:
-            raise Exception('invalid results size')
+        if self._comm_log.is_enabled:
+            self._comm_log.log(common.CommLogAction.RECEIVE,
+                               logger.CommandRes(result))
 
-        if res.results[0] is not None:
-            return _create_command_error(service_error=None,
-                                         last_appl_error=last_appl_error)
+        return result
 
 
 def _create_command_error(service_error, last_appl_error):
@@ -759,16 +899,3 @@ def _is_unconfirmed_termination(unconfirmed):
     return (data_ref.fc == 'CO' and
             len(data_ref_names) == 2 and
             data_ref_names[1] == 'Oper')
-
-
-def _create_logger(name, info):
-    extra = {'meta': {'type': 'Iec61850Client',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['local_addr'] = {'host': info.local_addr.host,
-                                       'port': info.local_addr.port}
-        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                        'port': info.remote_addr.port}
-
-    return logging.LoggerAdapter(mlog, extra)
