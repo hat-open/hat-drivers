@@ -36,7 +36,7 @@ class Endpoint(aio.Resource):
         self._endpoint = endpoint
         self._encoder = encoder.Encoder(address_size=address_size,
                                         direction_valid=direction_valid)
-        self._data = bytearray()
+        self._data = memoryview(bytes())
         self._log = logger.create_logger(mlog, endpoint.info)
         self._comm_log = logger.CommunicationLogger(mlog, endpoint.info)
 
@@ -65,12 +65,12 @@ class Endpoint(aio.Resource):
 
             if len(self._data) < size:
                 data = await self._endpoint.read(size - len(self._data))
-                self._data.extend(data)
+                self._data = memoryview(b''.join([self._data, data]))
                 continue
 
             try:
                 data, self._data = self._data[:size], self._data[size:]
-                msg = self._encoder.decode(memoryview(data))
+                msg = self._encoder.decode(data)
 
                 self._comm_log.log(common.CommLogAction.RECEIVE, msg)
 

@@ -93,10 +93,10 @@ class SlaveLink(aio.Resource):
                                None)
         self._conns[addr] = conn
 
-        conn.async_group.spawn(conn._keep_alive_loop, keep_alive_timeout)
-
         try:
             await conn._active_future
+
+            conn.async_group.spawn(conn._keep_alive_loop, keep_alive_timeout)
 
         except BaseException:
             await aio.uncancellable(conn.async_close())
