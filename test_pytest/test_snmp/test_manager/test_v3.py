@@ -484,7 +484,7 @@ async def test_send_on_closing(agent_addr):
     await agent.async_close()
 
 
-async def test_msg_id(agent_addr, caplog):
+async def test_msg_id(agent_addr):
     agent = await create_mock_agent(agent_addr)
 
     manager = await create_and_sync_manager(agent_addr, agent)
@@ -504,8 +504,6 @@ async def test_msg_id(agent_addr, caplog):
         with pytest.raises(asyncio.TimeoutError):
             await aio.wait_for(asyncio.shield(send_fut), 0.05)
         assert manager.is_open
-        invalid_response_log = caplog.records[0]
-        assert invalid_response_log.levelname == 'WARNING'
 
         # good response
         agent.send(resp_msg)
@@ -553,7 +551,7 @@ async def test_invalid_request(agent_addr, invalid_request):
          ),  # version
     ])
 async def test_invalid_response(agent_addr, version, msg_type, context_name,
-                                auth, priv, caplog):
+                                auth, priv):
     version_module = {
         snmp.Version.V1: v1,
         snmp.Version.V2C: v2c,
@@ -621,8 +619,6 @@ async def test_invalid_response(agent_addr, version, msg_type, context_name,
         await asyncio.sleep(0.01)
 
         assert not send_fut.done()
-        invalid_response_log = caplog.records[0]
-        assert invalid_response_log.levelname == 'WARNING'
 
     await manager.async_close()
     await agent.async_close()

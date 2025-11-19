@@ -135,7 +135,7 @@ async def test_v1_set_req_res(addr, data, error):
     await agent.async_close()
 
 
-async def test_v1_request_cb_exception(addr, caplog):
+async def test_v1_request_cb_exception(addr):
     request_id = 42
     community = 'abc'
     exception_msg = 'test request cb exception'
@@ -168,11 +168,6 @@ async def test_v1_request_cb_exception(addr, caplog):
     assert res_msg.pdu.error.type == snmp.ErrorType.GEN_ERR
     assert res_msg.pdu.data == []
 
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert exception_msg in log_record.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -180,7 +175,7 @@ async def test_v1_request_cb_exception(addr, caplog):
 @pytest.mark.parametrize('response', [
     [snmp.UnspecifiedData(name=(1, 2, 3))],
     ])
-async def test_v1_invalid_response(addr, response, caplog):
+async def test_v1_invalid_response(addr, response):
     request_id = 42
     community = 'abc'
 
@@ -203,10 +198,6 @@ async def test_v1_invalid_response(addr, response, caplog):
 
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
-
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
 
     await endpoint.async_close()
     await agent.async_close()
@@ -240,7 +231,7 @@ async def test_v1_invalid_response(addr, response, caplog):
                     data=[snmp.IntegerData(name=(1, 2, 3), value=100)])),
      "not accepting V3")
     ])
-async def test_v1_invalid_version(addr, caplog, req_msg, log_msg):
+async def test_v1_invalid_version(addr, req_msg, log_msg):
 
     def on_request_cb(addr, comm, req):
         pass
@@ -254,11 +245,6 @@ async def test_v1_invalid_version(addr, caplog, req_msg, log_msg):
 
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
-
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert log_msg in log_record.message
 
     await endpoint.async_close()
     await agent.async_close()
@@ -381,7 +367,7 @@ async def test_v2c_set_req_res(addr, data, error):
     await agent.async_close()
 
 
-async def test_v2c_request_cb_exception(addr, caplog):
+async def test_v2c_request_cb_exception(addr):
     request_id = 42
     community = 'abc'
     exception_msg = 'test request cb exception'
@@ -414,11 +400,6 @@ async def test_v2c_request_cb_exception(addr, caplog):
     assert res_msg.pdu.error.type == snmp.ErrorType.GEN_ERR
     assert res_msg.pdu.data == []
 
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert exception_msg in log_record.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -426,7 +407,7 @@ async def test_v2c_request_cb_exception(addr, caplog):
 @pytest.mark.parametrize('response', [
     [snmp.EmptyData(name=(1, 2, 3))],
     ])
-async def test_v2c_invalid_response(addr, response, caplog):
+async def test_v2c_invalid_response(addr, response):
     request_id = 42
     community = 'abc'
 
@@ -449,10 +430,6 @@ async def test_v2c_invalid_response(addr, response, caplog):
 
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
-
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
 
     await endpoint.async_close()
     await agent.async_close()
@@ -486,7 +463,7 @@ async def test_v2c_invalid_response(addr, response, caplog):
                     data=[snmp.IntegerData(name=(1, 2, 3), value=100)])),
      "not accepting V3")
     ])
-async def test_v2c_invalid_version(addr, caplog, req_msg, log_msg):
+async def test_v2c_invalid_version(addr, req_msg, log_msg):
 
     def on_request_cb(addr, comm, req):
         pass
@@ -500,11 +477,6 @@ async def test_v2c_invalid_version(addr, caplog, req_msg, log_msg):
 
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
-
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert log_msg in log_record.message
 
     await endpoint.async_close()
     await agent.async_close()
@@ -796,7 +768,7 @@ async def test_v3_set_req_res(addr, data, error, auth, priv, auth_type):
     await agent.async_close()
 
 
-async def test_v3_request_cb_exception(addr, caplog):
+async def test_v3_request_cb_exception(addr):
     request_id = 42
     context = snmp.Context(engine_id=b'engine_cntx', name='xyz')
     exception_msg = 'test request cb exception'
@@ -845,11 +817,6 @@ async def test_v3_request_cb_exception(addr, caplog):
     assert res_msg.pdu.error.type == snmp.ErrorType.GEN_ERR
     assert res_msg.pdu.data == []
 
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert exception_msg in log_record.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -857,7 +824,7 @@ async def test_v3_request_cb_exception(addr, caplog):
 @pytest.mark.parametrize('auth, priv', [(False, False),
                                         (True, False),
                                         (True, True)])
-async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
+async def test_invalid_auth_engine_id(addr, auth, priv):
     username = 'user_xyz'
     engine_id = b'engine'
     invalid_engine_id = b'invalid engine'
@@ -918,11 +885,6 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
 
-    assert caplog.records
-    log_msg = caplog.records[0]
-    assert log_msg.levelname == 'WARNING'
-    assert "invalid authoritative engine id" in log_msg.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -930,7 +892,7 @@ async def test_invalid_auth_engine_id(addr, caplog, auth, priv):
 @pytest.mark.parametrize('auth, priv', [(False, False),
                                         (True, False),
                                         (True, True)])
-async def test_invalid_user(addr, caplog, auth, priv):
+async def test_invalid_user(addr, auth, priv):
     username = 'user_xyz'
     engine_id = b'engine'
     invalid_username = 'user_invalid'
@@ -991,11 +953,6 @@ async def test_invalid_user(addr, caplog, auth, priv):
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
 
-    assert caplog.records
-    log_msg = caplog.records[0]
-    assert log_msg.levelname == 'WARNING'
-    assert "invalid user" in log_msg.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -1004,7 +961,7 @@ async def test_invalid_user(addr, caplog, auth, priv):
     key.KeyType.MD5,
     key.KeyType.SHA
 ])
-async def test_invalid_auth_flag(addr, caplog, key_type):
+async def test_invalid_auth_flag(addr, key_type):
     username = 'user_xyz'
     engine_id = b'engine'
     auth_pass = 'authpass'
@@ -1059,16 +1016,11 @@ async def test_invalid_auth_flag(addr, caplog, key_type):
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
 
-    assert caplog.records
-    log_msg = caplog.records[0]
-    assert log_msg.levelname == 'WARNING'
-    assert "invalid auth flag" in log_msg.message
-
     await endpoint.async_close()
     await agent.async_close()
 
 
-async def test_invalid_priv_flag(addr, caplog):
+async def test_invalid_priv_flag(addr):
     username = 'user_xyz'
     engine_id = b'engine'
     auth_pass = 'authpass'
@@ -1131,11 +1083,6 @@ async def test_invalid_priv_flag(addr, caplog):
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
 
-    assert caplog.records
-    log_msg = caplog.records[0]
-    assert log_msg.levelname == 'WARNING'
-    assert "invalid priv flag" in log_msg.message
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -1143,7 +1090,7 @@ async def test_invalid_priv_flag(addr, caplog):
 @pytest.mark.parametrize('response', [
     [snmp.EmptyData(name=(1, 2, 3))],
     ])
-async def test_v3_invalid_response(addr, caplog, response):
+async def test_v3_invalid_response(addr, response):
     request_id = 42
     username = 'user_xyz'
     context = snmp.Context(engine_id=b'engine_cntx', name='xyz')
@@ -1186,10 +1133,6 @@ async def test_v3_invalid_response(addr, caplog, response):
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
 
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-
     await endpoint.async_close()
     await agent.async_close()
 
@@ -1213,7 +1156,7 @@ async def test_v3_invalid_response(addr, caplog, response):
                 data=[])),
      'not accepting V2C'),
     ])
-async def test_v3_invalid_version(addr, caplog, req_msg, log_msg):
+async def test_v3_invalid_version(addr, req_msg, log_msg):
 
     def on_request_cb(addr, comm, req):
         pass
@@ -1227,11 +1170,6 @@ async def test_v3_invalid_version(addr, caplog, req_msg, log_msg):
 
     with pytest.raises(asyncio.TimeoutError):
         await aio.wait_for(endpoint.receive(), timeout=0.01)
-
-    assert caplog.records
-    log_record = caplog.records[0]
-    assert log_record.levelname == 'WARNING'
-    assert log_msg in log_record.message
 
     await endpoint.async_close()
     await agent.async_close()

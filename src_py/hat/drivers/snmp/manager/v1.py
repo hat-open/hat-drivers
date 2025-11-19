@@ -6,6 +6,7 @@ from hat import aio
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import logger
 from hat.drivers.snmp.manager import common
 
 
@@ -41,13 +42,16 @@ class V1Manager(common.Manager):
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
-        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
-        self._comm_log = common.create_logger_adapter(mlog, True,
-                                                      endpoint.info)
+
+        self._log = logger.create_logger(mlog, 'SnmpManager', endpoint.info)
+        self._comm_log = logger.CommunicationLogger(mlog, 'SnmpManager',
+                                                    endpoint.info)
 
         self.async_group.spawn(self._receive_loop)
 
-        self._comm_log.debug('manager created')
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -90,7 +94,7 @@ class V1Manager(common.Manager):
         future = self._loop.create_future()
         self._receive_futures[request_id] = future
         try:
-            self._comm_log.debug('sending %s', msg)
+            self._comm_log.log(common.CommLogAction.SEND, msg)
 
             self._endpoint.send(msg_bytes)
             return await future
@@ -106,7 +110,7 @@ class V1Manager(common.Manager):
                 try:
                     msg = encoder.decode(msg_bytes)
 
-                    self._comm_log.debug('received %s', msg)
+                    self._comm_log.log(common.CommLogAction.RECEIVE, msg)
 
                     if not isinstance(msg, encoder.v1.Msg):
                         raise Exception('invalid version')
@@ -141,5 +145,3 @@ class V1Manager(common.Manager):
             for future in self._receive_futures.values():
                 if not future.done():
                     future.set_exception(ConnectionError())
-
-            self._comm_log.debug('manager closed')

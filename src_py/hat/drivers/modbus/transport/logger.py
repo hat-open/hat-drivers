@@ -91,6 +91,7 @@ def _format_adu(adu):
 
     elif isinstance(adu.pdu, common.ReadCoilsReq):
         segments.append(f"addr={adu.pdu.address}")
+
         if adu.pdu.quantity is not None:
             segments.append(f"quantity={adu.pdu.quantity}")
 
@@ -99,6 +100,7 @@ def _format_adu(adu):
 
     elif isinstance(adu.pdu, common.ReadDiscreteInputsReq):
         segments.append(f"addr={adu.pdu.address}")
+
         if adu.pdu.quantity is not None:
             segments.append(f"quantity={adu.pdu.quantity}")
 
@@ -107,6 +109,7 @@ def _format_adu(adu):
 
     elif isinstance(adu.pdu, common.ReadHoldingRegistersReq):
         segments.append(f"addr={adu.pdu.address}")
+
         if adu.pdu.quantity is not None:
             segments.append(f"quantity={adu.pdu.quantity}")
 
@@ -115,6 +118,7 @@ def _format_adu(adu):
 
     elif isinstance(adu.pdu, common.ReadInputRegistersReq):
         segments.append(f"addr={adu.pdu.address}")
+
         if adu.pdu.quantity is not None:
             segments.append(f"quantity={adu.pdu.quantity}")
 
@@ -171,5 +175,12 @@ def _format_adu(adu):
 
     else:
         raise TypeError('unsupported pdu type')
+
+    return _format_segments(segments)
+
+
+def _format_segments(segments):
+    if len(segments) == 1:
+        return segments[0]
 
     return f"({' '.join(segments)})"

@@ -1,3 +1,5 @@
+from hat.drivers.common import *  # NOQA
+
 from collections.abc import Collection
 import enum
 import typing

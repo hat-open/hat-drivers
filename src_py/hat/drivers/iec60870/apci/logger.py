@@ -1,3 +1,4 @@
+import collections
 import logging
 
 from hat.drivers import tcp
@@ -62,16 +63,29 @@ class CommunicationLogger:
 
 
 def _format_apdu(apdu):
+    segments = collections.deque()
+
+    segments.append(type(apdu).__name__)
+
     if isinstance(apdu, common.APDUI):
-        return (f"(APDUI "
-                f"ssn={apdu.ssn} "
-                f"rsn={apdu.rsn} "
-                f"data=({apdu.data.hex(' ')}))")
+        segments.append(f"ssn={apdu.ssn}")
+        segments.append(f"rsn={apdu.rsn}")
+        segments.append(f"data=({apdu.data.hex(' ')})")
 
-    if isinstance(apdu, common.APDUS):
-        return f"(APDUS rsn={apdu.rsn})"
+    elif isinstance(apdu, common.APDUS):
+        segments.append(f"rsn={apdu.rsn}")
 
-    if isinstance(apdu, common.APDUU):
-        return f"(APDUU function={apdu.function.name})"
+    elif isinstance(apdu, common.APDUU):
+        segments.append(f"function={apdu.function.name}")
 
-    raise TypeError('unsupported apdu type')
+    else:
+        raise TypeError('unsupported apdu type')
+
+    return _format_segments(segments)
+
+
+def _format_segments(segments):
+    if len(segments) == 1:
+        return segments[0]
+
+    return f"({' '.join(segments)})"

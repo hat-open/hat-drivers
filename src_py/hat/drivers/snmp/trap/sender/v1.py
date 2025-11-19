@@ -4,6 +4,7 @@ from hat import aio
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import logger
 from hat.drivers.snmp.trap.sender import common
 
 
@@ -38,8 +39,13 @@ class V1TrapSender(common.TrapSender):
         self._community = community
         self._addr = tuple(int(i)
                            for i in endpoint.info.local_addr.host.split('.'))
-        self._comm_log = common.create_logger_adapter(mlog, True,
-                                                      endpoint.info)
+
+        self._comm_log = logger.CommunicationLogger(mlog, 'SnmpTrapSender',
+                                                    endpoint.info)
+
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -62,7 +68,7 @@ class V1TrapSender(common.TrapSender):
                              pdu=pdu)
         msg_bytes = encoder.encode(msg)
 
-        self._comm_log.debug('sending %s', msg)
+        self._comm_log.log(common.CommLogAction.SEND, msg)
 
         self._endpoint.send(msg_bytes)
 

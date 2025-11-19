@@ -83,15 +83,21 @@ def _format_frame(frame):
         if frame.data_flow_control:
             segments.append('data_flow_control')
 
-        segments.extend(f"function={frame.function.name}")
+        segments.append(f"function={frame.function.name}")
         segments.append(f"addr={frame.address}")
         segments.append(f"data=({frame.data.hex(' ')})")
 
     elif isinstance(frame, common.ShortFrame):
         segments.append('Res')
-        segments.append('short')
 
     else:
         raise TypeError('unsupported frame type')
+
+    return _format_segments(segments)
+
+
+def _format_segments(segments):
+    if len(segments) == 1:
+        return segments[0]
 
     return f"({' '.join(segments)})"

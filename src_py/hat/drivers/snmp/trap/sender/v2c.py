@@ -6,6 +6,7 @@ from hat import aio
 
 from hat.drivers import udp
 from hat.drivers.snmp import encoder
+from hat.drivers.snmp import logger
 from hat.drivers.snmp.trap.sender import common
 
 
@@ -41,13 +42,16 @@ class V2CTrapSender(common.TrapSender):
         self._loop = asyncio.get_running_loop()
         self._receive_futures = {}
         self._next_request_ids = itertools.count(1)
-        self._log = common.create_logger_adapter(mlog, False, endpoint.info)
-        self._comm_log = common.create_logger_adapter(mlog, True,
-                                                      endpoint.info)
+
+        self._log = logger.create_logger(mlog, 'SnmpTrapSender', endpoint.info)
+        self._comm_log = logger.CommunicationLogger(mlog, 'SnmpTrapSender',
+                                                    endpoint.info)
 
         self.async_group.spawn(self._receive_loop)
 
-        self._comm_log.debug('trap sender created')
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self) -> aio.Group:
@@ -77,7 +81,7 @@ class V2CTrapSender(common.TrapSender):
                               pdu=pdu)
         msg_bytes = encoder.encode(msg)
 
-        self._comm_log.debug('sending %s', msg)
+        self._comm_log.log(common.CommLogAction.SEND, msg)
 
         self._endpoint.send(msg_bytes)
 
@@ -104,7 +108,7 @@ class V2CTrapSender(common.TrapSender):
         future = self._loop.create_future()
         self._receive_futures[request_id] = future
         try:
-            self._comm_log.debug('sending %s', msg)
+            self._comm_log.log(common.CommLogAction.SEND, msg)
 
             self._endpoint.send(msg_bytes)
             return await future
@@ -122,7 +126,7 @@ class V2CTrapSender(common.TrapSender):
                 try:
                     msg = encoder.decode(msg_bytes)
 
-                    self._comm_log.debug('received %s', msg)
+                    self._comm_log.log(common.CommLogAction.RECEIVE, msg)
 
                     if not isinstance(msg, encoder.v2c.Msg):
                         raise Exception('invalid version')
@@ -157,5 +161,3 @@ class V2CTrapSender(common.TrapSender):
             for future in self._receive_futures.values():
                 if not future.done():
                     future.set_exception(ConnectionError())
-
-            self._comm_log.debug('trap sender closed')

@@ -55,232 +55,100 @@ class CommunicationLogger:
 
 
 def _format_msg(msg):
+    segments = collections.deque()
+
+    name = type(msg).__name__[:-3]
+    segments.append(name)
+
+    if msg.is_test:
+        segments.append('test')
+
     asdu_type = encoder.get_msg_asdu_type(msg)
+    segments.append(f"type={asdu_type.name}")
 
-    if isinstance(msg, common.DataMsg):
-        return (f"(Data "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"io={msg.io_address} "
-                f"data={_format_data(msg.data)} "
-                f"time={_format_time(msg.time)} "
-                f"cause={_format_cause(msg.cause)})")
+    segments.append(f"originator={msg.originator_address}")
+    segments.append(f"asdu={msg.asdu_address}")
 
-    if isinstance(msg, common.CommandMsg):
-        return (f"(Command "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"io={msg.io_address} "
-                f"command={_format_command(msg.command)} "
-                f"negative={msg.is_negative_confirm} "
-                f"time={_format_time(msg.time)} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'io_address'):
+        segments.append(f"io={msg.io_address}")
 
-    if isinstance(msg, common.InitializationMsg):
-        return (f"(Initialization "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"change={msg.param_change} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'data'):
+        segments.append(f"data={_format_data(msg.data)}")
 
-    if isinstance(msg, common.InterrogationMsg):
-        return (f"(Interrogation "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"request={msg.request} "
-                f"negative={msg.is_negative_confirm} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'command'):
+        segments.append(f"command={_format_command(msg.command)}")
 
-    if isinstance(msg, common.CounterInterrogationMsg):
-        return (f"(CounterInterrogation "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"request={msg.request} "
-                f"freeze={msg.freeze.name} "
-                f"negative={msg.is_negative_confirm} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'request'):
+        segments.append(f"request={msg.request}")
 
-    if isinstance(msg, common.ReadMsg):
-        return (f"(Read "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"io={msg.io_address} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'freeze'):
+        segments.append(f"freeze={msg.freeze.name}")
 
-    if isinstance(msg, common.ClockSyncMsg):
-        return (f"(ClockSync "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"time={_format_time(msg.time)} "
-                f"negative={msg.is_negative_confirm} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'counter'):
+        segments.append(f"counter={msg.counter}")
 
-    if isinstance(msg, common.TestMsg):
-        return (f"(Test "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"counter={msg.counter} "
-                f"time={_format_time(msg.time)} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'qualifier'):
+        segments.append(f"qualifier={msg.qualifier}")
 
-    if isinstance(msg, common.ResetMsg):
-        return (f"(Reset "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"qualifier={msg.qualifier} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'parameter'):
+        segments.append(f"parameter={_format_parameter(msg.parameter)}")
 
-    if isinstance(msg, common.ParameterMsg):
-        return (f"(Parameter "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"io={msg.io_address} "
-                f"parameter={_format_parameter(msg.parameter)} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'is_negative_confirm') and msg.is_negative_confirm:
+        segments.append('negative')
 
-    if isinstance(msg, common.ParameterActivationMsg):
-        return (f"(ParameterActivation "
-                f"type={asdu_type.name} "
-                f"test={msg.is_test} "
-                f"originator={msg.originator_address} "
-                f"asdu={msg.asdu_address} "
-                f"io={msg.io_address} "
-                f"qualifier={msg.qualifier} "
-                f"cause={_format_cause(msg.cause)})")
+    if hasattr(msg, 'param_change') and msg.param_change:
+        segments.append('change')
 
-    raise TypeError('unsupported message type')
+    if hasattr(msg, 'time') and msg.time is not None:
+        segments.append(f"time={_format_time(msg.time)}")
+
+    if hasattr(msg, 'cause'):
+        segments.append(f"cause={_format_cause(msg.cause)}")
+
+    return _format_segments(segments)
 
 
 def _format_data(data):
-    if isinstance(data, common.SingleData):
-        return (f"(Single "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    segments = collections.deque()
 
-    if isinstance(data, common.DoubleData):
-        return (f"(Double "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    name = type(data).__name__[:-4]
+    segments.append(name)
 
-    if isinstance(data, common.StepPositionData):
-        return (f"(StepPosition "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    segments.append(f"value={_format_value(data.value)}")
 
-    if isinstance(data, common.BitstringData):
-        return (f"(Bitstring "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    if data.quality is not None:
+        segments.append(f"quality={_format_quality(data.quality)}")
 
-    if isinstance(data, common.NormalizedData):
-        return (f"(Normalized "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    if hasattr(data, 'elapsed_time'):
+        segments.append(f"time={data.elapsed_time}")
 
-    if isinstance(data, common.ScaledData):
-        return (f"(Scaled "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    if hasattr(data, 'duration_time'):
+        segments.append(f"time={data.duration_time}")
 
-    if isinstance(data, common.FloatingData):
-        return (f"(Floating "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
+    if hasattr(data, 'operating_time'):
+        segments.append(f"time={data.operating_time}")
 
-    if isinstance(data, common.BinaryCounterData):
-        return (f"(BinaryCounter "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
-
-    if isinstance(data, common.ProtectionData):
-        return (f"(Protection "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)} "
-                f"time={data.elapsed_time})")
-
-    if isinstance(data, common.ProtectionStartData):
-        return (f"(ProtectionStart "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)} "
-                f"time={data.duration_time})")
-
-    if isinstance(data, common.ProtectionCommandData):
-        return (f"(ProtectionCommand "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)} "
-                f"time={data.operating_time})")
-
-    if isinstance(data, common.StatusData):
-        return (f"(Status "
-                f"value={_format_value(data.value)} "
-                f"quality={_format_quality(data.quality)})")
-
-    raise TypeError('unsupported data type')
+    return _format_segments(segments)
 
 
 def _format_command(command):
-    if isinstance(command, common.SingleCommand):
-        return (f"(Single "
-                f"value={_format_value(command.value)} "
-                f"select={command.select} "
-                f"qualifier={command.qualifier})")
+    segments = collections.deque()
 
-    if isinstance(command, common.DoubleCommand):
-        return (f"(Double "
-                f"value={_format_value(command.value)} "
-                f"select={command.select} "
-                f"qualifier={command.qualifier})")
+    name = type(command).__name__[:-7]
+    segments.append(name)
 
-    if isinstance(command, common.RegulatingCommand):
-        return (f"(Regulating "
-                f"value={_format_value(command.value)} "
-                f"select={command.select} "
-                f"qualifier={command.qualifier})")
+    if hasattr(command, 'select') and command.select:
+        segments.append('select')
 
-    if isinstance(command, common.NormalizedCommand):
-        return (f"(Normalized "
-                f"value={_format_value(command.value)} "
-                f"select={command.select})")
+    segments.append(f"value={_format_value(command.value)}")
 
-    if isinstance(command, common.ScaledCommand):
-        return (f"(Scaled "
-                f"value={_format_value(command.value)} "
-                f"select={command.select})")
+    if hasattr(command, 'qualifier'):
+        segments.append(f"qualifier={command.qualifier}")
 
-    if isinstance(command, common.FloatingCommand):
-        return (f"(Floating "
-                f"value={_format_value(command.value)} "
-                f"select={command.select})")
-
-    if isinstance(command, common.BitstringCommand):
-        return (f"(Bitstring "
-                f"value={_format_value(command.value)})")
+    return _format_segments(segments)
 
 
 def _format_time(time):
-    if time is None:
-        return ''
-
     time_str = f"{time.milliseconds // 1000:02}.{time.milliseconds % 1000:03}"
 
     if time.size == common.TimeSize.TWO:
@@ -315,85 +183,94 @@ def _format_cause(cause):
     if isinstance(cause, enum.Enum):
         return cause.name
 
-    return cause
+    return str(cause)
 
 
 def _format_parameter(parameter):
-    if isinstance(parameter, common.NormalizedParameter):
-        return (f"(Normalized "
-                f"value={_format_value(parameter.value)} "
-                f"qualifier={parameter.qualifier})")
+    segments = collections.deque()
 
-    if isinstance(parameter, common.ScaledParameter):
-        return (f"(Scaled "
-                f"value={_format_value(parameter.value)} "
-                f"qualifier={parameter.qualifier})")
+    name = type(parameter).__name__[:-9]
+    segments.append(name)
 
-    if isinstance(parameter, common.FloatingParameter):
-        return (f"(Floating "
-                f"value={_format_value(parameter.value)} "
-                f"qualifier={parameter.qualifier})")
+    segments.append(f"value={_format_value(parameter.value)}")
+    segments.append(f"qualifier={parameter.qualifier}")
 
-    raise TypeError('unsupported parameter type')
+    return _format_segments(segments)
 
 
 def _format_value(value):
-    if isinstance(value, common.SingleValue):
-        return value.name
+    segments = collections.deque()
 
-    if isinstance(value, common.DoubleValue):
-        return value.name
+    if isinstance(value, (common.SingleValue,
+                          common.DoubleValue,
+                          common.RegulatingValue,
+                          common.ProtectionValue)):
+        segments.append(value.name)
 
-    if isinstance(value, common.RegulatingValue):
-        return value.name
+    elif isinstance(value, common.StepPositionValue):
+        segments.append(str(value.value))
 
-    if isinstance(value, common.StepPositionValue):
-        return (f"({value.value} "
-                f"transient={value.transient})")
+        if value.transient:
+            segments.append('transient')
 
-    if isinstance(value, common.BitstringValue):
-        return f"({value.value.hex(' ')})"
+    elif isinstance(value, common.BitstringValue):
+        segments.append(f"({value.value.hex(' ')})")
 
-    if isinstance(value, common.NormalizedValue):
-        return value.value
+    elif isinstance(value, (common.NormalizedValue,
+                            common.ScaledValue,
+                            common.FloatingValue,
+                            common.BinaryCounterValue)):
+        segments.append(str(value.value))
 
-    if isinstance(value, common.ScaledValue):
-        return value.value
+    elif isinstance(value, common.ProtectionStartValue):
+        if value.general:
+            segments.append('general')
 
-    if isinstance(value, common.FloatingValue):
-        return value.value
+        if value.l1:
+            segments.append('l1')
 
-    if isinstance(value, common.BinaryCounterValue):
-        return value.value
+        if value.l2:
+            segments.append('l2')
 
-    if isinstance(value, common.ProtectionValue):
-        return value.name
+        if value.l3:
+            segments.append('l3')
 
-    if isinstance(value, common.ProtectionStartValue):
-        return (f"(general={value.general} "
-                f"l1={value.l1} "
-                f"l2={value.l2} "
-                f"l3={value.l3} "
-                f"ie={value.ie} "
-                f"reverse={value.reverse})")
+        if value.ie:
+            segments.append('ie')
 
-    if isinstance(value, common.ProtectionCommandValue):
-        return (f"(general={value.general} "
-                f"l1={value.l1} "
-                f"l2={value.l2} "
-                f"l3={value.l3})")
+        if value.reverse:
+            segments.append('reverse')
 
-    if isinstance(value, common.StatusValue):
-        return (f"({value.value} "
-                f"change={value.change})")
+    elif isinstance(value, common.ProtectionCommandValue):
+        if value.general:
+            segments.append('general')
 
-    raise TypeError('unsupported value type')
+        if value.l1:
+            segments.append('l1')
+
+        if value.l2:
+            segments.append('l2')
+
+        if value.l3:
+            segments.append('l3')
+
+    elif isinstance(value, common.StatusValue):
+        for i, change in zip(value.value, value.change):
+            subsegments = collections.deque()
+            subsegments.append(str(i))
+
+            if change:
+                subsegments.append('change')
+
+            segments.append(_format_segments(subsegments))
+
+    else:
+        raise TypeError('unsupported value type')
+
+    return _format_segments(segments)
 
 
 def _format_quality(quality):
-    if quality is None:
-        return ''
-
     if isinstance(quality, common.IndicationQuality):
         attrs = ['invalid', 'not_topical', 'substituted', 'blocked']
 
@@ -416,5 +293,12 @@ def _format_quality(quality):
 
     if isinstance(quality, common.CounterQuality):
         segments.append(f"sequence={quality.sequence})")
+
+    return _format_segments(segments)
+
+
+def _format_segments(segments):
+    if len(segments) == 1:
+        return segments[0]
 
     return f"({' '.join(segments)})"
