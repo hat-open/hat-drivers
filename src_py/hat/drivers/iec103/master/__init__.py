@@ -9,6 +9,7 @@ import typing
 from hat import aio
 
 from hat.drivers.iec103 import common
+from hat.drivers.iec103.master import logger
 from hat.drivers.iec60870.encodings import iec103
 from hat.drivers.iec60870 import link
 
@@ -31,8 +32,8 @@ class MasterConnection(aio.Resource):
         self._data_cb = data_cb
         self._generic_data_cb = generic_data_cb
 
-        self._log = _create_logger_adapter(False, conn.info)
-        self._comm_log = _create_logger_adapter(True, conn.info)
+        self._log = logger.create_logger(mlog, conn.info)
+        self._comm_log = logger.CommunicationLogger(mlog, conn.info)
 
         self._encoder = iec103.Encoder()
 
@@ -72,7 +73,9 @@ class MasterConnection(aio.Resource):
 
         self.async_group.spawn(self._receive_loop)
 
-        self._comm_log.debug('master connection created')
+        self.async_group.spawn(aio.call_on_cancel, self._comm_log.log,
+                               common.CommLogAction.CLOSE)
+        self._comm_log.log(common.CommLogAction.OPEN)
 
     @property
     def async_group(self):
@@ -99,7 +102,7 @@ class MasterConnection(aio.Resource):
 
         data = self._encoder.encode_asdu(asdu)
 
-        self._comm_log.debug('sending %s', asdu)
+        self._comm_log.log(common.CommLogAction.SEND, asdu)
 
         await self._conn.send(data)
 
@@ -123,7 +126,7 @@ class MasterConnection(aio.Resource):
             data = self._encoder.encode_asdu(asdu)
 
             try:
-                self._comm_log.debug('sending %s', asdu)
+                self._comm_log.log(common.CommLogAction.SEND, asdu)
 
                 self._interrogate_req_id = scan_number
                 self._interrogate_future = asyncio.Future()
@@ -157,7 +160,7 @@ class MasterConnection(aio.Resource):
             data = self._encoder.encode_asdu(asdu)
 
             try:
-                self._comm_log.debug('sending %s', asdu)
+                self._comm_log.log(common.CommLogAction.SEND, asdu)
 
                 self._send_command_req_id = return_identifier
                 self._send_command_future = asyncio.Future()
@@ -189,7 +192,7 @@ class MasterConnection(aio.Resource):
             data = self._encoder.encode_asdu(asdu)
 
             try:
-                self._comm_log.debug('sending %s', asdu)
+                self._comm_log.log(common.CommLogAction.SEND, asdu)
 
                 self._interrogate_generic_req_id = return_identifier
                 self._interrogate_generic_future = asyncio.Future()
@@ -206,7 +209,7 @@ class MasterConnection(aio.Resource):
                 data = await self._conn.receive()
                 asdu, _ = self._encoder.decode_asdu(data)
 
-                self._comm_log.debug('received %s', asdu)
+                self._comm_log.log(common.CommLogAction.RECEIVE, asdu)
 
                 for io in asdu.ios:
                     if asdu.type in self._process_single_element_fns:
@@ -232,8 +235,6 @@ class MasterConnection(aio.Resource):
             _try_set_exception(self._send_command_future, ConnectionError())
             _try_set_exception(self._interrogate_generic_future,
                                ConnectionError())
-
-            self._comm_log.debug('master connection closed')
 
     async def _process_TIME_TAGGED_MESSAGE(self, cause, asdu_address, io_address, element):  # NOQA
         if cause == iec103.Cause.GENERAL_COMMAND:
@@ -464,13 +465,3 @@ async def _try_aio_call(cb, *args):
     if not cb:
         return
     return await aio.call(cb, *args)
-
-
-def _create_logger_adapter(communication, info):
-    extra = {'meta': {'type': 'Iec103Master',
-                      'communication': communication,
-                      'name': info.name,
-                      'port': info.port,
-                      'address': info.address}}
-
-    return logging.LoggerAdapter(mlog, extra)

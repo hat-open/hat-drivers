@@ -156,6 +156,12 @@ class CommunicationLogger:
             self._log.debug('%s %s', action.value, _format_msg(msg),
                             stacklevel=2)
 
+            if isinstance(msg, ReportMsg):
+                for data in msg.data:
+                    self._log.debug('%s %s',
+                                    action.value, _format_report_data(data),
+                                    stacklevel=2)
+
 
 def _format_msg(msg):
     segments = collections.deque()
@@ -311,9 +317,6 @@ def _format_msg(msg):
         if msg.entry_id is not None:
             segments.append(f"entry_id=({msg.entry_id.hex(' ')})")
 
-        data = [_format_report_data(i) for i in msg.data]
-        segments.append(f"data={_format_segments(data)}")
-
     elif isinstance(msg, TerminationMsg):
         segments.append('TerminationMsg')
 
@@ -330,6 +333,19 @@ def _format_msg(msg):
 
     else:
         raise TypeError('unsupported message type')
+
+    return _format_segments(segments)
+
+
+def _format_report_data(data):
+    segments = collections.deque()
+    segments.append('ReportData')
+    segments.append(f"ref={encoder.data_ref_to_str(data.ref)}")
+    segments.append(f"value={_format_value(data.value)}")
+
+    if data.reasons is not None:
+        reasons = [i.name for i in data.reasons]
+        segments.append(f"reasons={_format_segments(reasons)}")
 
     return _format_segments(segments)
 
@@ -449,18 +465,6 @@ def _format_origin(origin):
     segments = collections.deque()
     segments.append(f"category={origin.category.name}")
     segments.append(f"identification=({origin.identification.hex(' ')})")
-    return _format_segments(segments)
-
-
-def _format_report_data(data):
-    segments = collections.deque()
-    segments.append(f"ref={encoder.data_ref_to_str(data.ref)}")
-    segments.append(f"value={_format_value(data.value)}")
-
-    if data.reasons is not None:
-        reasons = [i.name for i in data.reasons]
-        segments.append(f"reasons={_format_segments(reasons)}")
-
     return _format_segments(segments)
 
 
