@@ -51,14 +51,10 @@ async def test_connection_tcp_closed(addr):
     tcp_conn = await tcp.connect(addr)
     await tcp_conn.async_close()
 
-    conn = transport.Connection(conn=tcp_conn,
-                                request_cb=None,
-                                notification_cb=None)
-
-    assert not conn.is_open
-    assert conn.is_closed
-
-    await conn.wait_closed()
+    with pytest.raises(Exception):
+        transport.Connection(conn=tcp_conn,
+                             request_cb=None,
+                             notification_cb=None)
 
     await server.async_close()
 
