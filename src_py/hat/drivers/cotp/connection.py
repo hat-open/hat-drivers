@@ -86,11 +86,11 @@ async def listen(connection_cb: ConnectionCb,
     server._connection_cb = connection_cb
     server._receive_queue_size = cotp_receive_queue_size
     server._send_queue_size = cotp_send_queue_size
-    server._log = mlog
+    server._log = _create_server_logger(kwargs.get('name'), None)
 
     server._srv = await tpkt.listen(server._on_connection, addr, **kwargs)
 
-    server._log = _create_server_logger_adapter(server._srv.info)
+    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
 
     return server
 
@@ -174,13 +174,10 @@ class Connection(aio.Resource):
                                     **conn.info._asdict())
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
-        self._log = _create_connection_logger_adapter(False, self._info)
-        self._comm_log = _create_connection_logger_adapter(True, self._info)
+        self._log = _create_connection_logger(self._info)
 
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
-
-        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -225,8 +222,6 @@ class Connection(aio.Resource):
                 tpdu_bytes = await self._conn.receive()
                 tpdu = encoder.decode(memoryview(tpdu_bytes))
 
-                self._comm_log.debug('received %s', tpdu)
-
                 if isinstance(tpdu, (common.DR, common.ER)):
                     self._log.info("received disconnect request / error")
                     break
@@ -254,8 +249,6 @@ class Connection(aio.Resource):
             self.close()
             self._receive_queue.close()
 
-            self._comm_log.debug('connection closed')
-
     async def _send_loop(self):
         future = None
         try:
@@ -274,8 +267,6 @@ class Connection(aio.Resource):
 
                         tpdu = common.DT(eot=not data, data=single_data)
                         tpdu_bytes = encoder.encode(tpdu)
-
-                        self._comm_log.debug('sending %s', tpdu)
 
                         await self._conn.send(tpdu_bytes)
 
@@ -371,25 +362,24 @@ def _get_tsels(cr_tpdu, cc_tpdu):
     return calling_tsel, called_tsel
 
 
-def _create_server_logger_adapter(info):
+def _create_server_logger(name, info):
     extra = {'meta': {'type': 'CotpServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(communication, info):
+def _create_connection_logger(info):
     extra = {'meta': {'type': 'CotpConnection',
-                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
                       'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel}}
+                                      'port': info.remote_addr.port}}}
 
     return logging.LoggerAdapter(mlog, extra)

@@ -44,11 +44,10 @@ class DataCoding(enum.Enum):
     KS = 14
 
 
-def create_connection_logger_adapter(logger: logging.Logger,
-                                     communication: bool,
-                                     info: tcp.ConnectionInfo):
+def create_logger(logger: logging.Logger,
+                  info: tcp.ConnectionInfo
+                  ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'SmppConnection',
-                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},

@@ -94,7 +94,7 @@ async def connect(addr: tcp.Address,
                           acse_receive_queue_size, acse_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_copp(conn, _abrt_apdu(1), mlog))
+        await aio.uncancellable(_close_copp(conn, _abrt_apdu(1)))
         raise
 
 
@@ -124,7 +124,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = acse_receive_queue_size
     server._send_queue_size = acse_send_queue_size
-    server._log = mlog
+    server._log = _create_server_logger(kwargs.get('name'), None)
 
     server._srv = await copp.listen(server._on_validate,
                                     server._on_connection,
@@ -132,7 +132,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = _create_server_logger_adapter(server._srv.info)
+    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
 
     return server
 
@@ -205,8 +205,7 @@ class Server(aio.Resource):
                                   self._send_queue_size)
 
             except Exception:
-                await aio.uncancellable(
-                    _close_copp(copp_conn, _abrt_apdu(1), mlog))
+                await aio.uncancellable(_close_copp(copp_conn, _abrt_apdu(1)))
                 raise
 
             try:
@@ -272,16 +271,13 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(False, self._info)
-        self._comm_log = _create_connection_logger_adapter(True, self._info)
+        self._log = _create_connection_logger(self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
-
-        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -330,9 +326,7 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_copp(self._conn, self._close_apdu, self._comm_log)
-
-        self._comm_log.debug('connection closed')
+        await _close_copp(self._conn, self._close_apdu)
 
     def _close(self, apdu):
         if not self.is_open:
@@ -345,8 +339,6 @@ class Connection(aio.Resource):
         try:
             while True:
                 syntax_name, entity = await self._conn.receive()
-
-                self._comm_log.debug('received %s %s', syntax_name, entity)
 
                 if syntax_name == _acse_syntax_name:
                     if entity[0] == 'abrt':
@@ -383,8 +375,6 @@ class Connection(aio.Resource):
                     await self._conn.drain()
 
                 else:
-                    self._comm_log.debug('sending %s', data)
-
                     await self._conn.send(data)
 
                 if future and not future.done():
@@ -408,11 +398,8 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_copp(copp_conn, apdu, comm_log):
+async def _close_copp(copp_conn, apdu):
     data = (_acse_syntax_name, _encode(apdu)) if apdu else None
-
-    comm_log.debug('sending %s', apdu)
-
     await copp_conn.async_close(data)
 
 
@@ -533,37 +520,24 @@ def _decode(entity):
     return _encoder.decode_value(asn1.TypeRef('ACSE-1', 'ACSE-apdu'), entity)
 
 
-def _create_server_logger_adapter(info):
+def _create_server_logger(name, info):
     extra = {'meta': {'type': 'AcseServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(communication, info):
+def _create_connection_logger(info):
     extra = {'meta': {'type': 'AcseConnection',
-                      'communication': communication,
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,
                                      'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'local_ap_title': (
-                            '.'.join(str(i) for i in info.local_ap_title)
-                            if info.local_ap_title else None),
-                      'local_ae_qualifier': info.local_ae_qualifier,
                       'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel,
-                      'remote_ap_title': (
-                            '.'.join(str(i) for i in info.remote_ap_title)
-                            if info.remote_ap_title else None),
-                      'remote_ae_qualifier': info.remote_ae_qualifier}}
+                                      'port': info.remote_addr.port}}}
 
     return logging.LoggerAdapter(mlog, extra)

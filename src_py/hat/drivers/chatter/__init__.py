@@ -93,7 +93,7 @@ async def listen(connection_cb: ConnectionCb,
 
     """
 
-    log = mlog
+    log = _create_server_logger(kwargs.get('name'), None)
 
     async def on_connection(conn):
         try:
@@ -117,7 +117,7 @@ async def listen(connection_cb: ConnectionCb,
                               bind_connections=bind_connections,
                               **kwargs)
 
-    log = _create_server_logger_adapter(server.info)
+    log = _create_server_logger(kwargs.get('name'), server.info)
 
     return server
 
@@ -141,7 +141,7 @@ class Connection(aio.Resource):
         self._loop = asyncio.get_running_loop()
         self._next_msg_ids = itertools.count(1)
         self._ping_event = asyncio.Event()
-        self._log = _create_connection_logger_adapter(conn.info)
+        self._log = _create_connection_logger(conn.info)
 
         self.async_group.spawn(self._read_loop)
         self.async_group.spawn(self._write_loop)
@@ -353,17 +353,19 @@ with importlib.resources.as_file(importlib.resources.files(__package__) /
     _sbs_repo = sbs.Repository.from_json(_path)
 
 
-def _create_server_logger_adapter(info):
+def _create_server_logger(name, info):
     extra = {'meta': {'type': 'ChatterServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(info):
+def _create_connection_logger(info):
     extra = {'meta': {'type': 'ChatterConnection',
                       'name': info.name,
                       'local_addr': {'host': info.local_addr.host,

@@ -83,6 +83,7 @@ async def connect(addr: tcp.Address,
     Additional arguments are passed directly to `hat.drivers.cosp.connect`.
 
     """
+    log = _create_connection_logger(kwargs.get('name'), None)
     cp_ppdu = _cp_ppdu(syntax_names, local_psel, remote_psel, user_data)
     cp_ppdu_data = _encode('CP-type', cp_ppdu)
     conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
@@ -97,7 +98,7 @@ async def connect(addr: tcp.Address,
                           copp_receive_queue_size, copp_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), mlog, mlog))
+        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), log))
         raise
 
 
@@ -127,7 +128,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = copp_receive_queue_size
     server._send_queue_size = copp_send_queue_size
-    server._log = mlog
+    server._log = _create_server_logger(kwargs.get('name'), None)
 
     server._srv = await cosp.listen(server._on_validate,
                                     server._on_connection,
@@ -135,7 +136,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = _create_server_logger_adapter(server._srv.info)
+    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
 
     return server
 
@@ -193,7 +194,7 @@ class Server(aio.Resource):
 
             except Exception:
                 await aio.uncancellable(
-                    _close_cosp(cosp_conn, _arp_ppdu(), self._log, self._log))
+                    _close_cosp(cosp_conn, _arp_ppdu(), self._log))
                 raise
 
             try:
@@ -259,16 +260,13 @@ class Connection(aio.Resource):
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = _create_connection_logger_adapter(False, self._info)
-        self._comm_log = _create_connection_logger_adapter(True, self._info)
+        self._log = _create_connection_logger(self._info.name, self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
         self.async_group.spawn(self._send_loop)
         self.async_group.spawn(aio.call_on_done, conn.wait_closing(),
                                self.close)
-
-        self._comm_log.debug('connection established')
 
     @property
     def async_group(self) -> aio.Group:
@@ -331,10 +329,7 @@ class Connection(aio.Resource):
             raise ConnectionError()
 
     async def _on_close(self):
-        await _close_cosp(self._conn, self._close_ppdu, self._log,
-                          self._comm_log)
-
-        self._comm_log.debug('connection closed')
+        await _close_cosp(self._conn, self._close_ppdu, self._log)
 
     def _close(self, ppdu):
         if not self.is_open:
@@ -349,8 +344,6 @@ class Connection(aio.Resource):
                 cosp_data = await self._conn.receive()
 
                 user_data = _decode('User-data', cosp_data)
-
-                self._comm_log.debug('received %s', user_data)
 
                 pdv_list = user_data[1][0]
                 syntax_name = self._syntax_names.get_name(
@@ -382,8 +375,6 @@ class Connection(aio.Resource):
                     user_data = _user_data(self._syntax_names, data)
                     ppdu_data = _encode('User-data', user_data)
 
-                    self._comm_log.debug('sending %s', user_data)
-
                     await self._conn.send(ppdu_data)
 
                 if future and not future.done():
@@ -407,11 +398,9 @@ class Connection(aio.Resource):
                 _, future = self._send_queue.get_nowait()
 
 
-async def _close_cosp(cosp_conn, ppdu, log, comm_log):
+async def _close_cosp(cosp_conn, ppdu, log):
     try:
         data = _encode('Abort-type', ppdu)
-
-        comm_log.debug('sending %s', ppdu)
 
     except Exception as e:
         log.error("error encoding abort ppdu: %s", e, exc_info=e)
@@ -536,29 +525,26 @@ def _decode(name, data):
     return res
 
 
-def _create_server_logger_adapter(info):
+def _create_server_logger(name, info):
     extra = {'meta': {'type': 'CoppServer',
-                      'name': info.name,
-                      'addresses': [{'host': addr.host,
-                                     'port': addr.port}
-                                    for addr in info.addresses]}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['addresses'] = [{'host': addr.host,
+                                       'port': addr.port}
+                                      for addr in info.addresses]
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger_adapter(communication, info):
+def _create_connection_logger(name, info):
     extra = {'meta': {'type': 'CoppConnection',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'local_tsel': info.local_tsel,
-                      'local_ssel': info.local_ssel,
-                      'local_psel': info.local_psel,
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port},
-                      'remote_tsel': info.remote_tsel,
-                      'remote_ssel': info.remote_ssel,
-                      'remote_psel': info.remote_psel}}
+                      'name': name}}
+
+    if info is not None:
+        extra['meta']['local_addr'] = {'host': info.local_addr.host,
+                                       'port': info.local_addr.port}
+        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
+                                        'port': info.remote_addr.port}
 
     return logging.LoggerAdapter(mlog, extra)

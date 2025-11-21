@@ -1,3 +1,5 @@
+from hat.drivers.common import *  # NOQA
+
 import typing
 
 from hat import util
@@ -11,3 +13,8 @@ class EchoMsg(typing.NamedTuple):
 
 
 Msg: typing.TypeAlias = EchoMsg
+
+
+class EndpointInfo(typing.NamedTuple):
+    name: str | None
+    local_host: str

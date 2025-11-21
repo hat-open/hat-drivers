@@ -4,26 +4,16 @@ import logging
 import math
 import socket
 import sys
-import typing
 import uuid
 
 from hat import aio
 
 from hat.drivers.icmp import common
 from hat.drivers.icmp import encoder
+from hat.drivers.icmp import logger
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
-
-
-class Address(typing.NamedTuple):
-    host: str
-    port: int
-
-
-class EndpointInfo(typing.NamedTuple):
-    name: str | None
-    local_addr: Address
 
 
 async def create_endpoint(local_host: str = '0.0.0.0',
@@ -38,16 +28,19 @@ async def create_endpoint(local_host: str = '0.0.0.0',
     endpoint._loop = loop
     endpoint._echo_data = _echo_data_iter()
     endpoint._echo_futures = {}
-    endpoint._info = EndpointInfo(name=name,
-                                  local_addr=local_addr)
-    endpoint._log = _create_logger_adapter(False, endpoint._info)
-    endpoint._comm_log = _create_logger_adapter(True, endpoint._info)
+    endpoint._info = common.EndpointInfo(name=name,
+                                         local_host=local_addr[0])
+
+    endpoint._log = logger.create_logger(mlog, endpoint._info)
+    endpoint._comm_log = logger.CommunicationLogger(mlog, endpoint._info)
 
     endpoint._socket = _create_socket(local_addr)
 
     endpoint.async_group.spawn(endpoint._receive_loop)
 
-    endpoint._comm_log.debug('endpoint created')
+    endpoint.async_group.spawn(aio.call_on_cancel, endpoint._comm_log.log,
+                               common.CommLogAction.CLOSE)
+    endpoint._comm_log.log(common.CommLogAction.OPEN)
 
     return endpoint
 
@@ -59,14 +52,14 @@ class Endpoint(aio.Resource):
         return self._async_group
 
     @property
-    def info(self) -> EndpointInfo:
+    def info(self) -> common.EndpointInfo:
         return self._info
 
     async def ping(self, remote_host: str):
         if not self.is_open:
             raise ConnectionError()
 
-        addr = await _get_host_addr(self._loop, remote_host)
+        remote_addr = await _get_host_addr(self._loop, remote_host)
 
         if not self.is_open:
             raise ConnectionError()
@@ -86,14 +79,14 @@ class Endpoint(aio.Resource):
         try:
             self._echo_futures[data] = future
 
-            self._comm_log.debug('sending %s', req)
+            self._comm_log.log(common.CommLogAction.SEND, req)
 
             if sys.version_info[:2] >= (3, 11):
                 await self._loop.sock_sendto(self._socket, req_bytes,
-                                             tuple(addr))
+                                             remote_addr)
 
             else:
-                self._socket.sendto(req_bytes, tuple(addr))
+                self._socket.sendto(req_bytes, remote_addr)
 
             await future
 
@@ -113,7 +106,7 @@ class Endpoint(aio.Resource):
                                       e, exc_info=e)
                     continue
 
-                self._comm_log.debug('received %s', msg)
+                self._comm_log.log(common.CommLogAction.RECEIVE, msg)
 
                 if isinstance(msg, common.EchoMsg):
                     self._process_echo_msg(msg)
@@ -129,8 +122,6 @@ class Endpoint(aio.Resource):
                     future.set_exception(ConnectionError())
 
             self._socket.close()
-
-            self._comm_log.debug('endpoint closed')
 
     def _process_echo_msg(self, msg):
         if not msg.is_reply:
@@ -154,7 +145,7 @@ def _create_socket(local_addr):
 
     try:
         s.setblocking(False)
-        s.bind(tuple(local_addr))
+        s.bind(local_addr)
 
     except Exception:
         s.close()
@@ -171,7 +162,7 @@ async def _get_host_addr(loop, host):
     if not infos:
         raise Exception("could not resolve host addr")
 
-    return Address(*infos[0][4])
+    return infos[0][4]
 
 
 def _echo_data_iter():
@@ -181,13 +172,3 @@ def _echo_data_iter():
         i_size = math.ceil(i.bit_length() / 8)
 
         yield prefix + i.to_bytes(i_size, 'big')
-
-
-def _create_logger_adapter(communication, info):
-    extra = {'meta': {'type': 'IcmpEndpoint',
-                      'communication': communication,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port}}}
-
-    return logging.LoggerAdapter(mlog, extra)
