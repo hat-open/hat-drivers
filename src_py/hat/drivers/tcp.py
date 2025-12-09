@@ -319,6 +319,9 @@ class Protocol(asyncio.Protocol):
             if not future.done():
                 future.set_result(None)
 
+        if exc is not None:
+            self._log.debug('connection lost error: %s', exc, exc_info=exc)
+
         self._comm_log.log(common.CommLogAction.CLOSE)
 
     def pause_writing(self):

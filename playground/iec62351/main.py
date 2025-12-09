@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import contextlib
 import functools
+import logging.config
 
 from hat import aio
 
@@ -25,6 +26,7 @@ def create_argument_parser():
     parser.add_argument('--renegotiate-delay', type=float, default=None)
     parser.add_argument('--crl', type=Path, default=None)
     parser.add_argument('--reload-crl-delay', type=float, default=None)
+    parser.add_argument('--log-level', default='INFO')
     parser.add_argument('action', choices=['client', 'server'])
     return parser
 
@@ -32,6 +34,21 @@ def create_argument_parser():
 def main():
     parser = create_argument_parser()
     args = parser.parse_args()
+
+    logging.config.dictConfig({
+        'version': 1,
+        'formatters': {
+            'console_formater': {
+                'format': '[%(asctime)s %(levelname)s %(name)s] %(message)s'}},
+        'handlers': {
+            'console_handler': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'console_formater',
+                'level': args.log_level}},
+        'root': {
+            'level': args.log_level,
+            'handlers': ['console_handler']},
+        'disable_existing_loggers': False})
 
     addr = tcp.Address(args.host, args.port)
     maximum_version = ssl.TLSVersion[args.maximum_version]
@@ -74,7 +91,6 @@ def main():
 
 
 async def server_main(addr, ctx, attach_validator):
-
     async def on_connection(conn):
         print(">> new connection")
 
