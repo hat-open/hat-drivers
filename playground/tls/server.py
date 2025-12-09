@@ -41,8 +41,11 @@ def create_ctx():
                         '-out', str(cert_path)],
                        stderr=subprocess.DEVNULL,
                        check=True)
-        return ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
-                                  cert_path=cert_path)
+        ctx = ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
+                                 cert_path=cert_path)
+        ctx.options |= ssl.OP_ALLOW_CLIENT_RENEGOTIATION
+
+        return ctx
 
 
 async def on_connection(conn):

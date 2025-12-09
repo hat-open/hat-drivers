@@ -9,7 +9,98 @@ typedef struct {
 } PartialPySSLSocket;
 
 
+typedef struct {
+    PyObject ob_base;
+    SSL_CTX *ctx;
+} PartialPySSLContext;
+
+
+static PyObject *handshake_start_cb_dict = NULL;
+static PyObject *handshake_done_cb_dict = NULL;
+
+
 static int pass_cb(char *buf, int size, int rwflag, void *u) { return -1; }
+
+
+static int cb_dict_set(PyObject **cb_dict, void *key, PyObject *cb) {
+    PyObject *key_obj = NULL;
+    int ret = -1;
+
+    if (Py_IsNone(cb) && !(*cb_dict))
+        goto success;
+
+    key_obj = PyLong_FromVoidPtr(key);
+    if (!key_obj)
+        goto cleanup;
+
+    if (!(*cb_dict)) {
+        *cb_dict = PyDict_New();
+        if (!(*cb_dict))
+            goto cleanup;
+    }
+
+    int contains = PyDict_Contains(*cb_dict, key_obj);
+    if (contains < 0)
+        goto cleanup;
+
+    if (contains) {
+        if (PyDict_DelItem(*cb_dict, key_obj))
+            goto cleanup;
+    }
+
+    if (Py_IsNone(cb)) {
+        if (PyDict_Size(*cb_dict) < 1) {
+            Py_CLEAR(*cb_dict);
+        }
+
+    } else {
+        if (PyDict_SetItem(*cb_dict, key_obj, cb))
+            goto cleanup;
+    }
+
+success:
+    ret = 0;
+
+cleanup:
+    Py_XDECREF(key_obj);
+    return 0;
+}
+
+
+static PyObject *cb_dict_get(PyObject *cb_dict, void *key) {
+    if (!cb_dict)
+        return NULL;
+
+    PyObject *key_obj = PyLong_FromVoidPtr(key);
+    if (!key_obj)
+        return NULL;
+
+    PyObject *cb = PyDict_GetItem(cb_dict, key_obj);
+
+    Py_DecRef(key_obj);
+
+    return cb;
+}
+
+
+static void cb_dict_call(PyObject *cb_dict, const void *key) {
+    PyGILState_STATE gstate = PyGILState_Ensure();
+
+    PyObject *cb = cb_dict_get(cb_dict, (void *)key);
+    if (cb)
+        Py_XDECREF(PyObject_CallNoArgs(cb));
+
+    PyGILState_Release(gstate);
+}
+
+
+static void on_info(const SSL *ssl, int type, int val) {
+    if (type & SSL_CB_HANDSHAKE_START)
+        cb_dict_call(handshake_start_cb_dict, ssl);
+
+    if (type & SSL_CB_HANDSHAKE_DONE)
+        cb_dict_call(handshake_done_cb_dict, ssl);
+}
 
 
 static void free_cert(PyObject *self) {
@@ -80,6 +171,36 @@ static PyObject *get_peer_cert(PyObject *self, PyObject *args) {
     }
 
     return result;
+}
+
+
+static PyObject *set_handshake_start_cb(PyObject *self, PyObject *args) {
+    PartialPySSLSocket *sslctx;
+    PyObject *cb;
+    if (!PyArg_ParseTuple(args, "OO", &sslctx, &cb))
+        return NULL;
+
+    if (cb_dict_set(&handshake_start_cb_dict, sslctx->ssl, cb))
+        return NULL;
+
+    SSL_set_info_callback(sslctx->ssl, on_info);
+
+    return Py_NewRef(Py_None);
+}
+
+
+static PyObject *set_handshake_done_cb(PyObject *self, PyObject *args) {
+    PartialPySSLSocket *sslctx;
+    PyObject *cb;
+    if (!PyArg_ParseTuple(args, "OO", &sslctx, &cb))
+        return NULL;
+
+    if (cb_dict_set(&handshake_done_cb_dict, sslctx->ssl, cb))
+        return NULL;
+
+    SSL_set_info_callback(sslctx->ssl, on_info);
+
+    return Py_NewRef(Py_None);
 }
 
 
@@ -206,6 +327,24 @@ static PyObject *crl_contains_cert(PyObject *self, PyObject *args) {
 }
 
 
+static PyObject *crl_equal(PyObject *self, PyObject *args) {
+    PyObject *crl_a_obj;
+    PyObject *crl_b_obj;
+    if (!PyArg_ParseTuple(args, "OO", &crl_a_obj, &crl_b_obj))
+        return NULL;
+
+    X509_CRL *crl_a = PyCapsule_GetPointer(crl_a_obj, NULL);
+    if (!crl_a)
+        return NULL;
+
+    X509_CRL *crl_b = PyCapsule_GetPointer(crl_a_obj, NULL);
+    if (!crl_b)
+        return NULL;
+
+    return PyBool_FromLong(X509_CRL_cmp(crl_a, crl_b) == 0);
+}
+
+
 PyMethodDef methods[] = {{.ml_name = "key_update",
                           .ml_meth = (PyCFunction)key_update,
                           .ml_flags = METH_VARARGS},
@@ -214,6 +353,12 @@ PyMethodDef methods[] = {{.ml_name = "key_update",
                           .ml_flags = METH_VARARGS},
                          {.ml_name = "get_peer_cert",
                           .ml_meth = (PyCFunction)get_peer_cert,
+                          .ml_flags = METH_VARARGS},
+                         {.ml_name = "set_handshake_start_cb",
+                          .ml_meth = (PyCFunction)set_handshake_start_cb,
+                          .ml_flags = METH_VARARGS},
+                         {.ml_name = "set_handshake_done_cb",
+                          .ml_meth = (PyCFunction)set_handshake_done_cb,
                           .ml_flags = METH_VARARGS},
                          {.ml_name = "load_crl",
                           .ml_meth = (PyCFunction)load_crl,
@@ -231,6 +376,9 @@ PyMethodDef methods[] = {{.ml_name = "key_update",
                           .ml_meth = (PyCFunction)get_pub_key_size,
                           .ml_flags = METH_VARARGS},
                          {.ml_name = "crl_contains_cert",
+                          .ml_meth = (PyCFunction)crl_contains_cert,
+                          .ml_flags = METH_VARARGS},
+                         {.ml_name = "crl_equal",
                           .ml_meth = (PyCFunction)crl_contains_cert,
                           .ml_flags = METH_VARARGS},
                          {NULL}};

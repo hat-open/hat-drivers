@@ -21,7 +21,7 @@ def main():
 async def async_main():
     addr = tcp.Address('127.0.0.1', 1234)
     ctx = ssl.create_ssl_ctx(ssl.SslProtocol.TLS_CLIENT)
-    ctx.maximum_version = ssl.TLSVersion.TLSv1_3
+    ctx.maximum_version = ssl.TLSVersion.TLSv1_2
     conn = await tcp.connect(addr, ssl=ctx)
 
     print(">> cert store stats")
@@ -60,12 +60,22 @@ async def async_main():
             else:
                 ssl.renegotiate(conn.ssl_object)
 
-            conn.ssl_object.do_handshake()
-
-            conn.write(b'123')
+            print('>> handshake')
+            await _do_handshake(conn)
 
     finally:
         await aio.uncancellable(conn.async_close())
+
+
+async def _do_handshake(conn):
+    while True:
+        try:
+            conn.ssl_object.do_handshake()
+            break
+
+        except ssl.SSLWantReadError:
+            conn._protocol._transport._ssl_protocol._do_read()
+            await asyncio.sleep(0.005)
 
 
 if __name__ == '__main__':

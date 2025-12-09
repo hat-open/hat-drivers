@@ -1,5 +1,6 @@
 from ssl import *  # NOQA
 
+from collections.abc import Callable
 import enum
 import pathlib
 import ssl
@@ -10,6 +11,9 @@ try:
 
 except ImportError:
     _ssl = None
+
+
+OP_ALLOW_CLIENT_RENEGOTIATION = (1 << 8)
 
 
 class SslProtocol(enum.Enum):
@@ -57,12 +61,12 @@ def create_ssl_ctx(protocol: SslProtocol,
     return ctx
 
 
-def key_update(ssl_object: ssl.SSLObject,
+def key_update(ssl_object: ssl.SSLObject | ssl.SSLSocket,
                update_type: KeyUpdateType):
     if not _ssl:
         raise Exception('not supported')
 
-    if not isinstance(ssl_object, ssl.SSLObject):
+    if not isinstance(ssl_object, (ssl.SSLObject, ssl.SSLSocket)):
         raise TypeError('invalid ssl object')
 
     result = _ssl.key_update(ssl_object._sslobj, update_type.value)
@@ -70,11 +74,11 @@ def key_update(ssl_object: ssl.SSLObject,
         raise Exception('key update error')
 
 
-def renegotiate(ssl_object: ssl.SSLObject):
+def renegotiate(ssl_object: ssl.SSLObject | ssl.SSLSocket):
     if not _ssl:
         raise Exception('not supported')
 
-    if not isinstance(ssl_object, ssl.SSLObject):
+    if not isinstance(ssl_object, (ssl.SSLObject, ssl.SSLSocket)):
         raise TypeError('invalid ssl object')
 
     result = _ssl.renegotiate(ssl_object._sslobj)
@@ -82,11 +86,12 @@ def renegotiate(ssl_object: ssl.SSLObject):
         raise Exception('renegotiate error')
 
 
-def get_peer_cert(ssl_object: ssl.SSLObject) -> typing.Optional['Cert']:
+def get_peer_cert(ssl_object: ssl.SSLObject | ssl.SSLSocket
+                  ) -> typing.Optional['Cert']:
     if not _ssl:
         raise Exception('not supported')
 
-    if not isinstance(ssl_object, ssl.SSLObject):
+    if not isinstance(ssl_object, (ssl.SSLObject, ssl.SSLSocket)):
         raise TypeError('invalid ssl object')
 
     handle = _ssl.get_peer_cert(ssl_object._sslobj)
@@ -94,6 +99,34 @@ def get_peer_cert(ssl_object: ssl.SSLObject) -> typing.Optional['Cert']:
         return
 
     return Cert(handle)
+
+
+def set_handshake_start_cb(ssl_object: ssl.SSLObject | ssl.SSLSocket,
+                           cb: Callable[[], None]):
+    if not _ssl:
+        raise Exception('not supported')
+
+    if not isinstance(ssl_object, (ssl.SSLObject, ssl.SSLSocket)):
+        raise TypeError('invalid ssl object')
+
+    if not callable(cb) and cb is not None:
+        raise TypeError('invalid callback')
+
+    _ssl.set_handshake_start_cb(ssl_object._sslobj, cb)
+
+
+def set_handshake_done_cb(ssl_object: ssl.SSLObject | ssl.SSLSocket,
+                          cb: Callable[[], None]):
+    if not _ssl:
+        raise Exception('not supported')
+
+    if not isinstance(ssl_object, (ssl.SSLObject, ssl.SSLSocket)):
+        raise TypeError('invalid ssl object')
+
+    if not callable(cb) and cb is not None:
+        raise TypeError('invalid callback')
+
+    _ssl.set_handshake_done_cb(ssl_object._sslobj, cb)
 
 
 def load_crl(path: pathlib.PurePath) -> 'Crl':
@@ -110,11 +143,11 @@ class Cert:
         self._handle = handle
 
     def get_pub_key(self) -> 'PubKey':
-        handle = ssl.get_cert_pub_key(self._handle)
+        handle = _ssl.get_cert_pub_key(self._handle)
         return PubKey(handle)
 
     def get_bytes(self) -> bytes:
-        return ssl.get_cert_bytes(self._handle)
+        return _ssl.get_cert_bytes(self._handle)
 
 
 class PubKey:
@@ -123,10 +156,10 @@ class PubKey:
         self._handle = handle
 
     def is_rsa(self) -> bool:
-        return ssl.is_pub_key_rsa(self._handle)
+        return _ssl.is_pub_key_rsa(self._handle)
 
     def get_size(self) -> int:
-        return ssl.get_pub_key_size(self._handle)
+        return _ssl.get_pub_key_size(self._handle)
 
 
 class Crl:
@@ -134,8 +167,14 @@ class Crl:
     def __init__(self, handle):
         self._handle = handle
 
+    def __eq__(self, other):
+        if not isinstance(other, Crl):
+            return False
+
+        return _ssl.crl_equal(self._handle, other._handle)
+
     def contains_cert(self, cert: Cert) -> bool:
         if not isinstance(cert, Cert):
             raise TypeError('invalid cert')
 
-        return ssl.crl_contains_cert(self._handle, cert._handle)
+        return _ssl.crl_contains_cert(self._handle, cert._handle)

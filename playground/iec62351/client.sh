@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+
+RUN_PATH=$(dirname "$(realpath "$0")")
+PLAYGROUND_PATH=$RUN_PATH/..
+. $PLAYGROUND_PATH/env.sh
+
+CERTS_PATH=$RUN_PATH/certs
+
+exec python $RUN_PATH/main.py \
+    --cert $CERTS_PATH/client.cert \
+    --key $CERTS_PATH/client.key \
+    --ca $CERTS_PATH/ca.cert \
+    "$@" \
+    client
