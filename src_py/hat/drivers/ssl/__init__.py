@@ -95,9 +95,6 @@ def get_peer_cert(ssl_object: ssl.SSLObject | ssl.SSLSocket
         raise TypeError('invalid ssl object')
 
     handle = _ssl.get_peer_cert(ssl_object._sslobj)
-    if not handle:
-        return
-
     return Cert(handle)
 
 
@@ -157,6 +154,9 @@ class PubKey:
 
     def is_rsa(self) -> bool:
         return _ssl.is_pub_key_rsa(self._handle)
+
+    def is_ec(self) -> bool:
+        return _ssl.is_pub_key_ec(self._handle)
 
     def get_size(self) -> int:
         return _ssl.get_pub_key_size(self._handle)
