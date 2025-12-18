@@ -6,6 +6,8 @@ import typing
 from hat.drivers.iec60870.encodings import iec103
 
 
+AsduTypeError: typing.TypeAlias = iec103.AsduTypeError
+
 AsduAddress: typing.TypeAlias = iec103.AsduAddress
 OtherCause: typing.TypeAlias = iec103.OtherCause
 Description: typing.TypeAlias = iec103.Description

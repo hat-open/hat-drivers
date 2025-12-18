@@ -4,6 +4,10 @@ import time
 import typing
 
 
+class AsduTypeError(Exception):
+    pass
+
+
 class CauseSize(enum.Enum):
     ONE = 1
     TWO = 2

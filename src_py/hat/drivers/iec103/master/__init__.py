@@ -207,7 +207,12 @@ class MasterConnection(aio.Resource):
         try:
             while True:
                 data = await self._conn.receive()
-                asdu, _ = self._encoder.decode_asdu(data)
+                try:
+                    asdu, _ = self._encoder.decode_asdu(data)
+
+                except common.AsduTypeError as e:
+                    self._log.warning("asdu type error: %s", e)
+                    continue
 
                 self._comm_log.log(common.CommLogAction.RECEIVE, asdu)
 

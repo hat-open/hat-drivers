@@ -27,7 +27,7 @@ class Encoder:
                     ) -> tuple[common.ASDU, util.Bytes]:
         asdu, rest = self._encoder.decode_asdu(asdu_bytes)
 
-        asdu_type = common.AsduType(asdu.type)
+        asdu_type = _decode_asdu_type(asdu.type)
         cause = _decode_cause(asdu.cause)
         address = asdu.address
         ios = [common.IO(address=_decode_io_address(io.address),
@@ -79,7 +79,7 @@ def _encode_io_address(io_address):
 
 
 def _decode_io_element(io_bytes, asdu_type):
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if asdu_type == common.AsduType.TIME_TAGGED_MESSAGE:
         value, io_bytes = _decode_value(
@@ -367,7 +367,7 @@ def _decode_io_element(io_bytes, asdu_type):
 
 
 def _encode_io_element(element, asdu_type):
-    asdu_type = common.AsduType(asdu_type)
+    asdu_type = _decode_asdu_type(asdu_type)
 
     if asdu_type == common.AsduType.TIME_TAGGED_MESSAGE:
         yield from _encode_value(element.value)
@@ -967,3 +967,11 @@ def _get_value_min_size(value):
         return (value.value.bit_length() + 7) // 8
 
     raise ValueError('unsupported value type')
+
+
+def _decode_asdu_type(asdu_type):
+    try:
+        return common.AsduType(asdu_type)
+
+    except ValueError:
+        raise common.AsduTypeError(f"unsupported asdu type {asdu_type}")

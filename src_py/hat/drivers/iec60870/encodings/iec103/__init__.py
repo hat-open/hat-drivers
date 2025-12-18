@@ -1,6 +1,7 @@
 """IEC 60870-5-103 messages"""
 
 from hat.drivers.iec60870.encodings.iec103.common import (
+    AsduTypeError,
     TimeSize,
     Time,
     time_from_datetime,
@@ -69,7 +70,8 @@ from hat.drivers.iec60870.encodings.iec103.common import (
 from hat.drivers.iec60870.encodings.iec103.encoder import Encoder
 
 
-__all__ = ['TimeSize',
+__all__ = ['AsduTypeError',
+           'TimeSize',
            'Time',
            'time_from_datetime',
            'time_to_datetime',

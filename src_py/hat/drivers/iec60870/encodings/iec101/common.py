@@ -8,10 +8,6 @@ from hat import util
 from hat.drivers.iec60870.encodings.common import Time
 
 
-class AsduTypeError(Exception):
-    pass
-
-
 OriginatorAddress: typing.TypeAlias = int
 """Originator address in range [0, 255] - 0 if not available"""
 
