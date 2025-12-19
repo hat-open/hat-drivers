@@ -266,23 +266,24 @@ def _get_rcbs(logical_device, logical_node, ln_el):
 
 
 def _get_rcb(rc_el, logical_device, logical_node):
-    name = rc_el.get('name')
     report_id = rc_el.get('rptID')
     dataset = rc_el.get('datSet')
     rcb_type = 'BUFFERED' if rc_el.get('buffered') == 'true' else 'UNBUFFERED'
     rcb_type_short = {'BUFFERED': 'BR',
                       'UNBUFFERED': 'RP'}[rcb_type]
-    if not report_id:
-        report_id = f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"
-    mlog.info('rcb %s/%s.%s.%s',
-              logical_device, logical_node, rcb_type_short, name)
-    for rcb_name in _get_rcb_names(rc_el):
+
+    for name in _get_rcb_names(rc_el):
+        mlog.info('rcb %s/%s.%s.%s',
+                  logical_device, logical_node, rcb_type_short, name)
+
         yield {
             'ref': {'logical_device': logical_device,
                     'logical_node': logical_node,
                     'type': rcb_type,
-                    'name': rcb_name},
-            'report_id': report_id,
+                    'name': name},
+            'report_id': (
+                report_id if report_id else
+                f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"),
             'dataset': {'logical_device': logical_device,
                         'logical_node': logical_node,
                         'name': dataset} if dataset else None,
