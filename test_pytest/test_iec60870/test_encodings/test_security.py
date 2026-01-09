@@ -80,6 +80,7 @@ def gen_bytes(amount):
 def gen_times(amount):
     samples = {'milliseconds': (0, 59999, 1234),
                'invalid': [True, False, True],
+               'substituted': [False, True, False],
                'minutes': (0, 59, 30),
                'summer_time': [True, False, True],
                'hours': (0, 23, 12),

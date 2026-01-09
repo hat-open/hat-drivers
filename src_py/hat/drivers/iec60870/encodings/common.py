@@ -37,6 +37,8 @@ class Time(typing.NamedTuple):
     """milliseconds in range [0, 59999]"""
     invalid: bool | None
     """available for size THREE, FOUR, SEVEN"""
+    substituted: bool | None
+    """available for size THREE, FOUR, SEVEN"""
     minutes: int | None
     """available for size THREE, FOUR, SEVEN (minutes in range [0, 59])"""
     summer_time: bool | None
@@ -67,7 +69,8 @@ class ASDU(typing.NamedTuple):
 
 
 def time_from_datetime(dt: datetime.datetime,
-                       invalid: bool = False
+                       invalid: bool = False,
+                       substituted: bool = False
                        ) -> Time:
     """Create Time from datetime.datetime"""
     # TODO document edge cases (local time, os implementation, ...)
@@ -82,6 +85,7 @@ def time_from_datetime(dt: datetime.datetime,
         milliseconds=(local_time.tm_sec * 1000 +
                       dt_rounded.microsecond // 1000),
         invalid=invalid,
+        substituted=substituted,
         minutes=local_time.tm_min,
         summer_time=bool(local_time.tm_isdst),
         hours=local_time.tm_hour,

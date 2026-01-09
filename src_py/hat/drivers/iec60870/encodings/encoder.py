@@ -20,6 +20,7 @@ def decode_time(time_bytes: util.Bytes,
                 ) -> common.Time:
     milliseconds = (time_bytes[1] << 8) | time_bytes[0]
     invalid = (bool(time_bytes[2] & 0x80) if time_size.value > 2 else None)
+    substituted = (bool(time_bytes[2] & 0x40) if time_size.value > 2 else None)
     minutes = (time_bytes[2] & 0x3F if time_size.value > 2 else None)
     summer_time = (bool(time_bytes[3] & 0x80) if time_size.value > 3 else None)
     hours = (time_bytes[3] & 0x1F if time_size.value > 3 else None)
@@ -31,6 +32,7 @@ def decode_time(time_bytes: util.Bytes,
     return common.Time(size=time_size,
                        milliseconds=milliseconds,
                        invalid=invalid,
+                       substituted=substituted,
                        minutes=minutes,
                        summer_time=summer_time,
                        hours=hours,
@@ -51,6 +53,7 @@ def encode_time(time: common.Time,
 
     if time_size.value > 2:
         yield ((0x80 if time.invalid else 0) |
+               (0x40 if time.substituted else 0) |
                (time.minutes & 0x3F))
 
     if time_size.value > 3:
