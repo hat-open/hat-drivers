@@ -37,33 +37,42 @@ default_time_four = encoding.Time(
     years=None)
 
 
+class MockLinkConnection(aio.Resource):
+
+    def __init__(self, send_queue=None, receive_queue=None):
+        self._async_group = aio.Group()
+        self._send_queue = send_queue
+        self._receive_queue = receive_queue
+
+    @property
+    def async_group(self):
+        return self._async_group
+
+    @property
+    def info(self):
+        return link.ConnectionInfo(name=None,
+                                   port='',
+                                   address=0)
+
+    async def send(self, data, sent_cb=None):
+        if self._send_queue is None:
+            raise NotImplementedError()
+
+        self._send_queue.put_nowait(data)
+        if sent_cb:
+            await aio.call(sent_cb)
+
+    async def receive(self):
+        if self._receive_queue is None:
+            raise NotImplementedError()
+
+        return await self._receive_queue.get()
+
+
 def create_connection_slave_pair():
     send_queue = aio.Queue()
     receive_queue = aio.Queue()
     enc = encoding.Encoder()
-
-    class MockLinkConnection(aio.Resource):
-
-        def __init__(self):
-            self._async_group = aio.Group()
-
-        @property
-        def async_group(self):
-            return self._async_group
-
-        @property
-        def info(self):
-            return link.ConnectionInfo(name=None,
-                                       port='',
-                                       address=0)
-
-        async def send(self, data, sent_cb=None):
-            send_queue.put_nowait(data)
-            if sent_cb:
-                await aio.call(sent_cb)
-
-        async def receive(self):
-            return await receive_queue.get()
 
     class MockSlave(aio.Resource):
 
@@ -81,7 +90,7 @@ def create_connection_slave_pair():
             asdu, _ = enc.decode_asdu(await send_queue.get())
             return asdu
 
-    return MockLinkConnection(), MockSlave()
+    return MockLinkConnection(send_queue, receive_queue), MockSlave()
 
 
 @pytest.mark.parametrize('asdu_address, time', [(0xFF, default_time_seven),
@@ -546,4 +555,41 @@ async def test_transmission_of_disturbance_data():
     await slave.send(slave_asdu)
     # TODO: finish sequence when functionality implemented
     await slave.async_close()
+    await master_conn.async_close()
+
+
+async def test_unexpected_asdu_type():
+    enc = encoding.Encoder()
+    asdu_type = encoding.AsduType.TIME_TAGGED_MESSAGE
+    slave_send_queue = aio.Queue()
+    receive_queue = aio.Queue()
+    conn = MockLinkConnection(receive_queue=slave_send_queue)
+    # conn, slave = create_connection_slave_pair()
+    master_conn = iec103.MasterConnection(conn=conn,
+                                          data_cb=receive_queue.put_nowait)
+    element = getattr(encoding, f'IoElement_{asdu_type.name}')
+    io_addr = encoding.IoAddress(function_type=1, information_number=1)
+
+    value = encoding.DoubleWithTimeValue(value=encoding.DoubleValue.ON,
+                                         time=default_time_four,
+                                         supplementary=5)
+    slave_asdu = encoding.ASDU(
+        type=asdu_type,
+        cause=encoding.Cause.SPONTANEOUS,
+        address=1,
+        ios=[encoding.IO(address=io_addr, elements=[element(value)])])
+    encoded_slave_asdu = enc.encode_asdu(slave_asdu)
+
+    unexpected_asdu_type = 205
+    encoded_asdu_unexpected_type = (bytes([unexpected_asdu_type]) +
+                                    encoded_slave_asdu[1:])
+    slave_send_queue.put_nowait(encoded_asdu_unexpected_type)
+    await asyncio.sleep(0.05)
+    assert receive_queue.empty()
+
+    slave_send_queue.put_nowait(encoded_slave_asdu)
+
+    master_data = await receive_queue.get()
+    assert master_data.asdu_address == slave_asdu.address
+
     await master_conn.async_close()
