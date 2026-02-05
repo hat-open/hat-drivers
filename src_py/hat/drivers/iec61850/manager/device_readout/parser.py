@@ -100,20 +100,22 @@ def _get_rcb_confs(rcb_attr_values: dict[common.RcbRef,
     for rcb_ref, attr_values in rcb_attr_values.items():
         yield {
             'ref': common.rcb_ref_to_json(rcb_ref),
-            'report_id': attr_values[common.RcbAttrType.REPORT_ID],
+            'report_id': (attr_values[common.RcbAttrType.REPORT_ID]
+                          if attr_values[common.RcbAttrType.REPORT_ID]
+                          else _rcb_ref_to_str(rcb_ref)),
             'dataset': (
-               common.dataset_ref_to_json(
+                common.dataset_ref_to_json(
                     attr_values[common.RcbAttrType.DATASET])
-               if attr_values[common.RcbAttrType.DATASET] is not None
-               else None),
+                if attr_values[common.RcbAttrType.DATASET] is not None
+                else None),
             'conf_revision': attr_values[common.RcbAttrType.CONF_REVISION],
             'optional_fields': [
-               i.name
-               for i in attr_values[common.RcbAttrType.OPTIONAL_FIELDS]],
+                i.name
+                for i in attr_values[common.RcbAttrType.OPTIONAL_FIELDS]],
             'buffer_time': attr_values[common.RcbAttrType.BUFFER_TIME],
             'trigger_options': [
-               i.name
-               for i in attr_values[common.RcbAttrType.TRIGGER_OPTIONS]],
+                i.name
+                for i in attr_values[common.RcbAttrType.TRIGGER_OPTIONS]],
             'integrity_period': attr_values[common.RcbAttrType.INTEGRITY_PERIOD]}  # NOQA
 
 
@@ -528,3 +530,8 @@ def _get_value_type(ref: common.DataRef,
             raise TypeError('unsupported name type')
 
     return value_type
+
+
+def _rcb_ref_to_str(ref: common.RcbRef) -> str:
+    return (f"{ref.logical_device}/"
+            f"{ref.logical_node}${ref.type.value}${ref.name}")

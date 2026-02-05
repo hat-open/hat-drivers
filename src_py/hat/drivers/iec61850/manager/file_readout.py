@@ -283,7 +283,7 @@ def _get_rcb(rc_el, logical_device, logical_node):
                     'name': name},
             'report_id': (
                 report_id if report_id else
-                f"{logical_device}/{logical_node}.{rcb_type_short}.{name}"),
+                f"{logical_device}/{logical_node}${rcb_type_short}${name}"),
             'dataset': {'logical_device': logical_device,
                         'logical_node': logical_node,
                         'name': dataset} if dataset else None,
