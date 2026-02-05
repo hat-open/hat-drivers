@@ -165,7 +165,7 @@ class Server(aio.Resource):
 
             except BaseException:
                 await aio.uncancellable(
-                    _close_cotp(cotp_conn, _ab_spdu, self._log, self._log))
+                    _close_cotp(cotp_conn, _ab_spdu, self._log))
                 raise
 
             try:
