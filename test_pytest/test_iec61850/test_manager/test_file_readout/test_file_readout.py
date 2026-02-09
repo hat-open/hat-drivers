@@ -126,11 +126,11 @@ def test_1(validator):
     assert util.first(co_value_type['type']['elements'],
                       lambda i: i['name'] == 'Cancel')
 
-    # rcb with rcbID="" get generated rptID as ld/ln.BR/RP.name
+    # rcb with rcbID=""
     rcbs = device_json['rcbs']
-    assert rcbs[0]['report_id'] == 'DemoMeasurement/LLN0$BR$brcb101'
+    assert rcbs[0]['report_id'] == ''
     assert rcbs[0]['ref']['name'] == 'brcb101'
-    assert rcbs[1]['report_id'] == 'DemoMeasurement/LLN0$RP$urcb101'
+    assert rcbs[1]['report_id'] == ''
     assert rcbs[1]['ref']['name'] == 'urcb101'
 
     # no dynamic rcb editable attributes

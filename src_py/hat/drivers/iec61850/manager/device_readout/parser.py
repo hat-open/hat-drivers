@@ -100,9 +100,7 @@ def _get_rcb_confs(rcb_attr_values: dict[common.RcbRef,
     for rcb_ref, attr_values in rcb_attr_values.items():
         yield {
             'ref': common.rcb_ref_to_json(rcb_ref),
-            'report_id': (attr_values[common.RcbAttrType.REPORT_ID]
-                          if attr_values[common.RcbAttrType.REPORT_ID]
-                          else _rcb_ref_to_str(rcb_ref)),
+            'report_id': attr_values[common.RcbAttrType.REPORT_ID],
             'dataset': (
                 common.dataset_ref_to_json(
                     attr_values[common.RcbAttrType.DATASET])
@@ -530,8 +528,3 @@ def _get_value_type(ref: common.DataRef,
             raise TypeError('unsupported name type')
 
     return value_type
-
-
-def _rcb_ref_to_str(ref: common.RcbRef) -> str:
-    return (f"{ref.logical_device}/"
-            f"{ref.logical_node}${ref.type.value}${ref.name}")

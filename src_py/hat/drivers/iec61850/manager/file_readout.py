@@ -266,7 +266,6 @@ def _get_rcbs(logical_device, logical_node, ln_el):
 
 
 def _get_rcb(rc_el, logical_device, logical_node):
-    report_id = rc_el.get('rptID')
     dataset = rc_el.get('datSet')
     rcb_type = 'BUFFERED' if rc_el.get('buffered') == 'true' else 'UNBUFFERED'
     rcb_type_short = {'BUFFERED': 'BR',
@@ -281,9 +280,7 @@ def _get_rcb(rc_el, logical_device, logical_node):
                     'logical_node': logical_node,
                     'type': rcb_type,
                     'name': name},
-            'report_id': (
-                report_id if report_id else
-                f"{logical_device}/{logical_node}${rcb_type_short}${name}"),
+            'report_id': rc_el.get('rptID'),
             'dataset': {'logical_device': logical_device,
                         'logical_node': logical_node,
                         'name': dataset} if dataset else None,
