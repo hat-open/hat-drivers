@@ -264,6 +264,22 @@ def _get_rcbs(logical_device, logical_node, ln_el):
         except Exception as e:
             mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
 
+    for rc_el in ln_el.findall('./Private'):
+        try:
+            rcb_def_split = rc_el.text.split("<ReportControl", 1)
+            if len(rcb_def_split) < 2:
+                continue
+
+            rcb_def_str = "<ReportControl" + rcb_def_split[1]
+            rc_el = xml.etree.ElementTree.fromstring(rcb_def_str)
+            if rc_el.tag == 'ReportControl':
+                yield from _get_rcb(rc_el=rc_el,
+                                    logical_device=logical_device,
+                                    logical_node=logical_node)
+
+        except Exception as e:
+            mlog.warning('private rcb parse error: %s', e, exc_info=e)
+
 
 def _get_rcb(rc_el, logical_device, logical_node):
     dataset = rc_el.get('datSet')

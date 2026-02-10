@@ -511,7 +511,7 @@ def test_7(validator):
 
 
 def test_8(validator):
-    # File containes structs with count=0, which should not be defined as
+    # File contains structs with count=0, which should not be defined as
     # arrays. This test verifies that no array elements are defined.
     with importlib.resources.open_text(__package__, 'test8.icd') as f:
         res = readout(f)
@@ -540,3 +540,15 @@ def test_8(validator):
 
     for i in device_json['value_types']:
         assert not list(_get_all_array_types(i['type']))
+
+
+def test_9(validator):
+    # File doesn't have rcbs defined with ReportControl but only with Private
+    with importlib.resources.open_text(__package__, 'test9.cid') as f:
+        res = readout(f)
+
+    validator.validate(json_schema_id, res)
+
+    device_json = res['devices'][0]
+
+    assert len(device_json['rcbs']) == 134

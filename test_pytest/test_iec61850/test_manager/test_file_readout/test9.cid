@@ -1,0 +1,2037 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:scl="http://www.iec.ch/61850/2003/SCL" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL SCL.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:IEC_60870_5_104="http://www.iec.ch/61850-80-1/2007/SCL" xmlns:sieedc="http://www.siemens.com/energy/2011/11/Sieedc" xmlns:siedig="http://www.siemens.com/energy/2011/11/Siedig">
+   <Private type="Siemens-SclLib-V5-Version">V02.10.00.995</Private>
+   <Private type="Siemens-SclLib-V5-EditTime">09.11.2017 11:11:58</Private>
+   <Private type="Siemens-EditionConversion">
+      <sieedc:EditionConversion>
+         <sieedc:Info platform="SIPROTEC 5" version="01.00" lastOperation="Edition 2 to 1"/>
+      </sieedc:EditionConversion>
+   </Private>
+   <Private type="Siemens-Configurator-Version">V5.01 SP2</Private>
+   <Header id="K06_Kartonaza" version="1" revision="35" toolID="IEC 61850 System Configurator, Version: V5.01 SP2" nameStructure="IEDName">
+      <Text>CID-File for device: K06_Kartonaza</Text>
+      <History>
+         <Hitem version="1" revision="35" when="Thursday, November 09, 2017 11:11:57 AM" who="Licenced User:  Windows User Machine: WIN7-1 User: admin" why="IEC 61850 System Configurator User Action" what="CID File creation for Export"/>
+      </History>
+   </Header>
+   <Substation name="IEC61850Station">
+      <VoltageLevel name="Voltage level">
+         <Bay name="Field"/>
+      </VoltageLevel>
+   </Substation>
+   <Communication>
+      <SubNetwork name="NONE" type="8-MMS">
+         <Private type="Siemens-Start-Address">10.35.100.1</Private>
+         <ConnectedAP iedName="K06_Kartonaza" apName="P1">
+            <Private type="Siemens-Redundant-SubnetId">1</Private>
+            <Address>
+               <P type="OSI-AP-Title">1,3,9999,23</P>
+               <P type="OSI-AE-Qualifier">23</P>
+               <P type="OSI-PSEL">00000001</P>
+               <P type="OSI-SSEL">0001</P>
+               <P type="OSI-TSEL">0001</P>
+               <P type="IP" xsi:type="tP_IP">10.35.100.110</P>
+               <P type="IP-SUBNET" xsi:type="tP_IP-SUBNET">255.255.255.0</P>
+               <P type="IP-GATEWAY" xsi:type="tP_IP-GATEWAY">10.35.100.1</P>
+            </Address>
+         </ConnectedAP>
+      </SubNetwork>
+   </Communication>
+   <IED name="K06_Kartonaza" type="Siprotec-7SJ6xx" manufacturer="SIEMENS" configVersion="1.0" desc="7SJ622 V4.6-Kartonaza">
+      <Private type="Siemens-Inkrement">2</Private>
+      <Private type="Siemens-NetworkFrequency">50 Hz</Private>
+      <Private type="Siemens-EditionConversion">
+         <sieedc:EditionConversion>
+            <sieedc:ElementStore name="Services" xmlns="http://www.siemens.com/energy/2012/01/SCL-Edition2">
+               <Services nameLength="64">
+<!--DynReportControl max="10"/-->
+<!-- present in FDIS, removed in IS, commented by SIEMENS -->
+                  <DynAssociation max="6"/>
+                  <SettingGroups/>
+                  <GetDirectory/>
+                  <GetDataObjectDefinition/>
+                  <DataObjectDirectory/>
+                  <GetDataSetValue/>
+                  <DataSetDirectory/>
+                  <ConfDataSet max="34" maxAttributes="100" modify="true"/>
+                  <DynDataSet max="15" maxAttributes="60"/>
+                  <ReadWrite/>
+                  <ConfReportControl max="18" bufConf="false" bufMode="unbuffered"/>
+                  <GetCBValues/>
+                  <ReportSettings cbName="Fix" datSet="Dyn" rptID="Dyn" optFields="Dyn" bufTime="Dyn" trgOps="Dyn" intgPd="Dyn" resvTms="true" owner="false"/>
+                  <GSESettings cbName="Conf" datSet="Conf" appID="Conf"/>
+                  <GOOSE max="16"/>
+                  <FileHandling mms="true"/>
+                  <ConfLNs fixPrefix="true" fixLnInst="true"/>
+                  <ClientServices goose="true" maxGOOSE="128" supportsLdName="true" gsse="false" bufReport="false" unbufReport="false" readLog="false" sv="false" maxReports="0" maxSMV="0">
+                     <TimeSyncProt sntp="true" c37_238="false" other="false"/>
+                  </ClientServices>
+                  <SupSubscription maxGo="0" maxSv="0"/>
+               </Services>
+            </sieedc:ElementStore>
+            <sieedc:AttributeStore name="originalSclVersion" value="2007"/>
+            <sieedc:AttributeStore name="originalSclRevision" value="B"/>
+         </sieedc:EditionConversion>
+      </Private>
+      <Private type="Siemens-Owner">TS TOJS_61850</Private>
+      <Private type="Siemens-s7ManagerName">7SJ622 V4.6-Kartonaza</Private>
+      <Private type="Siemens-ModifiedDate">11/09/2017 10:11:58</Private>
+      <Private type="Siemens-IED-Id">IED_4</Private>
+      <Private type="Siemens-ICD-Language">en-US</Private>
+      <Private type="Siemens-ModificationCounter">8</Private>
+      <Private type="Siemens-CID-MainIED"/>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">CTRL\LLN0\brcbA|50</Private>
+      <Private type="Siemens-BRCB-StoragePercentageMemoryForBuffer">CTRL\LLN0\brcbB|50</Private>
+      <Services>
+<!--DynReportControl max="10"/-->
+<!-- present in FDIS, removed in IS, commented by SIEMENS -->
+         <DynAssociation/>
+         <SettingGroups/>
+         <GetDirectory/>
+         <GetDataObjectDefinition/>
+         <DataObjectDirectory/>
+         <GetDataSetValue/>
+         <DataSetDirectory/>
+         <ConfDataSet max="34" maxAttributes="100" modify="true"/>
+         <DynDataSet max="15" maxAttributes="60"/>
+         <ReadWrite/>
+         <ConfReportControl max="18"/>
+         <GetCBValues/>
+         <ReportSettings cbName="Fix" datSet="Dyn" rptID="Dyn" optFields="Dyn" bufTime="Dyn" trgOps="Dyn" intgPd="Dyn"/>
+         <GSESettings cbName="Conf" datSet="Conf" appID="Conf"/>
+         <GOOSE max="16"/>
+         <FileHandling/>
+         <ConfLNs fixPrefix="true" fixLnInst="true"/>
+      </Services>
+      <AccessPoint name="P1">
+         <Server>
+            <Authentication none="true"/>
+            <LDevice inst="PROT" desc="Protection">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="H04_TRAFO_II/PROT/LLN0">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbC|&lt;ReportControl name="urcbC" rptID="K06_10kVPROT/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbD|&lt;ReportControl name="urcbD" rptID="K06_10kVPROT/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbE|&lt;ReportControl name="urcbE" rptID="K06_10kVPROT/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbF|&lt;ReportControl name="urcbF" rptID="K06_10kVPROT/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbG|&lt;ReportControl name="urcbG" rptID="K06_10kVPROT/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbH|&lt;ReportControl name="urcbH" rptID="K06_10kVPROT/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbI|&lt;ReportControl name="urcbI" rptID="K06_10kVPROT/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbJ|&lt;ReportControl name="urcbJ" rptID="K06_10kVPROT/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbA|&lt;ReportControl name="brcbA" rptID="K06_10kVPROT/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbB|&lt;ReportControl name="brcbB" rptID="K06_10kVPROT/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-enhanced-security</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+<!-- Die DAI vendor, swRev, d, configRev und ldNs beziehen sich auf das EN100-Modul. Bis auf ldNs haben sie keinen InitValue! Sie werden mit Dummy vorbelegt. Gefuellt werden sie durch die EN100-Software zur Laufzeit. -->
+                     <DAI name="configRev">
+                        <Val>210404153620012</Val>
+                     </DAI>
+                     <DAI name="ldNs">
+                        <Val>IEC 61850-7-4:2003</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="OpTmh" desc="Operating hours"/>
+                  <SettingControl numOfSGs="1"/>
+               </LN0>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="H04_TRAFO_II/PROT/LPHD1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="PhyNam" desc="Info"/>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+               <LN inst="1" prefix="" desc="Total" lnClass="PTRC" lnType="K03_10kV/PROT/PTRC1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PTRC1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PTRC1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Tr" desc="OFF"/>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="FinTr" desc="AR fin OFF">
+<!-- Endgueltiges AUS-Kommando (kein AUSkommando an sich, nur Hinweis, das kein weiteres AUSkommando folgen wird) -->
+                     <DAI name="d">
+                        <Val>FinTr stands for Auto reclose Lockout</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="CB" lnClass="XCBR" lnType="H04_TRAFO_II/PROT/XCBR1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/XCBR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/XCBR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="local"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs1" desc="Sum Ia">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="d">
+                        <Val>SumSwARs1 stands for Accumulation of interrupted current L1</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs2" desc="Sum Ib">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="d">
+                        <Val>SumSwARs2 stands for Accumulation of interrupted current L2</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SumSwARs3" desc="Sum Ic">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="d">
+                        <Val>SumSwARs3 stands for Accumulation of interrupted current L3</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CBOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="6" prefix="" desc="50-1" lnClass="PTOC" lnType="H04_TRAFO_II/PROT/PTOC6">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PTOC6$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PTOC6$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="7" prefix="" desc="50-2" lnClass="PTOC" lnType="H04_TRAFO_II/PROT/PTOC6">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PTOC7$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PTOC7$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="SGnd Flt 50Ns-1" lnClass="PSDE" lnType="K03_10kV/PROT/PSDE1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PSDE1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PSDE1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="2" prefix="" desc="SGnd Flt 50Ns-2" lnClass="PSDE" lnType="K03_10kV/PROT/PSDE1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PSDE2$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PSDE2$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="SGF 64-1 VGND" lnClass="PHIZ" lnType="K03_10kV/PROT/PHIZ1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PHIZ1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PHIZ1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+               <LN inst="1" prefix="" desc="Autom reclosure" lnClass="RREC" lnType="K03_10kV/PROT/RREC1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/RREC1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/RREC1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-normal-security</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Op" desc="ON"/>
+                  <DOI name="AutoRecSt" desc="Status"/>
+               </LN>
+               <LN inst="2" prefix="" desc="50 General" lnClass="PTRC" lnType="H04_TRAFO_II/PROT/PTRC2">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVPROT/PTRC2$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVPROT/PTRC2$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Op" desc="OFF"/>
+                  <DOI name="Str" desc="Pickup"/>
+               </LN>
+               <LN inst="1" prefix="" desc="51-TOC" lnClass="PTOC" lnType="H04_TRAFO_II/PROT/PTOC6">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_KartonazaPROT/PTOC1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_KartonazaPROT/PTOC1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Str" desc="Pickup"/>
+                  <DOI name="Op" desc="OFF"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="MEAS" desc="Measurement">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="H04_TRAFO_II/MEAS/LLN0">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVMEAS/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVMEAS/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbC|&lt;ReportControl name="urcbC" rptID="K06_10kVMEAS/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbD|&lt;ReportControl name="urcbD" rptID="K06_10kVMEAS/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbE|&lt;ReportControl name="urcbE" rptID="K06_10kVMEAS/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbF|&lt;ReportControl name="urcbF" rptID="K06_10kVMEAS/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbG|&lt;ReportControl name="urcbG" rptID="K06_10kVMEAS/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbH|&lt;ReportControl name="urcbH" rptID="K06_10kVMEAS/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbI|&lt;ReportControl name="urcbI" rptID="K06_10kVMEAS/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbJ|&lt;ReportControl name="urcbJ" rptID="K06_10kVMEAS/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbA|&lt;ReportControl name="brcbA" rptID="K06_10kVMEAS/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbB|&lt;ReportControl name="brcbB" rptID="K06_10kVMEAS/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                     <DAI name="ldNs">
+                        <Val>IEC 61850-7-4:2003</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="" desc="Op meas value" lnClass="MMXU" lnType="H04_TRAFO_II/MEAS/MMXU1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVMEAS/MMXU1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVMEAS/MMXU1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotW" desc="P">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotVAr" desc="Q">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotVA" desc="S">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="TotPF" desc="cos">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="db">
+                        <Val>10000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Hz" desc="f">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                     <DAI name="db">
+                        <Val>100</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="PPV" desc="V">
+                     <SDI name="phsAB">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsBC">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsCA">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                  </DOI>
+                  <DOI name="PhV" desc="VN">
+                     <SDI name="phsA">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsB">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsC">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="neut">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>2000</Val>
+                        </DAI>
+                     </SDI>
+                  </DOI>
+                  <DOI name="A" desc="I">
+                     <SDI name="phsA">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsB">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="phsC">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="neut">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="Energy counter" lnClass="MMTR" lnType="H04_TRAFO_II/MEAS/MMTR1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVMEAS/MMTR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVMEAS/MMTR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SupWh" desc="Wp output">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                  </DOI>
+                  <DOI name="SupVArh" desc="Wq output">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                  </DOI>
+                  <DOI name="DmdWh" desc="Wp Input">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                  </DOI>
+                  <DOI name="DmdVArh" desc="Wq Input">
+                     <SDI name="units">
+                        <DAI name="SIUnit"/>
+                     </SDI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="sym comp value" lnClass="MSQI" lnType="H04_TRAFO_II/MEAS/MSQI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVMEAS/MSQI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVMEAS/MSQI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SeqA" desc="Current">
+                     <SDI name="c1">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c2">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c3">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <DAI name="seqT">
+                        <Val>pos-neg-zero</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SeqV" desc="Voltage">
+                     <SDI name="c1">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c2">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <SDI name="c3">
+                        <SDI name="units">
+                           <DAI name="SIUnit"/>
+                        </SDI>
+                        <DAI name="db">
+                           <Val>10000</Val>
+                        </DAI>
+                     </SDI>
+                     <DAI name="seqT">
+                        <Val>pos-neg-zero</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="H04_TRAFO_II/PROT/LPHD1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVMEAS/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVMEAS/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="PhyNam" desc="Info"/>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="DR" desc="Disturb Rec">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="H04_TRAFO_II/MEAS/LLN0">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVDR/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVDR/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbC|&lt;ReportControl name="urcbC" rptID="K06_10kVDR/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbD|&lt;ReportControl name="urcbD" rptID="K06_10kVDR/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbE|&lt;ReportControl name="urcbE" rptID="K06_10kVDR/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbF|&lt;ReportControl name="urcbF" rptID="K06_10kVDR/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbG|&lt;ReportControl name="urcbG" rptID="K06_10kVDR/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbH|&lt;ReportControl name="urcbH" rptID="K06_10kVDR/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbI|&lt;ReportControl name="urcbI" rptID="K06_10kVDR/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbJ|&lt;ReportControl name="urcbJ" rptID="K06_10kVDR/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbA|&lt;ReportControl name="brcbA" rptID="K06_10kVDR/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbB|&lt;ReportControl name="brcbB" rptID="K06_10kVDR/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                     <DAI name="ldNs">
+                        <Val>IEC 61850-7-4:2003</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="SC_" desc="Recording" lnClass="RDRE" lnType="H04_TRAFO_II/DR/SC_RDRE1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVDR/SC_RDRE1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVDR/SC_RDRE1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="RcdMade" desc="Made"/>
+                  <DOI name="FltNum" desc="Fault number"/>
+                  <DOI name="GriFltNum" desc="Grid fault num"/>
+                  <DOI name="RcdStr" desc="Start"/>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="H04_TRAFO_II/PROT/LPHD1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVDR/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVDR/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="PhyNam" desc="Info"/>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+            </LDevice>
+            <LDevice inst="CTRL" desc="Control">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="H04_TRAFO_II/CTRL/LLN0">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbC|&lt;ReportControl name="urcbC" rptID="K06_10kVCTRL/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbD|&lt;ReportControl name="urcbD" rptID="K06_10kVCTRL/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbE|&lt;ReportControl name="urcbE" rptID="K06_10kVCTRL/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbF|&lt;ReportControl name="urcbF" rptID="K06_10kVCTRL/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbG|&lt;ReportControl name="urcbG" rptID="K06_10kVCTRL/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbH|&lt;ReportControl name="urcbH" rptID="K06_10kVCTRL/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbI|&lt;ReportControl name="urcbI" rptID="K06_10kVCTRL/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbJ|&lt;ReportControl name="urcbJ" rptID="K06_10kVCTRL/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbA|&lt;ReportControl name="brcbA" rptID="K06_10kVCTRL/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbB|&lt;ReportControl name="brcbB" rptID="K06_10kVCTRL/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>091117093405608</Val>
+                     </DAI>
+                     <DAI name="ldNs">
+                        <Val>IEC 61850-7-4:2003</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpTmh" desc="Operating hours"/>
+                  <DOI name="LEDRs" desc="LED acknwldgmnt">
+                     <DAI name="ctlModel">
+                        <Val>direct-with-normal-security</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" desc="Fault" lnClass="CALH" lnType="H04_TRAFO_II/CTRL/CALH1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/CALH1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/CALH1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="GrAlm" desc="Group alarms"/>
+                  <DOI name="GrWrn" desc="Group Warning"/>
+                  <DOI name="ErrBoard1" desc="Error Board 1">
+                     <DAI name="d">
+                        <Val>ErrBoard1 stands for Error on board 1</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard2" desc="Error Board 2">
+                     <DAI name="d">
+                        <Val>ErrBoard2 stands for Error on board 2</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard3" desc="Error Board 3">
+                     <DAI name="d">
+                        <Val>ErrBoard3 stands for Error on board 3</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard4" desc="Error Board 4">
+                     <DAI name="d">
+                        <Val>ErrBoard4 stands for Error on board 4</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard5" desc="Error Board 5">
+                     <DAI name="d">
+                        <Val>ErrBoard5 stands for Error on board 5</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard6" desc="Error Board 6">
+                     <DAI name="d">
+                        <Val>ErrBoard6 stands for Error on board 6</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="ErrBoard7" desc="Error Board 7">
+                     <DAI name="d">
+                        <Val>ErrBoard7 stands for Error on board 7</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SDx IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="H04_TRAFO_II/CTRL/LPHD1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="PhyNam" desc="Info"/>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+                  <DOI name="DevStr" desc="Startup">
+<!-- SIEMENS-spezifisch -->
+                     <DAI name="d">
+                        <Val>DevStr stands for either InitialStart or Resume</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CtlNum" desc="Test oper Nr">
+<!-- SIEMENS-spezifisch -->
+                     <DAI name="d">
+                        <Val>CtlNum stands for number of Test Operations</Val>
+                     </DAI>
+                     <DAI name="dataNs">
+                        <Val>7SJ6 IED Configuration Description File</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q0" desc="52BreakerXCBR" lnClass="XCBR" lnType="H04_TRAFO_II/CTRL/Q0XCBR1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q0XCBR1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q0XCBR1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="CBOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q0" desc="52BreakerCSWI" lnClass="CSWI" lnType="H04_TRAFO_II/CTRL/Q0CSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q0CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q0CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q0" desc="52BreakerCILO" lnClass="CILO" lnType="H04_TRAFO_II/CTRL/Q0CILO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q0CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q0CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enable Close"/>
+               </LN>
+               <LN inst="1" prefix="Q1" desc="Disc.Swit.XSWI" lnClass="XSWI" lnType="H04_TRAFO_II/CTRL/Q1XSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q1XSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q1XSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwTyp" desc="Switch type">
+                     <DAI name="stVal">
+                        <Val>Disconnector</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q1" desc="Disc.Swit.CSWI" lnClass="CSWI" lnType="H04_TRAFO_II/CTRL/Q0CSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q1CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q1CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q1" desc="Disc.Swit.CILO" lnClass="CILO" lnType="H04_TRAFO_II/CTRL/Q0CILO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q1CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q1CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enable Close"/>
+               </LN>
+               <LN inst="1" prefix="Q2" desc="Q2 Op/ClXSWI" lnClass="XSWI" lnType="H04_TRAFO_II/CTRL/Q1XSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q2XSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q2XSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwTyp" desc="Switch type">
+                     <DAI name="stVal">
+                        <Val>Disconnector</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q2" desc="Q2 Op/ClCSWI" lnClass="CSWI" lnType="H04_TRAFO_II/CTRL/Q0CSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q2CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q2CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q2" desc="Q2 Op/ClCILO" lnClass="CILO" lnType="H04_TRAFO_II/CTRL/Q0CILO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q2CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q2CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enable Close"/>
+               </LN>
+               <LN inst="1" prefix="Q8" desc="GndSwit.XSWI" lnClass="XSWI" lnType="H04_TRAFO_II/CTRL/Q1XSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q8XSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q8XSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwTyp" desc="Switch type">
+                     <DAI name="stVal">
+                        <Val>Earthing Switch</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q8" desc="GndSwit.CSWI" lnClass="CSWI" lnType="H04_TRAFO_II/CTRL/Q0CSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q8CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q8CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q8" desc="GndSwit.CILO" lnClass="CILO" lnType="H04_TRAFO_II/CTRL/Q0CILO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q8CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q8CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enable Close"/>
+               </LN>
+               <LN inst="1" prefix="Q9" desc="Q9 Op/ClXSWI" lnClass="XSWI" lnType="H04_TRAFO_II/CTRL/Q1XSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q9XSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q9XSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="OpCnt" desc="TripComdCounter"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkOpn" desc="Open block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="BlkCls" desc="Close block">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwTyp" desc="Switch type">
+                     <DAI name="stVal">
+                        <Val>Disconnector</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SwOpCap" desc="Switch capablty">
+                     <DAI name="stVal">
+                        <Val>None</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q9" desc="Q9 Op/ClCSWI" lnClass="CSWI" lnType="H04_TRAFO_II/CTRL/Q0CSWI1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q9CSWI1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q9CSWI1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Loc" desc="Control Auth"/>
+                  <DOI name="Pos" desc="Position">
+                     <DAI name="ctlModel">
+                        <Val>sbo-with-enhanced-security</Val>
+                     </DAI>
+                     <DAI name="sboTimeout">
+                        <Val>300000</Val>
+                     </DAI>
+                     <DAI name="sboClass">
+                        <Val>operate-once</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+               <LN inst="1" prefix="Q9" desc="Q9 Op/ClCILO" lnClass="CILO" lnType="H04_TRAFO_II/CTRL/Q0CILO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_10kVCTRL/Q9CILO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_10kVCTRL/Q9CILO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="EnaOpn" desc="Enable Open"/>
+                  <DOI name="EnaCls" desc="Enable Close"/>
+               </LN>
+               <LN inst="1" prefix="" desc="GGIO1" lnClass="GGIO" lnType="K10_Vukovije/CTRL/GGIO1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_KartonazaCTRL/GGIO1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_KartonazaCTRL/GGIO1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>091117093405608</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO1" desc="ON/OFF (SP)">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="SPCSO2" desc="ON/OFF (SP)">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+            </LDevice>
+            <LDevice inst="EXT" desc="Extended">
+               <LN0 inst="" desc="General" lnClass="LLN0" lnType="H04_TRAFO_II/MEAS/LLN0">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_KartonazaEXT/LLN0$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_KartonazaEXT/LLN0$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbC|&lt;ReportControl name="urcbC" rptID="K06_KartonazaEXT/LLN0$RP$urcbC01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbD|&lt;ReportControl name="urcbD" rptID="K06_KartonazaEXT/LLN0$RP$urcbD01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbE|&lt;ReportControl name="urcbE" rptID="K06_KartonazaEXT/LLN0$RP$urcbE01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbF|&lt;ReportControl name="urcbF" rptID="K06_KartonazaEXT/LLN0$RP$urcbF01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbG|&lt;ReportControl name="urcbG" rptID="K06_KartonazaEXT/LLN0$RP$urcbG01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbH|&lt;ReportControl name="urcbH" rptID="K06_KartonazaEXT/LLN0$RP$urcbH01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbI|&lt;ReportControl name="urcbI" rptID="K06_KartonazaEXT/LLN0$RP$urcbI01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbJ|&lt;ReportControl name="urcbJ" rptID="K06_KartonazaEXT/LLN0$RP$urcbJ01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbA|&lt;ReportControl name="brcbA" rptID="K06_KartonazaEXT/LLN0$BR$brcbA01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">brcbB|&lt;ReportControl name="brcbB" rptID="K06_KartonazaEXT/LLN0$BR$brcbB01" confRev="0" bufTime="100" buffered="true"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" entryID="true" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                     <DAI name="ldNs">
+                        <Val>IEC 61850-7-4:2003</Val>
+                     </DAI>
+                  </DOI>
+               </LN0>
+               <LN inst="1" prefix="" desc="device" lnClass="LPHD" lnType="H04_TRAFO_II/PROT/LPHD1">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_KartonazaEXT/LPHD1$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_KartonazaEXT/LPHD1$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="PhyNam" desc="Info"/>
+                  <DOI name="PhyHealth" desc="State"/>
+                  <DOI name="Proxy" desc="Proxy"/>
+               </LN>
+               <LN inst="4103" prefix="pd" lnClass="GGIO" lnType="H04_TRAFO_II/EXT/pdGGIO4103">
+                  <Private type="Siemens-ControlBlockStorage">urcbA|&lt;ReportControl name="urcbA" rptID="K06_KartonazaEXT/pdGGIO4103$RP$urcbA01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <Private type="Siemens-ControlBlockStorage">urcbB|&lt;ReportControl name="urcbB" rptID="K06_KartonazaEXT/pdGGIO4103$RP$urcbB01" confRev="0" bufTime="100" buffered="false"> &lt;Private type="Siemens-PredefinedControlBlock"/> &lt;TrgOps dchg="true" qchg="true" dupd="true" period="true"/> &lt;OptFields seqNum="true" timeStamp="true" dataSet="true" reasonCode="true" dataRef="false" configRef="true"/> &lt;RptEnabled max="1"/> &lt;/ReportControl></Private>
+                  <DOI name="Mod" desc="Mode"/>
+                  <DOI name="Beh" desc="Behavior"/>
+                  <DOI name="Health" desc="State"/>
+                  <DOI name="NamPlt" desc="Info">
+                     <DAI name="configRev">
+                        <Val>160304190901000</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO3" desc="Control Authority">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+                  <DOI name="DPCSO4" desc="Controlmode LOCAL">
+                     <DAI name="ctlModel">
+                        <Val>status-only</Val>
+                     </DAI>
+                  </DOI>
+               </LN>
+            </LDevice>
+         </Server>
+      </AccessPoint>
+   </IED>
+   <DataTypeTemplates>
+      <LNodeType id="H04_TRAFO_II/PROT/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_0"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+         <DO name="OpTmh" type="myOpTmh_7"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/PROT/LPHD1" lnClass="LPHD">
+         <DO name="PhyNam" type="myPhyNam_9"/>
+         <DO name="PhyHealth" type="myHealth_5"/>
+         <DO name="Proxy" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/PROT/XCBR1" lnClass="XCBR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpCnt" type="myOpTmh_7"/>
+         <DO name="Pos" type="myPos_24"/>
+         <DO name="BlkOpn" type="myBlkOpn_25"/>
+         <DO name="BlkCls" type="myBlkOpn_25"/>
+         <DO name="SumSwARs1" type="mySumSwARs1_27"/>
+         <DO name="SumSwARs2" type="mySumSwARs1_27"/>
+         <DO name="SumSwARs3" type="mySumSwARs1_27"/>
+         <DO name="CBOpCap" type="myCBOpCap_33"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/PROT/PTOC6" lnClass="PTOC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/PROT/PTRC2" lnClass="PTRC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Op" type="myTr_16"/>
+         <DO name="Str" type="myStr_57"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/MEAS/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/MEAS/MMXU1" lnClass="MMXU">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="TotW" type="myTotW_66"/>
+         <DO name="TotVAr" type="myTotW_66"/>
+         <DO name="TotVA" type="myTotW_66"/>
+         <DO name="TotPF" type="myTotW_66"/>
+         <DO name="Hz" type="myTotW_66"/>
+         <DO name="PPV" type="myPPV_86"/>
+         <DO name="PhV" type="myPhV_105"/>
+         <DO name="A" type="myPhV_105"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/MEAS/MMTR1" lnClass="MMTR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SupWh" type="mySupWh_159"/>
+         <DO name="SupVArh" type="mySupWh_159"/>
+         <DO name="DmdWh" type="mySupWh_159"/>
+         <DO name="DmdVArh" type="mySupWh_159"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/MEAS/MSQI1" lnClass="MSQI">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SeqA" type="mySeqA_171"/>
+         <DO name="SeqV" type="mySeqA_171"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/DR/SC_RDRE1" lnClass="RDRE">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="RcdMade" type="myProxy_11"/>
+         <DO name="FltNum" type="myOpTmh_7"/>
+         <DO name="GriFltNum" type="myOpTmh_7"/>
+         <DO name="RcdStr" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/LLN0" lnClass="LLN0">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_6"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpTmh" type="myOpTmh_7"/>
+         <DO name="LEDRs" type="myLEDRs_233"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/CALH1" lnClass="CALH">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="GrAlm" type="myProxy_11"/>
+         <DO name="GrWrn" type="myProxy_11"/>
+         <DO name="ErrBoard1" type="myErrBoard1_243"/>
+         <DO name="ErrBoard2" type="myErrBoard1_243"/>
+         <DO name="ErrBoard3" type="myErrBoard1_243"/>
+         <DO name="ErrBoard4" type="myErrBoard1_243"/>
+         <DO name="ErrBoard5" type="myErrBoard1_243"/>
+         <DO name="ErrBoard6" type="myErrBoard1_243"/>
+         <DO name="ErrBoard7" type="myErrBoard1_243"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/LPHD1" lnClass="LPHD">
+         <DO name="PhyNam" type="myPhyNam_9"/>
+         <DO name="PhyHealth" type="myHealth_5"/>
+         <DO name="Proxy" type="myProxy_11"/>
+         <DO name="DevStr" type="myDevStr_253"/>
+         <DO name="CtlNum" type="myDevStr_253"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/Q0XCBR1" lnClass="XCBR">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpCnt" type="myOpTmh_7"/>
+         <DO name="Pos" type="myPos_24"/>
+         <DO name="BlkOpn" type="myBlkOpn_25"/>
+         <DO name="BlkCls" type="myBlkOpn_25"/>
+         <DO name="CBOpCap" type="myCBOpCap_33"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/Q0CSWI1" lnClass="CSWI">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="Pos" type="myPos_270"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/Q0CILO1" lnClass="CILO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="EnaOpn" type="myProxy_11"/>
+         <DO name="EnaCls" type="myProxy_11"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/CTRL/Q1XSWI1" lnClass="XSWI">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Loc" type="myProxy_11"/>
+         <DO name="OpCnt" type="myOpTmh_7"/>
+         <DO name="Pos" type="myPos_24"/>
+         <DO name="BlkOpn" type="myBlkOpn_25"/>
+         <DO name="BlkCls" type="myBlkOpn_25"/>
+         <DO name="SwTyp" type="mySwTyp_293"/>
+         <DO name="SwOpCap" type="mySwOpCap_294"/>
+      </LNodeType>
+      <LNodeType id="H04_TRAFO_II/EXT/pdGGIO4103" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="DPCSO3" type="myPos_24"/>
+         <DO name="DPCSO4" type="myPos_24"/>
+      </LNodeType>
+      <LNodeType id="K03_10kV/PROT/PTRC1" lnClass="PTRC">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Tr" type="myTr_16"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="FinTr" type="myErrBoard1_243"/>
+      </LNodeType>
+      <LNodeType id="K03_10kV/PROT/PSDE1" lnClass="PSDE">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_17"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="K03_10kV/PROT/PHIZ1" lnClass="PHIZ">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Str" type="myStr_69"/>
+         <DO name="Op" type="myTr_16"/>
+      </LNodeType>
+      <LNodeType id="K03_10kV/PROT/RREC1" lnClass="RREC">
+         <DO name="Mod" type="myMod_0"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="Op" type="myTr_16"/>
+         <DO name="AutoRecSt" type="myAutoRecSt_79"/>
+      </LNodeType>
+      <LNodeType id="K10_Vukovije/CTRL/GGIO1" lnClass="GGIO">
+         <DO name="Mod" type="myMod_12"/>
+         <DO name="Beh" type="myBeh_4"/>
+         <DO name="Health" type="myHealth_5"/>
+         <DO name="NamPlt" type="myNamPlt_15"/>
+         <DO name="SPCSO1" type="myBlkOpn_25"/>
+         <DO name="SPCSO2" type="myBlkOpn_25"/>
+      </LNodeType>
+      <DOType cdc="INC" id="myMod_0">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_2"/>
+      </DOType>
+      <DOType cdc="INS" id="myBeh_4">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INS" id="myHealth_5">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Health"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="LPL" id="myNamPlt_6">
+         <DA bType="VisString255" fc="DC" name="vendor" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="swRev" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="d" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="configRev" valKind="RO"/>
+         <DA bType="VisString255" fc="EX" name="ldNs" valKind="RO"/>
+      </DOType>
+      <DOType cdc="INS" id="myOpTmh_7">
+         <DA bType="INT32" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="DPL" id="myPhyNam_9">
+         <DA bType="VisString255" fc="DC" name="vendor" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="hwRev" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="swRev" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="serNum" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="model" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="location" valKind="RO"/>
+      </DOType>
+      <DOType cdc="SPS" id="myProxy_11">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INC" id="myMod_12">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="Beh"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="LPL" id="myNamPlt_15">
+         <DA bType="VisString255" fc="DC" name="vendor" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="swRev" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="d" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="configRev" valKind="RO"/>
+      </DOType>
+      <DOType cdc="ACT" id="myTr_16">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="ACD" id="myStr_17">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirGeneral" type="dir"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="DPC" id="myPos_24">
+         <DA bType="Dbpos" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="SPC" id="myBlkOpn_25">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+      </DOType>
+      <DOType cdc="BCR" id="mySumSwARs1_27">
+         <DA bType="INT32" dchg="true" fc="ST" name="actVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="FLOAT32" fc="CF" name="pulsQty" valKind="RO"/>
+         <DA bType="VisString255" fc="DC" name="d" valKind="RO"/>
+         <DA bType="VisString255" fc="EX" name="dataNs" valKind="RO"/>
+      </DOType>
+      <DOType cdc="INS" id="myCBOpCap_33">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="CBOpCap"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="ACD" id="myStr_57">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirGeneral" type="dir"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsA"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsA" type="dirPhs"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsB"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsB" type="dirPhs"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsC"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsC" type="dirPhs"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirNeut" type="dirPhs"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="MV" id="myTotW_66">
+         <DA bType="Struct" fc="MX" name="instMag" type="myinstMag_67"/>
+         <DA bType="Struct" fc="MX" name="mag" type="myinstMag_67"/>
+         <DA bType="Quality" fc="MX" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="MX" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="INT32U" fc="CF" name="db" valKind="Set"/>
+      </DOType>
+      <DOType cdc="DEL" id="myPPV_86">
+         <SDO name="phsAB" type="myphsAB_87"/>
+         <SDO name="phsBC" type="myphsAB_87"/>
+         <SDO name="phsCA" type="myphsAB_87"/>
+      </DOType>
+      <DOType cdc="CMV" id="myphsAB_87">
+         <DA bType="Struct" fc="MX" name="instCVal" type="myinstCVal_88"/>
+         <DA bType="Struct" fc="MX" name="cVal" type="myinstCVal_88"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="Quality" fc="MX" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="MX" name="t"/>
+         <DA bType="INT32U" fc="CF" name="db" valKind="Set"/>
+      </DOType>
+      <DOType cdc="WYE" id="myPhV_105">
+         <SDO name="phsA" type="myphsAB_87"/>
+         <SDO name="phsB" type="myphsAB_87"/>
+         <SDO name="phsC" type="myphsAB_87"/>
+         <SDO name="neut" type="myphsAB_87"/>
+      </DOType>
+      <DOType cdc="BCR" id="mySupWh_159">
+         <DA bType="INT32" dchg="true" fc="ST" name="actVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Struct" fc="CF" name="units" type="myunits_28"/>
+         <DA bType="FLOAT32" fc="CF" name="pulsQty" valKind="RO"/>
+      </DOType>
+      <DOType cdc="SEQ" id="mySeqA_171">
+         <SDO name="c1" type="myphsAB_87"/>
+         <SDO name="c2" type="myphsAB_87"/>
+         <SDO name="c3" type="myphsAB_87"/>
+         <DA bType="Enum" fc="MX" name="seqT" type="seqT"/>
+      </DOType>
+      <DOType cdc="SPC" id="myLEDRs_233">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_235"/>
+      </DOType>
+      <DOType cdc="SPS" id="myErrBoard1_243">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="VisString255" fc="DC" name="d" valKind="RO"/>
+         <DA bType="VisString255" fc="EX" name="dataNs" valKind="RO"/>
+      </DOType>
+      <DOType cdc="INS" id="myDevStr_253">
+         <DA bType="INT32" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="VisString255" fc="DC" name="d" valKind="RO"/>
+         <DA bType="VisString255" fc="EX" name="dataNs" valKind="RO"/>
+      </DOType>
+      <DOType cdc="DPC" id="myPos_270">
+         <DA bType="Struct" fc="ST" name="origin" type="myorigin_1"/>
+         <DA bType="INT8U" fc="ST" name="ctlNum"/>
+         <DA bType="Dbpos" dchg="true" fc="ST" name="stVal"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="stSeld"/>
+         <DA bType="Enum" fc="CF" name="ctlModel" valKind="RO" type="ctlModel"/>
+         <DA bType="INT32U" fc="CF" name="sboTimeout" valKind="RO"/>
+         <DA bType="Enum" fc="CF" name="sboClass" valKind="RO" type="sboClass"/>
+         <DA bType="Struct" fc="CO" name="SBOw" type="mySBOw_272"/>
+         <DA bType="Struct" fc="CO" name="Oper" type="myOper_235"/>
+         <DA bType="Struct" fc="CO" name="Cancel" type="myCancel_276"/>
+      </DOType>
+      <DOType cdc="INS" id="mySwTyp_293">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="SwTyp"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INS" id="mySwOpCap_294">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="SwOpCap"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="ACD" id="myStr_69">
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="general"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirGeneral" type="dir"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsA"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsA" type="dirPhs"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsB"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsB" type="dirPhs"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="phsC"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirPhsC" type="dirPhs"/>
+         <DA bType="BOOLEAN" dchg="true" fc="ST" name="neut"/>
+         <DA bType="Enum" dchg="true" fc="ST" name="dirNeut" type="dirPhs"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DOType cdc="INS" id="myAutoRecSt_79">
+         <DA bType="Enum" dchg="true" fc="ST" name="stVal" type="AutoRecSt"/>
+         <DA bType="Quality" fc="ST" name="q" qchg="true"/>
+         <DA bType="Timestamp" fc="ST" name="t"/>
+      </DOType>
+      <DAType id="myorigin_1">
+         <BDA bType="Enum" name="orCat" type="orCategory"/>
+         <BDA bType="Octet64" name="orIdent"/>
+      </DAType>
+      <DAType id="myOper_2">
+         <Private type="Siemens-EditionConversion">
+            <sieedc:EditionConversion>
+               <sieedc:ElementStore name="ProtNs" xmlns="http://www.siemens.com/energy/2012/01/SCL-Edition2">
+                  <ProtNs type="8-MMS">IEC 61850-8-1:2003</ProtNs>
+               </sieedc:ElementStore>
+            </sieedc:EditionConversion>
+         </Private>
+         <BDA bType="Enum" name="ctlVal" type="Beh"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+         <BDA bType="Check" name="Check"/>
+      </DAType>
+      <DAType id="myunits_28">
+         <BDA bType="Enum" name="SIUnit" valKind="RO" type="SIUnit"/>
+         <BDA bType="Enum" name="multiplier" valKind="RO" type="multiplier"/>
+      </DAType>
+      <DAType id="myinstMag_67">
+         <BDA bType="FLOAT32" name="f"/>
+      </DAType>
+      <DAType id="myinstCVal_88">
+         <BDA bType="Struct" name="mag" type="myinstMag_67"/>
+      </DAType>
+      <DAType id="myOper_235">
+         <Private type="Siemens-EditionConversion">
+            <sieedc:EditionConversion>
+               <sieedc:ElementStore name="ProtNs" xmlns="http://www.siemens.com/energy/2012/01/SCL-Edition2">
+                  <ProtNs type="8-MMS">IEC 61850-8-1:2003</ProtNs>
+               </sieedc:ElementStore>
+            </sieedc:EditionConversion>
+         </Private>
+         <BDA bType="BOOLEAN" name="ctlVal"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+         <BDA bType="Check" name="Check"/>
+      </DAType>
+      <DAType id="mySBOw_272">
+         <BDA bType="BOOLEAN" name="ctlVal"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+         <BDA bType="Check" name="Check"/>
+      </DAType>
+      <DAType id="myCancel_276">
+         <Private type="Siemens-EditionConversion">
+            <sieedc:EditionConversion>
+               <sieedc:ElementStore name="ProtNs" xmlns="http://www.siemens.com/energy/2012/01/SCL-Edition2">
+                  <ProtNs type="8-MMS">IEC 61850-8-1:2003</ProtNs>
+               </sieedc:ElementStore>
+            </sieedc:EditionConversion>
+         </Private>
+         <BDA bType="BOOLEAN" name="ctlVal"/>
+         <BDA bType="Struct" name="origin" type="myorigin_1"/>
+         <BDA bType="INT8U" name="ctlNum"/>
+         <BDA bType="Timestamp" name="T"/>
+         <BDA bType="BOOLEAN" name="Test"/>
+      </DAType>
+      <EnumType id="orCategory">
+         <EnumVal ord="0">not-supported</EnumVal>
+         <EnumVal ord="1">bay-control</EnumVal>
+         <EnumVal ord="2">station-control</EnumVal>
+         <EnumVal ord="3">remote-control</EnumVal>
+         <EnumVal ord="4">automatic-bay</EnumVal>
+         <EnumVal ord="5">automatic-station</EnumVal>
+         <EnumVal ord="6">automatic-remote</EnumVal>
+         <EnumVal ord="7">maintenance</EnumVal>
+         <EnumVal ord="8">process</EnumVal>
+      </EnumType>
+      <EnumType id="Beh">
+         <EnumVal ord="1">on</EnumVal>
+         <EnumVal ord="2">blocked</EnumVal>
+         <EnumVal ord="3">test</EnumVal>
+         <EnumVal ord="4">test/blocked</EnumVal>
+         <EnumVal ord="5">off</EnumVal>
+      </EnumType>
+      <EnumType id="ctlModel">
+         <EnumVal ord="0">status-only</EnumVal>
+         <EnumVal ord="1">direct-with-normal-security</EnumVal>
+         <EnumVal ord="2">sbo-with-normal-security</EnumVal>
+         <EnumVal ord="3">direct-with-enhanced-security</EnumVal>
+         <EnumVal ord="4">sbo-with-enhanced-security</EnumVal>
+      </EnumType>
+      <EnumType id="Health">
+         <EnumVal ord="1">Ok</EnumVal>
+         <EnumVal ord="2">Warning</EnumVal>
+         <EnumVal ord="3">Alarm</EnumVal>
+      </EnumType>
+      <EnumType id="dir">
+         <EnumVal ord="0">unknown</EnumVal>
+         <EnumVal ord="1">forward</EnumVal>
+         <EnumVal ord="2">backward</EnumVal>
+         <EnumVal ord="3">both</EnumVal>
+      </EnumType>
+      <EnumType id="SIUnit">
+         <EnumVal ord="1"/>
+         <EnumVal ord="2">m</EnumVal>
+         <EnumVal ord="3">kg</EnumVal>
+         <EnumVal ord="4">s</EnumVal>
+         <EnumVal ord="5">A</EnumVal>
+         <EnumVal ord="6">K</EnumVal>
+         <EnumVal ord="7">mol</EnumVal>
+         <EnumVal ord="8">cd</EnumVal>
+         <EnumVal ord="9">deg</EnumVal>
+         <EnumVal ord="10">rad</EnumVal>
+         <EnumVal ord="11">sr</EnumVal>
+         <EnumVal ord="21">Gy</EnumVal>
+         <EnumVal ord="23">°C</EnumVal>
+         <EnumVal ord="24">Sv</EnumVal>
+         <EnumVal ord="25">F</EnumVal>
+         <EnumVal ord="26">C</EnumVal>
+         <EnumVal ord="27">S</EnumVal>
+         <EnumVal ord="28">H</EnumVal>
+         <EnumVal ord="29">V</EnumVal>
+         <EnumVal ord="30">ohm</EnumVal>
+         <EnumVal ord="31">J</EnumVal>
+         <EnumVal ord="32">N</EnumVal>
+         <EnumVal ord="33">Hz</EnumVal>
+         <EnumVal ord="34">lx</EnumVal>
+         <EnumVal ord="35">Lm</EnumVal>
+         <EnumVal ord="36">Wb</EnumVal>
+         <EnumVal ord="37">T</EnumVal>
+         <EnumVal ord="38">W</EnumVal>
+         <EnumVal ord="39">Pa</EnumVal>
+         <EnumVal ord="41">m²</EnumVal>
+         <EnumVal ord="42">m³</EnumVal>
+         <EnumVal ord="43">m/s</EnumVal>
+         <EnumVal ord="44">m/s²</EnumVal>
+         <EnumVal ord="45">m³/s</EnumVal>
+         <EnumVal ord="46">m/m³</EnumVal>
+         <EnumVal ord="47">M</EnumVal>
+         <EnumVal ord="48">kg/m³</EnumVal>
+         <EnumVal ord="49">m²/s</EnumVal>
+         <EnumVal ord="50">W/m K</EnumVal>
+         <EnumVal ord="51">J/K</EnumVal>
+         <EnumVal ord="52">ppm</EnumVal>
+         <EnumVal ord="53">1/s</EnumVal>
+         <EnumVal ord="54">rad/s</EnumVal>
+         <EnumVal ord="61">VA</EnumVal>
+         <EnumVal ord="62">Watts</EnumVal>
+         <EnumVal ord="63">VAr</EnumVal>
+         <EnumVal ord="64">phi</EnumVal>
+         <EnumVal ord="65">cos(phi)</EnumVal>
+         <EnumVal ord="66">Vs</EnumVal>
+         <EnumVal ord="67">V²</EnumVal>
+         <EnumVal ord="68">As</EnumVal>
+         <EnumVal ord="69">A²</EnumVal>
+         <EnumVal ord="70">A²t</EnumVal>
+         <EnumVal ord="71">VAh</EnumVal>
+         <EnumVal ord="72">Wh</EnumVal>
+         <EnumVal ord="73">VArh</EnumVal>
+         <EnumVal ord="74">V/Hz</EnumVal>
+      </EnumType>
+      <EnumType id="multiplier">
+         <EnumVal ord="-24">y</EnumVal>
+         <EnumVal ord="-21">z</EnumVal>
+         <EnumVal ord="-18">a</EnumVal>
+         <EnumVal ord="-15">f</EnumVal>
+         <EnumVal ord="-12">p</EnumVal>
+         <EnumVal ord="-9">n</EnumVal>
+         <EnumVal ord="-6">µ</EnumVal>
+         <EnumVal ord="-3">m</EnumVal>
+         <EnumVal ord="-2">c</EnumVal>
+         <EnumVal ord="-1">d</EnumVal>
+         <EnumVal ord="0"/>
+         <EnumVal ord="1">da</EnumVal>
+         <EnumVal ord="2">h</EnumVal>
+         <EnumVal ord="3">k</EnumVal>
+         <EnumVal ord="6">M</EnumVal>
+         <EnumVal ord="9">G</EnumVal>
+         <EnumVal ord="12">T</EnumVal>
+         <EnumVal ord="15">P</EnumVal>
+         <EnumVal ord="18">E</EnumVal>
+         <EnumVal ord="21">Z</EnumVal>
+         <EnumVal ord="24">Y</EnumVal>
+      </EnumType>
+      <EnumType id="CBOpCap">
+         <EnumVal ord="1">None</EnumVal>
+         <EnumVal ord="2">Open</EnumVal>
+         <EnumVal ord="3">Close-Open</EnumVal>
+         <EnumVal ord="4">Open-Close-Open</EnumVal>
+         <EnumVal ord="5">Close-Open-Close-Open</EnumVal>
+      </EnumType>
+      <EnumType id="dirPhs">
+         <EnumVal ord="0">unknown</EnumVal>
+         <EnumVal ord="1">forward</EnumVal>
+         <EnumVal ord="2">backward</EnumVal>
+      </EnumType>
+      <EnumType id="seqT">
+         <EnumVal ord="0">pos-neg-zero</EnumVal>
+         <EnumVal ord="1">dir-quad-zero</EnumVal>
+      </EnumType>
+      <EnumType id="sboClass">
+         <EnumVal ord="0">operate-once</EnumVal>
+         <EnumVal ord="1">operate-many</EnumVal>
+      </EnumType>
+      <EnumType id="SwTyp">
+         <EnumVal ord="1">Load Break</EnumVal>
+         <EnumVal ord="2">Disconnector</EnumVal>
+         <EnumVal ord="3">Earthing Switch</EnumVal>
+         <EnumVal ord="4">High Speed Earthing Switch</EnumVal>
+      </EnumType>
+      <EnumType id="SwOpCap">
+         <EnumVal ord="1">None</EnumVal>
+         <EnumVal ord="2">Open</EnumVal>
+         <EnumVal ord="3">Close</EnumVal>
+         <EnumVal ord="4">Open and Close</EnumVal>
+      </EnumType>
+      <EnumType id="AutoRecSt">
+         <EnumVal ord="1">Ready</EnumVal>
+         <EnumVal ord="2">InProgress</EnumVal>
+         <EnumVal ord="3">Successful</EnumVal>
+      </EnumType>
+   </DataTypeTemplates>
+</SCL>
