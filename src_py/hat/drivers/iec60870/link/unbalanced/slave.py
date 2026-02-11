@@ -249,8 +249,13 @@ class SlaveConnection(common.Connection):
                 data = None
 
             if data is None:
-                function = common.ResFunction.RES_NACK
-                data = b''
+                if not self._send_queue.empty():
+                    function = common.ResFunction.RES_DATA
+                    data, sent_cb = self._send_queue.get_nowait()
+
+                else:
+                    function = common.ResFunction.RES_NACK
+                    data = b''
 
             else:
                 function = common.ResFunction.RES_DATA
