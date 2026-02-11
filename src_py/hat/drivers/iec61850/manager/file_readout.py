@@ -264,9 +264,17 @@ def _get_rcbs(logical_device, logical_node, ln_el):
         except Exception as e:
             mlog.warning('rcb %s ignored: %s', name, e, exc_info=e)
 
-    for rc_el in ln_el.findall('./Private'):
+    yield from _get_rcbs_siemens_private(logical_device, logical_node, ln_el)
+
+
+def _get_rcbs_siemens_private(logical_device, logical_node, ln_el):
+    # Siemens relays that use dynamic datasets define rcbs under Private
+    for private_el in ln_el.findall('./Private'):
+        if private_el.get('type') != "Siemens-ControlBlockStorage":
+            continue
+
         try:
-            rcb_def_split = rc_el.text.split("<ReportControl", 1)
+            rcb_def_split = private_el.text.split("<ReportControl", 1)
             if len(rcb_def_split) < 2:
                 continue
 
@@ -278,7 +286,7 @@ def _get_rcbs(logical_device, logical_node, ln_el):
                                     logical_node=logical_node)
 
         except Exception as e:
-            mlog.warning('private rcb parse error: %s', e, exc_info=e)
+            mlog.warning('private siemens rcb parse error: %s', e, exc_info=e)
 
 
 def _get_rcb(rc_el, logical_device, logical_node):

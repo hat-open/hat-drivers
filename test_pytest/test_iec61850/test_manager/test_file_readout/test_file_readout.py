@@ -543,7 +543,7 @@ def test_8(validator):
 
 
 def test_9(validator):
-    # File doesn't have rcbs defined with ReportControl but only with Private
+    # Siemens relays that use dynamic datasets define rcbs in scd under Private
     with importlib.resources.open_text(__package__, 'test9.cid') as f:
         res = readout(f)
 
