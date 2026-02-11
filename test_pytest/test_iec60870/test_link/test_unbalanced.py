@@ -150,6 +150,35 @@ async def test_send_receive(mock_serial):
     await slave.async_close()
 
 
+async def test_slave_send_master_poll_class2(mock_serial):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    slave = await unbalanced.slave.create_slave_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(
+        master.open_connection, addr=1,
+        poll_class1_delay=None,
+        poll_class2_delay=0.01)
+    slave_conn = await slave.open_connection(addr=1)
+    master_conn = await master_conn_fut
+
+    await slave_conn.send(b'a')
+    await slave_conn.send(b'b')
+    await slave_conn.send(b'c')
+
+    received = await master_conn.receive()
+    assert received == b'a'
+
+    received = await master_conn.receive()
+    assert received == b'b'
+
+    received = await master_conn.receive()
+    assert received == b'c'
+
+    await master.async_close()
+    await slave.async_close()
+
+
 @pytest.mark.parametrize("slave_count, poll_delay", [
     (1, 0.01),
     (2, 0.01),
