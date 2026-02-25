@@ -9,7 +9,7 @@ from hat import aio
 from hat import json
 
 from hat.drivers import tcp
-# from hat.drivers.iec61850.manager import common
+from hat.drivers.iec61850.manager import common
 from hat.drivers.iec61850.manager.device_readout.readout import readout
 
 
@@ -80,6 +80,10 @@ def create_argument_parser(subparsers) -> argparse.ArgumentParser:
         help="output devices file path or - for stdout (default -)")
 
     parser.add_argument(
+        '--validate-output', action='store_true',
+        help="validate output with JSON schema")
+
+    parser.add_argument(
         'host',
         help="remote host name or IP address")
 
@@ -113,8 +117,9 @@ async def async_main(args):
         mlog.error('readout error: %s', e, exc_info=e)
         return
 
-    # validator = json.DefaultSchemaValidator(common.json_schema_repo)
-    # validator.validate('hat-drivers://iec61850/readout.yaml', result)
+    if args.validate_output:
+        validator = json.DefaultSchemaValidator(common.json_schema_repo)
+        validator.validate('hat-drivers://iec61850/readout.yaml', result)
 
     try:
         if args.output == Path('-'):

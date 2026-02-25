@@ -88,7 +88,10 @@ def _get_dataset_confs(dataset_data_refs: dict[common.DatasetRef,
                                                Collection[common.DataRef]]
                        ) -> Iterable[json.Data]:
     for dataset_ref, data_refs in dataset_data_refs.items():
-        yield {'ref': common.dataset_ref_to_json(dataset_ref),
+        if not isinstance(dataset_ref, common.PersistedDatasetRef):
+            continue
+
+        yield {'ref': common.persisted_dataset_ref_to_json(dataset_ref),
                'values': [common.data_ref_to_json(data_ref)
                           for data_ref in data_refs]}
 
@@ -102,9 +105,10 @@ def _get_rcb_confs(rcb_attr_values: dict[common.RcbRef,
             'ref': common.rcb_ref_to_json(rcb_ref),
             'report_id': attr_values[common.RcbAttrType.REPORT_ID],
             'dataset': (
-                common.dataset_ref_to_json(
+                common.persisted_dataset_ref_to_json(
                     attr_values[common.RcbAttrType.DATASET])
-                if attr_values[common.RcbAttrType.DATASET] is not None
+                if isinstance(attr_values[common.RcbAttrType.DATASET],
+                              common.PersistedDatasetRef)
                 else None),
             'conf_revision': attr_values[common.RcbAttrType.CONF_REVISION],
             'optional_fields': [
@@ -391,10 +395,13 @@ def _get_data_dataset_confs(value_ref: common.DataRef,
                                                     Collection[common.DataRef]]
                             ) -> Iterable[json.Data]:
     for dataset_ref, data_refs in dataset_data_refs.items():
+        if not isinstance(dataset_ref, common.PersistedDatasetRef):
+            continue
+
         if not _is_ref_in_dataset(value_ref, data_refs):
             continue
 
-        yield {'ref': common.dataset_ref_to_json(dataset_ref),
+        yield {'ref': common.persisted_dataset_ref_to_json(dataset_ref),
                'quality': bool(quality_ref and
                                _is_ref_in_dataset(quality_ref, data_refs)),
                'timestamp': bool(timestamp_ref and

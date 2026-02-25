@@ -11,8 +11,6 @@ from hat.drivers.iec61850.manager.common import (BasicValueType,
                                                  ValueType,
                                                  DataRef,
                                                  PersistedDatasetRef,
-                                                 NonPersistedDatasetRef,
-                                                 DatasetRef,
                                                  RcbRef,
                                                  CommandRef)
 
@@ -52,16 +50,10 @@ def data_ref_to_json(ref: DataRef) -> json.Data:
             'names': list(ref.names)}
 
 
-def dataset_ref_to_json(ref: DatasetRef) -> json.Data:
-    if isinstance(ref, PersistedDatasetRef):
-        return {'logical_device': ref.logical_device,
-                'logical_node': ref.logical_node,
-                'name': ref.name}
-
-    if isinstance(ref, NonPersistedDatasetRef):
-        return ref.name
-
-    raise TypeError('unsupported ref type')
+def persisted_dataset_ref_to_json(ref: PersistedDatasetRef) -> json.Data:
+    return {'logical_device': ref.logical_device,
+            'logical_node': ref.logical_node,
+            'name': ref.name}
 
 
 def rcb_ref_to_json(ref: RcbRef) -> json.Data:

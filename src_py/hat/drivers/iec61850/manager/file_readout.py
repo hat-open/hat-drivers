@@ -22,6 +22,10 @@ def create_argument_parser(subparsers) -> argparse.ArgumentParser:
         help="output devices file path or - for stdout (default -)")
 
     parser.add_argument(
+        '--validate-output', action='store_true',
+        help="validate output with JSON schema")
+
+    parser.add_argument(
         'source', type=Path, default=Path('-'), nargs='?',
         help="input source file path or - for stdin (default -)")
 
@@ -33,8 +37,9 @@ def main(args):
 
     result = readout(source)
 
-    # validator = json.DefaultSchemaValidator(common.json_schema_repo)
-    # validator.validate('hat-drivers://iec61850/readout.yaml', result)
+    if args.validate_output:
+        validator = json.DefaultSchemaValidator(common.json_schema_repo)
+        validator.validate('hat-drivers://iec61850/readout.yaml', result)
 
     if args.output == Path('-'):
         json.encode_stream(result, sys.stdout)
