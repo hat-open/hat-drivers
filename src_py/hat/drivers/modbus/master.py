@@ -3,7 +3,6 @@
 import asyncio
 import itertools
 import logging
-import typing
 
 from hat import aio
 
@@ -25,12 +24,12 @@ async def create_tcp_master(modbus_type: common.ModbusType,
                             ) -> 'Master':
     """Create TCP master
 
+    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+
     Args:
         modbus_type: modbus type
         addr: remote host address
         response_timeout: response timeout in seconds
-        kwargs: additional arguments used for creating TCP connection
-            (see `tcp.connect`)
 
     """
     conn = await tcp.connect(addr, **kwargs)
@@ -54,13 +53,13 @@ async def create_serial_master(modbus_type: common.ModbusType,
                                ) -> 'Master':
     """Create serial master
 
+    Additional arguments are passed directly to `hat.drivers.serial.create`.
+
     Args:
         modbus_type: modbus type
-        port: port name (see `serial.create`)
-        silent_interval: silent interval (see `serial.create`)
+        port: port name (see `hat.drivers.serial.create`)
+        silent_interval: silent interval (see `hat.drivers.serial.create`)
         response_timeout: response timeout in seconds
-        kwargs: additional arguments used for opening serial connection
-            (see `serial.create`)
 
     """
     endpoint = await serial.create(port,
@@ -88,6 +87,7 @@ class Master(aio.Resource):
         self._response_timeout = response_timeout
         self._conn = transport.Connection(link)
         self._send_queue = aio.Queue()
+        self._loop = asyncio.get_running_loop()
         self._log = _create_logger_adapter(self._conn.info)
 
         if modbus_type == common.ModbusType.TCP:
@@ -108,195 +108,156 @@ class Master(aio.Resource):
         """Connection or endpoint info"""
         return self._conn.info
 
-    async def read(self,
-                   device_id: int,
-                   data_type: common.DataType,
-                   start_address: int,
-                   quantity: int = 1
-                   ) -> list[int] | common.Error:
-        """Read data from modbus device
-
-        Argument `quantity` is ignored if `data_type` is `QUEUE`.
+    async def send(self, req: common.Request) -> common.Response:
+        """Send request and wait for response
 
         Args:
-            device_id: slave device identifier
-            data_type: data type
-            start_address: starting modbus data address
-            quantity: number of data values
+            req: request
+
+        Returns:
+            response
 
         Raises:
             ConnectionError
             TimeoutError
 
         """
-        if device_id == 0:
-            raise ValueError('unsupported device id')
+        if isinstance(req, common.ReadReq):
+            if req.data_type == common.DataType.COIL:
+                req_pdu = transport.ReadCoilsReq(address=req.start_address,
+                                                 quantity=req.quantity)
 
-        if data_type == common.DataType.COIL:
-            req = transport.ReadCoilsReq(address=start_address,
-                                         quantity=quantity)
+            elif req.data_type == common.DataType.DISCRETE_INPUT:
+                req_pdu = transport.ReadDiscreteInputsReq(
+                    address=req.start_address,
+                    quantity=req.quantity)
 
-        elif data_type == common.DataType.DISCRETE_INPUT:
-            req = transport.ReadDiscreteInputsReq(address=start_address,
-                                                  quantity=quantity)
+            elif req.data_type == common.DataType.HOLDING_REGISTER:
+                req_pdu = transport.ReadHoldingRegistersReq(
+                    address=req.start_address,
+                    quantity=req.quantity)
 
-        elif data_type == common.DataType.HOLDING_REGISTER:
-            req = transport.ReadHoldingRegistersReq(address=start_address,
-                                                    quantity=quantity)
+            elif req.data_type == common.DataType.INPUT_REGISTER:
+                req_pdu = transport.ReadInputRegistersReq(
+                    address=req.start_address,
+                    quantity=req.quantity)
 
-        elif data_type == common.DataType.INPUT_REGISTER:
-            req = transport.ReadInputRegistersReq(address=start_address,
-                                                  quantity=quantity)
-
-        elif data_type == common.DataType.QUEUE:
-            req = transport.ReadFifoQueueReq(address=start_address)
-
-        else:
-            raise ValueError('unsupported data type')
-
-        res = await self._send(device_id, req)
-
-        if isinstance(res, transport.ErrorRes):
-            return res.error
-
-        if isinstance(res, (transport.ReadCoilsRes,
-                            transport.ReadDiscreteInputsRes,
-                            transport.ReadHoldingRegistersRes,
-                            transport.ReadInputRegistersRes)):
-            return res.values[:quantity]
-
-        if isinstance(res, transport.ReadFifoQueueRes):
-            return res.values
-
-        raise ValueError("unsupported response pdu")
-
-    async def write(self,
-                    device_id: int,
-                    data_type: common.DataType,
-                    start_address: int,
-                    values: typing.List[int]
-                    ) -> common.Error | None:
-        """Write data to modbus device
-
-        Data types `DISCRETE_INPUT`, `INPUT_REGISTER` and `QUEUE` are not
-        supported.
-
-        Args:
-            device_id: slave device identifier
-            data_type: data type
-            start_address: starting modbus data address
-            values: values
-
-        Raises:
-            ConnectionError
-            TimeoutError
-
-        """
-        if data_type == common.DataType.COIL:
-            if len(values) == 1:
-                req = transport.WriteSingleCoilReq(address=start_address,
-                                                   value=values[0])
+            elif req.data_type == common.DataType.QUEUE:
+                req_pdu = transport.ReadFifoQueueReq(address=req.start_address)
 
             else:
-                req = transport.WriteMultipleCoilsReq(address=start_address,
-                                                      values=values)
+                raise ValueError('unsupported data type')
 
-        elif data_type == common.DataType.HOLDING_REGISTER:
-            if len(values) == 1:
-                req = transport.WriteSingleRegisterReq(address=start_address,
-                                                       value=values[0])
+        elif isinstance(req, common.WriteReq):
+            if req.data_type == common.DataType.COIL:
+                if len(req.values) == 1:
+                    req_pdu = transport.WriteSingleCoilReq(
+                        address=req.start_address,
+                        value=req.values[0])
+
+                else:
+                    req_pdu = transport.WriteMultipleCoilsReq(
+                        address=req.start_address,
+                        values=req.values)
+
+            elif req.data_type == common.DataType.HOLDING_REGISTER:
+                if len(req.values) == 1:
+                    req_pdu = transport.WriteSingleRegisterReq(
+                        address=req.start_address,
+                        value=req.values[0])
+
+                else:
+                    req_pdu = transport.WriteMultipleRegistersReq(
+                        address=req.start_address,
+                        values=req.values)
 
             else:
-                req = transport.WriteMultipleRegistersReq(
-                    address=start_address,
-                    values=values)
+                raise ValueError('unsupported data type')
+
+        elif isinstance(req, common.WriteMaskReq):
+            req_pdu = transport.MaskWriteRegisterReq(address=req.address,
+                                                     and_mask=req.and_mask,
+                                                     or_mask=req.or_mask)
 
         else:
-            raise ValueError('unsupported data type')
+            raise TypeError('unsupported request')
 
-        res = await self._send(device_id, req)
+        res_pdu = await self._send(req.device_id, req_pdu)
 
-        if isinstance(res, transport.ErrorRes):
-            return res.error
+        if isinstance(res_pdu, transport.ErrorRes):
+            return res_pdu.error
 
-        if not isinstance(res, (transport.WriteSingleCoilRes,
-                                transport.WriteMultipleCoilsRes,
-                                transport.WriteSingleRegisterRes,
-                                transport.WriteMultipleRegistersRes)):
+        if isinstance(req, common.ReadReq):
+            if isinstance(res_pdu, (transport.ReadCoilsRes,
+                                    transport.ReadDiscreteInputsRes,
+                                    transport.ReadHoldingRegistersRes,
+                                    transport.ReadInputRegistersRes)):
+                return res_pdu.values[:req.quantity]
+
+            if isinstance(res_pdu, transport.ReadFifoQueueRes):
+                return res_pdu.values
+
             raise ValueError("unsupported response pdu")
 
-        if (res.address != start_address):
-            raise Exception("invalid response pdu address")
+        elif isinstance(req, common.WriteReq):
+            if not isinstance(res_pdu, (transport.WriteSingleCoilRes,
+                                        transport.WriteMultipleCoilsRes,
+                                        transport.WriteSingleRegisterRes,
+                                        transport.WriteMultipleRegistersRes)):
+                raise ValueError("unsupported response pdu")
 
-        if isinstance(res, (transport.WriteSingleCoilRes,
-                            transport.WriteSingleRegisterRes)):
-            if (res.value != values[0]):
-                raise Exception("invalid response pdu value")
+            if (res_pdu.address != req.start_address):
+                raise Exception("invalid response pdu address")
 
-        if isinstance(res, (transport.WriteMultipleCoilsRes,
-                            transport.WriteMultipleRegistersRes)):
-            if (res.quantity != len(values)):
-                raise Exception("invalid response pdu quantity")
+            if isinstance(res_pdu, (transport.WriteSingleCoilRes,
+                                    transport.WriteSingleRegisterRes)):
+                if (res_pdu.value != req.values[0]):
+                    raise Exception("invalid response pdu value")
 
-    async def write_mask(self,
-                         device_id: int,
-                         address: int,
-                         and_mask: int,
-                         or_mask: int
-                         ) -> common.Error | None:
-        """Write mask to modbus device HOLDING_REGISTER
+            if isinstance(res_pdu, (transport.WriteMultipleCoilsRes,
+                                    transport.WriteMultipleRegistersRes)):
+                if (res_pdu.quantity != len(req.values)):
+                    raise Exception("invalid response pdu quantity")
 
-        Args:
-            device_id: slave device identifier
-            address: modbus data address
-            and_mask: and mask
-            or_mask: or mask
+            return common.Success()
 
-        Raises:
-            ConnectionError
-            TimeoutError
+        elif isinstance(req, common.WriteMaskReq):
+            if not isinstance(res_pdu, transport.MaskWriteRegisterRes):
+                raise ValueError("unsupported response pdu")
 
-        """
-        req = transport.MaskWriteRegisterReq(address=address,
-                                             and_mask=and_mask,
-                                             or_mask=or_mask)
+            if (res_pdu.address != req.address):
+                raise Exception("invalid response pdu address")
 
-        res = await self._send(device_id, req)
+            if (res_pdu.and_mask != req.and_mask):
+                raise Exception("invalid response pdu and mask")
 
-        if isinstance(res, transport.ErrorRes):
-            return res.error
+            if (res_pdu.or_mask != req.or_mask):
+                raise Exception("invalid response pdu or mask")
 
-        if not isinstance(res, transport.MaskWriteRegisterRes):
-            raise ValueError("unsupported response pdu")
+            return common.Success()
 
-        if (res.address != address):
-            raise Exception("invalid response pdu address")
+        else:
+            raise TypeError('unsupported request')
 
-        if (res.and_mask != and_mask):
-            raise Exception("invalid response pdu and mask")
-
-        if (res.or_mask != or_mask):
-            raise Exception("invalid response pdu or mask")
-
-    async def _send(self, device_id, req):
+    async def _send(self, device_id, req_pdu):
         if self._modbus_type == common.ModbusType.TCP:
             req_adu = transport.TcpAdu(
                 transaction_id=next(self._next_transaction_ids),
                 device_id=device_id,
-                pdu=req)
+                pdu=req_pdu)
 
         elif self._modbus_type == common.ModbusType.RTU:
             req_adu = transport.RtuAdu(device_id=device_id,
-                                       pdu=req)
+                                       pdu=req_pdu)
 
         elif self._modbus_type == common.ModbusType.ASCII:
             req_adu = transport.AsciiAdu(device_id=device_id,
-                                         pdu=req)
+                                         pdu=req_pdu)
 
         else:
             raise ValueError("unsupported modbus type")
 
-        future = asyncio.Future()
+        future = self._loop.create_future()
         try:
             self._send_queue.put_nowait((req_adu, future))
             res_adu = await future

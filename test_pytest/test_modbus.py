@@ -37,8 +37,7 @@ async def patch_serial_read_timeout(monkeypatch):
 async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
 
     @contextlib.asynccontextmanager
-    async def create_master_slave(modbus_type, comm_type, read_cb=None,
-                                  write_cb=None, write_mask_cb=None):
+    async def create_master_slave(modbus_type, comm_type, request_cb=None):
         srv = None
 
         if comm_type == CommType.TCP:
@@ -47,9 +46,7 @@ async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
                 modbus_type=modbus_type,
                 addr=tcp_addr,
                 slave_cb=slave_queue.put_nowait,
-                read_cb=read_cb,
-                write_cb=write_cb,
-                write_mask_cb=write_mask_cb)
+                request_cb=request_cb)
             master = await modbus.create_tcp_master(
                 modbus_type=modbus_type,
                 addr=tcp_addr)
@@ -62,9 +59,7 @@ async def create_master_slave(tcp_addr, nullmodem, patch_serial_read_timeout):
             slave = await modbus.create_serial_slave(
                 modbus_type=modbus_type,
                 port=str(nullmodem[1]),
-                read_cb=read_cb,
-                write_cb=write_cb,
-                write_mask_cb=write_mask_cb)
+                request_cb=request_cb)
 
         else:
             raise ValueError()
@@ -151,122 +146,164 @@ async def test_create_serial(nullmodem, modbus_type,
 
 @pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
 @pytest.mark.parametrize("comm_type", comm_types)
-@pytest.mark.parametrize(
-    "device_id, data_type, start_address, quantity, result", [
-        (1, modbus.DataType.COIL, 1, 1, [0]),
-        (2, modbus.DataType.COIL, 1, 1, [1]),
-        (3, modbus.DataType.COIL, 3, 4, [1, 0, 1, 0]),
-        (4, modbus.DataType.DISCRETE_INPUT, 1, 1, [0]),
-        (5, modbus.DataType.DISCRETE_INPUT, 1, 2, [1, 0]),
-        (6, modbus.DataType.HOLDING_REGISTER, 1, 1, [0]),
-        (7, modbus.DataType.HOLDING_REGISTER, 1, 4, [1, 255, 1234, 0xFFFF]),
-        (8, modbus.DataType.INPUT_REGISTER, 1, 1, [0]),
-        (9, modbus.DataType.INPUT_REGISTER, 1, 4, [1, 255, 1234, 0xFFFF]),
-        (1, modbus.DataType.INPUT_REGISTER, 1, 4, [1, 255, 1234, 0xFFFF]),
-        (1, modbus.DataType.QUEUE, 123, None, [1, 255, 1234, 0xFFFF]),
-        (1, modbus.DataType.COIL, 1, 1, modbus.Error.INVALID_FUNCTION_CODE),
-        (1, modbus.DataType.COIL, 1, 3, modbus.Error.INVALID_DATA_ADDRESS),
-        (1, modbus.DataType.COIL, 1, 1, modbus.Error.INVALID_DATA_VALUE),
-        (1, modbus.DataType.COIL, 1, 3, modbus.Error.FUNCTION_ERROR)
-    ])
-async def test_read(create_master_slave, modbus_type, comm_type,
-                    device_id, data_type, start_address, quantity, result):
-    read_queue = aio.Queue()
+@pytest.mark.parametrize("req, res", [
+    (modbus.ReadReq(device_id=1,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=1),
+     [0]),
 
-    async def on_read(slave, device_id, data_type, start_address, quantity):
-        f = asyncio.Future()
-        entry = device_id, data_type, start_address, quantity, f
-        read_queue.put_nowait(entry)
-        return await f
+    (modbus.ReadReq(device_id=2,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=1),
+     [1]),
+
+    (modbus.ReadReq(device_id=3,
+                    data_type=modbus.DataType.COIL,
+                    start_address=3,
+                    quantity=4),
+     [1, 0, 1, 0]),
+
+    (modbus.ReadReq(device_id=4,
+                    data_type=modbus.DataType.DISCRETE_INPUT,
+                    start_address=1,
+                    quantity=1),
+     [0]),
+
+    (modbus.ReadReq(device_id=5,
+                    data_type=modbus.DataType.DISCRETE_INPUT,
+                    start_address=1,
+                    quantity=2),
+     [1, 0]),
+
+    (modbus.ReadReq(device_id=6,
+                    data_type=modbus.DataType.HOLDING_REGISTER,
+                    start_address=1,
+                    quantity=1),
+     [0]),
+
+    (modbus.ReadReq(device_id=7,
+                    data_type=modbus.DataType.HOLDING_REGISTER,
+                    start_address=1,
+                    quantity=4),
+     [1, 255, 1234, 0xFFFF]),
+
+    (modbus.ReadReq(device_id=8,
+                    data_type=modbus.DataType.INPUT_REGISTER,
+                    start_address=1,
+                    quantity=1),
+     [0]),
+
+    (modbus.ReadReq(device_id=9,
+                    data_type=modbus.DataType.INPUT_REGISTER,
+                    start_address=1,
+                    quantity=4),
+     [1, 255, 1234, 0xFFFF]),
+
+    (modbus.ReadReq(device_id=10,
+                    data_type=modbus.DataType.QUEUE,
+                    start_address=123,
+                    quantity=0),
+     [1, 255, 1234, 0xFFFF]),
+
+    (modbus.ReadReq(device_id=11,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=1),
+     modbus.Error.INVALID_FUNCTION_CODE),
+
+    (modbus.ReadReq(device_id=12,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=3),
+     modbus.Error.INVALID_DATA_ADDRESS),
+
+    (modbus.ReadReq(device_id=13,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=1),
+     modbus.Error.INVALID_DATA_VALUE),
+
+    (modbus.ReadReq(device_id=14,
+                    data_type=modbus.DataType.COIL,
+                    start_address=1,
+                    quantity=3),
+     modbus.Error.FUNCTION_ERROR),
+
+    (modbus.WriteReq(device_id=1,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[0]),
+     modbus.Success()),
+
+    (modbus.WriteReq(device_id=2,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[1]),
+     modbus.Success()),
+
+    (modbus.WriteReq(device_id=3,
+                     data_type=modbus.DataType.COIL,
+                     start_address=3,
+                     values=[1, 0, 1, 0]),
+     modbus.Success()),
+
+    (modbus.WriteReq(device_id=4,
+                     data_type=modbus.DataType.HOLDING_REGISTER,
+                     start_address=1,
+                     values=[0]),
+     modbus.Success()),
+
+    (modbus.WriteReq(device_id=5,
+                     data_type=modbus.DataType.HOLDING_REGISTER,
+                     start_address=1,
+                     values=[1, 255, 1234, 0xFFFF]),
+     modbus.Success()),
+
+    (modbus.WriteReq(device_id=6,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[0]),
+     modbus.Error.INVALID_FUNCTION_CODE),
+
+    (modbus.WriteReq(device_id=7,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[0]),
+     modbus.Error.INVALID_DATA_ADDRESS),
+
+    (modbus.WriteReq(device_id=8,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[0]),
+     modbus.Error.INVALID_DATA_VALUE),
+
+    (modbus.WriteReq(device_id=9,
+                     data_type=modbus.DataType.COIL,
+                     start_address=1,
+                     values=[0]),
+     modbus.Error.FUNCTION_ERROR),
+
+    (modbus.WriteMaskReq(device_id=1,
+                         address=1,
+                         and_mask=12,
+                         or_mask=21),
+     modbus.Success()),
+
+    (modbus.WriteMaskReq(device_id=3,
+                         address=5,
+                         and_mask=42,
+                         or_mask=24),
+     modbus.Success())
+    ])
+async def test_send(create_master_slave, modbus_type, comm_type, req, res):
+
+    async def on_request(slave, r):
+        assert req == r
+        return res
 
     async with create_master_slave(modbus_type, comm_type,
-                                   read_cb=on_read) as (master, slave):
-
-        read_future = asyncio.ensure_future(master.read(
-            device_id, data_type, start_address, quantity))
-
-        entry = await read_queue.get()
-        assert entry[0] == device_id
-        assert entry[1] == data_type
-        assert entry[2] == start_address
-        assert entry[3] == quantity
-        entry[4].set_result(result)
-
-        read_result = await read_future
-        assert read_result == result
-
-
-@pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
-@pytest.mark.parametrize("comm_type", comm_types)
-@pytest.mark.parametrize(
-    "device_id, data_type, start_address, values, result", [
-        (1, modbus.DataType.COIL, 1, [0], None),
-        (2, modbus.DataType.COIL, 1, [1], None),
-        (3, modbus.DataType.COIL, 3, [1, 0, 1, 0], None),
-        (6, modbus.DataType.HOLDING_REGISTER, 1, [0], None),
-        (7, modbus.DataType.HOLDING_REGISTER, 1, [1, 255, 1234, 0xFFFF], None),
-        (1, modbus.DataType.COIL, 1, [0], modbus.Error.INVALID_FUNCTION_CODE),
-        (1, modbus.DataType.COIL, 1, [0], modbus.Error.INVALID_DATA_ADDRESS),
-        (1, modbus.DataType.COIL, 1, [0], modbus.Error.INVALID_DATA_VALUE),
-        (1, modbus.DataType.COIL, 1, [0], modbus.Error.FUNCTION_ERROR)
-    ])
-async def test_write(create_master_slave, modbus_type, comm_type,
-                     device_id, data_type, start_address, values, result):
-    write_queue = aio.Queue()
-
-    async def on_write(slave, device_id, data_type, start_address, values):
-        f = asyncio.Future()
-        entry = device_id, data_type, start_address, values, f
-        write_queue.put_nowait(entry)
-        return await f
-
-    async with create_master_slave(modbus_type, comm_type,
-                                   write_cb=on_write) as (master, slave):
-
-        write_future = asyncio.ensure_future(master.write(
-            device_id, data_type, start_address, values))
-
-        entry = await write_queue.get()
-        assert entry[0] == device_id
-        assert entry[1] == data_type
-        assert entry[2] == start_address
-        assert entry[3] == values
-        entry[4].set_result(result)
-
-        read_result = await write_future
-        assert read_result == result
-
-
-@pytest.mark.parametrize("modbus_type", list(modbus.ModbusType))
-@pytest.mark.parametrize("comm_type", comm_types)
-@pytest.mark.parametrize("device_id, address, and_mask, or_mask", [
-    (1, 1, 12, 21),
-    (3, 5, 42, 24)
-])
-@pytest.mark.parametrize("result", [None, *modbus.Error])
-async def test_write_mask(create_master_slave, modbus_type, comm_type,
-                          device_id, address, and_mask, or_mask, result):
-    write_mask_queue = aio.Queue()
-
-    async def on_write_mask(slave, device_id, address, and_mask, or_mask):
-        f = asyncio.Future()
-        entry = device_id, address, and_mask, or_mask, f
-        write_mask_queue.put_nowait(entry)
-        return await f
-
-    async with create_master_slave(
-            modbus_type, comm_type,
-            write_mask_cb=on_write_mask) as (master, slave):
-
-        write_mask_future = asyncio.ensure_future(master.write_mask(
-            device_id, address, and_mask, or_mask))
-
-        entry = await write_mask_queue.get()
-        assert entry[0] == device_id
-        assert entry[1] == address
-        assert entry[2] == and_mask
-        assert entry[3] == or_mask
-        entry[4].set_result(result)
-
-        read_result = await write_mask_future
-        assert read_result == result
+                                   on_request) as (master, slave):
+        result = await master.send(req)
+        assert result == res

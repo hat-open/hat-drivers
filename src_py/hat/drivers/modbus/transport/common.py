@@ -1,5 +1,6 @@
 from hat.drivers.modbus.common import *  # NOQA
 
+from collections.abc import Sequence
 import enum
 import typing
 
@@ -31,38 +32,38 @@ class ErrorRes(typing.NamedTuple):
 
 class ReadCoilsReq(typing.NamedTuple):
     address: int
-    quantity: int | None
+    quantity: int
 
 
 class ReadCoilsRes(typing.NamedTuple):
-    values: list[int]
+    values: Sequence[int]
 
 
 class ReadDiscreteInputsReq(typing.NamedTuple):
     address: int
-    quantity: int | None
+    quantity: int
 
 
 class ReadDiscreteInputsRes(typing.NamedTuple):
-    values: list[int]
+    values: Sequence[int]
 
 
 class ReadHoldingRegistersReq(typing.NamedTuple):
     address: int
-    quantity: int | None
+    quantity: int
 
 
 class ReadHoldingRegistersRes(typing.NamedTuple):
-    values: list[int]
+    values: Sequence[int]
 
 
 class ReadInputRegistersReq(typing.NamedTuple):
     address: int
-    quantity: int | None
+    quantity: int
 
 
 class ReadInputRegistersRes(typing.NamedTuple):
-    values: list[int]
+    values: Sequence[int]
 
 
 class WriteSingleCoilReq(typing.NamedTuple):
@@ -87,7 +88,7 @@ class WriteSingleRegisterRes(typing.NamedTuple):
 
 class WriteMultipleCoilsReq(typing.NamedTuple):
     address: int
-    values: list[int]
+    values: Sequence[int]
 
 
 class WriteMultipleCoilsRes(typing.NamedTuple):
@@ -97,7 +98,7 @@ class WriteMultipleCoilsRes(typing.NamedTuple):
 
 class WriteMultipleRegistersReq(typing.NamedTuple):
     address: int
-    values: list[int]
+    values: Sequence[int]
 
 
 class WriteMultipleRegistersRes(typing.NamedTuple):
@@ -122,7 +123,7 @@ class ReadFifoQueueReq(typing.NamedTuple):
 
 
 class ReadFifoQueueRes(typing.NamedTuple):
-    values: list[int]
+    values: Sequence[int]
 
 
 Request: typing.TypeAlias = (ReadCoilsReq |
@@ -136,17 +137,17 @@ Request: typing.TypeAlias = (ReadCoilsReq |
                              MaskWriteRegisterReq |
                              ReadFifoQueueReq)
 
-Response = typing.TypeAlias = (ErrorRes |
-                               ReadCoilsRes |
-                               ReadDiscreteInputsRes |
-                               ReadHoldingRegistersRes |
-                               ReadInputRegistersRes |
-                               WriteSingleCoilRes |
-                               WriteSingleRegisterRes |
-                               WriteMultipleCoilsRes |
-                               WriteMultipleRegistersRes |
-                               MaskWriteRegisterRes |
-                               ReadFifoQueueRes)
+Response: typing.TypeAlias = (ErrorRes |
+                              ReadCoilsRes |
+                              ReadDiscreteInputsRes |
+                              ReadHoldingRegistersRes |
+                              ReadInputRegistersRes |
+                              WriteSingleCoilRes |
+                              WriteSingleRegisterRes |
+                              WriteMultipleCoilsRes |
+                              WriteMultipleRegistersRes |
+                              MaskWriteRegisterRes |
+                              ReadFifoQueueRes)
 
 Pdu: typing.TypeAlias = Request | Response
 
