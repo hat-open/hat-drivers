@@ -91,36 +91,28 @@ def _format_adu(adu):
 
     elif isinstance(adu.pdu, common.ReadCoilsReq):
         segments.append(f"addr={adu.pdu.address}")
-
-        if adu.pdu.quantity is not None:
-            segments.append(f"quantity={adu.pdu.quantity}")
+        segments.append(f"quantity={adu.pdu.quantity}")
 
     elif isinstance(adu.pdu, common.ReadCoilsRes):
         segments.append(f"values={adu.pdu.values}")
 
     elif isinstance(adu.pdu, common.ReadDiscreteInputsReq):
         segments.append(f"addr={adu.pdu.address}")
-
-        if adu.pdu.quantity is not None:
-            segments.append(f"quantity={adu.pdu.quantity}")
+        segments.append(f"quantity={adu.pdu.quantity}")
 
     elif isinstance(adu.pdu, common.ReadDiscreteInputsRes):
         segments.append(f"values={adu.pdu.values}")
 
     elif isinstance(adu.pdu, common.ReadHoldingRegistersReq):
         segments.append(f"addr={adu.pdu.address}")
-
-        if adu.pdu.quantity is not None:
-            segments.append(f"quantity={adu.pdu.quantity}")
+        segments.append(f"quantity={adu.pdu.quantity}")
 
     elif isinstance(adu.pdu, common.ReadHoldingRegistersRes):
         segments.append(f"values={adu.pdu.values}")
 
     elif isinstance(adu.pdu, common.ReadInputRegistersReq):
         segments.append(f"addr={adu.pdu.address}")
-
-        if adu.pdu.quantity is not None:
-            segments.append(f"quantity={adu.pdu.quantity}")
+        segments.append(f"quantity={adu.pdu.quantity}")
 
     elif isinstance(adu.pdu, common.ReadInputRegistersRes):
         segments.append(f"values={adu.pdu.values}")

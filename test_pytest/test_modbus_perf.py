@@ -20,12 +20,12 @@ def addr():
 @pytest.mark.parametrize("count", [1, 100, 1000])
 async def test_serial(profile, nullmodem, quantity, count):
 
-    def on_read(slave, device_id, data_type, start_address, quantity):
+    def on_request(slave, req):
         return list(range(quantity))
 
     slave = await modbus.create_serial_slave(modbus_type=modbus.ModbusType.RTU,
                                              port=str(nullmodem[0]),
-                                             read_cb=on_read,
+                                             request_cb=on_request,
                                              silent_interval=0)
 
     master = await modbus.create_serial_master(
@@ -35,10 +35,11 @@ async def test_serial(profile, nullmodem, quantity, count):
 
     with profile(f'quantity_{quantity}_count_{count}'):
         for _ in range(count):
-            await master.read(device_id=1,
-                              data_type=modbus.DataType.HOLDING_REGISTER,
-                              start_address=42,
-                              quantity=quantity)
+            await master.send(
+                modbus.ReadReq(device_id=1,
+                               data_type=modbus.DataType.HOLDING_REGISTER,
+                               start_address=42,
+                               quantity=quantity))
 
     await master.async_close()
     await slave.async_close()
@@ -48,22 +49,23 @@ async def test_serial(profile, nullmodem, quantity, count):
 @pytest.mark.parametrize("count", [1, 100, 1000])
 async def test_tcp(profile, addr, quantity, count):
 
-    def on_read(slave, device_id, data_type, start_address, quantity):
+    def on_request(slave, req):
         return list(range(quantity))
 
     server = await modbus.create_tcp_server(modbus_type=modbus.ModbusType.RTU,
                                             addr=addr,
-                                            read_cb=on_read)
+                                            request_cb=on_request)
 
     master = await modbus.create_tcp_master(modbus_type=modbus.ModbusType.RTU,
                                             addr=addr)
 
     with profile(f'quantity_{quantity}_count_{count}'):
         for _ in range(count):
-            await master.read(device_id=1,
-                              data_type=modbus.DataType.HOLDING_REGISTER,
-                              start_address=42,
-                              quantity=quantity)
+            await master.send(
+                modbus.ReadReq(device_id=1,
+                               data_type=modbus.DataType.HOLDING_REGISTER,
+                               start_address=42,
+                               quantity=quantity))
 
     await master.async_close()
     await server.async_close()
