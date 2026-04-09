@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="pdoc 16.0.0"/>
+    <title>hat.drivers.cdt API documentation</title>
+
+    <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
+    <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
+    <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;z-index:999;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent; z-index:1}nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{cursor:pointer;display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:.75rem center;margin-bottom:1rem;}.pdoc .alert > em{display:none;}.pdoc .alert > *:last-child{margin-bottom:0;}.pdoc .alert.note{color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .alert.tip{color:#0a3622;background-color:#d1e7dd;border-color:#a3cfbb;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%230a3622%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%206a6%206%200%201%201%2010.174%204.31c-.203.196-.359.4-.453.619l-.762%201.769A.5.5%200%200%201%2010.5%2013a.5.5%200%200%201%200%201%20.5.5%200%200%201%200%201l-.224.447a1%201%200%200%201-.894.553H6.618a1%201%200%200%201-.894-.553L5.5%2015a.5.5%200%200%201%200-1%20.5.5%200%200%201%200-1%20.5.5%200%200%201-.46-.302l-.761-1.77a2%202%200%200%200-.453-.618A5.98%205.98%200%200%201%202%206m6-5a5%205%200%200%200-3.479%208.592c.263.254.514.564.676.941L5.83%2012h4.342l.632-1.467c.162-.377.413-.687.676-.941A5%205%200%200%200%208%201%22/%3E%3C/svg%3E");}.pdoc .alert.important{color:#055160;background-color:#cff4fc;border-color:#9eeaf9;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23055160%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%200a2%202%200%200%200-2%202v12a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V2a2%202%200%200%200-2-2zm6%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .alert.caution{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M11.46.146A.5.5%200%200%200%2011.107%200H4.893a.5.5%200%200%200-.353.146L.146%204.54A.5.5%200%200%200%200%204.893v6.214a.5.5%200%200%200%20.146.353l4.394%204.394a.5.5%200%200%200%20.353.146h6.214a.5.5%200%200%200%20.353-.146l4.394-4.394a.5.5%200%200%200%20.146-.353V4.893a.5.5%200%200%200-.146-.353zM8%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--accent);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .decorator-deprecated{color:#842029;}.pdoc .decorator-deprecated ~ span{filter:grayscale(1) opacity(0.8);}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .view-value-toggle-state,.pdoc .view-value-toggle-state ~ .default_value{display:none;}.pdoc .view-value-toggle-state:checked ~ .default_value{display:inherit;}.pdoc .view-value-button{font-size:.5rem;vertical-align:middle;border-style:dashed;margin-top:-0.1rem;}.pdoc .view-value-button:hover{background:white;}.pdoc .view-value-button::before{content:"show";text-align:center;width:2.2em;display:inline-block;}.pdoc .view-value-toggle-state:checked ~ .view-value-button::before{content:"hide";}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:27px;vertical-align:bottom;width:50px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! custom.css */</style></head>
+<body>
+    <nav class="pdoc">
+        <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
+        <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
+        <div>            <a class="pdoc-button module-list-button" href="../drivers.html">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
+  <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
+</svg>                &nbsp;hat.drivers</a>
+
+
+            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+                   pattern=".+" required>
+
+
+
+            <h2>API Documentation</h2>
+                <ul class="memberlist">
+            <li>
+                    <a class="class" href="#Browser">Browser</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Browser.__init__">Browser</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Browser.conn">conn</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Browser.close">close</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="variable" href="#SessionId">SessionId</a>
+            </li>
+            <li>
+                    <a class="variable" href="#EventName">EventName</a>
+            </li>
+            <li>
+                    <a class="variable" href="#EventCb">EventCb</a>
+            </li>
+            <li>
+                    <a class="function" href="#connect">connect</a>
+            </li>
+            <li>
+                    <a class="class" href="#Connection">Connection</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#Connection.async_group">async_group</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Connection.register_event_cb">register_event_cb</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Connection.call">call</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Page">Page</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Page.__init__">Page</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Page.session">session</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Page.enable">enable</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Page.disable">disable</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Page.navigate">navigate</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Page.reload">reload</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Runtime">Runtime</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Runtime.__init__">Runtime</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Runtime.session">session</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Runtime.enable">enable</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Runtime.disable">disable</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Runtime.evaluate">evaluate</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="variable" href="#TargetId">TargetId</a>
+            </li>
+            <li>
+                    <a class="class" href="#TargetInfo">TargetInfo</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#TargetInfo.__init__">TargetInfo</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TargetInfo.target_id">target_id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TargetInfo.type">type</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TargetInfo.title">title</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TargetInfo.url">url</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TargetInfo.attached">attached</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#getTargetInfos">getTargetInfos</a>
+            </li>
+            <li>
+                    <a class="function" href="#createTarget">createTarget</a>
+            </li>
+            <li>
+                    <a class="class" href="#Session">Session</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Session.__init__">Session</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Session.conn">conn</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Session.session_id">session_id</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Session.call">call</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Session.detach">detach</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Target">Target</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Target.__init__">Target</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Target.conn">conn</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Target.target_id">target_id</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Target.activate">activate</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Target.attach">attach</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Target.close">close</a>
+                        </li>
+                </ul>
+
+            </li>
+    </ul>
+
+
+
+        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
+            built with <span class="visually-hidden">pdoc</span><img
+                alt="pdoc logo"
+                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22pdoc%20logo%22%20width%3D%22300%22%20height%3D%22160%22%20viewBox%3D%220%200%20150%2080%22%3E%3Ctitle%3Epdoc%3C/title%3E%3Cpath%20d%3D%22M132.316%2048.886c.276-4.679%202.342-6.698%204.409-7.982s4.27-1.165%206.751-1.055c1.586.07%203.044.156%204.222-.482%201.142-.619%202.026-1.932%202.162-3.739.268-3.576-1.929-5.368-5.006-5.551s-7.599.524-10.517%201.606c-4.455%201.652-8.588%206.606-9.552%208.992s-2.342%206.193-1.745%2010.873%202.664%209.221%205.878%2011.79%205.878%203.808%2010.103%204.312%203.444.229%206.062.229%205.006-2.202%204.914-4.909-2.296-5.001-4.501-4.863-3.077.505-5.281.229-7.715-2.064-7.899-9.451z%22%20fill%3D%22%23198754%22/%3E%3Ccircle%20cx%3D%22101.504%22%20cy%3D%2248.943%22%20r%3D%2214.208%22%20fill%3D%22none%22%20stroke%3D%22%23198754%22%20stroke-width%3D%229.354%22/%3E%3Cpath%20d%3D%22M87.81.002c-3.637.065-5.001.454-7.014%201.232s-3.443%201.363-6.3%204.282c-1.723%201.76-3.148%205.019-3.776%207.329-.413%201.521-.316%202.63-.316%202.63l-.195%2034.612c.065%205.774-6.755%208.305-9.612%208.37s-9.678-1.038-9.743-9.408%207.128-9.521%208.362-9.521c1.413-.13%202.526-.021%203.718-.016%202.071.009%204.157-.778%204.092-4.671s-4.157-4.736-4.157-4.736c-6.3-.843-11.43%202.206-11.43%202.206S40.917%2038.15%2041.372%2049.634%2051.568%2068.19%2061.311%2068.125s18.316-7.007%2018.445-17.193l.13-22.772c.046-2.291%202.683-3.644%204.476-4.203.745-.232%201.694-.274%201.694-.274l10.457-.13s4.871-.324%207.729-3.114%204.352-6.294%204.352-6.294.974-3.049.13-4.606-.195-1.233-2.792-3.309-8.573-4.477-8.573-4.477S91.447-.063%2087.81.002zM0%2047.169l.065%2028.417S0%2080.127%204.481%2079.997s5.072-3.866%205.049-4.152l-.113-28.482s1.624-7.656%209.937-7.721%2010.002%206.942%2010.002%208.499-.909%2010.51-9.093%2010.51c-.948%200-2.99-.567-4.145-.272-3.919%201-3.194%204.554-3.194%204.554s.065%205.061%207.404%204.996%2018.575-6.034%2018.575-19.074S26.953%2030.04%2019.549%2029.91%201.234%2035.296%200%2047.169z%22%20fill%3D%22%23198754%22/%3E%3Cg%20transform%3D%22matrix%28.325601%200%200%20.325256%20-10.32669%20-45.802786%29%22%3E%3Ccircle%20cx%3D%22297.554%22%20cy%3D%22172.286%22%20r%3D%2216.5%22%20fill%3D%22%23fff%22/%3E%3Cellipse%20cx%3D%22297.709%22%20cy%3D%22172.642%22%20rx%3D%2211.071%22%20ry%3D%2210.871%22%20fill%3D%22%23105a48%22/%3E%3Ccircle%20cx%3D%22304.104%22%20cy%3D%22167.667%22%20r%3D%224.5%22%20fill%3D%22%23fff%22/%3E%3C/g%3E%3Cpath%20d%3D%22M94.661%2017.032l.893-1.476s.99.714%201.916.925%201.575.114%202.955.114l14.565-.162c1.283-.032%203.085-.762%203.02-3.293s-.373-3.503-.373-3.503l1.283-.487s.52.503.877%201.573.309%201.995.292%202.66-.227%201.541-.227%201.541%201.564-.308%202.359-1.038.823-.779%201.489-1.508.812-.86.812-.86.552-.13.877.26.341.957.065%201.46-1.672%202.206-3.247%203.066-2.76%201.427-3.929%201.768-3.848.73-7.063.714l-10.944-.114s-2.143-.081-3.02-.373-2.241-.973-2.598-1.265z%22%20fill%3D%22%23d36d49%22/%3E%3Cg%20fill%3D%22%23105a48%22%3E%3Cellipse%20cx%3D%2293.052%22%20cy%3D%2243.567%22%20rx%3D%22.869%22%20ry%3D%221.014%22%20transform%3D%22rotate%28341.022%29%22/%3E%3Cellipse%20cx%3D%22104.3%22%20cy%3D%22-16.184%22%20rx%3D%22.865%22%20ry%3D%221.009%22%20transform%3D%22rotate%2814.786%29%22/%3E%3C/g%3E%3C/svg%3E"/>
+        </a>
+</div>
+    </nav>
+    <main class="pdoc">
+            <section class="module-info">
+                    <h1 class="modulename">
+hat<wbr>.<a href="./../drivers.html">drivers</a><wbr>.cdt    </h1>
+
+                        <div class="docstring"><p>Chrome DevTools Protocol</p>
+</div>
+
+                        <input id="mod-cdt-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+
+                        <label class="view-source-button" for="mod-cdt-view-source"><span>View Source</span></label>
+
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;Chrome DevTools Protocol&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">hat.drivers.cdt.browser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Browser</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">hat.drivers.cdt.connection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">SessionId</span><span class="p">,</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>                                        <span class="n">EventName</span><span class="p">,</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>                                        <span class="n">EventCb</span><span class="p">,</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>                                        <span class="n">connect</span><span class="p">,</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>                                        <span class="n">Connection</span><span class="p">)</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">hat.drivers.cdt.page</span><span class="w"> </span><span class="kn">import</span> <span class="n">Page</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">hat.drivers.cdt.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">hat.drivers.cdt.target</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">TargetId</span><span class="p">,</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>                                    <span class="n">TargetInfo</span><span class="p">,</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>                                    <span class="n">getTargetInfos</span><span class="p">,</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>                                    <span class="n">createTarget</span><span class="p">,</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>                                    <span class="n">Session</span><span class="p">,</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>                                    <span class="n">Target</span><span class="p">)</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Browser&#39;</span><span class="p">,</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>           <span class="s1">&#39;SessionId&#39;</span><span class="p">,</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>           <span class="s1">&#39;EventName&#39;</span><span class="p">,</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>           <span class="s1">&#39;EventCb&#39;</span><span class="p">,</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>           <span class="s1">&#39;connect&#39;</span><span class="p">,</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>           <span class="s1">&#39;Connection&#39;</span><span class="p">,</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>           <span class="s1">&#39;Page&#39;</span><span class="p">,</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>           <span class="s1">&#39;Runtime&#39;</span><span class="p">,</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>           <span class="s1">&#39;TargetId&#39;</span><span class="p">,</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>           <span class="s1">&#39;TargetInfo&#39;</span><span class="p">,</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>           <span class="s1">&#39;getTargetInfos&#39;</span><span class="p">,</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>           <span class="s1">&#39;createTarget&#39;</span><span class="p">,</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>           <span class="s1">&#39;Session&#39;</span><span class="p">,</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>           <span class="s1">&#39;Target&#39;</span><span class="p">]</span>
+</span></pre></div>
+
+
+            </section>
+                <section id="Browser">
+                            <input id="Browser-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Browser</span>:
+
+                <label class="view-source-button" for="Browser-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Browser"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Browser-5"><a href="#Browser-5"><span class="linenos"> 5</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Browser</span><span class="p">:</span>
+</span><span id="Browser-6"><a href="#Browser-6"><span class="linenos"> 6</span></a>
+</span><span id="Browser-7"><a href="#Browser-7"><span class="linenos"> 7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">):</span>
+</span><span id="Browser-8"><a href="#Browser-8"><span class="linenos"> 8</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span><span id="Browser-9"><a href="#Browser-9"><span class="linenos"> 9</span></a>
+</span><span id="Browser-10"><a href="#Browser-10"><span class="linenos">10</span></a>    <span class="nd">@property</span>
+</span><span id="Browser-11"><a href="#Browser-11"><span class="linenos">11</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Browser-12"><a href="#Browser-12"><span class="linenos">12</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span><span id="Browser-13"><a href="#Browser-13"><span class="linenos">13</span></a>
+</span><span id="Browser-14"><a href="#Browser-14"><span class="linenos">14</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Browser-15"><a href="#Browser-15"><span class="linenos">15</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Browser.close&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Browser.__init__" class="classattr">
+                                        <input id="Browser.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">Browser</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">conn</span><span class="p">:</span> <span class="n"><a href="#Connection">Connection</a></span></span>)</span>
+
+                <label class="view-source-button" for="Browser.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Browser.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Browser.__init__-7"><a href="#Browser.__init__-7"><span class="linenos">7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">):</span>
+</span><span id="Browser.__init__-8"><a href="#Browser.__init__-8"><span class="linenos">8</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Browser.conn" class="classattr">
+                                        <input id="Browser.conn-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">conn</span><span class="annotation">: <a href="#Connection">Connection</a></span>
+
+                <label class="view-source-button" for="Browser.conn-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Browser.conn"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Browser.conn-10"><a href="#Browser.conn-10"><span class="linenos">10</span></a>    <span class="nd">@property</span>
+</span><span id="Browser.conn-11"><a href="#Browser.conn-11"><span class="linenos">11</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Browser.conn-12"><a href="#Browser.conn-12"><span class="linenos">12</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Browser.close" class="classattr">
+                                        <input id="Browser.close-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">close</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Browser.close-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Browser.close"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Browser.close-14"><a href="#Browser.close-14"><span class="linenos">14</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Browser.close-15"><a href="#Browser.close-15"><span class="linenos">15</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Browser.close&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="SessionId">
+                    <div class="attr variable">
+            <span class="name">SessionId</span>        =
+<span class="default_value">&lt;class &#39;int&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SessionId"></a>
+    
+    
+
+                </section>
+                <section id="EventName">
+                    <div class="attr variable">
+            <span class="name">EventName</span>        =
+<span class="default_value">&lt;class &#39;str&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EventName"></a>
+    
+    
+
+                </section>
+                <section id="EventCb">
+                    <div class="attr variable">
+            <span class="name">EventCb</span>        =
+<input id="EventCb-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="EventCb-view-value"></label><span class="default_value">typing.Callable[[str, typing.Union[NoneType, bool, int, float, str, typing.List[ForwardRef(&#39;Data&#39;)], typing.Dict[str, ForwardRef(&#39;Data&#39;)]]], NoneType]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EventCb"></a>
+    
+    
+
+                </section>
+                <section id="connect">
+                            <input id="connect-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">connect</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">host</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">port</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n"><a href="#Connection">Connection</a></span>:</span></span>
+
+                <label class="view-source-button" for="connect-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#connect"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="connect-22"><a href="#connect-22"><span class="linenos">22</span></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="connect-23"><a href="#connect-23"><span class="linenos">23</span></a>                  <span class="n">port</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="connect-24"><a href="#connect-24"><span class="linenos">24</span></a>                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Connection&#39;</span><span class="p">:</span>
+</span><span id="connect-25"><a href="#connect-25"><span class="linenos">25</span></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span>
+</span><span id="connect-26"><a href="#connect-26"><span class="linenos">26</span></a>
+</span><span id="connect-27"><a href="#connect-27"><span class="linenos">27</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="connect-28"><a href="#connect-28"><span class="linenos">28</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;http://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">/json/version&#39;</span><span class="p">)</span>
+</span><span id="connect-29"><a href="#connect-29"><span class="linenos">29</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</span><span id="connect-30"><a href="#connect-30"><span class="linenos">30</span></a>        <span class="n">addr</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;webSocketDebuggerUrl&#39;</span><span class="p">]</span>
+</span><span id="connect-31"><a href="#connect-31"><span class="linenos">31</span></a>        <span class="n">ws</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">ws_connect</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="n">max_msg_size</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="connect-32"><a href="#connect-32"><span class="linenos">32</span></a>
+</span><span id="connect-33"><a href="#connect-33"><span class="linenos">33</span></a>    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+</span><span id="connect-34"><a href="#connect-34"><span class="linenos">34</span></a>        <span class="k">await</span> <span class="n">aio</span><span class="o">.</span><span class="n">uncancellable</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">())</span>
+</span><span id="connect-35"><a href="#connect-35"><span class="linenos">35</span></a>        <span class="k">raise</span>
+</span><span id="connect-36"><a href="#connect-36"><span class="linenos">36</span></a>
+</span><span id="connect-37"><a href="#connect-37"><span class="linenos">37</span></a>    <span class="n">conn</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">()</span>
+</span><span id="connect-38"><a href="#connect-38"><span class="linenos">38</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_ws</span> <span class="o">=</span> <span class="n">ws</span>
+</span><span id="connect-39"><a href="#connect-39"><span class="linenos">39</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_ws_session</span> <span class="o">=</span> <span class="n">session</span>
+</span><span id="connect-40"><a href="#connect-40"><span class="linenos">40</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_async_group</span> <span class="o">=</span> <span class="n">aio</span><span class="o">.</span><span class="n">Group</span><span class="p">()</span>
+</span><span id="connect-41"><a href="#connect-41"><span class="linenos">41</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_event_cbs</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">CallbackRegistry</span><span class="p">()</span>
+</span><span id="connect-42"><a href="#connect-42"><span class="linenos">42</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_next_ids</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="connect-43"><a href="#connect-43"><span class="linenos">43</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_result_futures</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="connect-44"><a href="#connect-44"><span class="linenos">44</span></a>
+</span><span id="connect-45"><a href="#connect-45"><span class="linenos">45</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_async_group</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">aio</span><span class="o">.</span><span class="n">call_on_cancel</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">_on_close</span><span class="p">)</span>
+</span><span id="connect-46"><a href="#connect-46"><span class="linenos">46</span></a>    <span class="n">conn</span><span class="o">.</span><span class="n">_async_group</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">_receive_loop</span><span class="p">)</span>
+</span><span id="connect-47"><a href="#connect-47"><span class="linenos">47</span></a>
+</span><span id="connect-48"><a href="#connect-48"><span class="linenos">48</span></a>    <span class="k">return</span> <span class="n">conn</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="Connection">
+                            <input id="Connection-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Connection</span><wbr>(<span class="base">hat.aio.group.Resource</span>):
+
+                <label class="view-source-button" for="Connection-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Connection"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Connection-51"><a href="#Connection-51"><span class="linenos"> 51</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Connection</span><span class="p">(</span><span class="n">aio</span><span class="o">.</span><span class="n">Resource</span><span class="p">):</span>
+</span><span id="Connection-52"><a href="#Connection-52"><span class="linenos"> 52</span></a>
+</span><span id="Connection-53"><a href="#Connection-53"><span class="linenos"> 53</span></a>    <span class="nd">@property</span>
+</span><span id="Connection-54"><a href="#Connection-54"><span class="linenos"> 54</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">async_group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">aio</span><span class="o">.</span><span class="n">Group</span><span class="p">:</span>
+</span><span id="Connection-55"><a href="#Connection-55"><span class="linenos"> 55</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_group</span>
+</span><span id="Connection-56"><a href="#Connection-56"><span class="linenos"> 56</span></a>
+</span><span id="Connection-57"><a href="#Connection-57"><span class="linenos"> 57</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">register_event_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Connection-58"><a href="#Connection-58"><span class="linenos"> 58</span></a>                          <span class="n">cb</span><span class="p">:</span> <span class="n">EventCb</span>
+</span><span id="Connection-59"><a href="#Connection-59"><span class="linenos"> 59</span></a>                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">util</span><span class="o">.</span><span class="n">RegisterCallbackHandle</span><span class="p">:</span>
+</span><span id="Connection-60"><a href="#Connection-60"><span class="linenos"> 60</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_cbs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+</span><span id="Connection-61"><a href="#Connection-61"><span class="linenos"> 61</span></a>
+</span><span id="Connection-62"><a href="#Connection-62"><span class="linenos"> 62</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Connection-63"><a href="#Connection-63"><span class="linenos"> 63</span></a>                   <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Connection-64"><a href="#Connection-64"><span class="linenos"> 64</span></a>                   <span class="n">params</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span> <span class="o">=</span> <span class="p">{},</span>
+</span><span id="Connection-65"><a href="#Connection-65"><span class="linenos"> 65</span></a>                   <span class="n">session_id</span><span class="p">:</span> <span class="n">SessionId</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="Connection-66"><a href="#Connection-66"><span class="linenos"> 66</span></a>                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+</span><span id="Connection-67"><a href="#Connection-67"><span class="linenos"> 67</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_open</span><span class="p">:</span>
+</span><span id="Connection-68"><a href="#Connection-68"><span class="linenos"> 68</span></a>            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">()</span>
+</span><span id="Connection-69"><a href="#Connection-69"><span class="linenos"> 69</span></a>
+</span><span id="Connection-70"><a href="#Connection-70"><span class="linenos"> 70</span></a>        <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_ids</span><span class="p">),</span>
+</span><span id="Connection-71"><a href="#Connection-71"><span class="linenos"> 71</span></a>               <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+</span><span id="Connection-72"><a href="#Connection-72"><span class="linenos"> 72</span></a>               <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
+</span><span id="Connection-73"><a href="#Connection-73"><span class="linenos"> 73</span></a>        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Connection-74"><a href="#Connection-74"><span class="linenos"> 74</span></a>            <span class="n">msg</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_id</span>
+</span><span id="Connection-75"><a href="#Connection-75"><span class="linenos"> 75</span></a>
+</span><span id="Connection-76"><a href="#Connection-76"><span class="linenos"> 76</span></a>        <span class="n">future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span><span class="p">()</span>
+</span><span id="Connection-77"><a href="#Connection-77"><span class="linenos"> 77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">future</span>
+</span><span id="Connection-78"><a href="#Connection-78"><span class="linenos"> 78</span></a>
+</span><span id="Connection-79"><a href="#Connection-79"><span class="linenos"> 79</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="Connection-80"><a href="#Connection-80"><span class="linenos"> 80</span></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="Connection-81"><a href="#Connection-81"><span class="linenos"> 81</span></a>            <span class="k">return</span> <span class="k">await</span> <span class="n">future</span>
+</span><span id="Connection-82"><a href="#Connection-82"><span class="linenos"> 82</span></a>
+</span><span id="Connection-83"><a href="#Connection-83"><span class="linenos"> 83</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="Connection-84"><a href="#Connection-84"><span class="linenos"> 84</span></a>            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span>
+</span><span id="Connection-85"><a href="#Connection-85"><span class="linenos"> 85</span></a>
+</span><span id="Connection-86"><a href="#Connection-86"><span class="linenos"> 86</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_on_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Connection-87"><a href="#Connection-87"><span class="linenos"> 87</span></a>        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span id="Connection-88"><a href="#Connection-88"><span class="linenos"> 88</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+</span><span id="Connection-89"><a href="#Connection-89"><span class="linenos"> 89</span></a>                <span class="n">future</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">())</span>
+</span><span id="Connection-90"><a href="#Connection-90"><span class="linenos"> 90</span></a>
+</span><span id="Connection-91"><a href="#Connection-91"><span class="linenos"> 91</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="Connection-92"><a href="#Connection-92"><span class="linenos"> 92</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="Connection-93"><a href="#Connection-93"><span class="linenos"> 93</span></a>
+</span><span id="Connection-94"><a href="#Connection-94"><span class="linenos"> 94</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_receive_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Connection-95"><a href="#Connection-95"><span class="linenos"> 95</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="Connection-96"><a href="#Connection-96"><span class="linenos"> 96</span></a>            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="Connection-97"><a href="#Connection-97"><span class="linenos"> 97</span></a>                <span class="n">msg_ws</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">receive</span><span class="p">()</span>
+</span><span id="Connection-98"><a href="#Connection-98"><span class="linenos"> 98</span></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">closed</span> <span class="ow">or</span> <span class="n">msg_ws</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">CLOSING</span><span class="p">:</span>
+</span><span id="Connection-99"><a href="#Connection-99"><span class="linenos"> 99</span></a>                    <span class="k">break</span>
+</span><span id="Connection-100"><a href="#Connection-100"><span class="linenos">100</span></a>                <span class="k">if</span> <span class="n">msg_ws</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">WSMsgType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span>
+</span><span id="Connection-101"><a href="#Connection-101"><span class="linenos">101</span></a>                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;unsupported message type&#39;</span><span class="p">)</span>
+</span><span id="Connection-102"><a href="#Connection-102"><span class="linenos">102</span></a>
+</span><span id="Connection-103"><a href="#Connection-103"><span class="linenos">103</span></a>                <span class="n">msg</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">msg_ws</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+</span><span id="Connection-104"><a href="#Connection-104"><span class="linenos">104</span></a>
+</span><span id="Connection-105"><a href="#Connection-105"><span class="linenos">105</span></a>                <span class="k">if</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+</span><span id="Connection-106"><a href="#Connection-106"><span class="linenos">106</span></a>                    <span class="n">future</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span><span id="Connection-107"><a href="#Connection-107"><span class="linenos">107</span></a>                    <span class="k">if</span> <span class="n">future</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+</span><span id="Connection-108"><a href="#Connection-108"><span class="linenos">108</span></a>                        <span class="k">if</span> <span class="s1">&#39;result&#39;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+</span><span id="Connection-109"><a href="#Connection-109"><span class="linenos">109</span></a>                            <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">])</span>
+</span><span id="Connection-110"><a href="#Connection-110"><span class="linenos">110</span></a>
+</span><span id="Connection-111"><a href="#Connection-111"><span class="linenos">111</span></a>                        <span class="k">else</span><span class="p">:</span>
+</span><span id="Connection-112"><a href="#Connection-112"><span class="linenos">112</span></a>                            <span class="n">future</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span>
+</span><span id="Connection-113"><a href="#Connection-113"><span class="linenos">113</span></a>                                <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">][</span><span class="s1">&#39;message&#39;</span><span class="p">]</span>
+</span><span id="Connection-114"><a href="#Connection-114"><span class="linenos">114</span></a>                                          <span class="k">if</span> <span class="s1">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">msg</span>
+</span><span id="Connection-115"><a href="#Connection-115"><span class="linenos">115</span></a>                                          <span class="k">else</span> <span class="s1">&#39;unknown response&#39;</span><span class="p">))</span>
+</span><span id="Connection-116"><a href="#Connection-116"><span class="linenos">116</span></a>
+</span><span id="Connection-117"><a href="#Connection-117"><span class="linenos">117</span></a>                <span class="k">else</span><span class="p">:</span>
+</span><span id="Connection-118"><a href="#Connection-118"><span class="linenos">118</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">_event_cbs</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">],</span> <span class="n">msg</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">])</span>
+</span><span id="Connection-119"><a href="#Connection-119"><span class="linenos">119</span></a>
+</span><span id="Connection-120"><a href="#Connection-120"><span class="linenos">120</span></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="Connection-121"><a href="#Connection-121"><span class="linenos">121</span></a>            <span class="n">mlog</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;receive loop error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+</span><span id="Connection-122"><a href="#Connection-122"><span class="linenos">122</span></a>
+</span><span id="Connection-123"><a href="#Connection-123"><span class="linenos">123</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="Connection-124"><a href="#Connection-124"><span class="linenos">124</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Resource with lifetime control based on <code>Group</code>.</p>
+</div>
+
+
+                            <div id="Connection.async_group" class="classattr">
+                                        <input id="Connection.async_group-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">async_group</span><span class="annotation">: hat.aio.group.Group</span>
+
+                <label class="view-source-button" for="Connection.async_group-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Connection.async_group"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Connection.async_group-53"><a href="#Connection.async_group-53"><span class="linenos">53</span></a>    <span class="nd">@property</span>
+</span><span id="Connection.async_group-54"><a href="#Connection.async_group-54"><span class="linenos">54</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">async_group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">aio</span><span class="o">.</span><span class="n">Group</span><span class="p">:</span>
+</span><span id="Connection.async_group-55"><a href="#Connection.async_group-55"><span class="linenos">55</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_group</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Group controlling resource's lifetime.</p>
+</div>
+
+
+                            </div>
+                            <div id="Connection.register_event_cb" class="classattr">
+                                        <input id="Connection.register_event_cb-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">register_event_cb</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">cb</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)]]],</span> <span class="n">NoneType</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="n">hat</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">callback</span><span class="o">.</span><span class="n">RegisterCallbackHandle</span>:</span></span>
+
+                <label class="view-source-button" for="Connection.register_event_cb-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Connection.register_event_cb"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Connection.register_event_cb-57"><a href="#Connection.register_event_cb-57"><span class="linenos">57</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">register_event_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Connection.register_event_cb-58"><a href="#Connection.register_event_cb-58"><span class="linenos">58</span></a>                          <span class="n">cb</span><span class="p">:</span> <span class="n">EventCb</span>
+</span><span id="Connection.register_event_cb-59"><a href="#Connection.register_event_cb-59"><span class="linenos">59</span></a>                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">util</span><span class="o">.</span><span class="n">RegisterCallbackHandle</span><span class="p">:</span>
+</span><span id="Connection.register_event_cb-60"><a href="#Connection.register_event_cb-60"><span class="linenos">60</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_cbs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Connection.call" class="classattr">
+                                        <input id="Connection.call-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">call</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">method</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)]]</span> <span class="o">=</span> <span class="p">{}</span>,</span><span class="param">	<span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)]]</span>:</span></span>
+
+                <label class="view-source-button" for="Connection.call-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Connection.call"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Connection.call-62"><a href="#Connection.call-62"><span class="linenos">62</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Connection.call-63"><a href="#Connection.call-63"><span class="linenos">63</span></a>                   <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Connection.call-64"><a href="#Connection.call-64"><span class="linenos">64</span></a>                   <span class="n">params</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span> <span class="o">=</span> <span class="p">{},</span>
+</span><span id="Connection.call-65"><a href="#Connection.call-65"><span class="linenos">65</span></a>                   <span class="n">session_id</span><span class="p">:</span> <span class="n">SessionId</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="Connection.call-66"><a href="#Connection.call-66"><span class="linenos">66</span></a>                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+</span><span id="Connection.call-67"><a href="#Connection.call-67"><span class="linenos">67</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_open</span><span class="p">:</span>
+</span><span id="Connection.call-68"><a href="#Connection.call-68"><span class="linenos">68</span></a>            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">()</span>
+</span><span id="Connection.call-69"><a href="#Connection.call-69"><span class="linenos">69</span></a>
+</span><span id="Connection.call-70"><a href="#Connection.call-70"><span class="linenos">70</span></a>        <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_ids</span><span class="p">),</span>
+</span><span id="Connection.call-71"><a href="#Connection.call-71"><span class="linenos">71</span></a>               <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+</span><span id="Connection.call-72"><a href="#Connection.call-72"><span class="linenos">72</span></a>               <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
+</span><span id="Connection.call-73"><a href="#Connection.call-73"><span class="linenos">73</span></a>        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Connection.call-74"><a href="#Connection.call-74"><span class="linenos">74</span></a>            <span class="n">msg</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_id</span>
+</span><span id="Connection.call-75"><a href="#Connection.call-75"><span class="linenos">75</span></a>
+</span><span id="Connection.call-76"><a href="#Connection.call-76"><span class="linenos">76</span></a>        <span class="n">future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span><span class="p">()</span>
+</span><span id="Connection.call-77"><a href="#Connection.call-77"><span class="linenos">77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">future</span>
+</span><span id="Connection.call-78"><a href="#Connection.call-78"><span class="linenos">78</span></a>
+</span><span id="Connection.call-79"><a href="#Connection.call-79"><span class="linenos">79</span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="Connection.call-80"><a href="#Connection.call-80"><span class="linenos">80</span></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ws</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span><span id="Connection.call-81"><a href="#Connection.call-81"><span class="linenos">81</span></a>            <span class="k">return</span> <span class="k">await</span> <span class="n">future</span>
+</span><span id="Connection.call-82"><a href="#Connection.call-82"><span class="linenos">82</span></a>
+</span><span id="Connection.call-83"><a href="#Connection.call-83"><span class="linenos">83</span></a>        <span class="k">finally</span><span class="p">:</span>
+</span><span id="Connection.call-84"><a href="#Connection.call-84"><span class="linenos">84</span></a>            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result_futures</span><span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]]</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="Page">
+                            <input id="Page-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Page</span>:
+
+                <label class="view-source-button" for="Page-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page-5"><a href="#Page-5"><span class="linenos"> 5</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Page</span><span class="p">:</span>
+</span><span id="Page-6"><a href="#Page-6"><span class="linenos"> 6</span></a>
+</span><span id="Page-7"><a href="#Page-7"><span class="linenos"> 7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+</span><span id="Page-8"><a href="#Page-8"><span class="linenos"> 8</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">session</span>
+</span><span id="Page-9"><a href="#Page-9"><span class="linenos"> 9</span></a>
+</span><span id="Page-10"><a href="#Page-10"><span class="linenos">10</span></a>    <span class="nd">@property</span>
+</span><span id="Page-11"><a href="#Page-11"><span class="linenos">11</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page-12"><a href="#Page-12"><span class="linenos">12</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span>
+</span><span id="Page-13"><a href="#Page-13"><span class="linenos">13</span></a>
+</span><span id="Page-14"><a href="#Page-14"><span class="linenos">14</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page-15"><a href="#Page-15"><span class="linenos">15</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.enable&#39;</span><span class="p">)</span>
+</span><span id="Page-16"><a href="#Page-16"><span class="linenos">16</span></a>
+</span><span id="Page-17"><a href="#Page-17"><span class="linenos">17</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page-18"><a href="#Page-18"><span class="linenos">18</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.disable&#39;</span><span class="p">)</span>
+</span><span id="Page-19"><a href="#Page-19"><span class="linenos">19</span></a>
+</span><span id="Page-20"><a href="#Page-20"><span class="linenos">20</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">navigate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="Page-21"><a href="#Page-21"><span class="linenos">21</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.navigate&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span>
+</span><span id="Page-22"><a href="#Page-22"><span class="linenos">22</span></a>
+</span><span id="Page-23"><a href="#Page-23"><span class="linenos">23</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+</span><span id="Page-24"><a href="#Page-24"><span class="linenos">24</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.reload&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ignoreCache&#39;</span><span class="p">:</span> <span class="n">ignore_cache</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Page.__init__" class="classattr">
+                                        <input id="Page.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">Page</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">session</span><span class="p">:</span> <span class="n"><a href="#Session">Session</a></span></span>)</span>
+
+                <label class="view-source-button" for="Page.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.__init__-7"><a href="#Page.__init__-7"><span class="linenos">7</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+</span><span id="Page.__init__-8"><a href="#Page.__init__-8"><span class="linenos">8</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">session</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Page.session" class="classattr">
+                                        <input id="Page.session-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">session</span>
+
+                <label class="view-source-button" for="Page.session-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.session"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.session-10"><a href="#Page.session-10"><span class="linenos">10</span></a>    <span class="nd">@property</span>
+</span><span id="Page.session-11"><a href="#Page.session-11"><span class="linenos">11</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page.session-12"><a href="#Page.session-12"><span class="linenos">12</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Page.enable" class="classattr">
+                                        <input id="Page.enable-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">enable</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Page.enable-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.enable"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.enable-14"><a href="#Page.enable-14"><span class="linenos">14</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page.enable-15"><a href="#Page.enable-15"><span class="linenos">15</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.enable&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Page.disable" class="classattr">
+                                        <input id="Page.disable-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">disable</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Page.disable-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.disable"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.disable-17"><a href="#Page.disable-17"><span class="linenos">17</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Page.disable-18"><a href="#Page.disable-18"><span class="linenos">18</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.disable&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Page.navigate" class="classattr">
+                                        <input id="Page.navigate-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">navigate</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">url</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Page.navigate-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.navigate"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.navigate-20"><a href="#Page.navigate-20"><span class="linenos">20</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">navigate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="Page.navigate-21"><a href="#Page.navigate-21"><span class="linenos">21</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.navigate&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Page.reload" class="classattr">
+                                        <input id="Page.reload-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">reload</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">ignore_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Page.reload-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Page.reload"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Page.reload-23"><a href="#Page.reload-23"><span class="linenos">23</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+</span><span id="Page.reload-24"><a href="#Page.reload-24"><span class="linenos">24</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Page.reload&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ignoreCache&#39;</span><span class="p">:</span> <span class="n">ignore_cache</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="Runtime">
+                            <input id="Runtime-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Runtime</span>:
+
+                <label class="view-source-button" for="Runtime-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime-19"><a href="#Runtime-19"><span class="linenos">19</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Runtime</span><span class="p">:</span>
+</span><span id="Runtime-20"><a href="#Runtime-20"><span class="linenos">20</span></a>
+</span><span id="Runtime-21"><a href="#Runtime-21"><span class="linenos">21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+</span><span id="Runtime-22"><a href="#Runtime-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">session</span>
+</span><span id="Runtime-23"><a href="#Runtime-23"><span class="linenos">23</span></a>
+</span><span id="Runtime-24"><a href="#Runtime-24"><span class="linenos">24</span></a>    <span class="nd">@property</span>
+</span><span id="Runtime-25"><a href="#Runtime-25"><span class="linenos">25</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime-26"><a href="#Runtime-26"><span class="linenos">26</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session12</span>
+</span><span id="Runtime-27"><a href="#Runtime-27"><span class="linenos">27</span></a>
+</span><span id="Runtime-28"><a href="#Runtime-28"><span class="linenos">28</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime-29"><a href="#Runtime-29"><span class="linenos">29</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.enable&#39;</span><span class="p">)</span>
+</span><span id="Runtime-30"><a href="#Runtime-30"><span class="linenos">30</span></a>
+</span><span id="Runtime-31"><a href="#Runtime-31"><span class="linenos">31</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime-32"><a href="#Runtime-32"><span class="linenos">32</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.disable&#39;</span><span class="p">)</span>
+</span><span id="Runtime-33"><a href="#Runtime-33"><span class="linenos">33</span></a>
+</span><span id="Runtime-34"><a href="#Runtime-34"><span class="linenos">34</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Runtime-35"><a href="#Runtime-35"><span class="linenos">35</span></a>                       <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Runtime-36"><a href="#Runtime-36"><span class="linenos">36</span></a>                       <span class="n">await_promise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Runtime-37"><a href="#Runtime-37"><span class="linenos">37</span></a>                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteObject</span><span class="p">:</span>
+</span><span id="Runtime-38"><a href="#Runtime-38"><span class="linenos">38</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span>
+</span><span id="Runtime-39"><a href="#Runtime-39"><span class="linenos">39</span></a>                                       <span class="p">{</span><span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">expression</span><span class="p">,</span>
+</span><span id="Runtime-40"><a href="#Runtime-40"><span class="linenos">40</span></a>                                        <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="n">await_promise</span><span class="p">})</span>
+</span><span id="Runtime-41"><a href="#Runtime-41"><span class="linenos">41</span></a>        <span class="k">if</span> <span class="s1">&#39;exceptionDetails&#39;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+</span><span id="Runtime-42"><a href="#Runtime-42"><span class="linenos">42</span></a>            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">])</span>
+</span><span id="Runtime-43"><a href="#Runtime-43"><span class="linenos">43</span></a>        <span class="k">return</span> <span class="n">RemoteObject</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+</span><span id="Runtime-44"><a href="#Runtime-44"><span class="linenos">44</span></a>                            <span class="n">subtype</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;subtype&#39;</span><span class="p">),</span>
+</span><span id="Runtime-45"><a href="#Runtime-45"><span class="linenos">45</span></a>                            <span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">),</span>
+</span><span id="Runtime-46"><a href="#Runtime-46"><span class="linenos">46</span></a>                            <span class="nb">id</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">))</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Runtime.__init__" class="classattr">
+                                        <input id="Runtime.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">Runtime</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">session</span><span class="p">:</span> <span class="n"><a href="#Session">Session</a></span></span>)</span>
+
+                <label class="view-source-button" for="Runtime.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime.__init__-21"><a href="#Runtime.__init__-21"><span class="linenos">21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+</span><span id="Runtime.__init__-22"><a href="#Runtime.__init__-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">session</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Runtime.session" class="classattr">
+                                        <input id="Runtime.session-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">session</span>
+
+                <label class="view-source-button" for="Runtime.session-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime.session"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime.session-24"><a href="#Runtime.session-24"><span class="linenos">24</span></a>    <span class="nd">@property</span>
+</span><span id="Runtime.session-25"><a href="#Runtime.session-25"><span class="linenos">25</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime.session-26"><a href="#Runtime.session-26"><span class="linenos">26</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session12</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Runtime.enable" class="classattr">
+                                        <input id="Runtime.enable-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">enable</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Runtime.enable-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime.enable"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime.enable-28"><a href="#Runtime.enable-28"><span class="linenos">28</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime.enable-29"><a href="#Runtime.enable-29"><span class="linenos">29</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.enable&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Runtime.disable" class="classattr">
+                                        <input id="Runtime.disable-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">disable</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Runtime.disable-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime.disable"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime.disable-31"><a href="#Runtime.disable-31"><span class="linenos">31</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">disable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Runtime.disable-32"><a href="#Runtime.disable-32"><span class="linenos">32</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.disable&#39;</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Runtime.evaluate" class="classattr">
+                                        <input id="Runtime.evaluate-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">evaluate</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">await_promise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">hat</span><span class="o">.</span><span class="n">drivers</span><span class="o">.</span><span class="n">cdt</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">RemoteObject</span>:</span></span>
+
+                <label class="view-source-button" for="Runtime.evaluate-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Runtime.evaluate"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Runtime.evaluate-34"><a href="#Runtime.evaluate-34"><span class="linenos">34</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Runtime.evaluate-35"><a href="#Runtime.evaluate-35"><span class="linenos">35</span></a>                       <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Runtime.evaluate-36"><a href="#Runtime.evaluate-36"><span class="linenos">36</span></a>                       <span class="n">await_promise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Runtime.evaluate-37"><a href="#Runtime.evaluate-37"><span class="linenos">37</span></a>                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteObject</span><span class="p">:</span>
+</span><span id="Runtime.evaluate-38"><a href="#Runtime.evaluate-38"><span class="linenos">38</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span>
+</span><span id="Runtime.evaluate-39"><a href="#Runtime.evaluate-39"><span class="linenos">39</span></a>                                       <span class="p">{</span><span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">expression</span><span class="p">,</span>
+</span><span id="Runtime.evaluate-40"><a href="#Runtime.evaluate-40"><span class="linenos">40</span></a>                                        <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="n">await_promise</span><span class="p">})</span>
+</span><span id="Runtime.evaluate-41"><a href="#Runtime.evaluate-41"><span class="linenos">41</span></a>        <span class="k">if</span> <span class="s1">&#39;exceptionDetails&#39;</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+</span><span id="Runtime.evaluate-42"><a href="#Runtime.evaluate-42"><span class="linenos">42</span></a>            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">])</span>
+</span><span id="Runtime.evaluate-43"><a href="#Runtime.evaluate-43"><span class="linenos">43</span></a>        <span class="k">return</span> <span class="n">RemoteObject</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+</span><span id="Runtime.evaluate-44"><a href="#Runtime.evaluate-44"><span class="linenos">44</span></a>                            <span class="n">subtype</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;subtype&#39;</span><span class="p">),</span>
+</span><span id="Runtime.evaluate-45"><a href="#Runtime.evaluate-45"><span class="linenos">45</span></a>                            <span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">),</span>
+</span><span id="Runtime.evaluate-46"><a href="#Runtime.evaluate-46"><span class="linenos">46</span></a>                            <span class="nb">id</span><span class="o">=</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">))</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="TargetId">
+                    <div class="attr variable">
+            <span class="name">TargetId</span>        =
+<span class="default_value">&lt;class &#39;str&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetId"></a>
+    
+    
+
+                </section>
+                <section id="TargetInfo">
+                            <input id="TargetInfo-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">TargetInfo</span><wbr>(<span class="base">typing.NamedTuple</span>):
+
+                <label class="view-source-button" for="TargetInfo-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#TargetInfo"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TargetInfo-12"><a href="#TargetInfo-12"><span class="linenos">12</span></a><span class="k">class</span><span class="w"> </span><span class="nc">TargetInfo</span><span class="p">(</span><span class="n">typing</span><span class="o">.</span><span class="n">NamedTuple</span><span class="p">):</span>
+</span><span id="TargetInfo-13"><a href="#TargetInfo-13"><span class="linenos">13</span></a>    <span class="n">target_id</span><span class="p">:</span> <span class="n">TargetId</span>
+</span><span id="TargetInfo-14"><a href="#TargetInfo-14"><span class="linenos">14</span></a>    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="TargetInfo-15"><a href="#TargetInfo-15"><span class="linenos">15</span></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="TargetInfo-16"><a href="#TargetInfo-16"><span class="linenos">16</span></a>    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="TargetInfo-17"><a href="#TargetInfo-17"><span class="linenos">17</span></a>    <span class="n">attached</span><span class="p">:</span> <span class="nb">bool</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>TargetInfo(target_id, type, title, url, attached)</p>
+</div>
+
+
+                            <div id="TargetInfo.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">TargetInfo</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">target_id</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">title</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">url</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">attached</span><span class="p">:</span> <span class="nb">bool</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.__init__"></a>
+    
+            <div class="docstring"><p>Create new instance of TargetInfo(target_id, type, title, url, attached)</p>
+</div>
+
+
+                            </div>
+                            <div id="TargetInfo.target_id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">target_id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.target_id"></a>
+    
+            <div class="docstring"><p>Alias for field number 0</p>
+</div>
+
+
+                            </div>
+                            <div id="TargetInfo.type" class="classattr">
+                                <div class="attr variable">
+            <span class="name">type</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.type"></a>
+    
+            <div class="docstring"><p>Alias for field number 1</p>
+</div>
+
+
+                            </div>
+                            <div id="TargetInfo.title" class="classattr">
+                                <div class="attr variable">
+            <span class="name">title</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.title"></a>
+    
+            <div class="docstring"><p>Alias for field number 2</p>
+</div>
+
+
+                            </div>
+                            <div id="TargetInfo.url" class="classattr">
+                                <div class="attr variable">
+            <span class="name">url</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.url"></a>
+    
+            <div class="docstring"><p>Alias for field number 3</p>
+</div>
+
+
+                            </div>
+                            <div id="TargetInfo.attached" class="classattr">
+                                <div class="attr variable">
+            <span class="name">attached</span><span class="annotation">: bool</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TargetInfo.attached"></a>
+    
+            <div class="docstring"><p>Alias for field number 4</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="getTargetInfos">
+                            <input id="getTargetInfos-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">getTargetInfos</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">conn</span><span class="p">:</span> <span class="n"><a href="#Connection">Connection</a></span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="n"><a href="#TargetInfo">TargetInfo</a></span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="getTargetInfos-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#getTargetInfos"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="getTargetInfos-20"><a href="#getTargetInfos-20"><span class="linenos">20</span></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">getTargetInfos</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TargetInfo</span><span class="p">]:</span>
+</span><span id="getTargetInfos-21"><a href="#getTargetInfos-21"><span class="linenos">21</span></a>    <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.getTargets&#39;</span><span class="p">)</span>
+</span><span id="getTargetInfos-22"><a href="#getTargetInfos-22"><span class="linenos">22</span></a>    <span class="k">return</span> <span class="p">[</span><span class="n">TargetInfo</span><span class="p">(</span><span class="n">target_id</span><span class="o">=</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">],</span>
+</span><span id="getTargetInfos-23"><a href="#getTargetInfos-23"><span class="linenos">23</span></a>                       <span class="nb">type</span><span class="o">=</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+</span><span id="getTargetInfos-24"><a href="#getTargetInfos-24"><span class="linenos">24</span></a>                       <span class="n">title</span><span class="o">=</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">],</span>
+</span><span id="getTargetInfos-25"><a href="#getTargetInfos-25"><span class="linenos">25</span></a>                       <span class="n">url</span><span class="o">=</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">],</span>
+</span><span id="getTargetInfos-26"><a href="#getTargetInfos-26"><span class="linenos">26</span></a>                       <span class="n">attached</span><span class="o">=</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;attached&#39;</span><span class="p">])</span>
+</span><span id="getTargetInfos-27"><a href="#getTargetInfos-27"><span class="linenos">27</span></a>            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;targetInfos&#39;</span><span class="p">]]</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="createTarget">
+                            <input id="createTarget-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">createTarget</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">conn</span><span class="p">:</span> <span class="n"><a href="#Connection">Connection</a></span>,</span><span class="param">	<span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>,</span><span class="param">	<span class="n">width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">new_window</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">background</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n"><a href="#Target">Target</a></span>:</span></span>
+
+                <label class="view-source-button" for="createTarget-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#createTarget"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="createTarget-30"><a href="#createTarget-30"><span class="linenos">30</span></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">createTarget</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span>
+</span><span id="createTarget-31"><a href="#createTarget-31"><span class="linenos">31</span></a>                       <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+</span><span id="createTarget-32"><a href="#createTarget-32"><span class="linenos">32</span></a>                       <span class="n">width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="createTarget-33"><a href="#createTarget-33"><span class="linenos">33</span></a>                       <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="createTarget-34"><a href="#createTarget-34"><span class="linenos">34</span></a>                       <span class="n">new_window</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="createTarget-35"><a href="#createTarget-35"><span class="linenos">35</span></a>                       <span class="n">background</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="createTarget-36"><a href="#createTarget-36"><span class="linenos">36</span></a>                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Target&#39;</span><span class="p">:</span>
+</span><span id="createTarget-37"><a href="#createTarget-37"><span class="linenos">37</span></a>    <span class="n">req</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+</span><span id="createTarget-38"><a href="#createTarget-38"><span class="linenos">38</span></a>           <span class="s1">&#39;new_window&#39;</span><span class="p">:</span> <span class="n">new_window</span><span class="p">,</span>
+</span><span id="createTarget-39"><a href="#createTarget-39"><span class="linenos">39</span></a>           <span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="n">background</span><span class="p">}</span>
+</span><span id="createTarget-40"><a href="#createTarget-40"><span class="linenos">40</span></a>    <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="createTarget-41"><a href="#createTarget-41"><span class="linenos">41</span></a>        <span class="n">req</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span>
+</span><span id="createTarget-42"><a href="#createTarget-42"><span class="linenos">42</span></a>    <span class="k">if</span> <span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="createTarget-43"><a href="#createTarget-43"><span class="linenos">43</span></a>        <span class="n">req</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span>
+</span><span id="createTarget-44"><a href="#createTarget-44"><span class="linenos">44</span></a>    <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.createTarget&#39;</span><span class="p">,</span> <span class="n">req</span><span class="p">)</span>
+</span><span id="createTarget-45"><a href="#createTarget-45"><span class="linenos">45</span></a>    <span class="k">return</span> <span class="n">Target</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">])</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="Session">
+                            <input id="Session-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Session</span>:
+
+                <label class="view-source-button" for="Session-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session-48"><a href="#Session-48"><span class="linenos">48</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Session</span><span class="p">:</span>
+</span><span id="Session-49"><a href="#Session-49"><span class="linenos">49</span></a>
+</span><span id="Session-50"><a href="#Session-50"><span class="linenos">50</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Session-51"><a href="#Session-51"><span class="linenos">51</span></a>                 <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span>
+</span><span id="Session-52"><a href="#Session-52"><span class="linenos">52</span></a>                 <span class="n">session_id</span><span class="p">:</span> <span class="n">SessionId</span><span class="p">):</span>
+</span><span id="Session-53"><a href="#Session-53"><span class="linenos">53</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span><span id="Session-54"><a href="#Session-54"><span class="linenos">54</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span> <span class="o">=</span> <span class="n">session_id</span>
+</span><span id="Session-55"><a href="#Session-55"><span class="linenos">55</span></a>
+</span><span id="Session-56"><a href="#Session-56"><span class="linenos">56</span></a>    <span class="nd">@property</span>
+</span><span id="Session-57"><a href="#Session-57"><span class="linenos">57</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Session-58"><a href="#Session-58"><span class="linenos">58</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span><span id="Session-59"><a href="#Session-59"><span class="linenos">59</span></a>
+</span><span id="Session-60"><a href="#Session-60"><span class="linenos">60</span></a>    <span class="nd">@property</span>
+</span><span id="Session-61"><a href="#Session-61"><span class="linenos">61</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SessionId</span><span class="p">:</span>
+</span><span id="Session-62"><a href="#Session-62"><span class="linenos">62</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span>
+</span><span id="Session-63"><a href="#Session-63"><span class="linenos">63</span></a>
+</span><span id="Session-64"><a href="#Session-64"><span class="linenos">64</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Session-65"><a href="#Session-65"><span class="linenos">65</span></a>                   <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Session-66"><a href="#Session-66"><span class="linenos">66</span></a>                   <span class="n">params</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="Session-67"><a href="#Session-67"><span class="linenos">67</span></a>                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+</span><span id="Session-68"><a href="#Session-68"><span class="linenos">68</span></a>        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span><span class="p">)</span>
+</span><span id="Session-69"><a href="#Session-69"><span class="linenos">69</span></a>
+</span><span id="Session-70"><a href="#Session-70"><span class="linenos">70</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">detach</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Session-71"><a href="#Session-71"><span class="linenos">71</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.detachFromTarget&#39;</span><span class="p">,</span>
+</span><span id="Session-72"><a href="#Session-72"><span class="linenos">72</span></a>                              <span class="p">{</span><span class="s1">&#39;sessionId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Session.__init__" class="classattr">
+                                        <input id="Session.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">Session</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">conn</span><span class="p">:</span> <span class="n"><a href="#Connection">Connection</a></span>, </span><span class="param"><span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span></span>)</span>
+
+                <label class="view-source-button" for="Session.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session.__init__-50"><a href="#Session.__init__-50"><span class="linenos">50</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Session.__init__-51"><a href="#Session.__init__-51"><span class="linenos">51</span></a>                 <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span>
+</span><span id="Session.__init__-52"><a href="#Session.__init__-52"><span class="linenos">52</span></a>                 <span class="n">session_id</span><span class="p">:</span> <span class="n">SessionId</span><span class="p">):</span>
+</span><span id="Session.__init__-53"><a href="#Session.__init__-53"><span class="linenos">53</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span><span id="Session.__init__-54"><a href="#Session.__init__-54"><span class="linenos">54</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span> <span class="o">=</span> <span class="n">session_id</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Session.conn" class="classattr">
+                                        <input id="Session.conn-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">conn</span><span class="annotation">: <a href="#Connection">Connection</a></span>
+
+                <label class="view-source-button" for="Session.conn-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session.conn"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session.conn-56"><a href="#Session.conn-56"><span class="linenos">56</span></a>    <span class="nd">@property</span>
+</span><span id="Session.conn-57"><a href="#Session.conn-57"><span class="linenos">57</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Session.conn-58"><a href="#Session.conn-58"><span class="linenos">58</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Session.session_id" class="classattr">
+                                        <input id="Session.session_id-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">session_id</span><span class="annotation">: int</span>
+
+                <label class="view-source-button" for="Session.session_id-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session.session_id"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session.session_id-60"><a href="#Session.session_id-60"><span class="linenos">60</span></a>    <span class="nd">@property</span>
+</span><span id="Session.session_id-61"><a href="#Session.session_id-61"><span class="linenos">61</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">session_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SessionId</span><span class="p">:</span>
+</span><span id="Session.session_id-62"><a href="#Session.session_id-62"><span class="linenos">62</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Session.call" class="classattr">
+                                        <input id="Session.call-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">call</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">method</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)]]</span> <span class="o">=</span> <span class="p">{}</span></span><span class="return-annotation">) -> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForwardRef</span><span class="p">(</span><span class="s1">&#39;Data&#39;</span><span class="p">)]]</span>:</span></span>
+
+                <label class="view-source-button" for="Session.call-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session.call"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session.call-64"><a href="#Session.call-64"><span class="linenos">64</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Session.call-65"><a href="#Session.call-65"><span class="linenos">65</span></a>                   <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="Session.call-66"><a href="#Session.call-66"><span class="linenos">66</span></a>                   <span class="n">params</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="Session.call-67"><a href="#Session.call-67"><span class="linenos">67</span></a>                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">json</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+</span><span id="Session.call-68"><a href="#Session.call-68"><span class="linenos">68</span></a>        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Session.detach" class="classattr">
+                                        <input id="Session.detach-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">detach</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Session.detach-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Session.detach"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Session.detach-70"><a href="#Session.detach-70"><span class="linenos">70</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">detach</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Session.detach-71"><a href="#Session.detach-71"><span class="linenos">71</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.detachFromTarget&#39;</span><span class="p">,</span>
+</span><span id="Session.detach-72"><a href="#Session.detach-72"><span class="linenos">72</span></a>                              <span class="p">{</span><span class="s1">&#39;sessionId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_id</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="Target">
+                            <input id="Target-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Target</span>:
+
+                <label class="view-source-button" for="Target-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target-75"><a href="#Target-75"><span class="linenos"> 75</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Target</span><span class="p">:</span>
+</span><span id="Target-76"><a href="#Target-76"><span class="linenos"> 76</span></a>
+</span><span id="Target-77"><a href="#Target-77"><span class="linenos"> 77</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Target-78"><a href="#Target-78"><span class="linenos"> 78</span></a>                 <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span>
+</span><span id="Target-79"><a href="#Target-79"><span class="linenos"> 79</span></a>                 <span class="n">target_id</span><span class="p">:</span> <span class="n">TargetId</span><span class="p">):</span>
+</span><span id="Target-80"><a href="#Target-80"><span class="linenos"> 80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span><span id="Target-81"><a href="#Target-81"><span class="linenos"> 81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span> <span class="o">=</span> <span class="n">target_id</span>
+</span><span id="Target-82"><a href="#Target-82"><span class="linenos"> 82</span></a>
+</span><span id="Target-83"><a href="#Target-83"><span class="linenos"> 83</span></a>    <span class="nd">@property</span>
+</span><span id="Target-84"><a href="#Target-84"><span class="linenos"> 84</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Target-85"><a href="#Target-85"><span class="linenos"> 85</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span><span id="Target-86"><a href="#Target-86"><span class="linenos"> 86</span></a>
+</span><span id="Target-87"><a href="#Target-87"><span class="linenos"> 87</span></a>    <span class="nd">@property</span>
+</span><span id="Target-88"><a href="#Target-88"><span class="linenos"> 88</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">target_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target-89"><a href="#Target-89"><span class="linenos"> 89</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span>
+</span><span id="Target-90"><a href="#Target-90"><span class="linenos"> 90</span></a>
+</span><span id="Target-91"><a href="#Target-91"><span class="linenos"> 91</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target-92"><a href="#Target-92"><span class="linenos"> 92</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.activateTarget&#39;</span><span class="p">,</span>
+</span><span id="Target-93"><a href="#Target-93"><span class="linenos"> 93</span></a>                              <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">})</span>
+</span><span id="Target-94"><a href="#Target-94"><span class="linenos"> 94</span></a>
+</span><span id="Target-95"><a href="#Target-95"><span class="linenos"> 95</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Session</span><span class="p">:</span>
+</span><span id="Target-96"><a href="#Target-96"><span class="linenos"> 96</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.attachToTarget&#39;</span><span class="p">,</span>
+</span><span id="Target-97"><a href="#Target-97"><span class="linenos"> 97</span></a>                                    <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">,</span>
+</span><span id="Target-98"><a href="#Target-98"><span class="linenos"> 98</span></a>                                     <span class="s1">&#39;flatten&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="Target-99"><a href="#Target-99"><span class="linenos"> 99</span></a>        <span class="k">return</span> <span class="n">Session</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">])</span>
+</span><span id="Target-100"><a href="#Target-100"><span class="linenos">100</span></a>
+</span><span id="Target-101"><a href="#Target-101"><span class="linenos">101</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target-102"><a href="#Target-102"><span class="linenos">102</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.closeTarget&#39;</span><span class="p">,</span>
+</span><span id="Target-103"><a href="#Target-103"><span class="linenos">103</span></a>                              <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            <div id="Target.__init__" class="classattr">
+                                        <input id="Target.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">Target</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">conn</span><span class="p">:</span> <span class="n"><a href="#Connection">Connection</a></span>, </span><span class="param"><span class="n">target_id</span><span class="p">:</span> <span class="nb">str</span></span>)</span>
+
+                <label class="view-source-button" for="Target.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.__init__-77"><a href="#Target.__init__-77"><span class="linenos">77</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span><span id="Target.__init__-78"><a href="#Target.__init__-78"><span class="linenos">78</span></a>                 <span class="n">conn</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span>
+</span><span id="Target.__init__-79"><a href="#Target.__init__-79"><span class="linenos">79</span></a>                 <span class="n">target_id</span><span class="p">:</span> <span class="n">TargetId</span><span class="p">):</span>
+</span><span id="Target.__init__-80"><a href="#Target.__init__-80"><span class="linenos">80</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+</span><span id="Target.__init__-81"><a href="#Target.__init__-81"><span class="linenos">81</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span> <span class="o">=</span> <span class="n">target_id</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Target.conn" class="classattr">
+                                        <input id="Target.conn-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">conn</span><span class="annotation">: <a href="#Connection">Connection</a></span>
+
+                <label class="view-source-button" for="Target.conn-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.conn"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.conn-83"><a href="#Target.conn-83"><span class="linenos">83</span></a>    <span class="nd">@property</span>
+</span><span id="Target.conn-84"><a href="#Target.conn-84"><span class="linenos">84</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">:</span>
+</span><span id="Target.conn-85"><a href="#Target.conn-85"><span class="linenos">85</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Target.target_id" class="classattr">
+                                        <input id="Target.target_id-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
+            <span class="name">target_id</span>
+
+                <label class="view-source-button" for="Target.target_id-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.target_id"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.target_id-87"><a href="#Target.target_id-87"><span class="linenos">87</span></a>    <span class="nd">@property</span>
+</span><span id="Target.target_id-88"><a href="#Target.target_id-88"><span class="linenos">88</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">target_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target.target_id-89"><a href="#Target.target_id-89"><span class="linenos">89</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Target.activate" class="classattr">
+                                        <input id="Target.activate-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">activate</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Target.activate-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.activate"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.activate-91"><a href="#Target.activate-91"><span class="linenos">91</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target.activate-92"><a href="#Target.activate-92"><span class="linenos">92</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.activateTarget&#39;</span><span class="p">,</span>
+</span><span id="Target.activate-93"><a href="#Target.activate-93"><span class="linenos">93</span></a>                              <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Target.attach" class="classattr">
+                                        <input id="Target.attach-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">attach</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n"><a href="#Session">Session</a></span>:</span></span>
+
+                <label class="view-source-button" for="Target.attach-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.attach"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.attach-95"><a href="#Target.attach-95"><span class="linenos">95</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Session</span><span class="p">:</span>
+</span><span id="Target.attach-96"><a href="#Target.attach-96"><span class="linenos">96</span></a>        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.attachToTarget&#39;</span><span class="p">,</span>
+</span><span id="Target.attach-97"><a href="#Target.attach-97"><span class="linenos">97</span></a>                                    <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">,</span>
+</span><span id="Target.attach-98"><a href="#Target.attach-98"><span class="linenos">98</span></a>                                     <span class="s1">&#39;flatten&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+</span><span id="Target.attach-99"><a href="#Target.attach-99"><span class="linenos">99</span></a>        <span class="k">return</span> <span class="n">Session</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">])</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="Target.close" class="classattr">
+                                        <input id="Target.close-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">async def</span>
+        <span class="name">close</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="Target.close-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Target.close"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Target.close-101"><a href="#Target.close-101"><span class="linenos">101</span></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="Target.close-102"><a href="#Target.close-102"><span class="linenos">102</span></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Target.closeTarget&#39;</span><span class="p">,</span>
+</span><span id="Target.close-103"><a href="#Target.close-103"><span class="linenos">103</span></a>                              <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_id</span><span class="p">})</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+    </main>
+<script>
+    function escapeHTML(html) {
+        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
+    }
+
+    const originalContent = document.querySelector("main.pdoc");
+    let currentContent = originalContent;
+
+    function setContent(innerHTML) {
+        let elem;
+        if (innerHTML) {
+            elem = document.createElement("main");
+            elem.classList.add("pdoc");
+            elem.innerHTML = innerHTML;
+        } else {
+            elem = originalContent;
+        }
+        if (currentContent !== elem) {
+            currentContent.replaceWith(elem);
+            currentContent = elem;
+        }
+    }
+
+    function getSearchTerm() {
+        return (new URL(window.location)).searchParams.get("search");
+    }
+
+    const searchBox = document.querySelector(".pdoc input[type=search]");
+    searchBox.addEventListener("input", function () {
+        let url = new URL(window.location);
+        if (searchBox.value.trim()) {
+            url.hash = "";
+            url.searchParams.set("search", searchBox.value);
+        } else {
+            url.searchParams.delete("search");
+        }
+        history.replaceState("", "", url.toString());
+        onInput();
+    });
+    window.addEventListener("popstate", onInput);
+
+
+    let search, searchErr;
+
+    async function initialize() {
+        try {
+            search = await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve(window.pdocSearch);
+                script.onerror = (e) => reject(e);
+                script.src = "../../search.js";
+                document.getElementsByTagName("head")[0].appendChild(script);
+            });
+        } catch (e) {
+            console.error("Cannot fetch pdoc search index");
+            searchErr = "Cannot fetch search index.";
+        }
+        onInput();
+
+        document.querySelector("nav.pdoc").addEventListener("click", e => {
+            if (e.target.hash) {
+                searchBox.value = "";
+                searchBox.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    function onInput() {
+        setContent((() => {
+            const term = getSearchTerm();
+            if (!term) {
+                return null
+            }
+            if (searchErr) {
+                return `<h3>Error: ${searchErr}</h3>`
+            }
+            if (!search) {
+                return "<h3>Searching...</h3>"
+            }
+
+            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+
+            const results = search(term);
+
+            let html;
+            if (results.length === 0) {
+                html = `No search results for '${escapeHTML(term)}'.`
+            } else {
+                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
+            }
+            for (let result of results.slice(0, 10)) {
+                let doc = result.doc;
+                let url = `../../${doc.modulename.replaceAll(".", "/")}.html`;
+                if (doc.qualname) {
+                    url += `#${doc.qualname}`;
+                }
+
+                let heading;
+                switch (result.doc.kind) {
+                    case "function":
+                        if (doc.fullname.endsWith(".__init__")) {
+                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
+                        } else {
+                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
+                        }
+                        break;
+                    case "class":
+                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
+                        if (doc.bases)
+                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
+                        heading += `:`;
+                        break;
+                    case "variable":
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        if (doc.annotation)
+                            heading += `<span class="annotation">${doc.annotation}</span>`;
+                        if (doc.default_value)
+                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
+                        break;
+                    default:
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        break;
+                }
+                html += `
+                        <section class="search-result">
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
+                        <div class="docstring">${doc.doc}</div>
+                        </section>
+                    `;
+
+            }
+            return html;
+        })());
+    }
+
+    if (getSearchTerm()) {
+        initialize();
+        searchBox.value = getSearchTerm();
+        onInput();
+    } else {
+        searchBox.addEventListener("focus", initialize, {once: true});
+    }
+
+    searchBox.addEventListener("keydown", e => {
+        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
+            let focused = currentContent.querySelector(".search-result.focused");
+            if (!focused) {
+                currentContent.querySelector(".search-result").classList.add("focused");
+            } else if (
+                e.key === "ArrowDown"
+                && focused.nextElementSibling
+                && focused.nextElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.nextElementSibling.classList.add("focused");
+                focused.nextElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "ArrowUp"
+                && focused.previousElementSibling
+                && focused.previousElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.previousElementSibling.classList.add("focused");
+                focused.previousElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "Enter"
+            ) {
+                focused.querySelector("a").click();
+            }
+        }
+    });
+</script></body>
+</html>
