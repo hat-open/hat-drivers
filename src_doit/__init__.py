@@ -11,7 +11,6 @@ from hat.doit.docs import (build_sphinx,
                            build_pdoc)
 from hat.doit.py import (get_task_build_wheel,
                          get_task_run_pytest,
-                         get_task_create_pip_requirements,
                          run_flake8,
                          get_py_versions)
 
@@ -29,7 +28,6 @@ __all__ = ['task_clean_all',
            'task_sbs',
            'task_peru',
            'task_format',
-           'task_pip_requirements',
            *pymodules.__all__]
 
 
@@ -138,11 +136,6 @@ def task_format():
     """Format"""
     yield from get_task_clang_format([*Path('src_c').rglob('*.c'),
                                       *Path('src_c').rglob('*.h')])
-
-
-def task_pip_requirements():
-    """Create pip requirements"""
-    return get_task_create_pip_requirements()
 
 
 def _get_subtask_asn1(src_paths, dst_path):
