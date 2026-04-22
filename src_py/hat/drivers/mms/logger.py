@@ -48,6 +48,7 @@ class CommunicationLogger:
                  logger: logging.Logger,
                  info: acse.ConnectionInfo):
         extra = {'meta': {'type': 'MmsConnection',
+                          'communication': True,
                           'name': info.name,
                           'local_addr': {'host': info.local_addr.host,
                                          'port': info.local_addr.port},

@@ -642,7 +642,8 @@ class Client(aio.Resource):
 
         data_defs = self._report_data_defs.get(report_id)
         if data_defs is None:
-            self._log.info("report id not defined - skipping report")
+            self._log.info("report id %s not defined - skipping report",
+                           report_id)
             return
 
         report = encoder.report_from_mms_data(mms_data, data_defs)
