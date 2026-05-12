@@ -401,7 +401,7 @@ class Connection(aio.Resource):
                 'serviceError': encoder.encode_error(res)}
 
         else:
-            TypeError('unsupported response/error type')
+            raise TypeError('unsupported response/error type')
 
         res_data = _mms_syntax_name, _encode(res_pdu)
 
