@@ -655,7 +655,8 @@ class Client(aio.Resource):
     def _process_last_appl_error(self, mms_data):
         last_appl_error = encoder.last_appl_error_from_mms_data(mms_data)
 
-        key = last_appl_error.name, last_appl_error.control_number
+        cmd_ref = encoder.command_ref_from_str(last_appl_error.name)
+        key = cmd_ref, last_appl_error.control_number
         if key in self._last_appl_errors:
             self._last_appl_errors[key] = last_appl_error
 
@@ -778,9 +779,7 @@ class Client(aio.Resource):
                                               value_type=value_type,
                                               with_checks=with_checks)])
 
-        name = (f'{req.specification[0].name.domain_id}/'
-                f'{req.specification[0].name.item_id}')
-        key = name, cmd.control_number
+        key = ref, cmd.control_number
 
         if key in self._last_appl_errors:
             raise Exception('active control number duplicate')
