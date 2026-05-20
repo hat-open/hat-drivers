@@ -118,6 +118,18 @@ def data_ref_from_str(ref_str: str) -> common.DataRef:
     return data_ref_from_object_name(object_name)
 
 
+def command_ref_from_str(ref_str: str) -> common.CommandRef:
+    logical_device, rest = ref_str.split('/', 1)
+    logical_node, fc, name, *_ = rest.split('$')
+
+    if fc != 'CO':
+        raise Exception('invalid functional constraint')
+
+    return common.CommandRef(logical_device=logical_device,
+                             logical_node=logical_node,
+                             name=name)
+
+
 def value_from_mms_data(mms_data: mms.Data,
                         value_type: common.ValueType
                         ) -> common.Value:
