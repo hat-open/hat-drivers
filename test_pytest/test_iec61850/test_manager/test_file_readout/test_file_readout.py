@@ -552,3 +552,50 @@ def test_9(validator):
     device_json = res['devices'][0]
 
     assert len(device_json['rcbs']) == 134
+
+
+def test_10(validator):
+    # Test checks number of each dataset members. Also it checks each
+    # data correctly references the dataset it belongs to.
+
+    def _is_value_in_dataset(ds_value_ref, value_ref):
+        if (ds_value_ref['logical_device'] != value_ref['logical_device'] or
+                ds_value_ref['logical_node'] != value_ref['logical_node'] or
+                ds_value_ref['fc'] != value_ref['fc']):
+            return False
+
+        if len(ds_value_ref) > len(value_ref):
+            return False
+
+        if any(i != j for i, j in zip(ds_value_ref['names'],
+                                      value_ref['names'])):
+            return False
+
+        return True
+
+    with importlib.resources.open_text(__package__, 'test10.cid') as f:
+        res = readout(f)
+
+    validator.validate(json_schema_id, res)
+
+    device_jsons = {device_json['ied_name']: device_json
+                    for device_json in res['devices']}
+
+    assert len(device_jsons) == 1
+    device_json = device_jsons['B21_P139']
+    assert len(device_json['datasets']) == 3
+
+    assert len(device_json['datasets'][0]['values']) == 3
+    assert len(device_json['datasets'][1]['values']) == 20
+    assert len(device_json['datasets'][2]['values']) == 9
+
+    for dataset in device_json['datasets']:
+        dataset = device_json['datasets'][1]
+        for value_ref in dataset['values']:
+            data_conf = util.first(
+                device_json['data'],
+                lambda i: _is_value_in_dataset(value_ref, i['value']))
+
+            assert data_conf
+            assert data_conf['datasets']
+            assert dataset['ref'] in [i['ref'] for i in data_conf['datasets']]
