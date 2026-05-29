@@ -170,11 +170,14 @@ def _get_device(root_el, ied_el, ap_el, ied_name):
                                   ied_name=ied_name,
                                   ap_name=ap_name,
                                   logical_device=logical_device,
-                                  logical_node=logical_node,
-                                  datasets=datasets))
+                                  logical_node=logical_node))
 
             commands.extend(_get_commands(
                 root_el, ln_el, ln_type_el, logical_device, logical_node))
+
+    for data_conf in data:
+        data_conf['datasets'] = list(
+            _get_data_datasets(datasets, data_conf))
 
     device_conf = {
         'ied_name': ied_name,
@@ -321,7 +324,7 @@ def _get_rcb(rc_el, logical_device, logical_node):
 
 
 def _get_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
-              logical_node, datasets):
+              logical_node):
 
     def parse_node(node_el, names, fc):
         if not node_el.get('name'):
@@ -336,8 +339,7 @@ def _get_data(root_el, ln_type_el, ied_name, ap_name, logical_device,
         cdc = type_el.get('cdc')
         if cdc:
             yield from _get_data_confs_for_cdc(
-                root_el, type_el, cdc, logical_device, logical_node, fc, names,
-                datasets)
+                root_el, type_el, cdc, logical_device, logical_node, fc, names)
 
         for nd_el in type_el:
             yield from parse_node(nd_el, names, fc)
@@ -813,7 +815,7 @@ def _create_logical_node(prefix, ln_class, inst):
 
 
 def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
-                   names, datasets, value_name=None, quality_name=None,
+                   names, value_name=None, quality_name=None,
                    timestamp_name=None, selected_name=None, writable=False,
                    quality_ref=None, timestamp_ref=None, selected_ref=None):
     da_name_el = {node_el.get('name'): node_el for node_el in type_el}
@@ -867,9 +869,7 @@ def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
         data_conf = {
             'value': value_ref,
             'value_type': value_type,
-            'datasets': list(_get_value_datasets(
-                datasets, value_ref, quality_ref, timestamp_ref,
-                selected_ref)),
+            'datasets': [],
             'writable': writable}
         if quality_ref:
             data_conf['quality'] = quality_ref
@@ -897,52 +897,51 @@ def _get_data_conf(root_el, type_el, logical_device, logical_node, fc,
         names = [*data_ref['names'], da_name]
         yield from _get_data_conf(
             root_el, type_el, logical_device, logical_node, fc, names,
-            datasets,
             writable=writable,
             quality_ref=quality_ref,
             timestamp_ref=timestamp_ref,
             selected_ref=selected_ref,)
 
 
-def _get_value_datasets(datasets, value_ref, quality_ref, timestamp_ref,
-                        selected_ref):
+def _get_data_datasets(datasets, data_conf):
     for dataset in datasets:
-        for ds_val_ref in dataset['values']:
-            if _is_ref_in_dataset(ds_val_ref, value_ref):
-                yield {
-                    'ref': dataset['ref'],
-                    'quality': (_is_ref_in_dataset(ds_val_ref, quality_ref)
-                                if quality_ref else False),
-                    'timestamp': (_is_ref_in_dataset(ds_val_ref, timestamp_ref)
-                                  if timestamp_ref else False),
-                    'selected': (_is_ref_in_dataset(ds_val_ref, selected_ref)
-                                 if selected_ref else False)}
+        if not _is_ref_in_dataset(data_conf['value'], dataset['values']):
+            continue
+
+        yield {
+            'ref': dataset['ref'],
+            'quality': bool(
+                'quality' in data_conf and
+                _is_ref_in_dataset(data_conf['quality'], dataset['values'])),
+            'timestamp': bool(
+                'timestamp' in data_conf and
+                _is_ref_in_dataset(data_conf['timestamp'], dataset['values'])),
+            'selected': bool(
+                'selected' in data_conf and
+                _is_ref_in_dataset(data_conf['selected'], dataset['values']))}
 
 
-def _is_ref_in_dataset(ds_value_ref, ref):
-    if ds_value_ref['logical_device'] != ref['logical_device']:
-        return False
+def _is_ref_in_dataset(ref, data_refs):
+    for data_ref in data_refs:
+        if (ref['logical_device'] != data_ref['logical_device'] or
+                ref['logical_node'] != data_ref['logical_node'] or
+                ref['fc'] != data_ref['fc']):
+            continue
 
-    if ds_value_ref['logical_node'] != ref['logical_node']:
-        return False
+        if (len(ref['names']) < len(data_ref['names']) or
+                any(i != j for i, j in zip(ref['names'], data_ref['names']))):
+            continue
 
-    if ds_value_ref['fc'] != ref['fc']:
-        return False
-
-    if ds_value_ref['names'] == ref['names']:
         return True
 
-    if len(ds_value_ref['names']) > len(ref['names']):
-        return True
-
-    return ref['names'][:len(ds_value_ref['names'])] == ds_value_ref['names']
+    return False
 
 
 def _get_data_confs_for_cdc(root_el, type_el, cdc,
-                            logical_device, logical_node, fc, names, datasets):
+                            logical_device, logical_node, fc, names):
     get_data_conf = functools.partial(
         _get_data_conf, root_el, type_el, logical_device, logical_node, fc,
-        names, datasets)
+        names)
     if cdc == 'SPS':
         yield from get_data_conf('stVal', 'q', 't')
         yield from get_data_conf('subVal', 'subQ')
