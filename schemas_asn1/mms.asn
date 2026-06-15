@@ -7,6 +7,7 @@
 -- This file has been checked with the OSS parser
 -- ABB Switzerland Corporate Research , Hubert Kirrmann 2005-07-21
 -- This file starts with the IEC61850 definitions.
+-- modified by hat-open 2026-06-15
 
 IEC61850 DEFINITIONS ::=
 BEGIN
@@ -535,7 +536,8 @@ TypeDescription ::= CHOICE {
   bcd               [13] IMPLICIT Unsigned8, -- BCD
   objId             [15] IMPLICIT NULL,
   ...,
-  mMSString         [16]  Integer32, -- MMS String
+  -- mMSString modified to IMPLICIT by hat-open, due to observed behavior of the real devices
+  mMSString         [16] IMPLICIT Integer32, -- MMS String
   utc-time          [17] IMPLICIT NULL -- from  IEC61850 8.1 G.2 --}
 
 DATA-EXCHANGE ::= CLASS {
