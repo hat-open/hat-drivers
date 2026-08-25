@@ -39,14 +39,18 @@ class Connection(aio.Resource):
 
     async def send(self,
                    msgs: list[common.Msg],
-                   sent_cb: aio.AsyncCallable[[], None] | None = None):
+                   *,
+                   sent_cb: aio.AsyncCallable[[], None] | None = None,
+                   with_ack: bool = True):
         self._comm_log.log(common.CommLogAction.SEND, msgs)
 
         data = collections.deque(self._encoder.encode(msgs))
 
         while data:
             i = data.popleft()
-            await self._conn.send(i, sent_cb=None if data else sent_cb)
+            await self._conn.send(i,
+                                  sent_cb=(None if data else sent_cb),
+                                  with_ack=with_ack)
 
     async def receive(self) -> list[common.Msg]:
         data = await self._conn.receive()

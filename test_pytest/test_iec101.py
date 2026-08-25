@@ -27,7 +27,7 @@ class MockMasterConnection(aio.Resource):
                                    port='',
                                    address=0)
 
-    async def send(self, data, sent_cb=None):
+    async def send(self, data, *, sent_cb=None, with_ack=True):
         self._data_queue.put_nowait(data)
         if sent_cb:
             await aio.call(sent_cb)

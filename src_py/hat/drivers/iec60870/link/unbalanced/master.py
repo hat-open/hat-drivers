@@ -235,14 +235,16 @@ class MasterConnection(common.Connection):
     def info(self):
         return self._info
 
-    async def send(self, data, sent_cb=None):
+    async def send(self, data, *, sent_cb=None, with_ack=True):
         if not data:
             return
 
+        function = (common.ReqFunction.DATA if with_ack
+                    else common.ReqFunction.DATA_NO_RES)
+
         future = self._loop.create_future()
         try:
-            await self._send_queue.put(
-                (future, common.ReqFunction.DATA, data))
+            await self._send_queue.put((future, function, data))
             await future
 
             if sent_cb:
@@ -315,6 +317,22 @@ class MasterConnection(common.Connection):
 
                 if data_flow_control and function == common.ReqFunction.DATA:
                     data_flow_queue.append((future, function, data))
+                    continue
+
+                if function == common.ReqFunction.DATA_NO_RES:
+                    req = common.ReqFrame(
+                        direction=None,
+                        frame_count_bit=False,
+                        frame_count_valid=False,
+                        function=function,
+                        address=self._info.address,
+                        data=data)
+
+                    await send(req)
+
+                    if not future.done():
+                        future.set_result(None)
+
                     continue
 
                 frame_count_bit = not frame_count_bit

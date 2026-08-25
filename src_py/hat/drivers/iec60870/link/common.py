@@ -86,7 +86,9 @@ class Connection(aio.Resource):
     @abc.abstractmethod
     async def send(self,
                    data: util.Bytes,
-                   sent_cb: aio.AsyncCallable[[], None] | None = None):
+                   *,
+                   sent_cb: aio.AsyncCallable[[], None] | None = None,
+                   with_ack: bool = True):
         pass
 
     @abc.abstractmethod

@@ -54,7 +54,7 @@ class MockLinkConnection(aio.Resource):
                                    port='',
                                    address=0)
 
-    async def send(self, data, sent_cb=None):
+    async def send(self, data, *, sent_cb=None, with_ack=True):
         if self._send_queue is None:
             raise NotImplementedError()
 

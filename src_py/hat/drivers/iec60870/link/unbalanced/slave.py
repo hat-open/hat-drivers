@@ -164,7 +164,7 @@ class SlaveConnection(common.Connection):
     def info(self):
         return self._info
 
-    async def send(self, data, sent_cb=None):
+    async def send(self, data, *, sent_cb=None, with_ack=True):
         if not data:
             return
 
