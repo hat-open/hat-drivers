@@ -150,6 +150,44 @@ async def test_send_receive(mock_serial):
     await slave.async_close()
 
 
+@pytest.mark.parametrize('with_ack, req_function', [
+    (True, common.ReqFunction.DATA),
+    (False, common.ReqFunction.DATA_NO_RES)])
+async def test_send_with_ack(mock_serial, with_ack, req_function):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+    master_conn_fut = master.async_group.spawn(
+        master.open_connection, addr=1, poll_class1_delay=None)
+
+    slave_endpoint = await endpoint.create(
+        port='1',
+        address_size=common.AddressSize.ONE,
+        direction_valid=True)
+    await slave_endpoint.receive()
+    await slave_endpoint.send(common.ShortFrame())
+    await slave_endpoint.drain()
+
+    master_conn = await master_conn_fut
+
+    send_future = master.async_group.spawn(
+        master_conn.send, b'hello', with_ack=with_ack)
+    req = await slave_endpoint.receive()
+    assert req.data == b'hello'
+    assert req.function == req_function
+
+    if with_ack:
+        await asyncio.sleep(0.01)
+        assert not send_future.done()
+
+        await slave_endpoint.send(common.ShortFrame())
+        await slave_endpoint.drain()
+
+    await send_future
+
+    await master.async_close()
+    await slave_endpoint.async_close()
+
+
 async def test_slave_send_master_poll_class2(mock_serial):
     master = await unbalanced.master.create_master_link(
         port='1', address_size=common.AddressSize.ONE)

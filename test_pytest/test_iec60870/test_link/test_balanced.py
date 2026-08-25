@@ -152,6 +152,43 @@ async def test_send_receive(mock_serial):
     await b.async_close()
 
 
+@pytest.mark.parametrize('with_ack, req_function', [
+    (True, common.ReqFunction.DATA),
+    (False, common.ReqFunction.DATA_NO_RES)])
+async def test_send_with_ack(mock_serial, with_ack, req_function):
+    a = await balanced.create_balanced_link(
+        port='1', address_size=common.AddressSize.ONE)
+    a_conn_fut = a.async_group.spawn(
+        a.open_connection, direction=common.Direction.A_TO_B, addr=1)
+
+    b_endpoint = await endpoint.create(
+        port='1',
+        address_size=common.AddressSize.ONE,
+        direction_valid=True)
+    await b_endpoint.receive()
+    await b_endpoint.send(common.ShortFrame())
+    await b_endpoint.drain()
+
+    a_conn = await a_conn_fut
+
+    send_future = a.async_group.spawn(a_conn.send, b'hello', with_ack=with_ack)
+    req = await b_endpoint.receive()
+    assert req.data == b'hello'
+    assert req.function == req_function
+
+    if with_ack:
+        await asyncio.sleep(0.01)
+        assert not send_future.done()
+
+        await b_endpoint.send(common.ShortFrame())
+        await b_endpoint.drain()
+
+    await send_future
+
+    await a.async_close()
+    await b_endpoint.async_close()
+
+
 async def test_multiple(mock_serial):
     a = await balanced.create_balanced_link(
         port='1', address_size=common.AddressSize.ONE)
