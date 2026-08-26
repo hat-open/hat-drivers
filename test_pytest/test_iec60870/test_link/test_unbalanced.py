@@ -120,6 +120,57 @@ async def test_response_ack(mock_serial):
     await ep.async_close()
 
 
+@pytest.mark.parametrize('exceeded', [True, False])
+@pytest.mark.parametrize('send_retry_count', [1, 5])
+async def test_send_retry_count(mock_serial, send_retry_count, exceeded):
+    master = await unbalanced.master.create_master_link(
+        port='1', address_size=common.AddressSize.ONE)
+
+    slave_endpoint = await endpoint.create(
+        port='1',
+        address_size=common.AddressSize.ONE,
+        direction_valid=True)
+
+    master_conn_fut = master.async_group.spawn(
+        master.open_connection,
+        addr=1,
+        send_retry_count=send_retry_count,
+        response_timeout=0.01,
+        poll_class1_delay=None)
+    req = await slave_endpoint.receive()
+    assert isinstance(req, common.ReqFrame)
+    assert req.function == common.ReqFunction.RESET_LINK
+
+    await slave_endpoint.send(common.ShortFrame())
+    master_conn = await master_conn_fut
+    assert master_conn.is_open
+
+    send_group = master.async_group.create_subgroup(log_exceptions=False)
+    send_future = send_group.spawn(master_conn.send, b'hello')
+    received_first = await slave_endpoint.receive()
+    assert received_first.data == b'hello'
+
+    for i in range(send_retry_count):
+        received_retry = await slave_endpoint.receive()
+        assert received_retry == received_first
+
+    assert not send_future.done()
+
+    if exceeded:
+        # no response after send_retry_count exceeded
+        with pytest.raises(Exception):
+            await send_future
+        await master_conn.wait_closed()
+
+    else:
+        await slave_endpoint.send(common.ShortFrame())
+        await send_future
+        assert master_conn.is_open
+
+    await master.async_close()
+    await slave_endpoint.async_close()
+
+
 async def test_send_receive(mock_serial):
     master = await unbalanced.master.create_master_link(
         port='1', address_size=common.AddressSize.ONE)
@@ -154,10 +205,16 @@ async def test_send_receive(mock_serial):
     (True, common.ReqFunction.DATA),
     (False, common.ReqFunction.DATA_NO_RES)])
 async def test_send_with_ack(mock_serial, with_ack, req_function):
+    send_retry_count = 3
+
     master = await unbalanced.master.create_master_link(
         port='1', address_size=common.AddressSize.ONE)
     master_conn_fut = master.async_group.spawn(
-        master.open_connection, addr=1, poll_class1_delay=None)
+        master.open_connection,
+        addr=1,
+        poll_class1_delay=None,
+        send_retry_count=send_retry_count,
+        response_timeout=0.01)
 
     slave_endpoint = await endpoint.create(
         port='1',
@@ -169,20 +226,26 @@ async def test_send_with_ack(mock_serial, with_ack, req_function):
 
     master_conn = await master_conn_fut
 
-    send_future = master.async_group.spawn(
+    send_group = master.async_group.create_subgroup(log_exceptions=False)
+    send_future = send_group.spawn(
         master_conn.send, b'hello', with_ack=with_ack)
-    req = await slave_endpoint.receive()
-    assert req.data == b'hello'
-    assert req.function == req_function
+    req_first = await slave_endpoint.receive()
+    assert req_first.data == b'hello'
+    assert req_first.function == req_function
 
     if with_ack:
-        await asyncio.sleep(0.01)
+        for i in range(send_retry_count):
+            req_retry = await slave_endpoint.receive()
+            assert req_retry == req_first
+
         assert not send_future.done()
+        with pytest.raises(Exception):
+            await send_future
+        await master_conn.wait_closed()
 
-        await slave_endpoint.send(common.ShortFrame())
-        await slave_endpoint.drain()
-
-    await send_future
+    else:
+        await send_future
+        assert master_conn.is_open
 
     await master.async_close()
     await slave_endpoint.async_close()
