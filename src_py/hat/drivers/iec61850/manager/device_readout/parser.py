@@ -4,11 +4,11 @@ import collections
 from hat import asn1
 from hat import json
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec61850.manager.device_readout import common
 
 
-def get_device_conf(addr: tcp.Address,
+def get_device_conf(addr: net.TcpAddress,
                     tsel: int | None,
                     ssel: int | None,
                     psel: int | None,
@@ -44,7 +44,7 @@ def get_device_conf(addr: tcp.Address,
         'commands': list(_get_command_confs(updated_value_types, cmd_models))}
 
 
-def _get_connection_conf(addr: tcp.Address,
+def _get_connection_conf(addr: net.TcpAddress,
                          tsel: int | None,
                          ssel: int | None,
                          psel: int | None,

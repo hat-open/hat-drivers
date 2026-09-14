@@ -1,34 +1,24 @@
 import collections
 import logging
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec60870.apci import common
 
 
 def create_server_logger(logger: logging.Logger,
-                         name: str | None,
-                         info: tcp.ServerInfo | None
+                         info: net.ServerInfo
                          ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec60870ApciServer',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
 
 def create_connection_logger(logger: logging.Logger,
-                             info: tcp.ConnectionInfo
+                             info: net.ConnectionInfo
                              ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec60870ApciConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -37,16 +27,10 @@ class CommunicationLogger:
 
     def __init__(self,
                  logger: logging.Logger,
-                 info: tcp.ConnectionInfo):
-        extra = {'meta': {'type': 'Iec60870ApciTransport',
-                          'communication': True,
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+                 info: net.ConnectionInfo):
+        self._log = create_connection_logger(logger=logger,
+                                             info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

@@ -11,7 +11,7 @@ from hat import asn1
 from hat import json
 
 from hat.drivers import acse
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.mms import common
 from hat.drivers.mms import encoder
 from hat.drivers.mms import logger
@@ -69,7 +69,7 @@ UnconfirmedCb: typing.TypeAlias = aio.AsyncCallable[['Connection',
 """Unconfirmed callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   local_detail_calling: int | None = None,
                   request_cb: RequestCb | None = None,
                   unconfirmed_cb: UnconfirmedCb | None = None,
@@ -119,7 +119,7 @@ async def connect(addr: tcp.Address,
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 102),
                  request_cb: RequestCb | None = None,
                  unconfirmed_cb: UnconfirmedCb | None = None,
                  *,
@@ -141,8 +141,7 @@ async def listen(connection_cb: ConnectionCb,
     server._request_cb = request_cb
     server._unconfirmed_cb = unconfirmed_cb
     server._bind_connections = bind_connections
-
-    server._log = logger.create_server_logger(mlog, kwargs.get('name'), None)
+    server._log = mlog
 
     server._srv = await acse.listen(validate_cb=server._on_validate,
                                     connection_cb=server._on_connection,
@@ -150,8 +149,7 @@ async def listen(connection_cb: ConnectionCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = logger.create_server_logger(mlog, server._srv.info.name,
-                                              server._srv.info)
+    server._log = logger.create_server_logger(mlog, server._srv.info)
 
     return server
 
@@ -169,7 +167,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def info(self) -> tcp.ServerInfo:
+    def info(self) -> net.ServerInfo:
         """Server info"""
         return self._srv.info
 

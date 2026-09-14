@@ -7,7 +7,7 @@ from hat import aio
 from hat import json
 
 from hat.drivers import mqtt
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 def create_argument_parser():
@@ -52,7 +52,7 @@ def main():
 
 
 async def async_main(args):
-    addr = tcp.Address(args.host, args.port)
+    addr = net.TcpAddress(args.host, args.port)
     qos = mqtt.QoS(args.qos)
 
     if args.action == 'publish':

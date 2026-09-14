@@ -5,7 +5,7 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
 from hat.drivers.iec104 import logger
@@ -18,7 +18,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   *,
                   response_timeout: float = 15,
                   supervisory_timeout: float = 10,
@@ -39,7 +39,7 @@ async def connect(addr: tcp.Address,
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 2404),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 2404),
                  *,
                  response_timeout: float = 15,
                  supervisory_timeout: float = 10,
@@ -47,8 +47,8 @@ async def listen(connection_cb: ConnectionCb,
                  send_window_size: int = 12,
                  receive_window_size: int = 8,
                  **kwargs
-                 ) -> tcp.Server:
-    log = logger.create_server_logger(mlog, kwargs.get('name'), None)
+                 ) -> net.Server:
+    log = mlog
 
     async def on_connection(conn):
         try:
@@ -72,7 +72,7 @@ async def listen(connection_cb: ConnectionCb,
                                receive_window_size=receive_window_size,
                                **kwargs)
 
-    log = logger.create_server_logger(mlog, server.info.name, server.info)
+    log = logger.create_server_logger(mlog, server.info)
 
     return server
 
@@ -93,7 +93,7 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         return self._conn.info
 
     @property

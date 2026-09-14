@@ -5,13 +5,13 @@ import pytest
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.smpp import transport
 
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def create_server(addr,
@@ -23,7 +23,7 @@ async def create_server(addr,
                                     request_cb=request_cb,
                                     notification_cb=notification_cb)
 
-    return await tcp.listen(connection_cb=on_connection,
+    return await net.listen(connection_cb=on_connection,
                             addr=addr,
                             bind_connections=True)
 
@@ -31,7 +31,7 @@ async def create_server(addr,
 async def test_connection(addr):
     server = await create_server(addr)
 
-    tcp_conn = await tcp.connect(addr)
+    tcp_conn = await net.connect(addr)
     conn = transport.Connection(conn=tcp_conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -48,7 +48,7 @@ async def test_connection(addr):
 async def test_connection_tcp_closed(addr):
     server = await create_server(addr)
 
-    tcp_conn = await tcp.connect(addr)
+    tcp_conn = await net.connect(addr)
     await tcp_conn.async_close()
 
     with pytest.raises(Exception):
@@ -62,7 +62,7 @@ async def test_connection_tcp_closed(addr):
 async def test_tcp_closes_on_conn_close(addr):
     server = await create_server(addr)
 
-    tcp_conn = await tcp.connect(addr)
+    tcp_conn = await net.connect(addr)
 
     conn = transport.Connection(conn=tcp_conn,
                                 request_cb=None,
@@ -79,7 +79,7 @@ async def test_tcp_closes_on_conn_close(addr):
 async def test_conn_close_on_server_close(addr):
     server = await create_server(addr)
 
-    tcp_conn = await tcp.connect(addr)
+    tcp_conn = await net.connect(addr)
     conn = transport.Connection(conn=tcp_conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -338,7 +338,7 @@ async def test_send(addr, req, resp, cmd_status):
     server = await create_server(addr,
                                  request_cb=on_request)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -378,7 +378,7 @@ async def test_notify(addr, notification):
         addr,
         notification_cb=notification_queue.put_nowait)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -396,7 +396,7 @@ async def test_notify(addr, notification):
 async def test_send_on_conn_closed(addr):
     server = await create_server(addr)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -412,7 +412,7 @@ async def test_send_on_conn_closed(addr):
 async def test_notify_on_conn_closed(addr):
     server = await create_server(addr)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -435,7 +435,7 @@ async def test_send_no_resp(addr):
     server = await create_server(addr,
                                  request_cb=on_request)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -490,7 +490,7 @@ async def test_send_multi(addr):
     server = await create_server(addr,
                                  request_cb=on_request)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -566,7 +566,7 @@ async def test_send_invalid_resp(addr, resp):
     server = await create_server(addr,
                                  request_cb=on_request)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -581,7 +581,7 @@ async def test_send_invalid_resp(addr, resp):
 async def test_send_no_req_cb(addr):
     server = await create_server(addr)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -601,7 +601,7 @@ async def test_send_req_cb_exc(addr):
     server = await create_server(addr,
                                  request_cb=on_request)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -616,11 +616,11 @@ async def test_send_req_cb_exc(addr):
 async def test_receive_invalid_header(addr):
     tcp_conn_queue = aio.Queue()
 
-    server = await tcp.listen(connection_cb=tcp_conn_queue.put_nowait,
+    server = await net.listen(connection_cb=tcp_conn_queue.put_nowait,
                               addr=addr,
                               bind_connections=True)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)
@@ -711,7 +711,7 @@ async def test_receive_invalid_header(addr):
 async def test_invalid_req_optional_param(addr, req):
     server = await create_server(addr)
 
-    conn = await tcp.connect(addr)
+    conn = await net.connect(addr)
     conn = transport.Connection(conn=conn,
                                 request_cb=None,
                                 notification_cb=None)

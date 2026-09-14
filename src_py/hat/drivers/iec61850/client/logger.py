@@ -6,6 +6,7 @@ import typing
 from hat import util
 
 from hat.drivers import acse
+from hat.drivers import net
 from hat.drivers.iec61850 import common
 from hat.drivers.iec61850 import encoder
 
@@ -106,17 +107,12 @@ Msg: typing.TypeAlias = (CreateDatasetReq |
 
 
 def create_logger(logger: logging.Logger,
-                  name: str | None,
-                  info: acse.ConnectionInfo | None
+                  info: acse.ConnectionInfo
                   ) -> logging.LoggerAdapter:
-    extra = {'meta': {'type': 'Iec61850Client',
-                      'name': name}}
+    net_info = _connection_info_to_net(info)
 
-    if info is not None:
-        extra['meta']['local_addr'] = {'host': info.local_addr.host,
-                                       'port': info.local_addr.port}
-        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                        'port': info.remote_addr.port}
+    extra = {'meta': {'type': 'Iec61850Client',
+                      **net.connection_info_to_json(net_info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -125,19 +121,14 @@ class CommunicationLogger:
 
     def __init__(self,
                  logger: logging.Logger,
-                 name: str | None,
-                 info: acse.ConnectionInfo | None):
-        extra = {'meta': {'type': 'Iec61850Client',
-                          'communication': True,
-                          'name': name}}
+                 info: acse.ConnectionInfo):
+        if info:
+            self._log = create_logger(logger=logger,
+                                      info=info)
+            self._log.extra['meta']['communication'] = True
 
-        if info is not None:
-            extra['meta']['local_addr'] = {'host': info.local_addr.host,
-                                           'port': info.local_addr.port}
-            extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                            'port': info.remote_addr.port}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        else:
+            self._log = logger
 
     @property
     def is_enabled(self) -> bool:
@@ -161,6 +152,19 @@ class CommunicationLogger:
                     self._log.debug('%s %s',
                                     action.value, _format_report_data(data),
                                     stacklevel=2)
+
+
+def _connection_info_to_net(info):
+    if isinstance(info, acse.TcpConnectionInfo):
+        return net.TcpConnectionInfo(name=info.name,
+                                     local_addr=info.local_addr,
+                                     remote_addr=info.remote_addr)
+
+    if isinstance(info, acse.UnixConnectionInfo):
+        return net.UnixConnectionInfo(name=info.name,
+                                      addr=info.addr)
+
+    raise TypeError('unsupported info type')
 
 
 def _format_msg(msg):

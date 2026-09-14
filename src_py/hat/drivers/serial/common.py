@@ -6,6 +6,7 @@ import logging
 import typing
 
 from hat import aio
+from hat import json
 from hat import util
 
 from hat.drivers.common import CommLogAction
@@ -88,12 +89,16 @@ class Endpoint(aio.Resource):
         """
 
 
+def endpoint_info_to_json(info: EndpointInfo) -> json.Data:
+    return {'name': info.name,
+            'port': info.port}
+
+
 def create_logger(logger: logging.Logger,
                   info: EndpointInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'SerialEndpoint',
-                      'name': info.name,
-                      'port': info.port}}
+                      **endpoint_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -103,12 +108,9 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: EndpointInfo):
-        extra = {'meta': {'type': 'UdpEndpoint',
-                          'communication': True,
-                          'name': info.name,
-                          'port': info.port}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        self._log = create_logger(logger=logger,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: CommLogAction,

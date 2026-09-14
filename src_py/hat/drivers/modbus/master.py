@@ -6,7 +6,7 @@ import logging
 
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import serial
 from hat.drivers.modbus import common
 from hat.drivers.modbus import transport
@@ -17,14 +17,14 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 async def create_tcp_master(modbus_type: common.ModbusType,
-                            addr: tcp.Address,
+                            addr: net.StreamAddress,
                             *,
                             response_timeout: float | None = None,
                             **kwargs
                             ) -> 'Master':
     """Create TCP master
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     Args:
         modbus_type: modbus type
@@ -32,7 +32,7 @@ async def create_tcp_master(modbus_type: common.ModbusType,
         response_timeout: response timeout in seconds
 
     """
-    conn = await tcp.connect(addr, **kwargs)
+    conn = await net.connect(addr, **kwargs)
 
     try:
         return Master(link=transport.TcpLink(conn),
@@ -88,7 +88,7 @@ class Master(aio.Resource):
         self._conn = transport.Connection(link)
         self._send_queue = aio.Queue()
         self._loop = asyncio.get_running_loop()
-        self._log = _create_logger_adapter(self._conn.info)
+        self._log = _create_logger(self._conn.info)
 
         if modbus_type == common.ModbusType.TCP:
             self._next_transaction_ids = iter(i % 0x10000
@@ -104,7 +104,7 @@ class Master(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+    def info(self) -> net.ConnectionInfo | serial.EndpointInfo:
         """Connection or endpoint info"""
         return self._conn.info
 
@@ -370,19 +370,14 @@ class Master(aio.Resource):
         self._log.debug("discarded %s bytes from input buffer", count)
 
 
-def _create_logger_adapter(info):
-    if isinstance(info, tcp.ConnectionInfo):
+def _create_logger(info):
+    if isinstance(info, net.ConnectionInfo):
         extra = {'meta': {'type': 'ModbusTcpMaster',
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
+                          **net.connection_info_to_json(info)}}
 
     elif isinstance(info, serial.EndpointInfo):
         extra = {'meta': {'type': 'ModbusSerialMaster',
-                          'name': info.name,
-                          'port': info.port}}
+                          **serial.endpoint_info_to_json(info)}}
 
     else:
         raise TypeError('invalid info type')

@@ -9,7 +9,7 @@ from hat import aio
 
 from hat.drivers import acse
 from hat.drivers import mms
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec61850 import common
 from hat.drivers.iec61850 import encoder
 from hat.drivers.iec61850.client import logger
@@ -25,7 +25,7 @@ TerminationCb: typing.TypeAlias = aio.AsyncCallable[[common.Termination], None]
 """Termination callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   data_value_types: dict[common.DataRef,
                                          common.ValueType] = {},
                   cmd_value_types: dict[common.CommandRef,
@@ -70,9 +70,8 @@ async def connect(addr: tcp.Address,
                     for data_ref in data_refs]
         for report_id, data_refs in report_data_refs.items()}
 
-    client._log = logger.create_logger(mlog, kwargs.get('name'), None)
-    client._comm_log = logger.CommunicationLogger(mlog, kwargs.get('name'),
-                                                  None)
+    client._log = mlog
+    client._comm_log = logger.CommunicationLogger(mlog, None)
 
     client._conn = await mms.connect(addr=addr,
                                      request_cb=None,
@@ -80,10 +79,8 @@ async def connect(addr: tcp.Address,
                                      **kwargs)
 
     try:
-        client._log = logger.create_logger(mlog, client._conn.info.name,
-                                           client._conn.info)
-        client._comm_log = logger.CommunicationLogger(
-            mlog, client._conn.info.name, client._conn.info)
+        client._log = logger.create_logger(mlog, client._conn.info)
+        client._comm_log = logger.CommunicationLogger(mlog, client._conn.info)
 
         if status_delay is not None:
             client.async_group.spawn(client._status_loop, status_delay,

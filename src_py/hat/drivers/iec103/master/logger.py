@@ -11,9 +11,7 @@ def create_logger(logger: logging.Logger,
                   info: link.ConnectionInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec103Master',
-                      'name': info.name,
-                      'port': info.port,
-                      'address': info.address}}
+                      **link.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -23,13 +21,9 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: link.ConnectionInfo):
-        extra = {'meta': {'type': 'Iec103Master',
-                          'communication': True,
-                          'name': info.name,
-                          'port': info.port,
-                          'address': info.address}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        self._log = create_logger(logger=logger,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

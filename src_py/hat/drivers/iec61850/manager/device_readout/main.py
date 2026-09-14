@@ -8,7 +8,7 @@ import sys
 from hat import aio
 from hat import json
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec61850.manager import common
 from hat.drivers.iec61850.manager.device_readout.readout import readout
 
@@ -100,7 +100,7 @@ def main(args):
 async def async_main(args):
     try:
         result = await readout(
-            addr=tcp.Address(args.host, args.port),
+            addr=net.TcpAddress(args.host, args.port),
             local_tsel=args.local_tsel,
             remote_tsel=args.remote_tsel,
             local_ssel=args.local_ssel,

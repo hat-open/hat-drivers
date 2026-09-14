@@ -6,8 +6,8 @@ import typing
 from hat import aio
 from hat import util
 
+from hat.drivers import net
 from hat.drivers import ssl
-from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
 from hat.drivers.iec60870.apci import logger
 from hat.drivers.iec60870.apci.transport import Transport
@@ -25,7 +25,7 @@ class ConnectionDisabledError(ConnectionError):
     pass
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   response_timeout: float = 15,
                   supervisory_timeout: float = 10,
                   test_timeout: float = 20,
@@ -38,7 +38,7 @@ async def connect(addr: tcp.Address,
                   ) -> 'Connection':
     """Connect to remote device
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     Args:
         addr: remote server's address
@@ -51,7 +51,7 @@ async def connect(addr: tcp.Address,
         receive_queue_size: size of receive queue
 
     """
-    conn = await tcp.connect(addr, **kwargs)
+    conn = await net.connect(addr, **kwargs)
 
     try:
         transport = Transport(conn)
@@ -77,7 +77,7 @@ async def connect(addr: tcp.Address,
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 2404),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 2404),
                  response_timeout: float = 15,
                  supervisory_timeout: float = 10,
                  test_timeout: float = 20,
@@ -88,10 +88,10 @@ async def listen(connection_cb: ConnectionCb,
                  receive_queue_size: int = 1024,
                  bind_connections: bool = True,
                  **kwargs
-                 ) -> tcp.Server:
+                 ) -> net.Server:
     """Create new IEC104 slave and listen for incoming connections
 
-    Additional arguments are passed directly to `hat.drivers.tcp.listen`.
+    Additional arguments are passed directly to `hat.drivers.net.listen`.
 
     Args:
         connection_cb: new connection callback
@@ -101,10 +101,10 @@ async def listen(connection_cb: ConnectionCb,
         test_timeout: test timeout (t3) in seconds
         send_window_size: send window size (k)
         receive_window_size: receive window size (w)
-        bind_connections: bind connections (see `hat.drivers.tcp.listen`)
+        bind_connections: bind connections (see `hat.drivers.net.listen`)
 
     """
-    log = logger.create_server_logger(mlog, kwargs.get('name'), None)
+    log = mlog
 
     async def on_connection(conn):
         try:
@@ -128,11 +128,11 @@ async def listen(connection_cb: ConnectionCb,
         except Exception as e:
             log.error("on connection error: %s", e, exc_info=e)
 
-    server = await tcp.listen(on_connection, addr,
+    server = await net.listen(on_connection, addr,
                               bind_connections=bind_connections,
                               **kwargs)
 
-    log = logger.create_server_logger(mlog, server.info.name, server.info)
+    log = logger.create_server_logger(mlog, server.info)
 
     return server
 
@@ -186,7 +186,7 @@ class Connection(aio.Resource):
         return self._transport.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         """Connection info"""
         return self._transport.info
 

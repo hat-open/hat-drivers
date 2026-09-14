@@ -1,6 +1,8 @@
 """Connection oriented session protocol"""
 
-from hat.drivers.cosp.connection import (ConnectionInfo,
+from hat.drivers.cosp.connection import (TcpConnectionInfo,
+                                         UnixConnectionInfo,
+                                         ConnectionInfo,
                                          ValidateCb,
                                          ConnectionCb,
                                          connect,
@@ -9,7 +11,9 @@ from hat.drivers.cosp.connection import (ConnectionInfo,
                                          Connection)
 
 
-__all__ = ['ConnectionInfo',
+__all__ = ['TcpConnectionInfo',
+           'UnixConnectionInfo',
+           'ConnectionInfo',
            'ValidateCb',
            'ConnectionCb',
            'connect',

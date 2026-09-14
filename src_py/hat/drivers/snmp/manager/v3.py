@@ -5,7 +5,7 @@ import time
 
 from hat import aio
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
 from hat.drivers.snmp import logger
@@ -22,15 +22,25 @@ _default_user = common.User(name='public',
                             priv_password=None)
 
 
-async def create_v3_manager(remote_addr: udp.Address,
+async def create_v3_manager(remote_addr: net.DatagramAddress,
                             context: common.Context | None = None,
                             user: common.User = _default_user,
                             **kwargs
                             ) -> common.Manager:
     """Create v3 manager"""
-    endpoint = await udp.create(local_addr=None,
-                                remote_addr=remote_addr,
-                                **kwargs)
+    if isinstance(remote_addr, net.UdpAddress):
+        datagram_type = net.DatagramType.UDP
+
+    elif isinstance(remote_addr, net.UnixAddress):
+        datagram_type = net.DatagramType.UNIX
+
+    else:
+        raise TypeError('unsupported address type')
+
+    endpoint = await net.create_endpoint(datagram_type=datagram_type,
+                                         local_addr=None,
+                                         remote_addr=remote_addr,
+                                         **kwargs)
 
     try:
         manager = V3Manager(endpoint=endpoint,
@@ -54,7 +64,7 @@ async def create_v3_manager(remote_addr: udp.Address,
 class V3Manager(common.Manager):
 
     def __init__(self,
-                 endpoint: udp.Endpoint,
+                 endpoint: net.Endpoint,
                  context: common.Context | None,
                  user: common.User):
         self._endpoint = endpoint

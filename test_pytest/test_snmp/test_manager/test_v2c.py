@@ -6,21 +6,21 @@ from hat import aio
 from hat import util
 
 from hat.drivers import snmp
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp.encoder import v1, v2c, v3
 
 
 @pytest.fixture
 def agent_addr():
-    return udp.Address('127.0.0.1', util.get_unused_udp_port())
+    return net.UdpAddress('127.0.0.1', util.get_unused_udp_port())
 
 
 async def create_mock_agent(addr):
     agent = MockAgent()
     agent._receive_queue = aio.Queue()
-    agent._endpoint = await udp.create(local_addr=addr,
-                                       remote_addr=None)
+    agent._endpoint = await net.create_endpoint(local_addr=addr,
+                                                remote_addr=None)
     agent.async_group.spawn(agent._receive_loop)
     return agent
 

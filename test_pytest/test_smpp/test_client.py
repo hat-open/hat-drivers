@@ -5,7 +5,7 @@ import pytest
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import smpp
 from hat.drivers.smpp import transport
 
@@ -29,14 +29,14 @@ async def create_server(addr,
         finally:
             await aio.uncancellable(conn.async_close())
 
-    return await tcp.listen(connection_cb=on_connection,
+    return await net.listen(connection_cb=on_connection,
                             addr=addr,
                             bind_connections=True)
 
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_connect(addr):

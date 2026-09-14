@@ -4,15 +4,15 @@ import pytest
 from hat import util
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import snmp
-from hat.drivers import udp
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
 
 
 @pytest.fixture
 def addr():
-    return udp.Address('127.0.0.1', util.get_unused_udp_port())
+    return net.UdpAddress('127.0.0.1', util.get_unused_udp_port())
 
 
 async def test_create(addr):
@@ -52,7 +52,7 @@ async def test_v1_get_req_res(addr, msg_type, data, error):
     agent = await snmp.create_agent(local_addr=addr,
                                     v1_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v1.Msg(
         type=msg_type,
@@ -105,7 +105,7 @@ async def test_v1_set_req_res(addr, data, error):
     agent = await snmp.create_agent(local_addr=addr,
                                     v1_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v1.Msg(
         type=encoder.v1.MsgType.SET_REQUEST,
@@ -146,7 +146,7 @@ async def test_v1_request_cb_exception(addr):
     agent = await snmp.create_agent(local_addr=addr,
                                     v1_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v1.Msg(
         type=encoder.v1.MsgType.GET_REQUEST,
@@ -185,7 +185,7 @@ async def test_v1_invalid_response(addr, response):
     agent = await snmp.create_agent(local_addr=addr,
                                     v1_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v1.Msg(
         type=encoder.v1.MsgType.GET_REQUEST,
@@ -239,7 +239,7 @@ async def test_v1_invalid_version(addr, req_msg, log_msg):
     agent = await snmp.create_agent(local_addr=addr,
                                     v1_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     endpoint.send(encoder.encode(req_msg))
 
@@ -275,7 +275,7 @@ async def test_v2c_get_req_res(addr, msg_type, data, error):
     agent = await snmp.create_agent(local_addr=addr,
                                     v2c_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     if msg_type == encoder.v2c.MsgType.GET_BULK_REQUEST:
         req_pdu = encoder.v2c.BulkPdu(
@@ -337,7 +337,7 @@ async def test_v2c_set_req_res(addr, data, error):
     agent = await snmp.create_agent(local_addr=addr,
                                     v2c_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v2c.Msg(
         type=encoder.v2c.MsgType.SET_REQUEST,
@@ -378,7 +378,7 @@ async def test_v2c_request_cb_exception(addr):
     agent = await snmp.create_agent(local_addr=addr,
                                     v2c_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v2c.Msg(
         type=encoder.v2c.MsgType.GET_REQUEST,
@@ -417,7 +417,7 @@ async def test_v2c_invalid_response(addr, response):
     agent = await snmp.create_agent(local_addr=addr,
                                     v2c_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v2c.Msg(
         type=encoder.v2c.MsgType.GET_REQUEST,
@@ -471,7 +471,7 @@ async def test_v2c_invalid_version(addr, req_msg, log_msg):
     agent = await snmp.create_agent(local_addr=addr,
                                     v2c_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     endpoint.send(encoder.encode(req_msg))
 
@@ -541,7 +541,7 @@ async def test_v3_get_req_res(addr, msg_type, data, error, auth, auth_type,
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -627,7 +627,7 @@ async def test_v3_sync_report(addr, auth, priv):
                                     v3_request_cb=on_request_cb,
                                     authoritative_engine_id=engine_id)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -724,7 +724,7 @@ async def test_v3_set_req_res(addr, data, error, auth, priv, auth_type):
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.SET_REQUEST,
@@ -788,7 +788,7 @@ async def test_v3_request_cb_exception(addr):
                          priv_type=None,
                          priv_password=None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -857,7 +857,7 @@ async def test_invalid_auth_engine_id(addr, auth, priv):
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -925,7 +925,7 @@ async def test_invalid_user(addr, auth, priv):
             priv_type=snmp.PrivType.DES if priv else None,
             priv_password=priv_pass if priv else None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -989,7 +989,7 @@ async def test_invalid_auth_flag(addr, key_type):
             priv_type=None,
             priv_password=None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -1056,7 +1056,7 @@ async def test_invalid_priv_flag(addr):
             priv_type=snmp.PrivType.DES,
             priv_password=priv_pass)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -1110,7 +1110,7 @@ async def test_v3_invalid_response(addr, response):
             priv_type=None,
             priv_password=None)])
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     req_msg = encoder.v3.Msg(
         type=encoder.v3.MsgType.GET_REQUEST,
@@ -1164,7 +1164,7 @@ async def test_v3_invalid_version(addr, req_msg, log_msg):
     agent = await snmp.create_agent(local_addr=addr,
                                     v3_request_cb=on_request_cb)
 
-    endpoint = await udp.create(remote_addr=addr)
+    endpoint = await net.create_endpoint(remote_addr=addr)
 
     endpoint.send(encoder.encode(req_msg))
 

@@ -3,17 +3,17 @@ import asyncio
 import pytest
 
 from hat import util
-from hat.drivers import udp
+from hat.drivers import net
 
 
 @pytest.fixture
 def addr():
-    return udp.Address('127.0.0.1', util.get_unused_udp_port())
+    return net.UdpAddress('127.0.0.1', util.get_unused_udp_port())
 
 
 async def test_create(addr):
-    ep1 = await udp.create(local_addr=addr)
-    ep2 = await udp.create(remote_addr=addr)
+    ep1 = await net.create_endpoint(local_addr=addr)
+    ep2 = await net.create_endpoint(remote_addr=addr)
 
     assert not ep1.is_closed
     assert not ep2.is_closed
@@ -25,8 +25,8 @@ async def test_create(addr):
 
 
 async def test_send_receive(addr):
-    ep1 = await udp.create(local_addr=addr)
-    ep2 = await udp.create(remote_addr=addr)
+    ep1 = await net.create_endpoint(local_addr=addr)
+    ep2 = await net.create_endpoint(remote_addr=addr)
 
     assert ep1.empty
     assert ep2.empty

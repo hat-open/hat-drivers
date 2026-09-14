@@ -3,7 +3,7 @@ import pytest
 from hat import aio
 from hat import util
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
@@ -12,7 +12,7 @@ from hat.drivers.snmp import trap
 
 @pytest.fixture
 def udp_addr():
-    return udp.Address('127.0.0.1', util.get_unused_udp_port())
+    return net.UdpAddress('127.0.0.1', util.get_unused_udp_port())
 
 
 def _data(version):
@@ -61,7 +61,7 @@ async def test_sender_create(version, udp_addr):
 @pytest.mark.parametrize("data", [list(_data('v1'))])
 @pytest.mark.parametrize("cause_type", common.CauseType)
 async def test_sender_send_trap_v1(udp_addr, data, cause_type):
-    listener = await udp.create(local_addr=udp_addr)
+    listener = await net.create_endpoint(local_addr=udp_addr)
 
     sender = await trap.create_v1_trap_sender(udp_addr, 'community')
     sender.send_trap(
@@ -90,7 +90,7 @@ async def test_sender_send_trap_v1(udp_addr, data, cause_type):
 
 @pytest.mark.parametrize("data", [list(_data('v2c'))])
 async def test_sender_send_trap_v2c(udp_addr, data):
-    listener = await udp.create(local_addr=udp_addr)
+    listener = await net.create_endpoint(local_addr=udp_addr)
 
     sender = await trap.create_v2c_trap_sender(udp_addr, 'community')
     sender.send_trap(common.Trap(cause=None,
@@ -147,7 +147,7 @@ async def test_sender_send_trap_v3(udp_addr, data, auth, auth_type, priv):
     def on_priv_key(eid, usr):
         return priv_key
 
-    listener = await udp.create(local_addr=udp_addr)
+    listener = await net.create_endpoint(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
         remote_addr=udp_addr,
@@ -203,7 +203,7 @@ async def test_listener_receive_trap_v1(udp_addr, data, cause_type):
         v1_trap_cb=lambda _, community, tr: trap_queue.put_nowait(
             (community, tr)))
 
-    sender = await udp.create(remote_addr=udp_addr)
+    sender = await net.create_endpoint(remote_addr=udp_addr)
 
     msg = encoder.v1.Msg(type=encoder.v1.MsgType.TRAP,
                          community='community',
@@ -236,7 +236,7 @@ async def test_listener_receive_trap_v2c(udp_addr, data):
         v2c_trap_cb=lambda _, community, tr: trap_queue.put_nowait(
             (community, tr)))
 
-    sender = await udp.create(remote_addr=udp_addr)
+    sender = await net.create_endpoint(remote_addr=udp_addr)
 
     msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.SNMPV2_TRAP,
                           community='community',
@@ -300,7 +300,7 @@ async def test_listener_receive_trap_v3(udp_addr, data, auth, auth_type, priv):
             (user, context, tr)),
         users=[user])
 
-    sender = await udp.create(remote_addr=udp_addr)
+    sender = await net.create_endpoint(remote_addr=udp_addr)
 
     msg = encoder.v3.Msg(type=encoder.v3.MsgType.SNMPV2_TRAP,
                          id=12345,
@@ -345,7 +345,7 @@ async def test_listener_receive_trap_v3(udp_addr, data, auth, auth_type, priv):
 
 @pytest.mark.parametrize("data", [list(_data('v2c'))])
 async def test_sender_send_inform_v2c(udp_addr, data):
-    listener = await udp.create(local_addr=udp_addr)
+    listener = await net.create_endpoint(local_addr=udp_addr)
 
     sender = await trap.create_v2c_trap_sender(udp_addr, 'community')
 
@@ -409,7 +409,7 @@ async def test_sender_send_inform_v3(udp_addr, data, auth, auth_type, priv):
     def on_priv_key(eid, usr):
         return priv_key
 
-    listener = await udp.create(local_addr=udp_addr)
+    listener = await net.create_endpoint(local_addr=udp_addr)
 
     sender = await trap.create_v3_trap_sender(
         remote_addr=udp_addr,
@@ -491,7 +491,7 @@ async def test_listener_receive_inform_v2c(udp_addr, data):
     listener = await trap.create_trap_listener(local_addr=udp_addr,
                                                v2c_inform_cb=inform_cb)
 
-    sender = await udp.create(remote_addr=udp_addr)
+    sender = await net.create_endpoint(remote_addr=udp_addr)
 
     msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.INFORM_REQUEST,
                           community='community',
@@ -571,7 +571,7 @@ async def test_listener_receive_inform_v3(udp_addr, data, auth, auth_type,
         v3_inform_cb=inform_cb,
         users=[user])
 
-    sender = await udp.create(remote_addr=udp_addr)
+    sender = await net.create_endpoint(remote_addr=udp_addr)
 
     msg = encoder.v3.Msg(type=encoder.v3.MsgType.INFORM_REQUEST,
                          id=4531,

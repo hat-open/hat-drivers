@@ -3,13 +3,13 @@ import pytest
 from hat import util
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.pnetgateway import transport
 
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 @pytest.mark.parametrize("data", [
@@ -20,8 +20,8 @@ def addr():
 ])
 async def test_transport(data, addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_queue.get()
 
     conn1 = transport.Transport(conn1)

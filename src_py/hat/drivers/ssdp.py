@@ -4,7 +4,8 @@ import logging
 import typing
 
 from hat import aio
-from hat.drivers import udp
+
+from hat.drivers import net
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 class DeviceInfo(typing.NamedTuple):
-    addr: udp.Address
+    addr: net.UdpAddress
     location: str
     server: str
     service: str
@@ -22,15 +23,16 @@ DeviceInfoCb: typing.TypeAlias = aio.AsyncCallable[[DeviceInfo], None]
 """Device info callback"""
 
 
-default_multicast_addr = udp.Address('239.255.255.250', 1900)
+default_multicast_addr = net.UdpAddress('239.255.255.250', 1900)
 
 
 async def discover(device_info_cb: DeviceInfoCb,
-                   multicast_addr: udp.Address = default_multicast_addr,
+                   multicast_addr: net.UdpAddress = default_multicast_addr,
                    local_name: str = 'hat'
                    ) -> 'DiscoveryServer':
     """Create discovery server"""
-    endpoint = await udp.create(udp.Address('0.0.0.0', multicast_addr.port))
+    endpoint = await net.create_endpoint(
+        local_addr=net.UdpAddress('0.0.0.0', multicast_addr.port))
 
     srv = DiscoveryServer()
     srv._endpoint = endpoint

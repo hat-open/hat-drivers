@@ -1,18 +1,38 @@
+import os
+
 import pytest
 
 from hat import aio
 from hat import util
 
 from hat.drivers import chatter
-from hat.drivers import tcp
+from hat.drivers import net
+
+
+stream_types = [net.StreamType.TCP]
+if os.name == 'posix':
+    stream_types.append(net.StreamType.UNIX)
 
 
 @pytest.fixture
-def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+def create_addr(tmp_path):
+
+    def create_addr(stream_type):
+        if stream_type == net.StreamType.TCP:
+            return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
+
+        if stream_type == net.StreamType.UNIX:
+            return tmp_path / 'socket'
+
+        raise ValueError('unsupported stream type')
+
+    return create_addr
 
 
-async def test_connect_listen(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_connect_listen(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     with pytest.raises(Exception):
         await chatter.connect(addr)
 
@@ -26,8 +46,17 @@ async def test_connect_listen(addr):
     assert conn2.is_open
 
     assert srv.info.addresses == [addr]
-    assert conn1.info.remote_addr == addr
-    assert conn2.info.local_addr == addr
+
+    if stream_type == net.StreamType.TCP:
+        assert conn1.info.remote_addr == addr
+        assert conn2.info.local_addr == addr
+
+    elif stream_type == net.StreamType.UNIX:
+        assert conn1.info.addr == addr
+        assert conn2.info.addr == addr
+
+    else:
+        raise ValueError('unsupported stream type')
 
     await conn1.async_close()
     await srv.async_close()
@@ -35,7 +64,10 @@ async def test_connect_listen(addr):
     await conn2.wait_closed()
 
 
-async def test_send_receive(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_send_receive(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
     srv = await chatter.listen(conn_queue.put_nowait, addr)
     conn1 = await chatter.connect(addr)
@@ -77,9 +109,12 @@ async def test_send_receive(addr):
         await conn2.receive()
 
 
-async def test_ping_timeout(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_ping_timeout(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
     conn = await chatter.connect(addr,
                                  ping_delay=0.01,
                                  ping_timeout=0.01)

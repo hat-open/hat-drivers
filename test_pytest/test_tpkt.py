@@ -4,13 +4,13 @@ import pytest
 
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import tpkt
 
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_connect_listen(addr):
@@ -65,7 +65,7 @@ async def test_invalid_connection_cb(addr):
 async def test_invalid_data(addr):
     conn_future = asyncio.Future()
     srv = await tpkt.listen(conn_future.set_result, addr)
-    conn1 = await tcp.connect(addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_future
 
     with pytest.raises(Exception):

@@ -5,8 +5,8 @@ import typing
 
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import serial
-from hat.drivers import tcp
 from hat.drivers.modbus import common
 from hat.drivers.modbus import transport
 
@@ -23,12 +23,12 @@ RequestCb: typing.TypeAlias = aio.AsyncCallable[['Slave', common.Request],
 
 
 async def create_tcp_server(modbus_type: common.ModbusType,
-                            addr: tcp.Address,
+                            addr: net.StreamAddress,
                             *,
                             slave_cb: SlaveCb | None = None,
                             request_cb: RequestCb | None = None,
                             **kwargs
-                            ) -> tcp.Server:
+                            ) -> net.Server:
     """Create TCP server
 
     Closing server closes all active associated slaves.
@@ -48,7 +48,7 @@ async def create_tcp_server(modbus_type: common.ModbusType,
         if not conn.is_open:
             return
 
-        log = _create_logger_adapter(conn.info)
+        log = _create_logger(conn.info)
 
         slave = Slave(link=transport.TcpLink(conn),
                       modbus_type=modbus_type,
@@ -66,7 +66,7 @@ async def create_tcp_server(modbus_type: common.ModbusType,
         finally:
             await aio.uncancellable(slave.async_close())
 
-    server = await tcp.listen(on_connection, addr,
+    server = await net.listen(on_connection, addr,
                               bind_connections=True,
                               **kwargs)
 
@@ -115,7 +115,7 @@ class Slave(aio.Resource):
         self._modbus_type = modbus_type
         self._request_cb = request_cb
         self._conn = transport.Connection(link)
-        self._log = _create_logger_adapter(self._conn.info)
+        self._log = _create_logger(self._conn.info)
 
         self.async_group.spawn(self._receive_loop)
 
@@ -127,7 +127,7 @@ class Slave(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+    def info(self) -> net.ConnectionInfo | serial.EndpointInfo:
         """Connection or endpoint info"""
         return self._conn.info
 
@@ -321,19 +321,14 @@ class Slave(aio.Resource):
         raise TypeError('unsupported request')
 
 
-def _create_logger_adapter(info):
-    if isinstance(info, tcp.ConnectionInfo):
+def _create_logger(info):
+    if isinstance(info, net.ConnectionInfo):
         extra = {'meta': {'type': 'ModbusTcpSlave',
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
+                          **net.connection_info_to_json(info)}}
 
     elif isinstance(info, serial.EndpointInfo):
         extra = {'meta': {'type': 'ModbusSerialSlave',
-                          'name': info.name,
-                          'port': info.port}}
+                          **serial.endpoint_info_to_json(info)}}
 
     else:
         raise TypeError('invalid info type')

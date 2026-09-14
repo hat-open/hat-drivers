@@ -5,7 +5,7 @@ import logging
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.smpp import common
 from hat.drivers.smpp import transport
 
@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   system_id: str = '',
                   password: str = '',
                   close_timeout: float = 0.1,
@@ -24,7 +24,7 @@ async def connect(addr: tcp.Address,
                   ) -> 'Client':
     """Connect to remote SMPP server
 
-    Additional arguments are passed directly to `tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     """
     client = Client()
@@ -32,7 +32,7 @@ async def connect(addr: tcp.Address,
     client._equire_link_event = asyncio.Event()
     client._bound = False
 
-    conn = await tcp.connect(addr, **kwargs)
+    conn = await net.connect(addr, **kwargs)
     client._conn = transport.Connection(
         conn=conn,
         request_cb=client._on_request,

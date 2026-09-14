@@ -9,7 +9,7 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.mqtt import common
 from hat.drivers.mqtt import transport
 
@@ -32,7 +32,7 @@ class Msg(typing.NamedTuple):
 MsgCb: typing.TypeAlias = aio.AsyncCallable[['Client', Msg], None]
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   msg_cb: MsgCb | None = None,
                   will_msg: Msg | None = None,
                   will_delay: common.UInt32 = 0,
@@ -113,7 +113,7 @@ class Client(aio.Resource):
         return self._async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         return self._conn.info
 
     @property
@@ -612,10 +612,6 @@ def _create_connect_packet(will_msg, will_delay, ping_delay, client_id,
 
 def _create_logger(info):
     extra = {'meta': {'type': 'MqttClient',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)

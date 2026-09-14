@@ -5,7 +5,7 @@ import pytest
 from hat import util
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.pnetgateway import client
 from hat.drivers.pnetgateway import common
 from hat.drivers.pnetgateway import encoder
@@ -31,12 +31,12 @@ cmd = common.Command(key='key',
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_connect(addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
 
     status_queue = aio.Queue()
     data_queue = aio.Queue()
@@ -74,7 +74,7 @@ async def test_connect(addr):
 
 async def test_data_changed(addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
 
     status_queue = aio.Queue()
     data_queue = aio.Queue()
@@ -115,7 +115,7 @@ async def test_data_changed(addr):
 
 async def test_status_changed(addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
 
     status_queue = aio.Queue()
     data_queue = aio.Queue()
@@ -165,7 +165,7 @@ async def test_status_changed(addr):
 @pytest.mark.parametrize("success", [True, False])
 async def test_change_data(success, addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
 
     status_queue = aio.Queue()
     data_queue = aio.Queue()
@@ -209,7 +209,7 @@ async def test_change_data(success, addr):
 @pytest.mark.parametrize("success", [True, False])
 async def test_send_commands(success, addr):
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
 
     status_queue = aio.Queue()
     data_queue = aio.Queue()

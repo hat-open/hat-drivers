@@ -3,23 +3,17 @@ import collections
 import enum
 import logging
 
-from hat.drivers import tcp
+from hat.drivers import net
 
 from hat.drivers.iec104 import common
 from hat.drivers.iec104 import encoder
 
 
 def create_server_logger(logger: logging.Logger,
-                         name: str | None,
-                         info: tcp.ServerInfo
+                         info: net.ServerInfo
                          ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec104Server',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -28,14 +22,10 @@ class CommunicationLogger:
 
     def __init__(self,
                  logger: logging.Logger,
-                 info: tcp.ConnectionInfo):
+                 info: net.ConnectionInfo):
         extra = {'meta': {'type': 'Iec104Connection',
                           'communication': True,
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
+                          **net.connection_info_to_json(info)}}
 
         self._log = logging.LoggerAdapter(logger, extra)
 

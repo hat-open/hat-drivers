@@ -5,7 +5,7 @@ from hat import aio
 from hat import asn1
 
 from hat.drivers import mms
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec61850 import encoder
 from hat.drivers.iec61850.manager.device_readout import common
 from hat.drivers.iec61850.manager.device_readout.parser import get_device_conf
@@ -15,7 +15,7 @@ from hat.drivers.iec61850.manager.device_readout.client import Client
 mlog: logging.Logger = logging.getLogger(__name__)
 
 
-async def readout(addr: tcp.Address,
+async def readout(addr: net.TcpAddress,
                   local_tsel: int | None = None,
                   remote_tsel: int | None = None,
                   local_ssel: int | None = None,

@@ -5,7 +5,7 @@ import typing
 
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.pnetgateway import common
 from hat.drivers.pnetgateway import encoder
 from hat.drivers.pnetgateway import transport
@@ -21,7 +21,7 @@ DataCb: typing.TypeAlias = aio.AsyncCallable[[list[common.Data]], None]
 """Data change callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   username: str,
                   password: str,
                   status_cb: StatusCb,
@@ -31,7 +31,7 @@ async def connect(addr: tcp.Address,
                   ) -> 'Connection':
     """Connect to PNET Gateway server
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     Args:
         address: PNET Gateway server address
@@ -53,7 +53,7 @@ async def connect(addr: tcp.Address,
     conn._next_ids = itertools.count(0)
     conn._id_futures = {}
 
-    conn._conn = transport.Transport(await tcp.connect(addr, **kwargs))
+    conn._conn = transport.Transport(await net.connect(addr, **kwargs))
 
     conn._log = _create_logger(conn._conn.info)
 
@@ -210,10 +210,6 @@ class Connection(aio.Resource):
 
 def _create_logger(info):
     extra = {'meta': {'type': 'PnetGatewayClient',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)

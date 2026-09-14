@@ -8,7 +8,7 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -18,40 +18,40 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   *,
                   tpkt_receive_queue_size: int = 1024,
                   **kwargs
                   ) -> 'Connection':
     """Create new TPKT connection
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     """
-    conn = await tcp.connect(addr, **kwargs)
+    conn = await net.connect(addr, **kwargs)
     return Connection(conn=conn,
                       receive_queue_size=tpkt_receive_queue_size)
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 102),
                  *,
                  tpkt_receive_queue_size: int = 1024,
                  **kwargs
                  ) -> 'Server':
     """Create new TPKT listening server
 
-    Additional arguments are passed directly to `hat.drivers.tcp.listen`.
+    Additional arguments are passed directly to `hat.drivers.net.listen`.
 
     """
     server = Server()
     server._connection_cb = connection_cb
     server._receive_queue_size = tpkt_receive_queue_size
-    server._log = _create_server_logger(kwargs.get('name'), None)
+    server._log = mlog
 
-    server._srv = await tcp.listen(server._on_connection, addr, **kwargs)
+    server._srv = await net.listen(server._on_connection, addr, **kwargs)
 
-    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
+    server._log = _create_server_logger(server._srv.info)
 
     return server
 
@@ -69,7 +69,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def info(self) -> tcp.ServerInfo:
+    def info(self) -> net.ServerInfo:
         """Server info"""
         return self._srv.info
 
@@ -92,7 +92,7 @@ class Connection(aio.Resource):
     """TPKT connection"""
 
     def __init__(self,
-                 conn: tcp.Connection,
+                 conn: net.Connection,
                  receive_queue_size: int):
         self._conn = conn
         self._receive_queue = aio.Queue(receive_queue_size)
@@ -106,7 +106,7 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         """Connection info"""
         return self._conn.info
 
@@ -172,24 +172,15 @@ class Connection(aio.Resource):
             self._receive_queue.close()
 
 
-def _create_server_logger(name, info):
+def _create_server_logger(info):
     extra = {'meta': {'type': 'TpktServer',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)
 
 
 def _create_connection_logger(info):
     extra = {'meta': {'type': 'TpktConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)

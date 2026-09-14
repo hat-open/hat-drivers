@@ -8,8 +8,7 @@ def create_logger(logger: logging.Logger,
                   info: common.EndpointInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'IcmpEndpoint',
-                      'name': info.name,
-                      'local_host': info.local_host}}
+                      **common.endpoint_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -19,12 +18,9 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: common.EndpointInfo):
-        extra = {'meta': {'type': 'IcmpEndpoint',
-                          'communication': True,
-                          'name': info.name,
-                          'local_host': info.local_host}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        self._log = create_logger(logger=logger,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

@@ -12,7 +12,7 @@ from hat import aio
 from hat import sbs
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 mlog: logging.Logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class Msg(typing.NamedTuple):
     token: bool
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   *,
                   ping_delay: float = 20,
                   ping_timeout: float = 20,
@@ -55,10 +55,10 @@ async def connect(addr: tcp.Address,
     If `ping_delay` is ``None`` or 0, ping requests are not sent.
     Otherwise, it represents ping request delay in seconds.
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`.
+    Additional arguments are passed directly to `hat.drivers.net.connect`.
 
     """
-    conn = await tcp.connect(addr, **kwargs)
+    conn = await net.connect(addr, **kwargs)
 
     try:
         return Connection(conn=conn,
@@ -73,7 +73,7 @@ async def connect(addr: tcp.Address,
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address,
+                 addr: net.StreamAddress,
                  *,
                  ping_delay: float = 20,
                  ping_timeout: float = 20,
@@ -81,7 +81,7 @@ async def listen(connection_cb: ConnectionCb,
                  send_queue_size: int = 1024,
                  bind_connections: bool = True,
                  **kwargs
-                 ) -> tcp.Server:
+                 ) -> net.Server:
     """Create listening server.
 
     Argument `addr` specifies local server listening address.
@@ -89,11 +89,11 @@ async def listen(connection_cb: ConnectionCb,
     If `ping_delay` is ``None`` or 0, ping requests are not sent.
     Otherwise, it represents ping request delay in seconds.
 
-    Additional arguments are passed directly to `hat.drivers.tcp.listen`.
+    Additional arguments are passed directly to `hat.drivers.net.listen`.
 
     """
 
-    log = _create_server_logger(kwargs.get('name'), None)
+    log = mlog
 
     async def on_connection(conn):
         try:
@@ -113,11 +113,11 @@ async def listen(connection_cb: ConnectionCb,
             await aio.uncancellable(conn.async_close())
             raise
 
-    server = await tcp.listen(on_connection, addr,
+    server = await net.listen(on_connection, addr,
                               bind_connections=bind_connections,
                               **kwargs)
 
-    log = _create_server_logger(kwargs.get('name'), server.info)
+    log = _create_server_logger(server.info)
 
     return server
 
@@ -130,7 +130,7 @@ class Connection(aio.Resource):
     """
 
     def __init__(self,
-                 conn: tcp.Connection,
+                 conn: net.Connection,
                  ping_delay: float,
                  ping_timeout: float,
                  receive_queue_size: int,
@@ -155,7 +155,7 @@ class Connection(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         """Connection info"""
         return self._conn.info
 
@@ -353,24 +353,15 @@ with importlib.resources.as_file(importlib.resources.files(__package__) /
     _sbs_repo = sbs.Repository.from_json(_path)
 
 
-def _create_server_logger(name, info):
+def _create_server_logger(info):
     extra = {'meta': {'type': 'ChatterServer',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)
 
 
 def _create_connection_logger(info):
     extra = {'meta': {'type': 'ChatterConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)

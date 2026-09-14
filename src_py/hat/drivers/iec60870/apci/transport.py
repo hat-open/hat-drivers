@@ -2,8 +2,8 @@ import logging
 
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import ssl
-from hat.drivers import tcp
 from hat.drivers.iec60870.apci import common
 from hat.drivers.iec60870.apci import encoder
 from hat.drivers.iec60870.apci import logger
@@ -14,7 +14,7 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 class Transport(aio.Resource):
 
-    def __init__(self, conn: tcp.Connection):
+    def __init__(self, conn: net.Connection):
         self._conn = conn
         self._comm_log = logger.CommunicationLogger(mlog, conn.info)
 
@@ -27,7 +27,7 @@ class Transport(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         return self._conn.info
 
     @property

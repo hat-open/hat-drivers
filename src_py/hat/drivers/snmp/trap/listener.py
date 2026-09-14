@@ -4,7 +4,7 @@ import typing
 
 from hat import aio
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
@@ -15,32 +15,32 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 V1TrapCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.CommunityName, common.Trap],
+    [net.DatagramAddress, common.CommunityName, common.Trap],
     None]
 """V1 trap callback"""
 
 V2CTrapCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.CommunityName, common.Trap],
+    [net.DatagramAddress, common.CommunityName, common.Trap],
     None]
 """V2c trap callback"""
 
 V2CInformCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.CommunityName, common.Inform],
+    [net.DatagramAddress, common.CommunityName, common.Inform],
     common.Error | None]
 """V2c inform callback"""
 
 V3TrapCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.UserName, common.Context, common.Trap],
+    [net.DatagramAddress, common.UserName, common.Context, common.Trap],
     None]
 """V3 trap callback"""
 
 V3InformCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.UserName, common.Context, common.Inform],
+    [net.DatagramAddress, common.UserName, common.Context, common.Inform],
     common.Error | None]
 """V3 inform callback"""
 
 
-async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 162),  # NOQA
+async def create_trap_listener(local_addr: net.DatagramAddress = net.UdpAddress('0.0.0.0', 162),  # NOQA
                                *,
                                v1_trap_cb: V1TrapCb | None = None,
                                v2c_trap_cb: V2CTrapCb | None = None,
@@ -51,9 +51,19 @@ async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 
                                **kwargs
                                ) -> 'TrapListener':
     """Create trap listener"""
-    endpoint = await udp.create(local_addr=local_addr,
-                                remote_addr=None,
-                                **kwargs)
+    if isinstance(local_addr, net.UdpAddress):
+        datagram_type = net.DatagramType.UDP
+
+    elif isinstance(local_addr, net.UnixAddress):
+        datagram_type = net.DatagramType.UNIX
+
+    else:
+        raise TypeError('unsupported address type')
+
+    endpoint = await net.create_endpoint(datagram_type=datagram_type,
+                                         local_addr=local_addr,
+                                         remote_addr=None,
+                                         **kwargs)
 
     try:
         return TrapListener(endpoint=endpoint,
@@ -72,7 +82,7 @@ async def create_trap_listener(local_addr: udp.Address = udp.Address('0.0.0.0', 
 class TrapListener(aio.Resource):
 
     def __init__(self,
-                 endpoint: udp.Endpoint,
+                 endpoint: net.Endpoint,
                  v1_trap_cb: V1TrapCb | None,
                  v2c_trap_cb: V2CTrapCb | None,
                  v2c_inform_cb: V2CInformCb | None,

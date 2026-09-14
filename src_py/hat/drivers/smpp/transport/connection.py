@@ -5,7 +5,7 @@ import typing
 
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.smpp.transport import common
 from hat.drivers.smpp.transport import encoder
 
@@ -24,7 +24,7 @@ NotificationCb: typing.TypeAlias = aio.AsyncCallable[
 class Connection(aio.Resource):
 
     def __init__(self,
-                 conn: tcp.Connection,
+                 conn: net.Connection,
                  request_cb: RequestCb | None,
                  notification_cb: NotificationCb | None):
         self._conn = conn

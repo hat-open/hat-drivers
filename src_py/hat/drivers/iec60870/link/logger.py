@@ -12,8 +12,7 @@ def create_logger(logger: logging.Logger,
                   info: serial.EndpointInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec60870Link',
-                      'name': info.name,
-                      'port': info.port}}
+                      **serial.endpoint_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -22,9 +21,7 @@ def create_connection_logger(logger: logging.Logger,
                              info: common.ConnectionInfo
                              ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'Iec60870LinkConnection',
-                      'name': info.name,
-                      'port': info.port,
-                      'address': info.address}}
+                      **common.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -34,12 +31,9 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: serial.EndpointInfo):
-        extra = {'meta': {'type': 'Iec60870Link',
-                          'communication': True,
-                          'name': info.name,
-                          'port': info.port}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        self._log = create_logger(logger=logger,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

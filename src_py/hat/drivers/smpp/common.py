@@ -4,7 +4,7 @@ import typing
 
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 # HACK should be str - bytes because of invalid ascii encoding
@@ -45,13 +45,9 @@ class DataCoding(enum.Enum):
 
 
 def create_logger(logger: logging.Logger,
-                  info: tcp.ConnectionInfo
+                  info: net.ConnectionInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'SmppConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)

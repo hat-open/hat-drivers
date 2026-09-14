@@ -4,7 +4,8 @@ from hat.drivers.serial.common import (ByteSize,
                                        Parity,
                                        StopBits,
                                        EndpointInfo,
-                                       Endpoint)
+                                       Endpoint,
+                                       endpoint_info_to_json)
 
 from hat.drivers.serial import py_serial
 
@@ -20,6 +21,7 @@ __all__ = ['ByteSize',
            'StopBits',
            'EndpointInfo',
            'Endpoint',
+           'endpoint_info_to_json',
            'create',
            'py_serial',
            'native_serial']

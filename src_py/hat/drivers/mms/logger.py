@@ -5,7 +5,7 @@ import typing
 from hat import util
 
 from hat.drivers import acse
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.mms import common
 
 
@@ -16,28 +16,20 @@ Msg: typing.TypeAlias = (common.Request |
 
 
 def create_server_logger(logger: logging.Logger,
-                         name: str | None,
-                         info: tcp.ServerInfo | None
+                         info: net.ServerInfo
                          ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': 'MmsServer',
-                      'name': name}}
-
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
 
 def create_connection_logger(logger: logging.Logger,
                              info: acse.ConnectionInfo):
+    net_info = _connection_info_to_net(info)
+
     extra = {'meta': {'type': 'MmsConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(net_info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -47,15 +39,9 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  info: acse.ConnectionInfo):
-        extra = {'meta': {'type': 'MmsConnection',
-                          'communication': True,
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+        self._log = create_connection_logger(logger=logger,
+                                             info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,
@@ -69,6 +55,19 @@ class CommunicationLogger:
         else:
             self._log.debug('%s %s', action.value, _format_msg(msg),
                             stacklevel=2)
+
+
+def _connection_info_to_net(info):
+    if isinstance(info, acse.TcpConnectionInfo):
+        return net.TcpConnectionInfo(name=info.name,
+                                     local_addr=info.local_addr,
+                                     remote_addr=info.remote_addr)
+
+    if isinstance(info, acse.UnixConnectionInfo):
+        return net.UnixConnectionInfo(name=info.name,
+                                      addr=info.addr)
+
+    raise TypeError('unsupported info type')
 
 
 def _format_msg(msg):

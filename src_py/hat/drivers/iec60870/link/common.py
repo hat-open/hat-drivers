@@ -5,6 +5,7 @@ import enum
 import typing
 
 from hat import aio
+from hat import json
 from hat import util
 
 
@@ -104,3 +105,9 @@ def get_broadcast_address(address_size: AddressSize):
         return 0xFFFF
 
     raise ValueError('unsupported address size')
+
+
+def connection_info_to_json(info: ConnectionInfo) -> json.Data:
+    return {'name': info.name,
+            'port': info.port,
+            'address': info.address}

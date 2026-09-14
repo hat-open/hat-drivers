@@ -10,7 +10,7 @@ from hat import asn1
 from hat import json
 
 from hat.drivers import copp
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 mlog = logging.getLogger(__name__)
@@ -24,21 +24,38 @@ with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
             json.decode_stream(_f)))
 
 
-class ConnectionInfo(typing.NamedTuple):
+class TcpConnectionInfo(typing.NamedTuple):
     name: str | None
-    local_addr: tcp.Address
+    local_addr: net.TcpAddress
     local_tsel: int | None
     local_ssel: int | None
     local_psel: int | None
     local_ap_title: asn1.ObjectIdentifier | None
     local_ae_qualifier: int | None
-    remote_addr: tcp.Address
+    remote_addr: net.TcpAddress
     remote_tsel: int | None
     remote_ssel: int | None
     remote_psel: int | None
     remote_ap_title: asn1.ObjectIdentifier | None
     remote_ae_qualifier: int | None
 
+
+class UnixConnectionInfo(typing.NamedTuple):
+    name: str | None
+    addr: net.UnixAddress
+    local_tsel: int | None
+    local_ssel: int | None
+    local_psel: int | None
+    local_ap_title: asn1.ObjectIdentifier | None
+    local_ae_qualifier: int | None
+    remote_tsel: int | None
+    remote_ssel: int | None
+    remote_psel: int | None
+    remote_ap_title: asn1.ObjectIdentifier | None
+    remote_ae_qualifier: int | None
+
+
+ConnectionInfo: typing.TypeAlias = TcpConnectionInfo | UnixConnectionInfo
 
 ValidateCb: typing.TypeAlias = aio.AsyncCallable[[copp.SyntaxNames,
                                                   copp.IdentifiedEntity],
@@ -49,7 +66,7 @@ ConnectionCb: typing.TypeAlias = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   syntax_name_list: list[asn1.ObjectIdentifier],
                   app_context_name: asn1.ObjectIdentifier,
                   user_data: copp.IdentifiedEntity | None = None,
@@ -100,7 +117,7 @@ async def connect(addr: tcp.Address,
 
 async def listen(validate_cb: ValidateCb,
                  connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 102),
                  *,
                  bind_connections: bool = False,
                  acse_receive_queue_size: int = 1024,
@@ -124,7 +141,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = acse_receive_queue_size
     server._send_queue_size = acse_send_queue_size
-    server._log = _create_server_logger(kwargs.get('name'), None)
+    server._log = mlog
 
     server._srv = await copp.listen(server._on_validate,
                                     server._on_connection,
@@ -132,7 +149,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
+    server._log = _create_server_logger(server._srv.info)
 
     return server
 
@@ -150,7 +167,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def info(self) -> tcp.ServerInfo:
+    def info(self) -> net.ServerInfo:
         """Server info"""
         return self._srv.info
 
@@ -262,11 +279,12 @@ class Connection(aio.Resource):
         self._conn_req_user_data = conn_req_user_data
         self._conn_res_user_data = conn_res_user_data
         self._loop = asyncio.get_running_loop()
-        self._info = ConnectionInfo(local_ap_title=local_ap_title,
-                                    local_ae_qualifier=local_ae_qualifier,
-                                    remote_ap_title=remote_ap_title,
-                                    remote_ae_qualifier=remote_ae_qualifier,
-                                    **conn.info._asdict())
+        self._info = _connection_info_from_copp(
+            info=conn.info,
+            local_ap_title=local_ap_title,
+            local_ae_qualifier=local_ae_qualifier,
+            remote_ap_title=remote_ap_title,
+            remote_ae_qualifier=remote_ae_qualifier,)
         self._close_apdu = _abrt_apdu(0)
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
@@ -520,24 +538,64 @@ def _decode(entity):
     return _encoder.decode_value(asn1.TypeRef('ACSE-1', 'ACSE-apdu'), entity)
 
 
-def _create_server_logger(name, info):
-    extra = {'meta': {'type': 'AcseServer',
-                      'name': name}}
+def _connection_info_to_net(info):
+    if isinstance(info, TcpConnectionInfo):
+        return net.TcpConnectionInfo(name=info.name,
+                                     local_addr=info.local_addr,
+                                     remote_addr=info.remote_addr)
 
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+    if isinstance(info, UnixConnectionInfo):
+        return net.UnixConnectionInfo(name=info.name,
+                                      addr=info.addr)
+
+    raise TypeError('unsupported info type')
+
+
+def _connection_info_from_copp(info, local_ap_title, local_ae_qualifier,
+                               remote_ap_title, remote_ae_qualifier,):
+    if isinstance(info, copp.TcpConnectionInfo):
+        return TcpConnectionInfo(name=info.name,
+                                 local_addr=info.local_addr,
+                                 local_tsel=info.local_tsel,
+                                 local_ssel=info.local_ssel,
+                                 local_psel=info.local_psel,
+                                 local_ap_title=local_ap_title,
+                                 local_ae_qualifier=local_ae_qualifier,
+                                 remote_addr=info.remote_addr,
+                                 remote_tsel=info.remote_tsel,
+                                 remote_ssel=info.remote_ssel,
+                                 remote_psel=info.remote_psel,
+                                 remote_ap_title=remote_ap_title,
+                                 remote_ae_qualifier=remote_ae_qualifier)
+
+    if isinstance(info, copp.UnixConnectionInfo):
+        return UnixConnectionInfo(name=info.name,
+                                  addr=info.addr,
+                                  local_tsel=info.local_tsel,
+                                  local_ssel=info.local_ssel,
+                                  local_psel=info.local_psel,
+                                  local_ap_title=local_ap_title,
+                                  local_ae_qualifier=local_ae_qualifier,
+                                  remote_tsel=info.remote_tsel,
+                                  remote_ssel=info.remote_ssel,
+                                  remote_psel=info.remote_psel,
+                                  remote_ap_title=remote_ap_title,
+                                  remote_ae_qualifier=remote_ae_qualifier)
+
+    raise TypeError('unsupported info type')
+
+
+def _create_server_logger(info):
+    extra = {'meta': {'type': 'AcseServer',
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)
 
 
 def _create_connection_logger(info):
+    net_info = _connection_info_to_net(info)
+
     extra = {'meta': {'type': 'AcseConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(net_info)}}
 
     return logging.LoggerAdapter(mlog, extra)

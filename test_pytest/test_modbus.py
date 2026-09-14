@@ -9,8 +9,8 @@ from hat import aio
 from hat import util
 
 from hat.drivers import modbus
+from hat.drivers import net
 from hat.drivers import serial
-from hat.drivers import tcp
 
 
 CommType = enum.Enum('CommType', ['TCP', 'SERIAL'])
@@ -25,7 +25,7 @@ else:
 
 @pytest.fixture
 def tcp_addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 @pytest.fixture

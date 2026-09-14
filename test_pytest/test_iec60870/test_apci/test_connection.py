@@ -5,7 +5,7 @@ import pytest
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec60870 import apci
 from hat.drivers.iec60870.apci import common
 from hat.drivers.iec60870.apci import encoder
@@ -16,7 +16,7 @@ pytestmark = pytest.mark.timeout(1)
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_connect(addr):
@@ -37,7 +37,7 @@ async def test_connect_no_server(addr):
 
 async def test_connect_no_startdt_con(addr):
     srv_conn_queue = aio.Queue()
-    srv = await tcp.listen(srv_conn_queue.put_nowait, addr)
+    srv = await net.listen(srv_conn_queue.put_nowait, addr)
 
     with pytest.raises(Exception):
         await apci.connect(addr, response_timeout=0.1)
@@ -169,7 +169,7 @@ async def test_test_timeout(addr):
         apdu_bytes = encoder.encode(apdu)
         await conn.write(apdu_bytes)
 
-    srv = await tcp.listen(on_connection, addr,
+    srv = await net.listen(on_connection, addr,
                            bind_connections=False)
     conn1 = await apci.connect(addr,
                                test_timeout=0.1,

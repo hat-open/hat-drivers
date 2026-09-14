@@ -10,7 +10,7 @@ from hat import asn1
 from hat import json
 
 from hat.drivers import cosp
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 mlog = logging.getLogger(__name__)
@@ -21,17 +21,30 @@ with importlib.resources.open_text(__package__, 'asn1_repo.json') as _f:
             json.decode_stream(_f)))
 
 
-class ConnectionInfo(typing.NamedTuple):
+class TcpConnectionInfo(typing.NamedTuple):
     name: str | None
-    local_addr: tcp.Address
+    local_addr: net.TcpAddress
     local_tsel: int | None
     local_ssel: int | None
     local_psel: int | None
-    remote_addr: tcp.Address
+    remote_addr: net.TcpAddress
     remote_tsel: int | None
     remote_ssel: int | None
     remote_psel: int | None
 
+
+class UnixConnectionInfo(typing.NamedTuple):
+    name: str | None
+    addr: net.UnixAddress
+    local_tsel: int | None
+    local_ssel: int | None
+    local_psel: int | None
+    remote_tsel: int | None
+    remote_ssel: int | None
+    remote_psel: int | None
+
+
+ConnectionInfo: typing.TypeAlias = TcpConnectionInfo | UnixConnectionInfo
 
 IdentifiedEntity: typing.TypeAlias = tuple[asn1.ObjectIdentifier, asn1.Entity]
 """Identified entity"""
@@ -68,7 +81,7 @@ class SyntaxNames:
         return self._syntax_name_ids[syntax_name]
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   syntax_names: SyntaxNames,
                   user_data: IdentifiedEntity | None = None,
                   *,
@@ -83,7 +96,6 @@ async def connect(addr: tcp.Address,
     Additional arguments are passed directly to `hat.drivers.cosp.connect`.
 
     """
-    log = _create_connection_logger(kwargs.get('name'), None)
     cp_ppdu = _cp_ppdu(syntax_names, local_psel, remote_psel, user_data)
     cp_ppdu_data = _encode('CP-type', cp_ppdu)
     conn = await cosp.connect(addr, cp_ppdu_data, **kwargs)
@@ -98,13 +110,13 @@ async def connect(addr: tcp.Address,
                           copp_receive_queue_size, copp_send_queue_size)
 
     except Exception:
-        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), log))
+        await aio.uncancellable(_close_cosp(conn, _arp_ppdu(), mlog))
         raise
 
 
 async def listen(validate_cb: ValidateCb,
                  connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 102),
                  *,
                  bind_connections: bool = False,
                  copp_receive_queue_size: int = 1024,
@@ -128,7 +140,7 @@ async def listen(validate_cb: ValidateCb,
     server._bind_connections = bind_connections
     server._receive_queue_size = copp_receive_queue_size
     server._send_queue_size = copp_send_queue_size
-    server._log = _create_server_logger(kwargs.get('name'), None)
+    server._log = mlog
 
     server._srv = await cosp.listen(server._on_validate,
                                     server._on_connection,
@@ -136,7 +148,7 @@ async def listen(validate_cb: ValidateCb,
                                     bind_connections=False,
                                     **kwargs)
 
-    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
+    server._log = _create_server_logger(server._srv.info)
 
     return server
 
@@ -154,7 +166,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def info(self) -> tcp.ServerInfo:
+    def info(self) -> net.ServerInfo:
         """Server info"""
         return self._srv.info
 
@@ -253,14 +265,14 @@ class Connection(aio.Resource):
         self._conn_req_user_data = conn_req_user_data
         self._conn_res_user_data = conn_res_user_data
         self._loop = asyncio.get_running_loop()
-        self._info = ConnectionInfo(local_psel=local_psel,
-                                    remote_psel=remote_psel,
-                                    **conn.info._asdict())
+        self._info = _connection_info_from_cosp(info=conn.info,
+                                                local_psel=local_psel,
+                                                remote_psel=remote_psel)
         self._close_ppdu = _arp_ppdu()
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._async_group = aio.Group()
-        self._log = _create_connection_logger(self._info.name, self._info)
+        self._log = _create_connection_logger(self._info)
 
         self.async_group.spawn(aio.call_on_cancel, self._on_close)
         self.async_group.spawn(self._receive_loop)
@@ -525,26 +537,55 @@ def _decode(name, data):
     return res
 
 
-def _create_server_logger(name, info):
-    extra = {'meta': {'type': 'CoppServer',
-                      'name': name}}
+def _connection_info_to_net(info):
+    if isinstance(info, TcpConnectionInfo):
+        return net.TcpConnectionInfo(name=info.name,
+                                     local_addr=info.local_addr,
+                                     remote_addr=info.remote_addr)
 
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+    if isinstance(info, UnixConnectionInfo):
+        return net.UnixConnectionInfo(name=info.name,
+                                      addr=info.addr)
+
+    raise TypeError('unsupported info type')
+
+
+def _connection_info_from_cosp(info, local_psel, remote_psel):
+    if isinstance(info, cosp.TcpConnectionInfo):
+        return TcpConnectionInfo(name=info.name,
+                                 local_addr=info.local_addr,
+                                 local_tsel=info.local_tsel,
+                                 local_ssel=info.local_ssel,
+                                 local_psel=local_psel,
+                                 remote_addr=info.remote_addr,
+                                 remote_tsel=info.remote_tsel,
+                                 remote_ssel=info.remote_ssel,
+                                 remote_psel=remote_psel)
+
+    if isinstance(info, cosp.UnixConnectionInfo):
+        return UnixConnectionInfo(name=info.name,
+                                  addr=info.addr,
+                                  local_tsel=info.local_tsel,
+                                  local_ssel=info.local_ssel,
+                                  local_psel=local_psel,
+                                  remote_tsel=info.remote_tsel,
+                                  remote_ssel=info.remote_ssel,
+                                  remote_psel=remote_psel)
+
+    raise TypeError('unsupported info type')
+
+
+def _create_server_logger(info):
+    extra = {'meta': {'type': 'CoppServer',
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)
 
 
-def _create_connection_logger(name, info):
-    extra = {'meta': {'type': 'CoppConnection',
-                      'name': name}}
+def _create_connection_logger(info):
+    net_info = _connection_info_to_net(info)
 
-    if info is not None:
-        extra['meta']['local_addr'] = {'host': info.local_addr.host,
-                                       'port': info.local_addr.port}
-        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                        'port': info.remote_addr.port}
+    extra = {'meta': {'type': 'CoppConnection',
+                      **net.connection_info_to_json(net_info)}}
 
     return logging.LoggerAdapter(mlog, extra)

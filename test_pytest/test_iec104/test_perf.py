@@ -7,7 +7,7 @@ from hat import aio
 from hat import util
 
 from hat.drivers import iec104
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 pytestmark = pytest.mark.perf
@@ -15,7 +15,7 @@ pytestmark = pytest.mark.perf
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
 @pytest.mark.parametrize("window_size", [1, 10, 100])

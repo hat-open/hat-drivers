@@ -1,17 +1,33 @@
 import asyncio
+import os
 import subprocess
 
 import pytest
 
 from hat import aio
 from hat import util
+from hat.drivers import net
 from hat.drivers import ssl
-from hat.drivers import tcp
+
+
+stream_types = [net.StreamType.TCP]
+if os.name == 'posix':
+    stream_types.append(net.StreamType.UNIX)
 
 
 @pytest.fixture
-def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+def create_addr(tmp_path):
+
+    def create_addr(stream_type):
+        if stream_type == net.StreamType.TCP:
+            return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
+
+        if stream_type == net.StreamType.UNIX:
+            return tmp_path / 'socket'
+
+        raise ValueError('unsupported stream type')
+
+    return create_addr
 
 
 @pytest.fixture(scope="session")
@@ -27,20 +43,29 @@ def pem_path(tmp_path_factory):
     return path
 
 
+@pytest.mark.parametrize("stream_type", stream_types)
 @pytest.mark.parametrize("with_ssl", [True, False])
-async def test_connect_listen(addr, pem_path, with_ssl):
-    srv_ssl_ctx = (ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
-                                      cert_path=pem_path)
-                   if with_ssl else None)
-    conn_ssl_ctx = (ssl.create_ssl_ctx(ssl.SslProtocol.TLS_CLIENT)
-                    if with_ssl else None)
+async def test_connect_listen(create_addr, pem_path, stream_type, with_ssl):
+    addr = create_addr(stream_type)
 
-    with pytest.raises(ConnectionError):
-        await tcp.connect(addr, ssl=conn_ssl_ctx)
+    if with_ssl:
+        srv_kwargs = {'ssl': ssl.create_ssl_ctx(ssl.SslProtocol.TLS_SERVER,
+                                                cert_path=pem_path)}
+        conn_kwargs = {'ssl': ssl.create_ssl_ctx(ssl.SslProtocol.TLS_CLIENT)}
+
+        if stream_type == net.StreamType.UNIX:
+            conn_kwargs['server_hostname'] = ''
+
+    else:
+        srv_kwargs = {}
+        conn_kwargs = {}
+
+    with pytest.raises(Exception):
+        await net.connect(addr, **conn_kwargs)
 
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr, ssl=srv_ssl_ctx)
-    conn1 = await tcp.connect(addr, ssl=conn_ssl_ctx)
+    srv = await net.listen(conn_queue.put_nowait, addr, **srv_kwargs)
+    conn1 = await net.connect(addr, **conn_kwargs)
     conn2 = await conn_queue.get()
 
     assert srv.is_open
@@ -48,12 +73,21 @@ async def test_connect_listen(addr, pem_path, with_ssl):
     assert conn2.is_open
 
     assert srv.info.addresses == [addr]
-    assert conn1.info.local_addr == conn2.info.remote_addr
-    assert conn1.info.remote_addr == conn2.info.local_addr
+
+    if stream_type == net.StreamType.TCP:
+        assert conn1.info.local_addr == conn2.info.remote_addr
+        assert conn1.info.remote_addr == conn2.info.local_addr
+
+    elif stream_type == net.StreamType.UNIX:
+        assert conn1.info.addr == conn2.info.addr
+
+    else:
+        raise ValueError('unsupported stream type')
 
     if with_ssl:
         assert conn1.ssl_object is not None
         assert conn2.ssl_object is not None
+
     else:
         assert conn1.ssl_object is None
         assert conn2.ssl_object is None
@@ -63,10 +97,13 @@ async def test_connect_listen(addr, pem_path, with_ssl):
     await srv.async_close()
 
 
-async def test_read(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_read(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_queue.get()
 
     data = b'123'
@@ -103,10 +140,13 @@ async def test_read(addr):
     await srv.async_close()
 
 
-async def test_readexactly(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_readexactly(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_queue.get()
 
     data = b'123'
@@ -139,10 +179,13 @@ async def test_readexactly(addr):
     await srv.async_close()
 
 
-async def test_cancel_concurent_read(addr):
+@pytest.mark.parametrize("stream_type", stream_types)
+async def test_cancel_concurent_read(create_addr, stream_type):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_queue.get()
 
     data = b'123'
@@ -167,16 +210,20 @@ async def test_cancel_concurent_read(addr):
     await srv.async_close()
 
 
+@pytest.mark.parametrize("stream_type", stream_types)
 @pytest.mark.parametrize("bind_connections", [True, False])
 @pytest.mark.parametrize("conn_count", [1, 2, 5])
-async def test_bind_connections(addr, bind_connections, conn_count):
+async def test_bind_connections(create_addr, stream_type, bind_connections,
+                                conn_count):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr,
+    srv = await net.listen(conn_queue.put_nowait, addr,
                            bind_connections=bind_connections)
 
     conns = []
     for _ in range(conn_count):
-        conn1 = await tcp.connect(addr)
+        conn1 = await net.connect(addr)
         conn2 = await conn_queue.get()
 
         conns.append((conn1, conn2))
@@ -203,11 +250,11 @@ async def test_bind_connections(addr, bind_connections, conn_count):
 
 
 async def test_example_docs():
-    addr = tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    addr = net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
     conn2_future = asyncio.Future()
-    srv = await tcp.listen(conn2_future.set_result, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn2_future.set_result, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn2_future
 
     # send from conn1 to conn2
@@ -227,16 +274,19 @@ async def test_example_docs():
     await srv.async_close()
 
 
+@pytest.mark.parametrize("stream_type", stream_types)
 @pytest.mark.parametrize(
     "write_block_count, write_block_size, read_block_size",
     [(10000, 1024 + 123, 512 - 123),
      (10000, 512 - 123, 1024 + 123),
      (100, 102400 + 123, 512 - 123)])
-async def test_large(addr, write_block_count, write_block_size,
-                     read_block_size):
+async def test_large(create_addr, stream_type,
+                     write_block_count, write_block_size, read_block_size):
+    addr = create_addr(stream_type)
+
     conn_queue = aio.Queue()
-    srv = await tcp.listen(conn_queue.put_nowait, addr)
-    conn1 = await tcp.connect(addr)
+    srv = await net.listen(conn_queue.put_nowait, addr)
+    conn1 = await net.connect(addr)
     conn2 = await conn_queue.get()
 
     for _ in range(write_block_count):

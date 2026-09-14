@@ -4,7 +4,7 @@ import pytest
 
 from hat import util
 from hat.drivers import modbus
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 pytestmark = pytest.mark.perf
@@ -12,7 +12,7 @@ pytestmark = pytest.mark.perf
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.Address('127.0.0.1', util.get_unused_tcp_port())
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason="can't simulate serial")

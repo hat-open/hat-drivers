@@ -6,8 +6,8 @@ import sys
 from hat import aio
 from hat import json
 
+from hat.drivers import net
 from hat.drivers import snmp
-from hat.drivers import udp
 
 
 string_decode = 'utf-8'
@@ -134,21 +134,21 @@ async def _create_manager(args):
     version = args.version
     if version == '1':
         return await snmp.create_v1_manager(
-            remote_addr=udp.Address(
+            remote_addr=net.UdpAddress(
                 host=args.host,
                 port=args.port),
             community=args.community)
 
     if version == '2c':
         return await snmp.create_v2c_manager(
-            remote_addr=udp.Address(
+            remote_addr=net.UdpAddress(
                 host=args.host,
                 port=args.port),
             community=args.community)
 
     if version == '3':
         return await snmp.create_v3_manager(
-            remote_addr=udp.Address(
+            remote_addr=net.UdpAddress(
                 host=args.host,
                 port=args.port),
             context=snmp.Context(

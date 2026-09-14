@@ -15,9 +15,7 @@ class CommunicationLogger:
                  info: link.ConnectionInfo):
         extra = {'meta': {'type': 'Iec101Connection',
                           'communication': True,
-                          'name': info.name,
-                          'port': info.port,
-                          'address': info.address}}
+                          **link.connection_info_to_json(info)}}
 
         self._log = logging.LoggerAdapter(logger, extra)
 

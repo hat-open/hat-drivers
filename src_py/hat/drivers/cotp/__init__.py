@@ -1,6 +1,8 @@
 """Connection oriented transport protocol"""
 
-from hat.drivers.cotp.connection import (ConnectionInfo,
+from hat.drivers.cotp.connection import (TcpConnectionInfo,
+                                         UnixConnectionInfo,
+                                         ConnectionInfo,
                                          ConnectionCb,
                                          connect,
                                          listen,
@@ -8,7 +10,9 @@ from hat.drivers.cotp.connection import (ConnectionInfo,
                                          Connection)
 
 
-__all__ = ['ConnectionInfo',
+__all__ = ['TcpConnectionInfo',
+           'UnixConnectionInfo',
+           'ConnectionInfo',
            'ConnectionCb',
            'connect',
            'listen',

@@ -1,11 +1,12 @@
 from hat import aio
 from hat import json
-from hat.drivers import tcp
+
+from hat.drivers import net
 
 
 class Transport(aio.Resource):
 
-    def __init__(self, conn: tcp.Connection):
+    def __init__(self, conn: net.Connection):
         self._conn = conn
 
     @property
@@ -13,7 +14,7 @@ class Transport(aio.Resource):
         return self._conn.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo:
+    def info(self) -> net.ConnectionInfo:
         return self._conn.info
 
     async def receive(self) -> json.Data:

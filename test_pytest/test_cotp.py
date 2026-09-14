@@ -5,16 +5,16 @@ import pytest
 from hat import util
 
 from hat.drivers import cotp
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 @pytest.fixture
 def addr():
-    return tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    return net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
 
 async def test_example_docs():
-    addr = tcp.Address('127.0.0.1', util.get_unused_tcp_port())
+    addr = net.TcpAddress('127.0.0.1', util.get_unused_tcp_port())
 
     conn2_future = asyncio.Future()
     srv = await cotp.listen(conn2_future.set_result, addr)

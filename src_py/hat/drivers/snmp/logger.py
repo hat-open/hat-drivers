@@ -1,23 +1,17 @@
 import collections
 import logging
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder
 
 
 def create_logger(logger: logging.Logger,
                   meta_type: str,
-                  info: udp.EndpointInfo
+                  info: net.EndpointInfo
                   ) -> logging.LoggerAdapter:
     extra = {'meta': {'type': meta_type,
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port}}}
-
-    if info.remote_addr is not None:
-        extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                        'port': info.remote_addr.port}
+                      **net.endpoint_info_to_json(info)}}
 
     return logging.LoggerAdapter(logger, extra)
 
@@ -27,18 +21,11 @@ class CommunicationLogger:
     def __init__(self,
                  logger: logging.Logger,
                  meta_type: str,
-                 info: udp.EndpointInfo):
-        extra = {'meta': {'type': meta_type,
-                          'communication': True,
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port}}}
-
-        if info.remote_addr is not None:
-            extra['meta']['remote_addr'] = {'host': info.remote_addr.host,
-                                            'port': info.remote_addr.port}
-
-        self._log = logging.LoggerAdapter(logger, extra)
+                 info: net.EndpointInfo):
+        self._log = create_logger(logger=logger,
+                                  meta_type=meta_type,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

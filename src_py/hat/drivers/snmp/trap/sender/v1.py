@@ -2,7 +2,7 @@ import logging
 
 from hat import aio
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import logger
 from hat.drivers.snmp.trap.sender import common
@@ -12,14 +12,24 @@ mlog: logging.Logger = logging.getLogger(__name__)
 """Module logger"""
 
 
-async def create_v1_trap_sender(remote_addr: udp.Address,
+async def create_v1_trap_sender(remote_addr: net.DatagramAddress,
                                 community: common.CommunityName = 'public',
                                 **kwargs
                                 ) -> common.TrapSender:
     """Create v1 trap sender"""
-    endpoint = await udp.create(local_addr=None,
-                                remote_addr=remote_addr,
-                                **kwargs)
+    if isinstance(remote_addr, net.UdpAddress):
+        datagram_type = net.DatagramType.UDP
+
+    elif isinstance(remote_addr, net.UnixAddress):
+        datagram_type = net.DatagramType.UNIX
+
+    else:
+        raise TypeError('unsupported address type')
+
+    endpoint = await net.create_endpoint(datagram_type=datagram_type,
+                                         local_addr=None,
+                                         remote_addr=remote_addr,
+                                         **kwargs)
 
     try:
         return V1TrapSender(endpoint=endpoint,
@@ -33,12 +43,14 @@ async def create_v1_trap_sender(remote_addr: udp.Address,
 class V1TrapSender(common.TrapSender):
 
     def __init__(self,
-                 endpoint: udp.Endpoint,
+                 endpoint: net.Endpoint,
                  community: common.CommunityName):
         self._endpoint = endpoint
         self._community = community
-        self._addr = tuple(int(i)
-                           for i in endpoint.info.local_addr.host.split('.'))
+        self._addr = (
+            tuple(int(i) for i in endpoint.info.local_addr.host.split('.'))
+            if isinstance(endpoint.info, net.UdpEndpointInfo)
+            else (0, 0, 0, 0))
 
         self._comm_log = logger.CommunicationLogger(mlog, 'SnmpTrapSender',
                                                     endpoint.info)

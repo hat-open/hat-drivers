@@ -5,7 +5,7 @@ import typing
 
 from hat import aio
 
-from hat.drivers import udp
+from hat.drivers import net
 from hat.drivers.snmp import common
 from hat.drivers.snmp import encoder
 from hat.drivers.snmp import key
@@ -17,19 +17,19 @@ mlog: logging.Logger = logging.getLogger(__name__)
 
 
 V1RequestCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.CommunityName, common.Request],
+    [net.DatagramAddress, common.CommunityName, common.Request],
     common.Response]
 
 V2CRequestCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.CommunityName, common.Request],
+    [net.DatagramAddress, common.CommunityName, common.Request],
     common.Response]
 
 V3RequestCb: typing.TypeAlias = aio.AsyncCallable[
-    [udp.Address, common.UserName, common.Context, common.Request],
+    [net.DatagramAddress, common.UserName, common.Context, common.Request],
     common.Response]
 
 
-async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
+async def create_agent(local_addr: net.DatagramAddress = net.UdpAddress('0.0.0.0', 161),  # NOQA
                        *,
                        v1_request_cb: V1RequestCb | None = None,
                        v2c_request_cb: V2CRequestCb | None = None,
@@ -39,9 +39,19 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
                        **kwargs
                        ) -> 'Agent':
     """Create agent"""
-    endpoint = await udp.create(local_addr=local_addr,
-                                remote_addr=None,
-                                **kwargs)
+    if isinstance(local_addr, net.UdpAddress):
+        datagram_type = net.DatagramType.UDP
+
+    elif isinstance(local_addr, net.UnixAddress):
+        datagram_type = net.DatagramType.UNIX
+
+    else:
+        raise TypeError('unsupported address type')
+
+    endpoint = await net.create_endpoint(datagram_type=datagram_type,
+                                         local_addr=local_addr,
+                                         remote_addr=None,
+                                         **kwargs)
 
     try:
         return Agent(endpoint=endpoint,
@@ -59,7 +69,7 @@ async def create_agent(local_addr: udp.Address = udp.Address('0.0.0.0', 161),
 class Agent(aio.Resource):
 
     def __init__(self,
-                 endpoint: udp.Endpoint,
+                 endpoint: net.Endpoint,
                  v1_request_cb: V1RequestCb | None,
                  v2c_request_cb: V2CRequestCb | None,
                  v3_request_cb: V3RequestCb | None,

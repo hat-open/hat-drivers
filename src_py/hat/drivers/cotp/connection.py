@@ -7,7 +7,7 @@ import typing
 from hat import aio
 from hat import util
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import tpkt
 from hat.drivers.cotp import common
 from hat.drivers.cotp import encoder
@@ -18,19 +18,28 @@ mlog: logging.Logger = logging.getLogger(__name__)
 _next_srcs = ((i % 0xFFFF) + 1 for i in itertools.count(0))
 
 
-class ConnectionInfo(typing.NamedTuple):
+class TcpConnectionInfo(typing.NamedTuple):
     name: str | None
-    local_addr: tcp.Address
+    local_addr: net.TcpAddress
     local_tsel: int | None
-    remote_addr: tcp.Address
+    remote_addr: net.TcpAddress
     remote_tsel: int | None
 
+
+class UnixConnectionInfo(typing.NamedTuple):
+    name: str | None
+    addr: net.UnixAddress
+    local_tsel: int | None
+    remote_tsel: int | None
+
+
+ConnectionInfo: typing.TypeAlias = TcpConnectionInfo | UnixConnectionInfo
 
 ConnectionCb = aio.AsyncCallable[['Connection'], None]
 """Connection callback"""
 
 
-async def connect(addr: tcp.Address,
+async def connect(addr: net.StreamAddress,
                   *,
                   local_tsel: int | None = None,
                   remote_tsel: int | None = None,
@@ -71,7 +80,7 @@ async def connect(addr: tcp.Address,
 
 
 async def listen(connection_cb: ConnectionCb,
-                 addr: tcp.Address = tcp.Address('0.0.0.0', 102),
+                 addr: net.StreamAddress = net.TcpAddress('0.0.0.0', 102),
                  *,
                  cotp_receive_queue_size: int = 1024,
                  cotp_send_queue_size: int = 1024,
@@ -86,11 +95,11 @@ async def listen(connection_cb: ConnectionCb,
     server._connection_cb = connection_cb
     server._receive_queue_size = cotp_receive_queue_size
     server._send_queue_size = cotp_send_queue_size
-    server._log = _create_server_logger(kwargs.get('name'), None)
+    server._log = mlog
 
     server._srv = await tpkt.listen(server._on_connection, addr, **kwargs)
 
-    server._log = _create_server_logger(kwargs.get('name'), server._srv.info)
+    server._log = _create_server_logger(server._srv.info)
 
     return server
 
@@ -108,7 +117,7 @@ class Server(aio.Resource):
         return self._srv.async_group
 
     @property
-    def info(self) -> tcp.ServerInfo:
+    def info(self) -> net.ServerInfo:
         """Server info"""
         return self._srv.info
 
@@ -169,9 +178,9 @@ class Connection(aio.Resource):
         self._conn = conn
         self._max_tpdu = max_tpdu
         self._loop = asyncio.get_running_loop()
-        self._info = ConnectionInfo(local_tsel=local_tsel,
-                                    remote_tsel=remote_tsel,
-                                    **conn.info._asdict())
+        self._info = _connection_info_from_net(info=conn.info,
+                                               local_tsel=local_tsel,
+                                               remote_tsel=remote_tsel)
         self._receive_queue = aio.Queue(receive_queue_size)
         self._send_queue = aio.Queue(send_queue_size)
         self._log = _create_connection_logger(self._info)
@@ -362,24 +371,47 @@ def _get_tsels(cr_tpdu, cc_tpdu):
     return calling_tsel, called_tsel
 
 
-def _create_server_logger(name, info):
-    extra = {'meta': {'type': 'CotpServer',
-                      'name': name}}
+def _connection_info_to_net(info):
+    if isinstance(info, TcpConnectionInfo):
+        return net.TcpConnectionInfo(name=info.name,
+                                     local_addr=info.local_addr,
+                                     remote_addr=info.remote_addr)
 
-    if info is not None:
-        extra['meta']['addresses'] = [{'host': addr.host,
-                                       'port': addr.port}
-                                      for addr in info.addresses]
+    if isinstance(info, UnixConnectionInfo):
+        return net.UnixConnectionInfo(name=info.name,
+                                      addr=info.addr)
+
+    raise TypeError('unsupported info type')
+
+
+def _connection_info_from_net(info, local_tsel, remote_tsel):
+    if isinstance(info, net.TcpConnectionInfo):
+        return TcpConnectionInfo(name=info.name,
+                                 local_addr=info.local_addr,
+                                 local_tsel=local_tsel,
+                                 remote_addr=info.remote_addr,
+                                 remote_tsel=remote_tsel)
+
+    if isinstance(info, net.UnixConnectionInfo):
+        return UnixConnectionInfo(name=info.name,
+                                  addr=info.addr,
+                                  local_tsel=local_tsel,
+                                  remote_tsel=remote_tsel)
+
+    raise TypeError('unsupported info type')
+
+
+def _create_server_logger(info):
+    extra = {'meta': {'type': 'CotpServer',
+                      **net.server_info_to_json(info)}}
 
     return logging.LoggerAdapter(mlog, extra)
 
 
 def _create_connection_logger(info):
+    net_info = _connection_info_to_net(info)
+
     extra = {'meta': {'type': 'CotpConnection',
-                      'name': info.name,
-                      'local_addr': {'host': info.local_addr.host,
-                                     'port': info.local_addr.port},
-                      'remote_addr': {'host': info.remote_addr.host,
-                                      'port': info.remote_addr.port}}}
+                      **net.connection_info_to_json(net_info)}}
 
     return logging.LoggerAdapter(mlog, extra)

@@ -1,27 +1,22 @@
 import collections
 import logging
 
+from hat.drivers import net
 from hat.drivers import serial
-from hat.drivers import tcp
 
 from hat.drivers.modbus.transport import common
 
 
 def create_logger(logger: logging.Logger,
-                  info: tcp.ConnectionInfo | serial.EndpointInfo
+                  info: net.ConnectionInfo | serial.EndpointInfo
                   ) -> logging.LoggerAdapter:
-    if isinstance(info, tcp.ConnectionInfo):
+    if isinstance(info, net.TcpConnectionInfo):
         extra = {'meta': {'type': 'ModbusTcpConnection',
-                          'name': info.name,
-                          'local_addr': {'host': info.local_addr.host,
-                                         'port': info.local_addr.port},
-                          'remote_addr': {'host': info.remote_addr.host,
-                                          'port': info.remote_addr.port}}}
+                          **net.connection_info_to_json(info)}}
 
     elif isinstance(info, serial.EndpointInfo):
         extra = {'meta': {'type': 'ModbusSerialConnection',
-                          'name': info.name,
-                          'port': info.port}}
+                          **serial.endpoint_info_to_json(info)}}
 
     else:
         raise TypeError('invalid info type')
@@ -33,26 +28,10 @@ class CommunicationLogger:
 
     def __init__(self,
                  logger: logging.Logger,
-                 info: tcp.ConnectionInfo | serial.EndpointInfo):
-        if isinstance(info, tcp.ConnectionInfo):
-            extra = {'meta': {'type': 'ModbusTcpConnection',
-                              'communication': True,
-                              'name': info.name,
-                              'local_addr': {'host': info.local_addr.host,
-                                             'port': info.local_addr.port},
-                              'remote_addr': {'host': info.remote_addr.host,
-                                              'port': info.remote_addr.port}}}
-
-        elif isinstance(info, serial.EndpointInfo):
-            extra = {'meta': {'type': 'ModbusSerialConnection',
-                              'communication': True,
-                              'name': info.name,
-                              'port': info.port}}
-
-        else:
-            raise TypeError('invalid info type')
-
-        self._log = logging.LoggerAdapter(logger, extra)
+                 info: net.ConnectionInfo | serial.EndpointInfo):
+        self._log = create_logger(logger=logger,
+                                  info=info)
+        self._log.extra['meta']['communication'] = True
 
     def log(self,
             action: common.CommLogAction,

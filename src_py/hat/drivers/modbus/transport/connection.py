@@ -4,8 +4,8 @@ import logging
 from hat import aio
 from hat import util
 
+from hat.drivers import net
 from hat.drivers import serial
-from hat.drivers import tcp
 from hat.drivers.modbus.transport import common
 from hat.drivers.modbus.transport import encoder
 from hat.drivers.modbus.transport import logger
@@ -18,7 +18,7 @@ class Link(aio.Resource):
 
     @property
     @abc.abstractmethod
-    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+    def info(self) -> net.ConnectionInfo | serial.EndpointInfo:
         pass
 
     @abc.abstractmethod
@@ -66,7 +66,7 @@ class SerialLink(Link):
 
 class TcpLink(Link):
 
-    def __init__(self, conn: tcp.Connection):
+    def __init__(self, conn: net.Connection):
         self._conn = conn
 
     @property
@@ -106,7 +106,7 @@ class Connection(aio.Resource):
         return self._link.async_group
 
     @property
-    def info(self) -> tcp.ConnectionInfo | serial.EndpointInfo:
+    def info(self) -> net.ConnectionInfo | serial.EndpointInfo:
         return self._link.info
 
     async def send(self, adu: common.Adu):
