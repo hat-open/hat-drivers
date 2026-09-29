@@ -312,7 +312,7 @@ def _get_rcb(rc_el, logical_device, logical_node):
                     'logical_node': logical_node,
                     'type': rcb_type,
                     'name': name},
-            'report_id': rc_el.get('rptID'),
+            'report_id': rc_el.get('rptID', ''),
             'dataset': {'logical_device': logical_device,
                         'logical_node': logical_node,
                         'name': dataset} if dataset else None,
