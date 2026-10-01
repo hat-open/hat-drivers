@@ -1,0 +1,15 @@
+.. _hat-drivers-iec103:
+
+`hat.drivers.iec103` - IEC 60870-5-103
+======================================
+
+Asyncio based communication driver for
+`IEC 60870-5-103 <https://en.wikipedia.org/wiki/IEC_60870-5>`_ protocol.
+
+
+API
+---
+
+API reference is available as part of generated documentation:
+
+    * `Python hat.drivers.iec103 module <py_api/hat/drivers/iec103.html>`_
