@@ -9,5 +9,4 @@
 /src_py/**/sbs_repo.json
 /src_py/hat/drivers/modbus/transport/_encoder.*
 /src_py/hat/drivers/serial/_native_serial.*
-/src_py/hat/drivers/ssl/_ssl.*
 __pycache__

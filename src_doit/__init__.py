@@ -42,7 +42,6 @@ def task_clean_all():
         *common.src_py_dir.rglob('asn1_repo.json'),
         *common.src_py_dir.rglob('json_schema_repo.json'),
         *common.src_py_dir.rglob('sbs_repo.json'),
-        *(common.src_py_dir / 'hat/drivers/ssl').glob('_ssl.*'),
         *(common.src_py_dir / 'hat/drivers/serial').glob('_native_serial.*'),
         *(common.src_py_dir /
           'hat/drivers/modbus/transport').glob('_encoder.*')])]}
