@@ -67,6 +67,7 @@ class MasterLink(aio.Resource):
                               poll_class2_delay: float | None = None,
                               send_queue_size: int = 1024,
                               receive_queue_size: int = 1024,
+                              connect_delay: float = 1
                               ) -> common.Connection:
         if addr >= self._broadcast_address:
             raise ValueError('unsupported address')
@@ -110,13 +111,19 @@ class MasterLink(aio.Resource):
                         data=b'')
                     res = await send(req)
 
-                    if (isinstance(res, common.ShortFrame) or
-                            (isinstance(res, common.ResFrame) and
-                             res.function == common.ResFunction.ACK)):
-                        # TODO maybe delay?
+                    if isinstance(res, common.ShortFrame):
+                        data_flow_control = False
                         break
 
-            conn.async_group.spawn(conn._send_loop, send)
+                    elif (isinstance(res, common.ResFrame) and
+                            res.function == common.ResFunction.ACK):
+                        data_flow_control = res.data_flow_control
+                        break
+
+                    else:
+                        await asyncio.sleep(connect_delay)
+
+            conn.async_group.spawn(conn._send_loop, send, data_flow_control)
 
             if poll_class1_delay is not None:
                 conn.async_group.spawn(conn._poll_loop_class1,
@@ -157,7 +164,7 @@ class MasterLink(aio.Resource):
             pass
 
         except Exception as e:
-            self._log.error("read loop error: %s", e, exc_info=e)
+            self._log.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -301,10 +308,9 @@ class MasterConnection(common.Connection):
         finally:
             self.close()
 
-    async def _send_loop(self, send):
+    async def _send_loop(self, send, data_flow_control):
         future = None
         frame_count_bit = False
-        data_flow_control = False
         data_flow_queue = collections.deque()
 
         try:
@@ -364,7 +370,7 @@ class MasterConnection(common.Connection):
 
                 # TODO
                 # if data_flow_control and data:
-                #     data_flow_queue.append((future, data))
+                #     data_flow_queue.append_left((future, function, data))
                 #     continue
 
                 if future.done():
