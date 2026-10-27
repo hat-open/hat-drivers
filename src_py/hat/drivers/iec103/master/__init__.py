@@ -265,6 +265,12 @@ class MasterConnection(aio.Resource):
             value=element.value))
 
     async def _process_MEASURANDS_1(self, cause, asdu_address, io_address, elements):  # NOQA
+        if (len(elements) > 4):
+            self._log.debug(
+                "received MEASURANDS_1 %s elements - truncating to 4",
+                len(elements))
+            elements = elements[:4]
+
         value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
@@ -301,6 +307,12 @@ class MasterConnection(aio.Resource):
         _try_set_result(self._interrogate_future, None)
 
     async def _process_MEASURANDS_2(self, cause, asdu_address, io_address, elements):  # NOQA
+        if (len(elements) > 9):
+            self._log.debug(
+                "received MEASURANDS_2 with %s elements - truncating to 9",
+                len(elements))
+            elements = elements[:9]
+
         value = common.MeasurandValues(values={})
         for i, element in enumerate(elements):
             measurand_type = common.MeasurandType((
