@@ -426,7 +426,7 @@ class LtaResultV0_16Data(typing.NamedTuple):
     volume_1: common.UInt16
     volume_2: common.UInt16
     speed_1: common.UInt8
-    speed_2: common.UInt18
+    speed_2: common.UInt8
 
 
 class LtaResultV1_16Data(typing.NamedTuple):
