@@ -31,6 +31,7 @@ class Server:
         self._cache_ttl_ms = round(cache_ttl * 1000)
         self._tools = {}
 
+    @property
     def route(self) -> aiohttp.web.RouteDef:
         return self._route
 
