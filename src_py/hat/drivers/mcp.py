@@ -23,7 +23,9 @@ class Server:
                  name: str,
                  version: str = '1.0.0',
                  path: str = '/',
-                 cache_ttl: float = 60 * 60):
+                 cache_ttl: float = 60 * 60,
+                 instructions: str | None = None):
+        self._instructions = instructions
         self._meta = {
             'io.modelcontextprotocol/serverInfo': {'name': name,
                                                    'version': version}}
@@ -141,10 +143,15 @@ class Server:
         if self._tools:
             capabilities['tools'] = {'listChanged': False}
 
-        return {'supportedVersions': [_supported_version],
-                'capabilities': capabilities,
-                'ttlMs': self._cache_ttl_ms,
-                'cacheScope': 'public'}
+        result = {'supportedVersions': [_supported_version],
+                  'capabilities': capabilities,
+                  'ttlMs': self._cache_ttl_ms,
+                  'cacheScope': 'public'}
+
+        if self._instructions is not None:
+            result['instructions'] = self._instructions
+
+        return result
 
     def _process_tools_list(self):
         tools = collections.deque()
