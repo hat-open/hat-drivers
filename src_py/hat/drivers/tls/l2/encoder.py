@@ -79,7 +79,7 @@ def decode_frame(data: util.Bytes) -> common.Frame:
     return frame
 
 
-def encode_frame(frame: common.Frame) -> bytes:
+def encode_frame(frame: common.Frame) -> util.Bytes:
     if isinstance(frame, common.ShortFrame):
         return b'\xE5'
 

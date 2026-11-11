@@ -6,9 +6,9 @@ import typing
 
 from hat import util
 
-from hat.drivers.tls.l4 import common
-from hat.drivers.tls.l4 import fg1
-from hat.drivers.tls.l4 import fg254
+from hat.drivers.tls import common
+from hat.drivers.tls import fg1
+from hat.drivers.tls import fg254
 
 
 class DisplayPrinciple(enum.Enum):
@@ -344,7 +344,7 @@ def encode(data: Data) -> util.Bytes:
                       ((0x01 if data.status_not_terminated else 0x00) |
                        (0x02 if data.status_error else 0x00))])
 
-    raise ValueError('unsupported data type')
+    raise TypeError('unsupported data type')
 
 
 def decode(data_type: DataType, data: util.Bytes) -> Data:

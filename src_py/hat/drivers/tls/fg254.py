@@ -6,9 +6,9 @@ import typing
 
 from hat import util
 
+from hat.drivers.tls import common
 from hat.drivers.tls import l2
 from hat.drivers.tls import l3
-from hat.drivers.tls.l4 import common
 
 
 class Channel(typing.NamedTuple):

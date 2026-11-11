@@ -4,7 +4,8 @@ import typing
 from hat import util
 
 from hat.drivers.tls import common
-from hat.drivers.tls.l4 import fg1, fg254
+from hat.drivers.tls import fg1
+from hat.drivers.tls import fg254
 
 
 class Status(typing.NamedTuple):
@@ -180,7 +181,7 @@ def encode(data: Data) -> util.Bytes:
                       data.charging_voltage << 2,
                       data.charging_current << 3])
 
-    raise ValueError('unsupported data type')
+    raise TypeError('unsupported data type')
 
 
 def decode(data_type: DataType, data: util.Bytes) -> Data:
@@ -275,9 +276,9 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
         charging_current = data[2]
 
         return RemoteMonitoringSolarUnitsData(
-                status=Status(overcharge_protection_not_addressed,
-                              total_discharge_protection_not_waiting),
-                charging_voltage=charging_voltage,
-                charging_current=charging_current)
+            status=Status(overcharge_protection_not_addressed,
+                          total_discharge_protection_not_waiting),
+            charging_voltage=charging_voltage,
+            charging_current=charging_current)
 
     raise ValueError('unsupported data type')

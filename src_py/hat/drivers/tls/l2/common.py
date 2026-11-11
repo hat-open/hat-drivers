@@ -15,7 +15,6 @@ from hat.drivers.tls.common import UInt8
 
 
 Address: typing.TypeAlias = UInt8
-"""addres is 0 or in range [0, 255]"""
 
 
 class ReqFunction(enum.Enum):
@@ -108,7 +107,7 @@ class Connection(aio.Resource):
         pass
 
     @abc.abstractmethod
-    async def receive(self) -> [util.Bytes, Test]:
+    async def receive(self) -> tuple[util.Bytes, Test]:
         pass
 
 

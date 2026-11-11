@@ -5,8 +5,8 @@ import typing
 
 from hat import util
 
-from hat.drivers.tls.l4 import common
-from hat.drivers.tls.l4 import fg254
+from hat.drivers.tls import common
+from hat.drivers.tls import fg254
 
 
 class AverageType(enum.Enum):

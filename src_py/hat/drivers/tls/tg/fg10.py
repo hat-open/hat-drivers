@@ -3,15 +3,15 @@ import typing
 
 from hat import util
 
-from hat.drivers.tls.l4 import fg254
+from hat.drivers.tls import fg254
 
 
 class DataType(enum.Enum):
-    FAULT_REPORT = 1
+    ERROR = 1
     OPERATING_PARAMETERS = 32
 
 
-FaultReportData: typing.TypeAlias = fg254.ErrorData
+ErrorData: typing.TypeAlias = fg254.ErrorData
 
 
 class OperatingParametersData(typing.NamedTuple):
@@ -19,18 +19,19 @@ class OperatingParametersData(typing.NamedTuple):
     local_automatics_parameters: util.Bytes
 
 
-Data: typing.TypeAlias = (FaultReportData | OperatingParametersData)
+Data: typing.TypeAlias = (ErrorData |
+                          OperatingParametersData)
 
 
 def encode(data: Data) -> util.Bytes:
-    if isinstance(data, FaultReportData):
+    if isinstance(data, ErrorData):
         return fg254.encode(data)
 
     if isinstance(data, OperatingParametersData):
         return bytes([data.local_automatics_enabled,
                       *data.local_automatics_parameters])
 
-    raise ValueError('unsupported data type')
+    raise TypeError('unsupported data type')
 
 
 def decode(data_type: DataType, data: util.Bytes) -> Data:
@@ -42,7 +43,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
         local_automatics_parameters = data[1:]
 
         return OperatingParametersData(
-                local_automatics_enabled=local_automatics_enabled,
-                local_automatics_parameters=local_automatics_parameters)
+            local_automatics_enabled=local_automatics_enabled,
+            local_automatics_parameters=local_automatics_parameters)
 
     raise ValueError('unsupported data type')
