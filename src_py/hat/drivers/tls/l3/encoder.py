@@ -7,8 +7,8 @@ from hat.drivers.tls.l3 import common
 
 def decode_packet(data: util.Bytes) -> common.Packet:
     priority = common.Priority(data[0] >> 7)
-    length = (data[0] >> 3) & 0x03
-    pointer = data[0] & 0x03
+    length = (data[0] >> 3) & 0x07
+    pointer = data[0] & 0x07
 
     addresses = [(data[i * 2 + 1], data[i * 2 + 2])
                  for i in range(length)]

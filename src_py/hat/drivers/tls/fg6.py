@@ -4,7 +4,8 @@ import typing
 from hat import util
 
 from hat.drivers.tls import common
-from hat.drivers.tls.l4 import fg1, fg254
+from hat.drivers.tls import fg1
+from hat.drivers.tls import fg254
 
 
 class Status(typing.NamedTuple):
@@ -136,37 +137,37 @@ def encode(data: Data) -> util.Bytes:
 
     if isinstance(data, OperatingParametersData):
         return bytes([data.acquisition_period_seconds & 0xFF,
-                      data.acquisition_perdio_seconds >> 8,
+                      data.acquisition_period_seconds >> 8,
                       data.transmission_procedure])
 
     if isinstance(data, GeographicalCharacteristicsData):
         return fg254.encode(data)
 
     if isinstance(data, DoorContactData):
-        return bytes([data.status])
+        return bytes([data.open])
 
     if isinstance(data, TemperatureMonitoringData):
-        return bytes([data.monitoring_defective,
-                      data.above_range << 1,
-                      data.below_range << 2])
+        return bytes([data.monitoring_defective |
+                      (data.above_range << 1) |
+                      (data.below_range << 2)])
 
     if isinstance(data, LightData):
         return bytes([data.switched_on])
 
     if isinstance(data, PowerSupplyData):
-        return bytes([data.power_failed,
-                      data.ups_defective << 1,
-                      data.battery_empty << 2,
-                      data.battery_overcharged << 3,
-                      data.FI_protective_switch_triggered << 4])
+        return bytes([data.power_failed |
+                      (data.ups_defective << 1) |
+                      (data.battery_empty << 2) |
+                      (data.battery_overcharged << 3) |
+                      (data.FI_protective_switch_triggered << 4)])
 
     if isinstance(data, HeatingData):
-        return bytes([data.defective,
-                      data.switched_on << 1])
+        return bytes([data.defective |
+                      (data.switched_on << 1)])
 
     if isinstance(data, VentilationData):
-        return bytes([data.defective,
-                      data.switched_on << 1])
+        return bytes([data.defective |
+                      (data.switched_on << 1)])
 
     if isinstance(data, ExcessVoltageProtectionData):
         return bytes([data.defective])
@@ -175,12 +176,12 @@ def encode(data: Data) -> util.Bytes:
         return bytes([data.alarm])
 
     if isinstance(data, RemoteMonitoringSolarUnitsData):
-        return bytes([data.status.overcharge_protection_not_addressed,
-                      data.status.total_discharge_protection_not_waiting << 1,
-                      data.charging_voltage << 2,
-                      data.charging_current << 3])
+        return bytes([(data.status.overcharge_protection_not_addressed |
+                       (data.status.total_discharge_protection_not_waiting << 1)),  # NOQA
+                      data.charging_voltage,
+                      data.charging_current])
 
-    raise ValueError('unsupported data type')
+    raise TypeError('unsupported data type')
 
 
 def decode(data_type: DataType, data: util.Bytes) -> Data:
@@ -275,9 +276,9 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
         charging_current = data[2]
 
         return RemoteMonitoringSolarUnitsData(
-                status=Status(overcharge_protection_not_addressed,
-                              total_discharge_protection_not_waiting),
-                charging_voltage=charging_voltage,
-                charging_current=charging_current)
+            status=Status(overcharge_protection_not_addressed,
+                          total_discharge_protection_not_waiting),
+            charging_voltage=charging_voltage,
+            charging_current=charging_current)
 
     raise ValueError('unsupported data type')

@@ -15,6 +15,8 @@ from hat.drivers.tls.l2.encoder import (get_next_frame_size,
                                         decode_frame,
                                         encode_frame)
 from hat.drivers.tls.l2.master import MasterLink
+from hat.drivers.tls.l2.slave import (PollClass2Cb,
+                                      SlaveLink)
 
 
 __all__ = ['Address',
@@ -33,4 +35,6 @@ __all__ = ['Address',
            'get_next_frame_size',
            'decode_frame',
            'encode_frame',
-           'MasterLink']
+           'MasterLink',
+           'PollClass2Cb',
+           'SlaveLink']

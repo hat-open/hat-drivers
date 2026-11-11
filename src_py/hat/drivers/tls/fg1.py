@@ -5,8 +5,8 @@ import typing
 
 from hat import util
 
-from hat.drivers.tls.l4 import common
-from hat.drivers.tls.l4 import fg254
+from hat.drivers.tls import common
+from hat.drivers.tls import fg254
 
 
 class AverageType(enum.Enum):
@@ -450,6 +450,7 @@ class LtaResultV3_16Data(typing.NamedTuple):
     volume_2: common.UInt16
     speed_1: common.UInt8
     speed_2: common.UInt8
+    time_gap: common.UInt8
     occupancy: common.UInt8
     standard_deviation: common.UInt8
     smoothed_speed: common.UInt8
@@ -460,6 +461,7 @@ class LtaResultV4_16Data(typing.NamedTuple):
     volume_2: common.UInt16
     speed_1: common.UInt8
     speed_2: common.UInt8
+    time_gap: common.UInt8
     occupancy: common.UInt8
     standard_deviation: common.UInt8
     smoothed_speed: common.UInt8
