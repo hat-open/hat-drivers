@@ -6,9 +6,9 @@ import typing
 
 from hat import util
 
-from hat.drivers.tls.l4 import common
-from hat.drivers.tls.l4 import fg1
-from hat.drivers.tls.l4 import fg254
+from hat.drivers.tls import common
+from hat.drivers.tls import fg1
+from hat.drivers.tls import fg254
 
 
 class DisplayPrinciple(enum.Enum):
@@ -267,12 +267,12 @@ def encode(data: Data) -> util.Bytes:
 
     if isinstance(data, VmsBasicSettingData):
         return bytes([data.code,
-                      encode_function(data.function)])
+                      _encode_function(data.function)])
 
     if isinstance(data, BasicSettingData):
         ret = [data.display_principle.value,
                data.basic_setting_code,
-               encode_function(data.function)]
+               _encode_function(data.function)]
         if data.display_principle in (DisplayPrinciple.C,
                                       DisplayPrinciple.D,
                                       DisplayPrinciple.E):
@@ -281,7 +281,7 @@ def encode(data: Data) -> util.Bytes:
                 [len(data.component_setting_codes)],
                 itertools.chain.from_iterable(
                     ([i] if isinstance(i, int) else
-                     [i[0], encode_function(i[1])])
+                     [i[0], _encode_function(i[1])])
                     for i in data.component_setting_codes))
         return bytes(ret)
 
@@ -304,13 +304,13 @@ def encode(data: Data) -> util.Bytes:
              len(data.component_definitions)],
             itertools.chain.from_iterable(
                 ([i] if isinstance(i, int) else
-                 [i[0], encode_function(i[1])] if len(i) == 2 else
-                 [i[0], i[1].value, i[2], encode_function(i[3])])
+                 [i[0], _encode_function(i[1])] if len(i) == 2 else
+                 [i[0], i[1].value, i[2], _encode_function(i[3])])
                 for i in data.component_definitions)))
 
     if isinstance(data, VmsSettingStatusData):
         return bytes([data.code,
-                      encode_function(data.function)])
+                      _encode_function(data.function)])
 
     if isinstance(data, BrightnessData):
         return bytes([data.value,
@@ -319,14 +319,14 @@ def encode(data: Data) -> util.Bytes:
 
     if isinstance(data, VariableTextData):
         return bytes(itertools.chain(
-            [encode_function(data.function),
+            [_encode_function(data.function),
              len(data.text)],
             data.text))
 
     if isinstance(data, SettingStatusData):
         ret = [data.display_principle.value,
                data.setting_code,
-               encode_function(data.function)]
+               _encode_function(data.function)]
         if data.display_principle in (DisplayPrinciple.C,
                                       DisplayPrinciple.D,
                                       DisplayPrinciple.E):
@@ -335,7 +335,7 @@ def encode(data: Data) -> util.Bytes:
                 [len(data.component_statuses)],
                 itertools.chain.from_iterable(
                     ([i] if isinstance(i, int) else
-                     [i[0], encode_function(i[1])])
+                     [i[0], _encode_function(i[1])])
                     for i in data.component_statuses))
         return bytes(ret)
 
@@ -344,7 +344,7 @@ def encode(data: Data) -> util.Bytes:
                       ((0x01 if data.status_not_terminated else 0x00) |
                        (0x02 if data.status_error else 0x00))])
 
-    raise ValueError('unsupported data type')
+    raise TypeError('unsupported data type')
 
 
 def decode(data_type: DataType, data: util.Bytes) -> Data:
@@ -420,7 +420,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
 
     if data_type == DataType.VMS_BASIC_SETTING:
         code = data[0]
-        function = decode_function(data[1])
+        function = _decode_function(data[1])
 
         return VmsBasicSettingData(code=code,
                                    function=function)
@@ -428,7 +428,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
     if data_type == DataType.BASIC_SETTING:
         display_principle = DisplayPrinciple(data[0])
         basic_setting_code = data[1]
-        function = decode_function(data[2])
+        function = _decode_function(data[2])
         component_setting_codes = []
         if display_principle in (DisplayPrinciple.C,
                                  DisplayPrinciple.D,
@@ -436,7 +436,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
             for i in range(data[3]):
                 if display_principle == DisplayPrinciple.E:
                     code = (data[4 + (i * 2)],
-                            decode_function(data[5 + (i * 2)]))
+                            _decode_function(data[5 + (i * 2)]))
                 else:
                     code = data[4 + i]
                 component_setting_codes.append(code)
@@ -469,12 +469,12 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
         for i in range(data[2]):
             if display_principle == DisplayPrinciple.E:
                 definition = (data[3 + (i * 2)],
-                              decode_function(data[4 + (i * 2)]))
+                              _decode_function(data[4 + (i * 2)]))
             elif display_principle == DisplayPrinciple.CLUSTER:
                 definition = (data[3 + (i * 4)],
                               DisplayPrinciple(data[4 + (i * 4)]),
                               data[5 + (i * 4)],
-                              decode_function(data[6 + (i * 4)]))
+                              _decode_function(data[6 + (i * 4)]))
             else:
                 definition = data[3 + i]
             component_definitions.append(definition)
@@ -485,7 +485,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
 
     if data_type == DataType.VMS_SETTING_STATUS:
         code = data[0]
-        function = decode_function(data[1])
+        function = _decode_function(data[1])
 
         return VmsSettingStatusData(code=code,
                                     function=function)
@@ -500,7 +500,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
                               messages=messages)
 
     if data_type == DataType.VARIABLE_TEXT:
-        function = decode_function(data[0])
+        function = _decode_function(data[0])
         text = data[2:2+data[1]]
 
         return VariableTextData(function=function,
@@ -509,7 +509,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
     if data_type == DataType.SETTING_STATUS:
         display_principle = DisplayPrinciple(data[0])
         setting_code = data[1]
-        function = decode_function(data[2])
+        function = _decode_function(data[2])
         component_statuses = []
         if display_principle in (DisplayPrinciple.C,
                                  DisplayPrinciple.D,
@@ -517,7 +517,7 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
             for i in range(data[3]):
                 if display_principle == DisplayPrinciple.E:
                     status = (data[4 + (i * 2)],
-                              decode_function(data[5 + (i * 2)]))
+                              _decode_function(data[5 + (i * 2)]))
                 else:
                     status = data[4 + i]
                 component_statuses.append(status)
@@ -540,14 +540,14 @@ def decode(data_type: DataType, data: util.Bytes) -> Data:
     raise ValueError('unsupported data type')
 
 
-def encode_function(function: Function) -> common.UInt8:
+def _encode_function(function):
     return (function.type.value |
             (0x04 if function.status_error else 0x00) |
             (0x08 if function.status_not_terminated else 0x00) |
             (function.indication_time << 4))
 
 
-def decode_function(function: common.UInt8) -> Function:
+def _decode_function(function):
     return Function(type=FunctionType(function & 0x03),
                     status_error=bool(function & 0x04),
                     status_not_terminated=bool(function & 0x08),

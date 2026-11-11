@@ -75,7 +75,8 @@ class MasterLink(aio.Resource):
                         data=b'')
                     res = await send(req)
 
-                    if res.function != common.ResFunction.RES_STATUS:
+                    if (not isinstance(res, common.ResFrame) or
+                            res.function != common.ResFunction.RES_STATUS):
                         await asyncio.sleep(connect_delay)
                         continue
 
@@ -88,12 +89,12 @@ class MasterLink(aio.Resource):
                         data=b'')
                     res = await send(req)
 
-                    if isinstance(res, common.ShortMsg):
+                    if isinstance(res, common.ShortFrame):
                         data_flow_control = False
                         break
 
-                    elif (isinstance(res, common.ResMsg) and
-                            res.function == common.ResFunction.ACK):
+                    elif (isinstance(res, common.ResFrame) and
+                            res.function == common.ResFunction.RES_ACK):
                         data_flow_control = res.data_flow_control
                         break
 
@@ -141,7 +142,7 @@ class MasterLink(aio.Resource):
                     continue
 
                 if len(data) < size:
-                    result = await self._link.read(size - len(self._data))
+                    result = await self._link.read(size - len(data))
                     data = memoryview(b''.join([data, result]))
                     continue
 
@@ -151,8 +152,11 @@ class MasterLink(aio.Resource):
 
                 except Exception as e:
                     mlog.error("error decoding message: %s", e, exc_info=e)
+                    continue
 
-                # TODO check frame is response
+                if not isinstance(frame, (common.ResFrame,
+                                          common.ShortFrame)):
+                    continue
 
                 if self._res_future and not self._res_future.done():
                     self._res_future.set_result(frame)
@@ -161,7 +165,7 @@ class MasterLink(aio.Resource):
             pass
 
         except Exception as e:
-            self._log.error("receive loop error: %s", e, exc_info=e)
+            mlog.error("receive loop error: %s", e, exc_info=e)
 
         finally:
             self.close()
@@ -353,16 +357,16 @@ class _MasterConnection(common.Connection):
                         res = await send(req)
                         break
 
-                    if retry_counter > self._send_retry_count:
+                    if retry_counter >= self._send_retry_count:
                         raise Exception('send retry count exceeded')
 
                     retry_counter += 1
 
-                if isinstance(res, common.ResMsg) and res.access_demand:
+                if isinstance(res, common.ResFrame) and res.access_demand:
                     self._access_demand_event.set()
 
                 data_flow_control = (res.data_flow_control
-                                     if isinstance(res, common.ResMsg)
+                                     if isinstance(res, common.ResFrame)
                                      else False)
 
                 # TODO
@@ -373,7 +377,7 @@ class _MasterConnection(common.Connection):
                 if future.done():
                     continue
 
-                if isinstance(res, common.ShortMsg):
+                if isinstance(res, common.ShortFrame):
                     future.set_result(None)
 
                 elif isinstance(res, common.ResFrame):
@@ -381,7 +385,7 @@ class _MasterConnection(common.Connection):
                                         common.ResFunction.RES_TEST):
                         if res.data:
                             test = res.function == common.ResFunction.RES_TEST
-                            await self._receive_queue.put((data, test))
+                            await self._receive_queue.put((res.data, test))
 
                         future.set_result(None)
 

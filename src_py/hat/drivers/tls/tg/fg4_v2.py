@@ -1,0 +1,10 @@
+import enum
+
+
+class DataType(enum.Enum):
+    PROPRIETARY_TIME_STAMP = 150
+    PROPRIETARY_WORK_MODE = 208
+    VMS_LED_MODULE_FAULT_REPORT = 247
+
+
+# TODO

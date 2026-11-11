@@ -9,6 +9,9 @@ UInt3: typing.TypeAlias = int
 UInt4: typing.TypeAlias = int
 """In range [0, 0x0f]"""
 
+UInt6: typing.TypeAlias = int
+"""In range [0, 0x3f]"""
+
 UInt7: typing.TypeAlias = int
 """In range [0, 0x7f]"""
 
@@ -20,3 +23,6 @@ UInt16: typing.TypeAlias = int
 
 UInt24: typing.TypeAlias = int
 """In range [0, 0xffffff]"""
+
+UInt32: typing.TypeAlias = int
+"""In range [0, 0xffffffff]"""

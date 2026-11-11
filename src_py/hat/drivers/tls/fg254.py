@@ -6,9 +6,9 @@ import typing
 
 from hat import util
 
+from hat.drivers.tls import common
 from hat.drivers.tls import l2
 from hat.drivers.tls import l3
-from hat.drivers.tls.l4 import common
 
 
 class Channel(typing.NamedTuple):
@@ -224,13 +224,15 @@ def encode(data: Data) -> util.Bytes:
                 for route in data.routes)))
 
     if isinstance(data, GeographicalCharacteristicsData):
+        kilometrage = round(data.kilometrage * 100)
+
         return bytes([data.country,
                       data.road_type,
                       (data.road_number // 100) % 100,
                       data.road_number % 100,
-                      int(data.kilometrage / 100) % 100,
-                      int(data.kilometrage) % 100,
-                      int(data.kilometrage * 100) % 100,
+                      (kilometrage // 10000) % 100,
+                      (kilometrage // 100) % 100,
+                      kilometrage % 100,
                       data.direction,
                       0])
 

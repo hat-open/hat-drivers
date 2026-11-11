@@ -15,7 +15,6 @@ from hat.drivers.tls.common import UInt8
 
 
 Address: typing.TypeAlias = UInt8
-"""addres is 0 or in range [0, 255]"""
 
 
 class ReqFunction(enum.Enum):
@@ -66,21 +65,21 @@ Frame: typing.TypeAlias = ReqFrame | ResFrame | ShortFrame
 
 class TcpConnectionInfo(typing.NamedTuple):
     name: str | None
-    l1_local_addr: net.TcpAddress
-    l1_remote_addr: net.TcpAddress
-    l2_addr: Address
+    addr: Address
+    tcp_local_addr: net.TcpAddress
+    tcp_remote_addr: net.TcpAddress
 
 
 class UnixConnectionInfo(typing.NamedTuple):
     name: str | None
-    l1_addr: net.UnixAddress
-    l2_addr: Address
+    addr: Address
+    unix_addr: net.UnixAddress
 
 
 class SerialConnectionInfo(typing.NamedTuple):
     name: str | None
-    l1_port: str
-    l2_addr: Address
+    addr: Address
+    port: str
 
 
 ConnectionInfo: typing.TypeAlias = (TcpConnectionInfo |
@@ -108,7 +107,7 @@ class Connection(aio.Resource):
         pass
 
     @abc.abstractmethod
-    async def receive(self) -> [util.Bytes, Test]:
+    async def receive(self) -> tuple[util.Bytes, Test]:
         pass
 
 

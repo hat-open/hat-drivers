@@ -60,7 +60,7 @@ def main():
                 msg = l4.decode_general_msg(packet.data)
 
             else:
-                msg = l4.decode_msg(packet.data)
+                msg, _ = l4.decode_msg(packet.data)
 
         except Exception as e:
             write_error(e)

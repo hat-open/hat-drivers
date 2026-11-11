@@ -20,7 +20,7 @@ class Link(aio.Resource):
 
     @property
     @abc.abstractmethod
-    async def info(self) -> LinkInfo:
+    def info(self) -> LinkInfo:
         pass
 
     @abc.abstractmethod
