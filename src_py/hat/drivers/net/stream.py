@@ -304,8 +304,12 @@ class Connection(aio.Resource):
         If EOF is detected and no new bytes are available, `ConnectionError`
         is raised.
 
+        If ``n < 0``, read all data available in input buffer.
+
+        If input buffer is empty, this coroutine waits until data is available.
+
         """
-        return await self._protocol.read(n)
+        return await self._protocol.read(n, False)
 
     async def readexactly(self, n: int) -> util.Bytes:
         """Read exactly `n` bytes
@@ -314,7 +318,7 @@ class Connection(aio.Resource):
         raised.
 
         """
-        return await self._protocol.readexactly(n)
+        return await self._protocol.read(n, True)
 
     def clear_input_buffer(self) -> int:
         """Clear input buffer
@@ -341,7 +345,10 @@ class _Protocol(asyncio.Protocol):
         self._loop = asyncio.get_running_loop()
         self._input_buffer = util.BytesBuffer()
         self._transport = None
-        self._read_queue = None
+        self._read_lock = asyncio.Lock()
+        self._read_count = 0
+        self._read_future = None
+        self._eof = False
         self._write_queue = None
         self._drain_futures = None
         self._closed_futures = None
@@ -364,7 +371,6 @@ class _Protocol(asyncio.Protocol):
 
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
-        self._read_queue = collections.deque()
         self._closed_futures = collections.deque()
 
         try:
@@ -390,7 +396,8 @@ class _Protocol(asyncio.Protocol):
         drain_futures, self._drain_futures = self._drain_futures, None
         closed_futures, self._closed_futures = self._closed_futures, None
 
-        self.eof_received()
+        if self._read_future and not self._read_future.done():
+            self._read_future.set_result(None)
 
         while write_queue:
             _, future = write_queue.popleft()
@@ -449,26 +456,19 @@ class _Protocol(asyncio.Protocol):
         self._comm_log.log(common.CommLogAction.RECEIVE, data)
 
         self._input_buffer.add(data)
-        self._process_input_buffer()
+
+        if self._read_future and not self._read_future.done():
+            self._read_future.set_result(None)
+
+        self._update_read_pause()
 
     def eof_received(self):
         self._log.debug('eof received')
 
-        while self._read_queue:
-            exact, n, future = self._read_queue.popleft()
-            if future.done():
-                continue
+        self._eof = True
 
-            if exact and n <= len(self._input_buffer):
-                future.set_result(self._input_buffer.read(n))
-
-            elif not exact and self._input_buffer:
-                future.set_result(self._input_buffer.read(n))
-
-            else:
-                future.set_exception(ConnectionError())
-
-        self._read_queue = None
+        if self._read_future and not self._read_future.done():
+            self._read_future.set_result(None)
 
     async def write(self, data: util.Bytes):
         if self._transport is None:
@@ -495,40 +495,34 @@ class _Protocol(asyncio.Protocol):
         self._drain_futures.append(future)
         await future
 
-    async def read(self, n: int) -> util.Bytes:
+    async def read(self, n: int, exactly: bool) -> util.Bytes:
         if n == 0:
             return b''
 
-        if self._input_buffer and not self._read_queue:
-            data = self._input_buffer.read(n)
-            self._process_input_buffer()
-            return data
+        if (self._read_count < 1 and
+                len(self._input_buffer) >= (n if exactly else 1)):
+            return self._read(n)
 
-        if self._read_queue is None:
-            raise ConnectionError()
+        self._read_count += 1
+        try:
+            async with self._read_lock:
+                while len(self._input_buffer) < (n if exactly else 1):
+                    if self._eof or self._transport is None:
+                        raise ConnectionError()
 
-        future = self._loop.create_future()
-        future.add_done_callback(self._on_read_future_done)
-        self._read_queue.append((False, n, future))
-        return await future
+                    self._read_future = self._loop.create_future()
+                    self._update_read_pause()
 
-    async def readexactly(self, n: int) -> util.Bytes:
-        if n == 0:
-            return b''
+                    try:
+                        await self._read_future
 
-        if n <= len(self._input_buffer) and not self._read_queue:
-            data = self._input_buffer.read(n)
-            self._process_input_buffer()
-            return data
+                    finally:
+                        self._read_future = None
 
-        if self._read_queue is None:
-            raise ConnectionError()
+                return self._read(n)
 
-        future = self._loop.create_future()
-        future.add_done_callback(self._on_read_future_done)
-        self._read_queue.append((True, n, future))
-        self._process_input_buffer()
-        return await future
+        finally:
+            self._read_count -= 1
 
     def clear_input_buffer(self) -> int:
         if self._transport is None:
@@ -561,42 +555,18 @@ class _Protocol(asyncio.Protocol):
         self._closed_futures.append(future)
         await future
 
-    def _on_read_future_done(self, future):
-        if not self._read_queue:
-            return
+    def _read(self, n):
+        data = self._input_buffer.read(n)
+        self._update_read_pause()
+        return data
 
-        if not future.cancelled():
-            return
-
-        for _ in range(len(self._read_queue)):
-            i = self._read_queue.popleft()
-            if not i[2].done():
-                self._read_queue.append(i)
-
-        self._process_input_buffer()
-
-    def _process_input_buffer(self):
-        while self._input_buffer and self._read_queue:
-            exact, n, future = self._read_queue.popleft()
-            if future.done():
-                continue
-
-            if not exact:
-                future.set_result(self._input_buffer.read(n))
-
-            elif n <= len(self._input_buffer):
-                future.set_result(self._input_buffer.read(n))
-
-            else:
-                self._read_queue.appendleft((exact, n, future))
-                break
-
+    def _update_read_pause(self):
         if not self._transport:
             return
 
         pause = (self._input_buffer_limit > 0 and
                  len(self._input_buffer) > self._input_buffer_limit and
-                 not self._read_queue)
+                 self._read_future is None)
 
         if pause:
             self._transport.pause_reading()
