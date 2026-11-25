@@ -94,7 +94,7 @@ class MasterLink(aio.Resource):
                         break
 
                     elif (isinstance(res, common.ResFrame) and
-                            res.function == common.ResFunction.RES_ACK):
+                            res.function == common.ResFunction.RESET_ACK):
                         data_flow_control = res.data_flow_control
                         break
 
