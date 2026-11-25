@@ -96,6 +96,7 @@ async def connect(addr: StreamAddress,
                   *,
                   name: str | None = None,
                   input_buffer_limit: int = 64 * 1024,
+                  close_timeout: float | None = 30,
                   **kwargs
                   ) -> 'Connection':
     """Create TCP or Unix Domain Socket connection
@@ -109,6 +110,9 @@ async def connect(addr: StreamAddress,
     drops bellow `input_buffer_limit`, data receiving is resumed. If this
     argument is ``0``, data receive pausing is disabled.
 
+    Argument `close_timeout` defines maximum time in seconds that closing
+    of connection can take.
+
     Additional arguments are passed directly to `asyncio.create_connection` or
     `asyncio.create_unix_connection`.
 
@@ -116,7 +120,7 @@ async def connect(addr: StreamAddress,
     loop = asyncio.get_running_loop()
     stream_type = _get_stream_type(addr)
     create_protocol = functools.partial(_Protocol, stream_type, None, name,
-                                        input_buffer_limit)
+                                        input_buffer_limit, close_timeout)
 
     if stream_type == StreamType.TCP:
         _, protocol = await loop.create_connection(create_protocol,
@@ -139,6 +143,7 @@ async def listen(connection_cb: ConnectionCb,
                  name: str | None = None,
                  bind_connections: bool = False,
                  input_buffer_limit: int = 64 * 1024,
+                 close_timeout: float | None = 30,
                  **kwargs
                  ) -> 'Server':
     """Create listening TCP or Unix Domain Socket server
@@ -150,6 +155,9 @@ async def listen(connection_cb: ConnectionCb,
     incoming connections.
 
     Argument `input_buffer_limit` is associated with newly created connections
+    (see `connect`).
+
+    Argument `close_timeout` is associated with newly created connections
     (see `connect`).
 
     Additional arguments are passed directly to `asyncio.create_server` or
@@ -168,7 +176,7 @@ async def listen(connection_cb: ConnectionCb,
                                       server._on_connection)
     create_protocol = functools.partial(_Protocol, server._stream_type,
                                         on_connection, name,
-                                        input_buffer_limit)
+                                        input_buffer_limit, close_timeout)
 
     if server._stream_type == StreamType.TCP:
         server._srv = await loop.create_server(create_protocol,
@@ -323,11 +331,13 @@ class _Protocol(asyncio.Protocol):
                  stream_type: StreamType,
                  on_connected: Callable[['_Protocol'], None] | None,
                  name: str | None,
-                 input_buffer_limit: int):
+                 input_buffer_limit: int,
+                 close_timeout: float | None):
         self._stream_type = stream_type
         self._on_connected = on_connected
         self._name = name
         self._input_buffer_limit = input_buffer_limit
+        self._close_timeout = close_timeout
         self._loop = asyncio.get_running_loop()
         self._input_buffer = util.BytesBuffer()
         self._transport = None
@@ -521,6 +531,9 @@ class _Protocol(asyncio.Protocol):
         return await future
 
     def clear_input_buffer(self) -> int:
+        if self._transport is None:
+            raise ConnectionError()
+
         count = self._input_buffer.clear()
         self._transport.resume_reading()
         return count
@@ -528,6 +541,15 @@ class _Protocol(asyncio.Protocol):
     async def async_close(self):
         if self._transport is not None:
             self._transport.close()
+
+        if self._close_timeout is not None:
+            try:
+                await aio.wait_for(self.wait_closed(), self._close_timeout)
+                return
+
+            except asyncio.TimeoutError:
+                if self._transport is not None:
+                    self._transport.abort()
 
         await self.wait_closed()
 

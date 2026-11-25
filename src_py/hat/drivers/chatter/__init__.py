@@ -137,7 +137,7 @@ class Connection(aio.Resource):
                  send_queue_size: int):
         self._conn = conn
         self._receive_queue = aio.Queue(receive_queue_size)
-        self._send_queue = aio.Queue(receive_queue_size)
+        self._send_queue = aio.Queue(send_queue_size)
         self._loop = asyncio.get_running_loop()
         self._next_msg_ids = itertools.count(1)
         self._ping_event = asyncio.Event()
