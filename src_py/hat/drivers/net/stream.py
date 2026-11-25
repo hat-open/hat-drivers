@@ -134,7 +134,12 @@ async def connect(addr: StreamAddress,
     else:
         raise ValueError('unsupported stream type')
 
-    return _create_connection(protocol)
+    try:
+        return _create_connection(protocol)
+
+    except Exception:
+        await aio.uncancellable(protocol.async_close())
+        raise
 
 
 async def listen(connection_cb: ConnectionCb,
@@ -231,7 +236,14 @@ class Server(aio.Resource):
     async def _on_connection(self, protocol):
         self._log.debug('new incomming connection')
 
-        conn = _create_connection(protocol)
+        try:
+            conn = _create_connection(protocol)
+
+        except Exception as e:
+            self._log.warning('create connection error: %s', e, exc_info=e)
+
+            await aio.uncancellable(protocol.async_close())
+            return
 
         try:
             await aio.call(self._connection_cb, conn)
@@ -251,6 +263,9 @@ class Server(aio.Resource):
 
 
 def _create_connection(protocol: '_Protocol') -> 'Connection':
+    if protocol.info is None:
+        raise ConnectionError()
+
     conn = Connection()
     conn._protocol = protocol
     conn._async_group = aio.Group()
@@ -387,9 +402,12 @@ class _Protocol(asyncio.Protocol):
             if self._on_connected:
                 self._on_connected(self)
 
-        except Exception:
+        except Exception as e:
+            self._log.warning('connection initialization error: %s', e,
+                              exc_info=e)
+
+            self._info = None
             transport.abort()
-            return
 
     def connection_lost(self, exc: Exception | None):
         self._transport = None
