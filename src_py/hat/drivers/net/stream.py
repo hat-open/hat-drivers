@@ -283,7 +283,11 @@ class Connection(aio.Resource):
         await self._protocol.write(data)
 
     async def drain(self):
-        """Drain output buffer"""
+        """Wait until it is appropriate to resume writing to the stream
+
+        See `asyncio.StreamWriter.drain`.
+
+        """
         await self._protocol.drain()
 
     async def read(self, n: int = -1) -> util.Bytes:
@@ -386,7 +390,7 @@ class _Protocol(asyncio.Protocol):
         while drain_futures:
             future = drain_futures.popleft()
             if not future.done():
-                future.set_result(None)
+                future.set_exception(ConnectionError())
 
         while closed_futures:
             future = closed_futures.popleft()
@@ -471,6 +475,9 @@ class _Protocol(asyncio.Protocol):
         await future
 
     async def drain(self):
+        if self._transport is None:
+            raise ConnectionError()
+
         if self._drain_futures is None:
             return
 
