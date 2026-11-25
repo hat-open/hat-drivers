@@ -97,6 +97,7 @@ async def connect(addr: StreamAddress,
                   name: str | None = None,
                   input_buffer_limit: int = 64 * 1024,
                   close_timeout: float | None = 30,
+                  half_close: bool = False,
                   **kwargs
                   ) -> 'Connection':
     """Create TCP or Unix Domain Socket connection
@@ -113,6 +114,11 @@ async def connect(addr: StreamAddress,
     Argument `close_timeout` defines maximum time in seconds that closing
     of connection can take.
 
+    If `half_close` is ``False``, receiving end of stream from remote peer
+    closes connection. If `half_close` is ``True``, connection remains open
+    for writing after remote peer ends its side of the stream (reading
+    raises `ConnectionError` once all received data is read).
+
     Additional arguments are passed directly to `asyncio.create_connection` or
     `asyncio.create_unix_connection`.
 
@@ -120,7 +126,8 @@ async def connect(addr: StreamAddress,
     loop = asyncio.get_running_loop()
     stream_type = _get_stream_type(addr)
     create_protocol = functools.partial(_Protocol, stream_type, None, name,
-                                        input_buffer_limit, close_timeout)
+                                        input_buffer_limit, close_timeout,
+                                        half_close)
 
     if stream_type == StreamType.TCP:
         _, protocol = await loop.create_connection(create_protocol,
@@ -149,6 +156,7 @@ async def listen(connection_cb: ConnectionCb,
                  bind_connections: bool = False,
                  input_buffer_limit: int = 64 * 1024,
                  close_timeout: float | None = 30,
+                 half_close: bool = False,
                  **kwargs
                  ) -> 'Server':
     """Create listening TCP or Unix Domain Socket server
@@ -159,11 +167,8 @@ async def listen(connection_cb: ConnectionCb,
     If `bind_connections` is ``True``, closing server will close all open
     incoming connections.
 
-    Argument `input_buffer_limit` is associated with newly created connections
-    (see `connect`).
-
-    Argument `close_timeout` is associated with newly created connections
-    (see `connect`).
+    Arguments `input_buffer_limit`, `close_timeout` and `half_close` are
+    associated with newly created connections (see `connect`).
 
     Additional arguments are passed directly to `asyncio.create_server` or
     `asyncio.create_unix_server`.
@@ -181,7 +186,8 @@ async def listen(connection_cb: ConnectionCb,
                                       server._on_connection)
     create_protocol = functools.partial(_Protocol, server._stream_type,
                                         on_connection, name,
-                                        input_buffer_limit, close_timeout)
+                                        input_buffer_limit, close_timeout,
+                                        half_close)
 
     try:
         if server._stream_type == StreamType.TCP:
@@ -352,12 +358,14 @@ class _Protocol(asyncio.Protocol):
                  on_connected: Callable[['_Protocol'], None] | None,
                  name: str | None,
                  input_buffer_limit: int,
-                 close_timeout: float | None):
+                 close_timeout: float | None,
+                 half_close: bool):
         self._stream_type = stream_type
         self._on_connected = on_connected
         self._name = name
         self._input_buffer_limit = input_buffer_limit
         self._close_timeout = close_timeout
+        self._half_close = half_close
         self._loop = asyncio.get_running_loop()
         self._input_buffer = util.BytesBuffer()
         self._transport = None
@@ -481,13 +489,15 @@ class _Protocol(asyncio.Protocol):
 
         self._update_read_pause()
 
-    def eof_received(self):
+    def eof_received(self) -> bool:
         self._log.debug('eof received')
 
         self._eof = True
 
         if self._read_future and not self._read_future.done():
             self._read_future.set_result(None)
+
+        return self._half_close and self._ssl_object is None
 
     async def write(self, data: util.Bytes):
         if self._transport is None:
@@ -580,7 +590,7 @@ class _Protocol(asyncio.Protocol):
         return data
 
     def _update_read_pause(self):
-        if not self._transport:
+        if self._eof or self._transport is None:
             return
 
         pause = (self._input_buffer_limit > 0 and
