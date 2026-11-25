@@ -178,24 +178,25 @@ async def listen(connection_cb: ConnectionCb,
                                         on_connection, name,
                                         input_buffer_limit, close_timeout)
 
-    if server._stream_type == StreamType.TCP:
-        server._srv = await loop.create_server(create_protocol,
-                                               addr.host, addr.port, **kwargs)
-
-    elif server._stream_type == StreamType.UNIX:
-        server._srv = await loop.create_unix_server(create_protocol,
-                                                    addr, **kwargs)
-
-    else:
-        raise ValueError('unsupported stream type')
-
-    server.async_group.spawn(aio.call_on_cancel, server._on_close)
-
     try:
+        if server._stream_type == StreamType.TCP:
+            server._srv = await loop.create_server(create_protocol,
+                                                   addr.host, addr.port,
+                                                   **kwargs)
+
+        elif server._stream_type == StreamType.UNIX:
+            server._srv = await loop.create_unix_server(create_protocol,
+                                                        addr, **kwargs)
+
+        else:
+            raise ValueError('unsupported stream type')
+
+        server.async_group.spawn(aio.call_on_cancel, server._on_close)
+
         server._info = _get_server_info(server._stream_type, name, server._srv)
         server._log = _create_server_logger(server._info)
 
-    except Exception:
+    except BaseException:
         await aio.uncancellable(server.async_close())
         raise
 
