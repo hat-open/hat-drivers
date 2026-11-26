@@ -215,6 +215,9 @@ class _Protocol(asyncio.DatagramProtocol):
             raise ConnectionError()
 
         if remote_addr is None:
+            if self._info.remote_addr is None:
+                raise ValueError('remote address not specified')
+
             addr = None
 
         elif isinstance(remote_addr, UdpAddress):
@@ -239,7 +242,7 @@ class _Protocol(asyncio.DatagramProtocol):
             raise ConnectionError()
 
         if isinstance(addr, tuple):
-            addr = UdpAddress(*addr)
+            addr = UdpAddress(addr[0], addr[1])
 
         elif isinstance(addr, str):
             addr = common.UnixAddress(addr)
