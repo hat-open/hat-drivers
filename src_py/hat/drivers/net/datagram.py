@@ -76,24 +76,24 @@ async def create_endpoint(datagram_type: DatagramType = DatagramType.UDP,
                           *,
                           name: str | None = None,
                           receive_queue_size: int = 0,
+                          close_timeout: float | None = 5,
                           **kwargs
                           ) -> 'Endpoint':
     """Create new UDP or Unix Domain Socket endpoint
 
-    Args:
-        datagram_type: datagram protocol type
-        local_addr: local address
-        remote_addr: remote address
-        name: endpoint name
-        receive_queue_size: receive queue max size
-        kwargs: additional arguments passed to
-            `asyncio.AbstractEventLoop.create_datagram_endpoint`
+    Argument `name` defines endpoint name available in property `info`.
+
+    Argument `close_timeout` defines maximum time in seconds that closing
+    of endpoint can take.
+
+    Additional arguments are passed directly to
+    `asyncio.AbstractEventLoop.create_datagram_endpoint`.
 
     """
     loop = asyncio.get_running_loop()
 
     create_protocol = functools.partial(_Protocol, datagram_type, name,
-                                        receive_queue_size)
+                                        receive_queue_size, close_timeout)
     family = _get_address_family(datagram_type)
 
     if isinstance(local_addr, common.UnixAddress):
@@ -116,7 +116,7 @@ def _create_endpoint(protocol: '_Protocol') -> 'Endpoint':
     endpoint._protocol = protocol
     endpoint._async_group = aio.Group()
 
-    endpoint.async_group.spawn(aio.call_on_cancel, protocol.close)
+    endpoint.async_group.spawn(aio.call_on_cancel, protocol.async_close)
     endpoint.async_group.spawn(aio.call_on_done, protocol.wait_closed(),
                                endpoint.close)
 
@@ -164,9 +164,11 @@ class _Protocol(asyncio.DatagramProtocol):
     def __init__(self,
                  datagram_type: DatagramType,
                  name: str | None,
-                 receive_queue_size: int):
+                 receive_queue_size: int,
+                 close_timeout: float | None):
         self._datagram_type = datagram_type
         self._name = name
+        self._close_timeout = close_timeout
         self._receive_queue = aio.Queue(receive_queue_size)
         self._closed = asyncio.Event()
         self._transport = None
@@ -194,6 +196,7 @@ class _Protocol(asyncio.DatagramProtocol):
     def connection_lost(self, exc: Exception | None):
         self._log.debug('connection lost')
 
+        self._transport = None
         self._closed.set()
         self._comm_log.log(common.CommLogAction.CLOSE)
 
@@ -252,13 +255,22 @@ class _Protocol(asyncio.DatagramProtocol):
 
         return data, addr
 
-    def close(self):
+    async def async_close(self):
         self._receive_queue.close()
 
-        if self._transport:
+        if self._transport is not None:
             self._transport.close()
 
-        self._transport = None
+        if self._close_timeout is not None:
+            try:
+                await aio.wait_for(self.wait_closed(), self._close_timeout)
+                return
+
+            except asyncio.TimeoutError:
+                if self._transport is not None:
+                    self._transport.abort()
+
+        await self.wait_closed()
 
     async def wait_closed(self):
         await self._closed.wait()
