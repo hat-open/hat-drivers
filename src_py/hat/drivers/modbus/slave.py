@@ -33,7 +33,7 @@ async def create_tcp_server(modbus_type: common.ModbusType,
 
     Closing server closes all active associated slaves.
 
-    Additional arguments are passed directly to `hat.drivers.tcp.connect`
+    Additional arguments are passed directly to `hat.drivers.net.connect`
     (`bind_connections` is set by this coroutine).
 
     Args:

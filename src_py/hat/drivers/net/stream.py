@@ -107,8 +107,8 @@ async def connect(addr: StreamAddress,
     Argument `name` defines connection name available in property `info`.
 
     Argument `input_buffer_limit` defines number of bytes in input buffer
-    that whill temporary pause data receiving. Once number of bytes
-    drops bellow `input_buffer_limit`, data receiving is resumed. If this
+    that will temporary pause data receiving. Once number of bytes
+    drops below `input_buffer_limit`, data receiving is resumed. If this
     argument is ``0``, data receive pausing is disabled.
 
     Argument `close_timeout` defines maximum time in seconds that closing
@@ -162,7 +162,7 @@ async def listen(connection_cb: ConnectionCb,
     """Create listening TCP or Unix Domain Socket server
 
     Argument `name` defines server name available in property `info`. This
-    name is used for all incomming connections.
+    name is used for all incoming connections.
 
     If `bind_connections` is ``True``, closing server will close all open
     incoming connections.
@@ -211,7 +211,7 @@ async def listen(connection_cb: ConnectionCb,
         await aio.uncancellable(server.async_close())
         raise
 
-    server._log.debug('listening for incomming connections')
+    server._log.debug('listening for incoming connections')
 
     return server
 
@@ -240,7 +240,7 @@ class Server(aio.Resource):
             await self._srv.wait_closed()
 
     async def _on_connection(self, protocol):
-        self._log.debug('new incomming connection')
+        self._log.debug('new incoming connection')
 
         try:
             conn = _create_connection(protocol)

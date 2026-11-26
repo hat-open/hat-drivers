@@ -180,7 +180,7 @@ async def test_readexactly(create_addr, stream_type):
 
 
 @pytest.mark.parametrize("stream_type", stream_types)
-async def test_cancel_concurent_read(create_addr, stream_type):
+async def test_cancel_concurrent_read(create_addr, stream_type):
     addr = create_addr(stream_type)
 
     conn_queue = aio.Queue()
