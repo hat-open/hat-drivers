@@ -1,10 +1,10 @@
 import asyncio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import modbus
 
 
-address = tcp.Address('127.0.0.1', 1234)
+address = net.TcpAddress('127.0.0.1', 1234)
 
 
 async def main():

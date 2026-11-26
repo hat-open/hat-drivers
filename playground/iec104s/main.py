@@ -9,7 +9,7 @@ import cryptography.hazmat.primitives.keywrap
 
 from hat import aio
 
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers.iec60870 import apci
 from hat.drivers.iec60870.msgs import iec104
 from hat.drivers.iec60870.msgs import security
@@ -53,7 +53,7 @@ async def async_main():
 
 
 async def run_master():
-    addr = tcp.Address('192.168.28.159', 2404)
+    addr = net.TcpAddress('192.168.28.159', 2404)
     ssl_ctx = None
     apci_conn = await apci.connect(addr, ssl_ctx=ssl_ctx)
     conn = Connection(apci_conn)
@@ -102,7 +102,7 @@ async def run_master():
 
 async def run_slave():
     # 192.168.28.200
-    addr = tcp.Address('0.0.0.0', 19998)
+    addr = net.TcpAddress('0.0.0.0', 19998)
     ssl_ctx = None  # create_ssl_ctx()
     conn_queue = aio.Queue()
     srv = await apci.listen(conn_queue.put_nowait, addr, ssl_ctx=ssl_ctx)

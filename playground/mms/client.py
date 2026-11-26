@@ -4,7 +4,7 @@ import contextlib
 from hat import aio
 
 from hat.drivers import mms
-from hat.drivers import tcp
+from hat.drivers import net
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
 
 
 async def async_main():
-    addr = tcp.Address('10.13.40.11', 102)
+    addr = net.TcpAddress('10.13.40.11', 102)
 
     conn = await mms.connect(addr,
                              local_tsel=1,

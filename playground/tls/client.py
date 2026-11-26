@@ -8,8 +8,8 @@ import cryptography.x509
 
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import ssl
-from hat.drivers import tcp
 
 
 def main():
@@ -19,10 +19,10 @@ def main():
 
 
 async def async_main():
-    addr = tcp.Address('127.0.0.1', 1234)
+    addr = net.TcpAddress('127.0.0.1', 1234)
     ctx = ssl.create_ssl_ctx(ssl.SslProtocol.TLS_CLIENT)
     ctx.maximum_version = ssl.TLSVersion.TLSv1_3
-    conn = await tcp.connect(addr, ssl=ctx)
+    conn = await net.connect(addr, ssl=ctx)
 
     print(">> cert store stats")
     pprint(ctx.cert_store_stats())

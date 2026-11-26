@@ -5,8 +5,8 @@ import sys
 
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import smpp
-from hat.drivers import tcp
 
 
 def create_argument_parser():
@@ -62,7 +62,7 @@ def main():
 
 
 async def async_main(args, msg_bytes):
-    client = await smpp.connect(addr=tcp.Address(args.host, args.port),
+    client = await smpp.connect(addr=net.TcpAddress(args.host, args.port),
                                 system_id=args.system_id,
                                 password=args.password)
 

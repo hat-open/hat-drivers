@@ -7,8 +7,8 @@ import tempfile
 
 from hat import aio
 
+from hat.drivers import net
 from hat.drivers import ssl
-from hat.drivers import tcp
 
 
 def main():
@@ -18,9 +18,9 @@ def main():
 
 
 async def async_main():
-    addr = tcp.Address('127.0.0.1', 1234)
+    addr = net.TcpAddress('127.0.0.1', 1234)
     ctx = create_ctx()
-    srv = await tcp.listen(on_connection, addr,
+    srv = await net.listen(on_connection, addr,
                            ssl=ctx,
                            bind_connections=True)
 

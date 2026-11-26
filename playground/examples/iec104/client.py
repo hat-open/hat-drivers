@@ -1,9 +1,9 @@
 import asyncio
-from hat.drivers import tcp
+from hat.drivers import net
 from hat.drivers import iec104
 
 
-addr = tcp.Address('127.0.0.1', 23231)
+addr = net.TcpAddress('127.0.0.1', 23231)
 
 cmd = iec104.CommandMsg(
     is_test=False,
