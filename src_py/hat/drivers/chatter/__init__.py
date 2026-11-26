@@ -317,19 +317,19 @@ class Connection(aio.Resource):
         msg_len = _bebytes_to_uint(msg_len_bytes)
 
         msg_bytes = await self._conn.readexactly(msg_len)
-        msg = _sbs_repo.decode('HatChatter.Msg', msg_bytes)
+        msg = _sbs_repo.decode(_msg_sbs_ref, msg_bytes)
 
         return msg
 
     async def _write(self, msg):
-        msg_bytes = _sbs_repo.encode('HatChatter.Msg', msg)
+        msg_bytes = _sbs_repo.encode(_msg_sbs_ref, msg)
         msg_len = len(msg_bytes)
         msg_len_bytes = _uint_to_bebytes(msg_len)
-        msg_len_len_bytes = [len(msg_len_bytes)]
+        msg_len_len_bytes = bytes([len(msg_len_bytes)])
 
-        await self._conn.write(bytes(itertools.chain(msg_len_len_bytes,
-                                                     msg_len_bytes,
-                                                     msg_bytes)))
+        await self._conn.write(b''.join([msg_len_len_bytes,
+                                         msg_len_bytes,
+                                         msg_bytes]))
 
     async def _ping(self):
         msg, _ = self._create_msg(data=Data('HatChatter.Ping', b''),
@@ -379,6 +379,9 @@ def _bebytes_to_uint(b):
 with importlib.resources.as_file(importlib.resources.files(__package__) /
                                  'sbs_repo.json') as _path:
     _sbs_repo = sbs.Repository.from_json(_path)
+
+
+_msg_sbs_ref = sbs.Ref('HatChatter', 'Msg')
 
 
 def _create_server_logger(info):
