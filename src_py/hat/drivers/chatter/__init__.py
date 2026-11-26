@@ -182,19 +182,10 @@ class Connection(aio.Resource):
         if self.is_closing:
             raise ConnectionError()
 
-        msg_id = next(self._next_msg_ids)
-
-        if not conv:
-            conv = Conversation(owner=True,
-                                first_id=msg_id)
-
-        msg = {'id': msg_id,
-               'first': conv.first_id,
-               'owner': conv.owner,
-               'token': token,
-               'last': last,
-               'data': {'type': data.type,
-                        'data': data.data}}
+        msg, conv = self._create_msg(data=data,
+                                     conv=conv,
+                                     last=last,
+                                     token=token)
         await self._send_queue.put((msg, None))
 
         return conv
@@ -229,8 +220,7 @@ class Connection(aio.Resource):
                 if msg.data.type == 'HatChatter.Ping':
                     self._log.debug("received ping request - "
                                     "sending ping response")
-                    await self.send(Data('HatChatter.Pong', b''),
-                                    conv=msg.conv)
+                    self.async_group.spawn(self._pong, msg.conv)
 
                 elif msg.data.type == 'HatChatter.Pong':
                     self._log.debug("received ping response")
@@ -299,11 +289,9 @@ class Connection(aio.Resource):
                     continue
 
                 self._log.debug("sending ping request")
-                await self.send(Data('HatChatter.Ping', b''),
-                                last=False)
 
                 with contextlib.suppress(asyncio.TimeoutError):
-                    await aio.wait_for(self._ping_event.wait(), timeout)
+                    await aio.wait_for(self._ping(), timeout)
                     continue
 
                 self._log.warning("ping timeout")
@@ -337,6 +325,41 @@ class Connection(aio.Resource):
         await self._conn.write(bytes(itertools.chain(msg_len_len_bytes,
                                                      msg_len_bytes,
                                                      msg_bytes)))
+
+    async def _ping(self):
+        msg, _ = self._create_msg(data=Data('HatChatter.Ping', b''),
+                                  conv=None,
+                                  last=False,
+                                  token=True)
+        await self._write(msg)
+
+        await self._ping_event.wait()
+
+    async def _pong(self, conv):
+        msg, _ = self._create_msg(data=Data('HatChatter.Pong', b''),
+                                  conv=conv,
+                                  last=True,
+                                  token=True)
+
+        with contextlib.suppress(ConnectionError):
+            await self._write(msg)
+
+    def _create_msg(self, data, conv, last, token):
+        msg_id = next(self._next_msg_ids)
+
+        if not conv:
+            conv = Conversation(owner=True,
+                                first_id=msg_id)
+
+        msg = {'id': msg_id,
+               'first': conv.first_id,
+               'owner': conv.owner,
+               'token': token,
+               'last': last,
+               'data': {'type': data.type,
+                        'data': data.data}}
+
+        return msg, conv
 
 
 def _uint_to_bebytes(x):
