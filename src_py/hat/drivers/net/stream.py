@@ -372,6 +372,7 @@ class _Protocol(asyncio.Protocol):
         self._read_lock = asyncio.Lock()
         self._read_count = 0
         self._read_future = None
+        self._read_paused = False
         self._eof = False
         self._write_queue = None
         self._drain_futures = None
@@ -487,7 +488,7 @@ class _Protocol(asyncio.Protocol):
         if self._read_future and not self._read_future.done():
             self._read_future.set_result(None)
 
-        self._update_read_pause()
+        self._update_read_paused()
 
     def eof_received(self) -> bool:
         self._log.debug('eof received')
@@ -540,7 +541,7 @@ class _Protocol(asyncio.Protocol):
                         raise ConnectionError()
 
                     self._read_future = self._loop.create_future()
-                    self._update_read_pause()
+                    self._update_read_paused()
 
                     try:
                         await self._read_future
@@ -558,7 +559,7 @@ class _Protocol(asyncio.Protocol):
             raise ConnectionError()
 
         count = self._input_buffer.clear()
-        self._transport.resume_reading()
+        self._update_read_paused()
         return count
 
     async def async_close(self):
@@ -586,18 +587,23 @@ class _Protocol(asyncio.Protocol):
 
     def _read(self, n):
         data = self._input_buffer.read(n)
-        self._update_read_pause()
+        self._update_read_paused()
         return data
 
-    def _update_read_pause(self):
+    def _update_read_paused(self):
         if self._eof or self._transport is None:
             return
 
-        pause = (self._input_buffer_limit > 0 and
-                 len(self._input_buffer) > self._input_buffer_limit and
-                 self._read_future is None)
+        paused = (self._input_buffer_limit > 0 and
+                  len(self._input_buffer) > self._input_buffer_limit and
+                  self._read_future is None)
 
-        if pause:
+        if paused == self._read_paused:
+            return
+
+        self._read_paused = paused
+
+        if paused:
             self._transport.pause_reading()
 
         else:
