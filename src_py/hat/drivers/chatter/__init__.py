@@ -186,7 +186,12 @@ class Connection(aio.Resource):
                                      conv=conv,
                                      last=last,
                                      token=token)
-        await self._send_queue.put((msg, None))
+
+        try:
+            await self._send_queue.put((msg, None))
+
+        except aio.QueueClosedError:
+            raise ConnectionError()
 
         return conv
 
