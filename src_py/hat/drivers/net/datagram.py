@@ -108,10 +108,18 @@ async def create_endpoint(datagram_type: DatagramType = DatagramType.UDP,
                                                       family=family,
                                                       **kwargs)
 
-    return _create_endpoint(protocol)
+    try:
+        return _create_endpoint(protocol)
+
+    except Exception:
+        await aio.uncancellable(protocol.async_close())
+        raise
 
 
 def _create_endpoint(protocol: '_Protocol') -> 'Endpoint':
+    if protocol.info is None:
+        raise ConnectionError()
+
     endpoint = Endpoint()
     endpoint._protocol = protocol
     endpoint._async_group = aio.Group()
@@ -185,13 +193,22 @@ class _Protocol(asyncio.DatagramProtocol):
 
     def connection_made(self, transport: asyncio.Transport):
         self._transport = transport
-        self._info = _get_endpoint_info(self._datagram_type, self._name,
-                                        transport)
 
-        self._log = _create_logger(self._info)
-        self._comm_log = _CommunicationLogger(self._info)
+        try:
+            self._info = _get_endpoint_info(self._datagram_type, self._name,
+                                            transport)
 
-        self._comm_log.log(common.CommLogAction.OPEN)
+            self._log = _create_logger(self._info)
+            self._comm_log = _CommunicationLogger(self._info)
+
+            self._comm_log.log(common.CommLogAction.OPEN)
+
+        except Exception as e:
+            self._log.warning('endpoint initialization error: %s', e,
+                              exc_info=e)
+
+            self._info = None
+            transport.abort()
 
     def connection_lost(self, exc: Exception | None):
         self._log.debug('connection lost')
