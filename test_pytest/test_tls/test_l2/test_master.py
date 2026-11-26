@@ -258,8 +258,7 @@ async def test_connect(create_master_slave_links, comm_type, reset_unit):
 
 @pytest.mark.parametrize('comm_type', comm_types)
 @pytest.mark.parametrize('reset_unit', [True, False])
-async def test_connect_reset_ack(create_master_slave_links, comm_type,
-                                 reset_unit):
+async def test_connect_ack(create_master_slave_links, comm_type, reset_unit):
     addr = 1
 
     link, slave_link = await create_master_slave_links(comm_type)
@@ -288,7 +287,7 @@ async def test_connect_reset_ack(create_master_slave_links, comm_type,
     await slave.send(common.ResFrame(
         access_demand=False,
         data_flow_control=False,
-        function=common.ResFunction.RESET_ACK,
+        function=common.ResFunction.ACK,
         address=addr,
         data=b''))
 
@@ -454,8 +453,7 @@ async def test_send_test(create_master_slave_links, comm_type, with_ack):
 
 @pytest.mark.parametrize('comm_type', comm_types)
 @pytest.mark.parametrize('is_test', [True, False])
-@pytest.mark.parametrize('res_function', [common.ResFunction.RESET_ACK,
-                                          common.ResFunction.REJECT,
+@pytest.mark.parametrize('res_function', [common.ResFunction.REJECT,
                                           # common.ResFunction.RES_ACK,
                                           common.ResFunction.RES_REJECT,
                                           common.ResFunction.RES_STATUS])

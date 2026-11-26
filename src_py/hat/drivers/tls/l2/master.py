@@ -94,7 +94,7 @@ class MasterLink(aio.Resource):
                         break
 
                     elif (isinstance(res, common.ResFrame) and
-                            res.function == common.ResFunction.RESET_ACK):
+                            res.function == common.ResFunction.ACK):
                         data_flow_control = res.data_flow_control
                         break
 
@@ -377,6 +377,8 @@ class _MasterConnection(common.Connection):
                 if future.done():
                     continue
 
+                # TODO allow only responses matching request
+
                 if isinstance(res, common.ShortFrame):
                     future.set_result(None)
 
@@ -389,7 +391,8 @@ class _MasterConnection(common.Connection):
 
                         future.set_result(None)
 
-                    elif res.function == common.ResFunction.RES_ACK:
+                    elif res.function in (common.ResFunction.ACK,
+                                          common.ResFunction.RES_ACK):
                         future.set_result(None)
 
                     else:

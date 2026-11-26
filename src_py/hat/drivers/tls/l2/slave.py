@@ -223,7 +223,7 @@ class _SlaveConnection(common.Connection):
             if not req.frame_count_valid:
                 self._frame_count_bit = False
 
-            function = common.ResFunction.RESET_ACK
+            function = common.ResFunction.ACK
             data = b''
 
         elif req.function in [common.ReqFunction.SEND_DATA,
@@ -233,7 +233,7 @@ class _SlaveConnection(common.Connection):
                 test = req.function == common.ReqFunction.SEND_TEST
                 await self._receive_queue.put((req.data, test))
 
-            function = common.ResFunction.RES_ACK
+            function = common.ResFunction.ACK
             data = b''
 
         elif req.function == common.ReqFunction.REQ_STATUS:
@@ -277,7 +277,7 @@ class _SlaveConnection(common.Connection):
 
         access_demand = not self._send_data_queue.empty()
 
-        if not access_demand and function in (common.ResFunction.RESET_ACK,
+        if not access_demand and function in (common.ResFunction.ACK,
                                               common.ResFunction.RES_ACK):
             res = common.ShortFrame()
 

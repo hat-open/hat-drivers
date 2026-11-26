@@ -31,7 +31,7 @@ class ReqFunction(enum.Enum):
 
 
 class ResFunction(enum.Enum):
-    RESET_ACK = 0
+    ACK = 0
     REJECT = 1
     RES_DATA = 8
     RES_ACK = 9
