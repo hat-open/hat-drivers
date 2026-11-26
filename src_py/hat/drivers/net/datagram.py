@@ -208,6 +208,9 @@ class _Protocol(asyncio.DatagramProtocol):
         except aio.QueueFullError:
             self._log.warning('receive queue full - dropping datagram')
 
+    def error_received(self, exc: Exception):
+        self._log.warning("protocol error: %s", exc, exc_info=exc)
+
     def send(self,
              data: util.Bytes,
              remote_addr: DatagramAddress | None = None):
