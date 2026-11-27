@@ -91,8 +91,6 @@ def create_argument_parser(subparsers) -> argparse.ArgumentParser:
 
 
 def main(args):
-    aio.init_asyncio()
-
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main(args))
 

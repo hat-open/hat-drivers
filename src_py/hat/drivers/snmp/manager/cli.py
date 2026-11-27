@@ -101,8 +101,6 @@ def main():
     global string_decode
     string_decode = args.string_decode
 
-    aio.init_asyncio()
-
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main(args))
 

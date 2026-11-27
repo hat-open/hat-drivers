@@ -13,7 +13,6 @@ from hat.drivers import ssl
 
 
 def main():
-    aio.init_asyncio()
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main())
 

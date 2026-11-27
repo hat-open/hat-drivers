@@ -13,7 +13,6 @@ addr = Path(__file__).parent / 'socket'
 
 
 def main():
-    aio.init_asyncio()
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main())
 

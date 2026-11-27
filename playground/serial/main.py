@@ -28,7 +28,6 @@ def main():
     parser = create_argument_parser()
     args = parser.parse_args()
 
-    aio.init_asyncio()
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main(args))
 

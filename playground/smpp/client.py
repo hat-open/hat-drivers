@@ -55,8 +55,6 @@ def main():
     msg_str = sys.stdin.read() if args.msg is None else args.msg
     msg_bytes = msg_str.encode('ascii')
 
-    aio.init_asyncio()
-
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main(args, msg_bytes))
 

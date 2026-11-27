@@ -9,7 +9,6 @@ addr = iec104.Address('127.0.0.1', 23231)
 
 
 def main():
-    aio.init_asyncio()
     with contextlib.suppress(asyncio.CancelledError):
         aio.run_asyncio(async_main())
 
